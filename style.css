@@ -472,3 +472,10 @@ footer ul li a:hover::before {
         gap: 1rem;
     }
 }
+
+@media(max-width: 375px) {
+    .about-container img {
+        height: 38vh;
+        width: 90vw;
+    }
+}
