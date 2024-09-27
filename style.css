@@ -95,6 +95,14 @@ section {
 }
 
 .about {
+    padding: 8rem 12% 4rem 12%;
+}
+
+.education , .projects, .contact {
+    padding: 2rem 12% 1rem 12%;
+}
+
+.about {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -476,6 +484,13 @@ footer ul li a:hover::before {
     
     footer ul {
         gap: 1rem;
+    }
+}
+
+@media(max-width: 440px) {
+    .about-container img {
+        height: 44vh;
+        width: 80vw;
     }
 }
 
