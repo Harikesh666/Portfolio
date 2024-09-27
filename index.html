@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <title>Portfolio</title>
+</head>
+
+<body>
+    <header class="header">
+        <a href="#" class="logo"><span>Harikesh Mishra</span></a>
+
+        <ul class="nav-links">
+            <li>
+                <a href="#about" class="link">About</a>
+            </li>
+            <li>
+                <a href="#experience" class="link">Education</a>
+            </li>
+            <li>
+                <a href="#projects" class="link">Projects</a>
+            </li>
+            <li>
+                <a href="#contact" class="link">Contact</a>
+            </li>
+        </ul>
+
+        <i class="fa-solid fa-bars" id="menu-icon"></i>
+
+        <a href="https://github.com/Harikesh666" class="visit-btn" target="_blank">Visit Github</a>
+    </header>
+
+    <section class="about" id="about">
+        <div class="about-container">
+            <img src="avatar.png" alt="">
+
+            <div class="info-box">
+                <div class="text">
+                    <h3>Hi, I'm</h3>
+                    <h1>Harikesh Mishra</h1>
+                    <span>Frontend Developer</span>
+                </div>
+
+                <div class="btn-group">
+                    <a href="resume.pdf" class="btn" download="Harikesh_Mishra_Resume.pdf">Download Resume</a>
+                    <a href="#contact" class="btn">Contact</a>
+                </div>
+
+                <div class="socials">
+                    <a href="https://github.com/Harikesh666" target="_blank"><i class="fa-brands fa-github"></i></a>
+                    <a href="https://www.linkedin.com/in/harikesh-mishra/" target="_blank"><i
+                            class="fa-brands fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="experience" class="education">
+        <h2 class="section-title">Education</h2>
+
+        <div class="education-info">
+            <div class="grid">
+
+                <div class="grid-card">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>MSc IT</span>
+                    <h3>2 Years</h3>
+                    <p>Completed my Post Graduation from Sathaye College (Autnomous) in the Academic Year 2022-2024</p>
+                </div>
+
+                <div class="grid-card">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>BSc IT</span>
+                    <h3>3 Years</h3>
+                    <p>Completed my Graduation from L S Raheja College of Arts and Commerce in the Academic Year 2019-2022</p>
+                </div>
+
+            </div>
+
+            <img src="avatar.png" alt="">
+        </div>
+    </section>
+
+    <section id="projects" class="projects">
+        <h2 class="section-title">Recent Projects</h2>
+
+        <div class="projects-grid">
+
+            <div class="project-card">
+                <img src="thumbnail.jpg" alt="">
+                <h3>Single Page Website</h3>
+                <p>A fully responsive website built using HTML & CSS. Two breakpoints at 900px and 500px</p>
+                <div class="btn-group">
+                    <a href="https://main--eloquent-youtiao-7e7617.netlify.app/" class="btn" target="_blank">Live Demo</a>
+                    <a href="https://github.com/Harikesh666/Responsive-" class="btn" target="_blank">Github</a>
+                </div>
+            </div>
+
+            <div class="project-card">
+                <img src="thumbnail1.png" alt="">
+                <h3>Responive Landing Page</h3>
+                <p>A Responsive Landing Page built using HTML & CSS. One breakpoint at 600px</p>
+                <div class="btn-group">
+                    <a href="https://66f65904ba2371df95265488--eloquent-buttercream-4554ee.netlify.app/" class="btn" target="_blank">Live Demo</a>
+                    <a href="https://github.com/Harikesh666/Web-Design-Landing-Page" class="btn" target="_blank">Github</a>
+                </div>
+            </div>
+
+            <div class="project-card">
+                <img src="thumbnai2.png" alt="">
+                <h3>Landing Page</h3>
+                <p>Landing Page built using HTML & CSS (not responsive but beautiful)</p>
+                <div class="btn-group">
+                    <a href="https://66f65d1a778c4de6c0eb3ec2--delightful-gumption-6797da.netlify.app/" class="btn" target="_blank">Live Demo</a>
+                    <a href="https://github.com/Harikesh666/Landing-Page" class="btn" target="_blank">Github</a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <section id="contact" class="contact">
+        <div class="input-box">
+            <h2 class="section-title">Contact Me</h2>
+
+            <!-- <div class="input">
+                <input type="text" placeholder="example@gmail.com">
+                <i class="fa-solid fa-envelope"></i>
+            </div>
+
+            <div class="btn">Submit</div> -->
+
+            <form id="fs-frm" name="simple-contact-form" accept-charset="utf-8" action="https://formspree.io/f/xovagjvl"
+                method="post">
+                <fieldset id="fs-frm-inputs">
+                    <label for="full-name">Full Name</label>
+                    <input type="text" name="name" id="full-name" placeholder="First and Last" required="">
+                    <label for="email-address">Email Address</label>
+                    <input type="email" name="_replyto" id="email-address" placeholder="email@domain.tld" required="">
+                    <label for="message">Message</label>
+                    <textarea rows="5" name="message" id="message"
+                        placeholder="Aenean lacinia bibendum nulla sed consectetur. Vivamus sagittis lacus vel augue laoreet rutrum faucibus dolor auctor. Donec ullamcorper nulla non metus auctor fringilla nullam quis risus."
+                        required=""></textarea>
+                    <input type="hidden" name="_subject" id="email-subject" value="Contact Form Submission">
+                </fieldset>
+                <input type="submit" value="Submit">
+            </form>
+            <style>
+                /* reset */
+                #fs-frm input,
+                #fs-frm select,
+                #fs-frm textarea,
+                #fs-frm fieldset,
+                #fs-frm optgroup,
+                #fs-frm label,
+                #fs-frm #card-element:disabled {
+                    font-family: inherit;
+                    font-size: 100%;
+                    color: inherit;
+                    border: none;
+                    border-radius: 0;
+                    display: block;
+                    width: 100%;
+                    padding: 0;
+                    margin: 0;
+                    appearance: none;
+                    -webkit-appearance: none;
+                    -moz-appearance: none;
+                }
+
+                #fs-frm label,
+                #fs-frm legend,
+                #fs-frm ::placeholder {
+                    font-size: .825rem;
+                    margin-bottom: .5rem;
+                    padding-top: .2rem;
+                    display: flex;
+                    align-items: baseline;
+                }
+
+                /* border, padding, margin, width */
+                #fs-frm input,
+                #fs-frm select,
+                #fs-frm textarea,
+                #fs-frm #card-element {
+                    border: 1px solid rgba(0, 0, 0, 0.2);
+                    background-color: rgba(255, 255, 255, 0.9);
+                    padding: .75em 1rem;
+                    margin-bottom: 1.5rem;
+                }
+
+                #fs-frm input:focus,
+                #fs-frm select:focus,
+                #fs-frm textarea:focus {
+                    background-color: white;
+                    outline-style: solid;
+                    outline-width: thin;
+                    outline-color: gray;
+                    outline-offset: -1px;
+                }
+
+                #fs-frm [type="text"],
+                #fs-frm [type="email"] {
+                    width: 100%;
+                }
+
+                #fs-frm [type="button"],
+                #fs-frm [type="submit"],
+                #fs-frm [type="reset"] {
+                    width: auto;
+                    cursor: pointer;
+                    -webkit-appearance: button;
+                    -moz-appearance: button;
+                    appearance: button;
+                }
+
+                #fs-frm [type="button"]:focus,
+                #fs-frm [type="submit"]:focus,
+                #fs-frm [type="reset"]:focus {
+                    outline: none;
+                }
+
+                #fs-frm [type="submit"],
+                #fs-frm [type="reset"] {
+                    margin-bottom: 0;
+                }
+
+                #fs-frm select {
+                    text-transform: none;
+                }
+
+                #fs-frm [type="checkbox"] {
+                    -webkit-appearance: checkbox;
+                    -moz-appearance: checkbox;
+                    appearance: checkbox;
+                    display: inline-block;
+                    width: auto;
+                    margin: 0 .5em 0 0 !important;
+                }
+
+                #fs-frm [type="radio"] {
+                    -webkit-appearance: radio;
+                    -moz-appearance: radio;
+                    appearance: radio;
+                }
+
+                /* address, locale */
+                #fs-frm fieldset.locale input[name="city"],
+                #fs-frm fieldset.locale select[name="state"],
+                #fs-frm fieldset.locale input[name="postal-code"] {
+                    display: inline;
+                }
+
+                #fs-frm fieldset.locale input[name="city"] {
+                    width: 52%;
+                }
+
+                #fs-frm fieldset.locale select[name="state"],
+                #fs-frm fieldset.locale input[name="postal-code"] {
+                    width: 20%;
+                }
+
+                #fs-frm fieldset.locale input[name="city"],
+                #fs-frm fieldset.locale select[name="state"] {
+                    margin-right: 3%;
+                }
+            </style>
+        </div>
+    </section>
+
+    <footer>
+        <ul>
+            <li>
+                <a href="#about" class="link">About</a>
+            </li>
+            <li>
+                <a href="#experience" class="link">Education</a>
+            </li>
+            <li>
+                <a href="#projects" class="link">Projects</a>
+            </li>
+            <li>
+                <a href="#contact" class="link">Contact</a>
+            </li>
+        </ul>
+
+        <p class="copyright">&copy; All Rights Reserved | Harikesh Mishra</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
