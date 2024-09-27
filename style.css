@@ -468,6 +468,12 @@ footer ul li a:hover::before {
         width: 80vw;
     }
 
+    .projects-grid {
+        grid-template-columns: repeat(1, 1fr);
+        justify-content: center;
+    }
+
+    
     footer ul {
         gap: 1rem;
     }
