@@ -235,6 +235,8 @@ section {
     background-color: #000;
     color: #fff;
     transform: scale(1.05);
+    transform: scale(1.2);
+    animation: fa-bounce 1s infinite;
 }
 
 .skill {
@@ -244,6 +246,7 @@ section {
 .skill i {
     font-size: 1.4rem;
     text-align: center;
+    transition: transform 0.3s ease;
 }
 
 .card h3 {
@@ -441,6 +444,7 @@ footer ul li a:hover::before {
 
 @media (max-width: 768px) {
     header {
+        top: 1rem;
         padding: 1rem 1rem;
         gap: 1rem;
     }
@@ -472,7 +476,7 @@ footer ul li a:hover::before {
 
 @media (max-width: 600px) {
     header {
-        top: 0;
+        top: 1;
         padding: 1rem 5rem;
         gap: 8rem;
     }
@@ -488,7 +492,7 @@ footer ul li a:hover::before {
     .nav-links {
         position: absolute;
         top: 100%;
-        margin-top: 0rem;
+        margin-top: 0.5rem;
         width: 100%;
         padding: 1rem;
         color: #fff;
@@ -496,7 +500,7 @@ footer ul li a:hover::before {
         flex-direction: column;
         text-align: center;
         background: rgba(0, 0, 0, 0.9);
-        border-radius: 0rem;
+        border-radius: 3rem;
         display: none;
     }
 
@@ -567,15 +571,28 @@ footer ul li a:hover::before {
 }
 
 @media(max-width: 440px) {
+    .header {
+        top: 0;
+    }
+
+    .nav-links {
+        border-radius: 0;
+        margin-top: 0rem;
+    }
+
     .about-container img {
-        height: 44vh;
-        width: 80vw;
+        /* height: 44vh;
+        width: 100%; */
+        height: 40vh;
+        width: 85vw;
     }
 }
 
 @media(max-width: 375px) {
     .about-container img {
-        height: 38vh;
-        width: 85vw;
+        /* height: 38vh;
+        width: 85vw; */
+        height: 35vh;
+        width: 80vw;
     }
 }
