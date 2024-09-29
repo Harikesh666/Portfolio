@@ -242,11 +242,12 @@ section {
 }
 
 .skill i {
-    font-size: 2rem;
+    font-size: 1.4rem;
     text-align: center;
 }
 
 .card h3 {
+    font-size: 1.3rem;
     background: linear-gradient(to right, rgb(31, 132, 195), rgb(141, 30, 141));
     background-clip: text;
     color: transparent;
@@ -519,6 +520,10 @@ footer ul li a:hover::before {
 
     .section-title {
         font-size: 2.5rem;
+    }
+
+    .grid-card {
+        padding: 1.8rem;
     }
 
     .projects-grid {
