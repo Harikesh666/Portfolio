@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://portfolio.example/</loc></url>
+  <url><loc>https://portfolio.example/writing</loc></url>
+  <url><loc>https://portfolio.example/writing/the-case-for-a-little-friction</loc></url>
+  <url><loc>https://portfolio.example/writing/a-website-is-not-a-pdf</loc></url>
+  <url><loc>https://portfolio.example/writing/making-room-for-taste</loc></url>
+</urlset>
