@@ -4,75 +4,83 @@
   "title": "Design System: Harikesh Mishra Portfolio",
   "extensions": {
     "colorMeta": {
-      "surface": { "role": "neutral", "displayName": "Cool Paper", "canonical": "oklch(0.985 0.003 247)", "tonalRamp": ["oklch(0.985 0.003 247)", "oklch(0.93 0.006 247)", "oklch(0.89 0.008 255)"] },
-      "foreground-strong": { "role": "neutral", "displayName": "Operational Ink", "canonical": "oklch(0.235 0.022 255)", "tonalRamp": ["oklch(0.235 0.022 255)", "oklch(0.37 0.018 255)", "oklch(0.53 0.016 255)"] },
-      "accent": { "role": "primary", "displayName": "Decision Coral", "canonical": "oklch(0.61 0.18 35)", "tonalRamp": ["oklch(0.93 0.035 35)", "oklch(0.76 0.12 35)", "oklch(0.61 0.18 35)"] }
+      "surface": {
+        "role": "neutral",
+        "displayName": "Warm Reading Surface",
+        "canonical": "oklch(0.98 0.004 95)",
+        "tonalRamp": ["oklch(0.98 0.004 95)", "oklch(0.9 0.008 95)", "oklch(0.3 0.008 95)"]
+      },
+      "foreground-strong": {
+        "role": "neutral",
+        "displayName": "Reading Ink",
+        "canonical": "oklch(0.22 0.02 95)",
+        "tonalRamp": ["oklch(0.22 0.02 95)", "oklch(0.37 0.015 95)", "oklch(0.52 0.014 95)"]
+      },
+      "accent": {
+        "role": "primary",
+        "displayName": "Coral Signal",
+        "canonical": "oklch(0.61 0.18 35)",
+        "tonalRamp": ["oklch(0.93 0.035 35)", "oklch(0.61 0.18 35)", "oklch(0.72 0.17 35)"]
+      }
     },
     "typographyMeta": {
-      "display": { "displayName": "Source Serif 4 Display", "purpose": "Major claims and article-level headings." },
-      "body": { "displayName": "Atkinson Hyperlegible Body", "purpose": "Accessible operational copy and long-form reading." }
+      "body": {
+        "displayName": "Atkinson Hyperlegible",
+        "purpose": "All prose and headings in the quiet single-column interface."
+      },
+      "mono": {
+        "displayName": "JetBrains Mono",
+        "purpose": "Section labels, metadata, series numbers, and code-adjacent UI."
+      }
     },
     "shadows": [],
     "motion": [
-      { "name": "standard", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Short color and transform feedback only; removed for reduced motion." }
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion",
+        "purpose": "Disables smooth scrolling and nonessential animation."
+      }
     ],
     "breakpoints": [
-      { "name": "sm", "value": "640px" },
-      { "name": "lg", "value": "1024px" }
+      { "name": "sm", "value": "640px" }
     ]
   },
   "components": [
     {
-      "name": "Primary Contact Button",
-      "kind": "button",
-      "refersTo": "button-primary",
-      "description": "The primary route to a role conversation.",
-      "html": "<button class=\"ds-button-primary\">Email me about a role</button>",
-      "css": ".ds-button-primary { border: 0; border-radius: 6px; background: var(--color-foreground-strong); color: var(--color-surface); padding: 12px 20px; font: 700 14px var(--font-sans); cursor: pointer; transition: background-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-primary:hover { background: var(--color-accent); } .ds-button-primary:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
-    },
-    {
-      "name": "Secondary Reading Button",
-      "kind": "button",
-      "refersTo": "button-secondary",
-      "description": "A low-noise route into the writing series.",
-      "html": "<button class=\"ds-button-secondary\">Start reading</button>",
-      "css": ".ds-button-secondary { border: 1px solid var(--color-divider); border-radius: 6px; background: var(--color-surface); color: var(--color-foreground-strong); padding: 12px 20px; font: 700 14px var(--font-sans); cursor: pointer; transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-secondary:hover { border-color: var(--color-foreground-strong); background: var(--color-accent-soft); } .ds-button-secondary:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
-    },
-    {
-      "name": "Evidence Row",
-      "kind": "custom",
-      "refersTo": "evidence-row",
-      "description": "A scan-friendly production outcome in a ruled list.",
-      "html": "<article class=\"ds-evidence\"><strong>Sales Copilot</strong><p>Built reusable admin primitives across a production module.</p><span>130K+ records · ~190ms page requests</span></article>",
-      "css": ".ds-evidence { display: grid; gap: 10px; border-bottom: 1px solid var(--color-divider); padding: 24px 0; color: var(--color-foreground); font: 400 16px/1.6 var(--font-sans); } .ds-evidence strong { color: var(--color-foreground-strong); font-weight: 700; } .ds-evidence p { margin: 0; } .ds-evidence span { color: var(--color-accent); font-size: 14px; font-weight: 700; }"
+      "name": "Global Navigation",
+      "kind": "nav",
+      "refersTo": "main-navigation",
+      "description": "A compact ruled row with writing, GitHub, resume, and a persistent theme control.",
+      "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Writing</a><a href=\"#\">GitHub</a><button aria-label=\"Toggle theme\">Theme</button></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-divider); padding: 16px 20px; color: var(--color-foreground); font: 400 14px var(--font-sans); } .ds-nav strong { margin-right: auto; color: var(--color-foreground-strong); font-weight: 700; } .ds-nav button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--color-foreground-strong); } .ds-nav :focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
     },
     {
       "name": "Writing List Item",
-      "kind": "card",
+      "kind": "custom",
       "refersTo": "writing-list-item",
-      "description": "A ruled article link that gives title, explanation, and reading time equal structure.",
-      "html": "<a class=\"ds-writing-item\" href=\"#\"><span>01</span><b>React Rendering and Reconciliation Internals</b><em>45 min read</em></a>",
-      "css": ".ds-writing-item { display: grid; gap: 8px; border-bottom: 1px solid var(--color-divider); padding: 20px 0; color: inherit; text-decoration: none; } .ds-writing-item span { color: var(--color-accent); font: 700 14px var(--font-sans); } .ds-writing-item b { color: var(--color-foreground-strong); font: 500 24px/1.2 var(--font-serif); transition: color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-writing-item em { color: var(--color-muted); font: 600 14px var(--font-sans); font-style: normal; } .ds-writing-item:hover b { color: var(--color-accent); } .ds-writing-item:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
+      "description": "A ruled vertical article link with series number, title, summary, and reading time.",
+      "html": "<a class=\"ds-writing-item\" href=\"#\"><span>01</span><b>React Rendering and Reconciliation Internals</b><p>How React turns state into UI.</p><em>45 min read</em></a>",
+      "css": ".ds-writing-item { display: block; border-bottom: 1px solid var(--color-divider); padding: 20px 0; color: var(--color-foreground); text-decoration: none; } .ds-writing-item span { color: var(--color-accent); font: 400 14px var(--font-mono); } .ds-writing-item b { display: block; margin-top: 4px; color: var(--color-foreground-strong); font: 700 17px/1.4 var(--font-sans); } .ds-writing-item p { margin: 4px 0 0; color: var(--color-muted); font: 400 14px/1.6 var(--font-sans); } .ds-writing-item em { display: block; margin-top: 8px; font: 400 14px var(--font-sans); font-style: normal; } .ds-writing-item:hover b { color: var(--color-accent); }"
     },
     {
-      "name": "Portfolio Navigation",
-      "kind": "nav",
-      "refersTo": "main-navigation",
-      "description": "Compact identity and direct navigational choices, divided from content by a rule.",
-      "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Writing</a><a href=\"#\">Contact</a></nav>",
-      "css": ".ds-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; border-bottom: 1px solid var(--color-divider); padding: 20px 0; color: var(--color-foreground); font: 600 14px var(--font-sans); } .ds-nav strong { color: var(--color-foreground-strong); margin-right: auto; } .ds-nav a { color: inherit; text-decoration: none; } .ds-nav a:last-child { color: var(--color-foreground-strong); text-decoration: underline 2px var(--color-accent); text-underline-offset: 4px; } .ds-nav a:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
+      "name": "Article Code Block",
+      "kind": "custom",
+      "refersTo": "expressive-code",
+      "description": "Expressive Code owns fenced-code syntax highlighting, copy controls, and theme switching.",
+      "html": "<div class=\"expressive-code\"><figure class=\"frame\"><pre><code>const answer = 42;</code></pre><div class=\"copy\"><button title=\"Copy to clipboard\"></button></div></figure></div>",
+      "css": ".expressive-code { margin-block: 2rem; } .guide-content :not(pre) > code { border-radius: 4px; background: var(--color-accent-soft); color: var(--color-foreground-strong); font-family: var(--font-mono); }"
     }
   ],
   "narrative": {
-    "northStar": "The Production Notebook",
-    "overview": "A proof-led personal portfolio and technical writing system. It uses calm structure, real metrics, and a dedicated reading hierarchy to express rigor without corporate gloss.",
-    "keyCharacteristics": ["Proof-led", "Flat and structural", "Readable at depth", "Directly actionable"],
+    "northStar": "The Quiet Engineering Notebook",
+    "overview": "A narrow, theme-aware portfolio and writing surface that emphasizes readable proof and technical depth over editorial display.",
+    "keyCharacteristics": ["Single-column", "Sans and mono", "Explicit light and dark themes", "Code-first reading"],
     "rules": [
-      { "name": "The Signal Rule", "body": "Coral marks actions, proof, and focused attention—not ambient decoration.", "section": "colors" },
-      { "name": "The Mechanism Rule", "body": "Every strong claim should be followed by a concrete mechanism or metric.", "section": "typography" },
-      { "name": "The Evidence Rule", "body": "Rules organize proof and never frame generic card content.", "section": "elevation" }
+      { "name": "The Signal Rule", "body": "Coral is reserved for links, series indices, inline code, focus, and selected evidence.", "section": "colors" },
+      { "name": "The Reading Rule", "body": "Hierarchy comes from sequence and spacing, not oversized display typography.", "section": "typography" },
+      { "name": "The Flat Rule", "body": "Rules and whitespace organize content; decorative cards and shadows do not.", "section": "elevation" }
     ],
-    "dos": ["Lead with concrete outcomes.", "Keep long-form reading comfortable.", "Use coral only to direct attention."],
-    "donts": ["Do not use generic template portfolio patterns.", "Do not use buzzword-heavy copy.", "Do not use flashy motion showcases."]
+    "dos": ["Use semantic theme tokens.", "Keep pages inside the reading column.", "Publish through frontmatter and lazy guide imports."],
+    "donts": ["Do not reintroduce serif display typography.", "Do not add a second accent palette.", "Do not override Expressive Code fenced blocks with legacy pre styles."]
   }
 }

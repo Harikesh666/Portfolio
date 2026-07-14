@@ -1,4 +1,13 @@
-# React Hooks and Effects: A Guided Deep Dive
+---
+title: "React Hooks and Effects"
+description: "A practical mental model for hooks, renders, effects, closures, and React's update queues."
+category: "Foundation"
+readTime: "60 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 2
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025) and `useEffectEvent` stable since 19.2. Companion to the rendering and reconciliation guide; this one sits directly on top of the hook storage, the update queue, and the render and commit split described there, so it helps to have at least skimmed that guide first.
 

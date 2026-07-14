@@ -1,4 +1,13 @@
-# React's Event System: A Guided Deep Dive
+---
+title: "React's Event System"
+description: "How synthetic events, delegation, propagation, portals, and event priority work in modern React."
+category: "Internals"
+readTime: "45 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 6
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (latest patch 19.2.6, May 2026). The event system has been stable since React 17 (which moved delegation to the root container and removed event pooling); the facts here were verified against current sources and apply to the React 19 line. This is a Track A engine-internals guide, and it is pure React: nothing here needs a framework.
 

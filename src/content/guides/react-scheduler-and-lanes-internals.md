@@ -1,4 +1,13 @@
-# React's Scheduler and Lanes: A Guided Deep Dive
+---
+title: "React's Scheduler and Lanes"
+description: "A guided tour of cooperative scheduling, update priority, lanes, and React's concurrent work loop."
+category: "Internals"
+readTime: "45 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 7
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (latest patch 19.2.6, May 2026). The scheduler and the lane model have been stable since React 18; the specifics here (the 31-lane bitmask, the MessageChannel work loop, the 5ms time slice) were verified against current sources and apply to the React 19 line. This is a Track A engine-internals guide and the deep companion to the rendering guide's concurrency sections.
 

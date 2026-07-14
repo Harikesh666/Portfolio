@@ -1,4 +1,13 @@
-# React Data Fetching and Server State: A Guided Deep Dive
+---
+title: "React Data Fetching and Server State"
+description: "A guide to remote data as a cache: query keys, stale data, mutations, optimistic updates, and Suspense."
+category: "Architecture"
+readTime: "55 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 4
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (latest patch 19.2.6, May 2026) and TanStack Query v5 (the React package `@tanstack/react-query`, 5.100.x as of May 2026; note that the only "v6" in existence is the Svelte adapter, the React version is still v5). Version-specific and library-specific claims are noted inline and were verified against current docs.
 

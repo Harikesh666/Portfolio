@@ -1,4 +1,13 @@
-# React Error Boundaries and Resilience: A Guided Deep Dive
+---
+title: "React Error Boundaries and Resilience"
+description: "What React catches, how it recovers, and how error boundaries contain failures in real applications."
+category: "Internals"
+readTime: "45 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 8
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (latest patch 19.2.6, May 2026). The error-boundary API (the `getDerivedStateFromError` and `componentDidCatch` class methods) is long-stable; React 19 added the root-level `onCaughtError`, `onUncaughtError`, and `onRecoverableError` options and changed error-logging behavior, both verified against current docs and noted inline. This is a Track A engine-internals guide.
 

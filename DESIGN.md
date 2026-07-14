@@ -1,137 +1,134 @@
 ---
 name: Harikesh Mishra Portfolio
-description: A proof-led portfolio and technical writing system for a full-stack developer.
+description: A quiet, single-column engineer portfolio and technical writing system.
 colors:
-  surface: "oklch(0.985 0.003 247)"
-  foreground: "oklch(0.37 0.018 255)"
-  foreground-strong: "oklch(0.235 0.022 255)"
-  muted: "oklch(0.53 0.016 255)"
-  divider: "oklch(0.89 0.008 255)"
+  surface-light: "oklch(0.98 0.004 95)"
+  foreground-light: "oklch(0.37 0.015 95)"
+  foreground-strong-light: "oklch(0.22 0.02 95)"
+  muted-light: "oklch(0.52 0.014 95)"
+  divider-light: "oklch(0.9 0.008 95)"
+  surface-dark: "oklch(0.18 0.006 95)"
+  foreground-dark: "oklch(0.78 0.01 95)"
+  foreground-strong-dark: "oklch(0.93 0.008 95)"
   accent: "oklch(0.61 0.18 35)"
-  accent-soft: "oklch(0.93 0.035 35)"
 typography:
   display:
-    fontFamily: "Source Serif 4, Georgia, serif"
-    fontSize: "clamp(3.35rem, 8vw, 6rem)"
-    fontWeight: 500
-    lineHeight: 0.93
-    letterSpacing: "-0.038em"
+    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "2rem"
+    fontWeight: 700
+    lineHeight: 1.2
+    letterSpacing: "-0.02em"
   body:
     fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
     fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.6
+  mono:
+    fontFamily: "JetBrains Mono, ui-monospace, monospace"
+    fontSize: "0.875rem"
+    fontWeight: 400
+    lineHeight: 1.5
 rounded:
   sm: "4px"
-  md: "6px"
 spacing:
   sm: "12px"
   md: "20px"
   lg: "56px"
 components:
-  button-primary:
-    backgroundColor: "{colors.foreground-strong}"
-    textColor: "{colors.surface}"
-    rounded: "{rounded.md}"
-    padding: "12px 20px"
-  button-secondary:
-    backgroundColor: "{colors.surface}"
-    textColor: "{colors.foreground-strong}"
-    rounded: "{rounded.md}"
-    padding: "12px 20px"
+  text-link:
+    textColor: "{colors.foreground-strong-light}"
+    typography: "{typography.body}"
+  navigation:
+    textColor: "{colors.foreground-light}"
+    typography: "{typography.body}"
 ---
 
 # Design System: Harikesh Mishra Portfolio
 
 ## 1. Overview
 
-**Creative North Star: "The Production Notebook"**
+**Creative North Star: "The Quiet Engineering Notebook"**
 
-This is a developer portfolio that reads like evidence collected from real systems: clear claim, visible constraint, measurable outcome. The interface is structured for recruiters scanning quickly and developers reading deeply. Its personality is rigorous, pragmatic, and candid.
+The portfolio is a minimal, proof-led introduction to a full-stack developer and a home for deep technical writing. The interface behaves like a dependable reading surface: one narrow column, direct navigation, calm spacing, and evidence before ornament.
 
-The writing experience carries equal weight with the portfolio. Long-form pieces have generous reading space, stable hierarchy, and strong navigation without theatrical decoration. The system rejects generic template portfolios, buzzword-heavy copy, and flashy motion showcases.
+It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes quickly; fellow engineers can settle into substantial articles without visual noise.
 
 **Key Characteristics:**
-- Proof-led landing sections with concrete metrics and short, decisive labels.
-- Calm blue-black ink on a neutral paper surface, with coral used only for decisions and emphasis.
-- A readable humanist sans paired with a serious text serif for long-form technical work.
-- Flat, rule-based structure instead of card grids, gradients, or decorative shadows.
+- A `42rem` single-column layout across portfolio, writing index, and articles.
+- Explicit light and dark themes using the same semantic tokens.
+- Atkinson Hyperlegible for all prose and headings, JetBrains Mono for metadata and technical labels.
+- Coral acts as one intentional signal for links, series indices, inline code, focus, and important metrics.
 
 ## 2. Colors
 
-The palette is an intentionally quiet technical field note: cool paper, dense ink, and a limited coral signal.
+The palette is warm and low-chroma rather than editorial or decorative. All components consume semantic variables so light and dark modes switch together.
 
-### Primary
-- **Decision Coral** (`oklch(0.61 0.18 35)`): CTAs, key metrics, inline emphasis, and focus rings. Use it sparingly; it should make a decision or piece of evidence easier to find.
+### Light Theme
+- **Surface** (`oklch(0.98 0.004 95)`): reading background.
+- **Foreground** (`oklch(0.37 0.015 95)`): body text.
+- **Strong Foreground** (`oklch(0.22 0.02 95)`): headings and key navigation.
+- **Muted** (`oklch(0.52 0.014 95)`): metadata and secondary context.
+- **Divider** (`oklch(0.9 0.008 95)`): list and layout rules.
 
-### Neutral
-- **Cool Paper** (`oklch(0.985 0.003 247)`): Main page surface and secondary button background.
-- **Operational Ink** (`oklch(0.235 0.022 255)`): Display type, key labels, primary actions, and code container borders.
-- **Working Text** (`oklch(0.37 0.018 255)`): Body copy and supporting interface text.
-- **Quiet Metadata** (`oklch(0.53 0.016 255)`): Dates, labels, and lower-priority context.
-- **Structural Rule** (`oklch(0.89 0.008 255)`): Separators and low-emphasis boundaries.
+### Dark Theme
+- **Surface** (`oklch(0.18 0.006 95)`): warm near-black reading background.
+- **Foreground** (`oklch(0.78 0.01 95)`): body text.
+- **Strong Foreground** (`oklch(0.93 0.008 95)`): headings and key navigation.
+- **Divider** (`oklch(0.3 0.008 95)`): quiet structural separation.
 
-**The Signal Rule.** Coral is never a background atmosphere. It marks actions, proof, and focused attention; every use should earn its place.
+### Accent
+- **Coral** (`oklch(0.61 0.18 35)` light; `oklch(0.72 0.17 35)` dark): links, series numbers, inline-code surfaces, focus rings, and selected evidence.
+
+**The Signal Rule.** Coral directs attention; it is never used as ambient decoration or a second palette.
 
 ## 3. Typography
 
-**Display Font:** Source Serif 4, Georgia, serif
-**Body Font:** Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif
-**Label/Mono Font:** ui-monospace, Cascadia Code, monospace
-
-**Character:** The serif gives article titles and major claims enough gravity to invite close reading. The accessible sans keeps operational copy direct, legible, and unshowy.
+**Body and Headings:** Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif
+**Technical Labels:** JetBrains Mono, ui-monospace, monospace
 
 ### Hierarchy
-- **Display** (500, `clamp(3.35rem, 8vw, 6rem)`, 0.93): Home page promise and writing page titles only.
-- **Headline** (500, `clamp(2.2rem, 5vw, 4rem)`, 0.98): Major home page section claims.
-- **Title** (500, 1.5–2.35rem, 0.98–1.2): Article links, in-page titles, and content headings.
-- **Body** (400, 1rem, 1.6): Primary explanatory copy; long-form content uses `1.0625rem` and 1.75 line height.
-- **Label** (700, 0.875rem, normal): Short section labels and proof markers. Avoid making every heading a tracked uppercase eyebrow.
+- **Page Title:** 1.75rem on mobile and 2rem from `sm`, bold, normal leading, `-0.02em` tracking.
+- **Section Label:** 12px JetBrains Mono, uppercase, `0.08em` tracking, muted.
+- **Article Link:** 17px bold sans with coral hover.
+- **Body:** 16px Atkinson Hyperlegible at 1.6 line height.
+- **Guide Prose:** 17px at 1.75 line height for long-form reading.
 
-**The Mechanism Rule.** Never use typography to pretend a claim is deep. Give the claim room, then provide the mechanism or metric that proves it.
+**The Reading Rule.** No oversized display type or decorative serif hierarchy. Technical ideas earn emphasis through clarity, sequence, and breathing room.
 
 ## 4. Elevation
 
-This is a flat-by-default system. Depth comes from deliberate whitespace, text scale, and one-pixel structural rules; cards and decorative shadows are avoided. Hover states shift text or border color rather than lifting surfaces into space.
+The system is flat. Borders divide lists and sections; whitespace establishes priority. There are no decorative shadows, card shells, gradients, or glass effects.
 
-**The Evidence Rule.** A border separates related evidence; it never becomes a decorative frame around generic content.
+Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact coral-tinted surface with no generated backticks.
 
 ## 5. Components
 
-### Buttons
-- **Shape:** Reserved rounding (6px), never pill-shaped.
-- **Primary:** Operational Ink background with Cool Paper text and 12px × 20px padding. Hover changes to Decision Coral.
-- **Secondary:** Cool Paper with a Structural Rule border. Hover increases border contrast and applies Accent Soft.
-- **Focus:** 3px Decision Coral outline with a 3px offset.
-
-### Cards / Containers
-- **Corner Style:** Containers do not rely on rounded card shells.
-- **Background:** Main content stays on Cool Paper.
-- **Shadow Strategy:** No decorative shadows.
-- **Border:** One-pixel Structural Rule dividers organize evidence and reading lists.
-- **Internal Padding:** 20px for actions, 56px or more between major sections.
-
 ### Navigation
-- **Style:** A compact identity block on the left and direct text links on the right, separated from content by a single rule.
-- **State:** Active route uses Operational Ink; contact remains visibly underlined with Decision Coral.
-- **Mobile:** Links wrap without collapsing into a hidden navigation control.
+- **Shape:** A single ruled row with site name, writing link, GitHub, resume, and theme toggle.
+- **Theme Control:** Minimum 44px target; persists explicit `light` or `dark` preference in local storage.
+- **Focus:** 3px coral outline with 3px offset.
 
-### Signature Component: Evidence Row
-- **Style:** A named project or system, a concise explanation, and a coral metric line in a ruled list.
-- **Purpose:** Makes production impact scannable without inventing glossy case-study cards.
+### Writing List Item
+- **Structure:** Series index, title, summary, and reading time in a vertically stacked ruled list.
+- **Behavior:** Only the title changes to coral on hover; no cards or lift effects.
+
+### Article Content
+- **Structure:** Back link, title, muted metadata, prose, then optional previous/next links.
+- **Anchors:** H2–H4 headings have stable IDs and a 2rem scroll margin.
+- **Code:** Expressive Code frames retain their generated theme and copy behavior; local CSS only styles inline code.
 
 ## 6. Do's and Don'ts
 
 ### Do:
-- **Do** lead portfolio claims with a specific outcome, constraint, or production lesson.
-- **Do** use `text-balance` for display headings and keep display tracking at `-0.038em` or looser.
-- **Do** reserve Decision Coral for interactive decisions, proof lines, and focus treatment.
-- **Do** keep technical writing comfortable to read with a controlled line length and generous line height.
-- **Do** keep metadata quieter than the title, but readable enough to meet contrast requirements.
+- **Do** keep every primary surface within the narrow reading column.
+- **Do** use semantic theme tokens and test both explicit `data-theme` values.
+- **Do** preserve accessible focus, reduced-motion, and overflow safeguards.
+- **Do** publish guides through validated frontmatter rather than a hardcoded registry.
+- **Do** let evidence, writing, and code carry the visual weight.
 
 ### Don't:
-- **Don't** use generic template portfolio sections, invented client work, or buzzword-heavy self-description.
-- **Don't** add gradient text, ambient gradients, glassmorphism, or a hero-metric template.
-- **Don't** make a flashy motion showcase; all motion must be brief, purposeful, and disabled for reduced-motion preferences.
-- **Don't** use colored side-stripe card borders, repeated tiny uppercase eyebrows, or identical icon-card grids.
-- **Don't** pair soft wide shadows with one-pixel card borders or use oversized rounded containers.
+- **Don't** reintroduce a serif display system, oversized clamp-based headings, or magazine layouts.
+- **Don't** add a second accent color, gradients, glass, or decorative card grids.
+- **Don't** hardcode Markdown post metadata in route components.
+- **Don't** override Expressive Code fenced-block styles with legacy `pre` rules.
+- **Don't** use motion as decoration; respect reduced-motion preferences.

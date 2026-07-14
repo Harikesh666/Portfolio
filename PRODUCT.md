@@ -14,7 +14,7 @@ The primary audience is recruiters assessing Harikesh for software engineering r
 
 ## Product Purpose
 
-This is Harikesh Mishra's responsive personal portfolio and technical writing site. It turns real production work into evidence that he can build, debug, and improve full-stack systems. Success means qualified role enquiries first, followed by sustained readership and relevant client enquiries.
+This is Harikesh Mishra's responsive personal portfolio and technical writing site. It turns real production work into evidence that he can build, debug, and improve full-stack systems, while giving developers a dependable place to read long-form guides. Success means qualified role enquiries first, followed by sustained readership and relevant client enquiries.
 
 ## Positioning
 
@@ -43,7 +43,8 @@ Avoid generic template portfolios, buzzword-heavy copy, and flashy motion showca
 3. Be direct without being dry: use plain, specific language and show the work behind every claim.
 4. Make the best next action obvious: contacting Harikesh and entering the writing should always feel effortless.
 5. Treat discoverability as quality: fast rendering, semantic structure, metadata, and structured data are part of the product.
+6. Keep the interface quiet: a narrow reading column, direct navigation, and dark mode should remove friction rather than add personality for its own sake.
 
 ## Accessibility & Inclusion
 
-Use strong text contrast, keyboard-accessible interactions, responsive layouts, and reduced-motion support. Deliver excellent technical SEO through server rendering, semantic content, accurate metadata, canonical URLs, structured data, and crawlable routes.
+Use strong text contrast, keyboard-accessible interactions, responsive layouts, explicit light and dark themes, and reduced-motion support. Deliver excellent technical SEO through server rendering, semantic content, accurate metadata, canonical URLs, structured data, and crawlable routes. Article navigation must retain heading anchors, readable code blocks, and copy controls.

@@ -1,4 +1,13 @@
-# React Rendering and Reconciliation Internals: A Guided Deep Dive
+---
+title: "React Rendering and Reconciliation Internals"
+description: "A guided deep dive into how React turns state into UI, compares trees, and keeps updates responsive."
+category: "Foundation"
+readTime: "45 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 1
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025). Version-specific behavior is noted inline.
 

@@ -1,4 +1,13 @@
-# React Server Components and the Server/Client Boundary: A Guided Deep Dive
+---
+title: "React Server Components and the Server/Client Boundary"
+description: "A clear model of Server Components, Client Components, serialization, streaming, and framework boundaries."
+category: "Framework"
+readTime: "30 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 10
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (2026), with Server Components stable in the React 19 line. Companion to the rendering and reconciliation guide; this one assumes you have at least skimmed that one, since RSC sits on top of the rendering engine described there.
 

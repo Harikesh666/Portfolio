@@ -52,7 +52,10 @@ export const Route = createFileRoute("/writing/$slug")({
 
 function PostPage() {
     const post = Route.useLoaderData();
-    const { previous, next } = getPostNeighbors(post.order);
+    const { previous, next } = getPostNeighbors(post);
+    const seriesPostCount = post.series
+        ? posts.filter((item) => item.series === post.series).length
+        : 0;
 
     return (
         <main
@@ -70,11 +73,14 @@ function PostPage() {
                 {post.title}
             </h1>
             <p className="mt-3 font-mono text-sm text-muted">
-                {post.date} · {post.readTime} · {String(post.order).padStart(2, "0")} of {posts.length}
+                {post.date} · {post.readTime}
+                {post.series && post.order !== undefined
+                    ? ` · ${String(post.order).padStart(2, "0")} of ${seriesPostCount}`
+                    : ""}
             </p>
 
             <article
-                className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:text-foreground-strong prose-headings:tracking-[-0.02em] prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto"
+                className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:text-foreground-strong prose-headings:tracking-[-0.02em] prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:before:content-none prose-code:after:content-none"
                 dangerouslySetInnerHTML={{ __html: post.html }}
             />
 

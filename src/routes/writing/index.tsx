@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { posts, series } from "../../lib/content";
+import { posts, seriesIndex } from "../../lib/content";
 import { site } from "../../lib/site";
 
 const writingDescription =
@@ -42,6 +42,12 @@ export const Route = createFileRoute("/writing/")({
 });
 
 function WritingPage() {
+    const series = seriesIndex["react-internals"];
+    const seriesPosts = posts.filter(
+        (post) => post.series === "react-internals",
+    );
+    const standalonePosts = posts.filter((post) => !post.series);
+
     return (
         <main
             id="main-content"
@@ -52,11 +58,11 @@ function WritingPage() {
             </h1>
             <p className="mt-3 text-foreground">{series.description}</p>
             <p className="mt-4 font-mono text-sm text-muted">
-                {posts.length} guides · about {series.readingTime} · updated {series.updatedAt}
+                {seriesPosts.length} guides · about {series.readingTime} · updated {series.updatedAt}
             </p>
 
             <ol className="mt-10 border-t border-divider">
-                {posts.map((post) => (
+                {seriesPosts.map((post) => (
                     <li className="border-b border-divider" key={post.slug}>
                         <Link
                             className="group block py-5"
@@ -79,6 +85,35 @@ function WritingPage() {
                     </li>
                 ))}
             </ol>
+
+            {standalonePosts.length > 0 && (
+                <section className="mt-14">
+                    <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                        Standalone
+                    </h2>
+                    <ol className="mt-4 border-t border-divider">
+                        {standalonePosts.map((post) => (
+                            <li className="border-b border-divider" key={post.slug}>
+                                <Link
+                                    className="group block py-5"
+                                    to="/writing/$slug"
+                                    params={{ slug: post.slug }}
+                                >
+                                    <span className="block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
+                                        {post.title}
+                                    </span>
+                                    <span className="mt-1 block text-sm text-muted">
+                                        {post.description}
+                                    </span>
+                                    <span className="mt-2 block text-sm text-foreground">
+                                        {post.readTime}
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ol>
+                </section>
+            )}
         </main>
     );
 }

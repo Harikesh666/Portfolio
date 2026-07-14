@@ -1,4 +1,13 @@
-# React Performance Architecture: A Guided Deep Dive
+---
+title: "React Performance Architecture"
+description: "A measured approach to rendering cost, memoization, concurrency, virtualization, and bundle size."
+category: "Architecture"
+readTime: "55 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 5
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025) as an opt-in build-time tool. Version-specific and library-specific claims are noted inline and were verified against current sources.
 

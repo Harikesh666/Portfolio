@@ -1,4 +1,13 @@
-# React Suspense Internals: A Guided Deep Dive
+---
+title: "React Suspense Internals"
+description: "How promises suspend rendering, boundaries reveal content, retries work, and transitions prevent jarring fallbacks."
+category: "Internals"
+readTime: "45 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 9
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (latest patch 19.2.6, May 2026). Suspense for data fetching and the `use` API are stable in the React 19 line; `SuspenseList` is still experimental (exposed only as `unstable_SuspenseList`), and that is flagged where it appears. The React 19 "pre-warming for suspended trees" behavior and the transition/throttling behaviors were verified against current sources and noted inline. This is a Track A engine-internals guide.
 

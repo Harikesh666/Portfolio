@@ -1,28 +1,62 @@
 # Harikesh Mishra Portfolio
 
-A fast, server-rendered portfolio and writing site built with TanStack Start, React, TypeScript, and Tailwind CSS.
+A server-rendered software-engineer portfolio and long-form React writing site. It uses TanStack Start, React, TypeScript, Tailwind CSS v4, and a Sätteri markdown pipeline.
 
-## Run locally
-
-```bash
-npm install
-npm run dev
-```
-
-The app runs at `http://localhost:3000`.
-
-## Customize it first
-
-Update `src/lib/site.ts` with the real name, email address, and production URL. This single file supplies the site title, social metadata, canonical URLs, JSON-LD, `robots.txt`, and sitemap values used by the app.
-
-Replace the sample work in `src/routes/index.tsx` and edit or add posts in `src/lib/content.ts`. Each post automatically receives its own SSR route, canonical tag, Open Graph metadata, and `Article` structured data.
-
-Before launch, replace the placeholder URLs in `public/robots.txt` and `public/sitemap.xml` with the production domain from `src/lib/site.ts`.
-
-## Production build
+## Development
 
 ```bash
-npm run build
+pnpm install
+pnpm dev
 ```
 
-The Vite configuration enables TanStack Start prerendering and link crawling, so the home page and writing routes are emitted as static HTML alongside SSR support.
+The development server runs at `http://localhost:3000`.
+
+```bash
+pnpm build
+pnpm test
+```
+
+`pnpm build` prerenders the portfolio, writing index, and every crawled article route. No Vitest test files are currently committed, so `pnpm test` reports that condition; use `pnpm exec vitest run --passWithNoTests` only when you need a successful empty-suite check.
+
+## Site Configuration
+
+Update `src/lib/site.ts` for the site name, email, production URL, and social links. It supplies the shared metadata, canonical URLs, JSON-LD, sitemap, and robots values.
+
+`public/og.png` is the shared social card. `public/Harikesh_Mishra_Resume.pdf` is the downloadable resume linked from the global header.
+
+## Writing Pipeline
+
+Publishing a guide means adding a Markdown file under `src/content/guides/`. Its filename becomes the flat `/writing/<slug>` URL.
+
+```yaml
+---
+title: "Post title"
+description: "Short article summary."
+category: "Architecture"
+readTime: "10 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+series: "react-internals"
+order: 11
+---
+```
+
+- `title`, `description`, `category`, `readTime`, `date`, and `publishedAt` are required.
+- `series` and `order` are optional together. Omit both for a standalone post; standalone posts sort by `publishedAt` descending.
+- Series definitions live in `src/lib/content.ts`. Add the series there before assigning its ID in frontmatter.
+- `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk.
+
+Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control.
+
+## Theme and Accessibility
+
+The visual system lives in `src/styles.css`. It uses semantic CSS variables mapped into Tailwind v4, with explicit `data-theme="light"` and `data-theme="dark"` values set before paint and persisted in local storage.
+
+The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts.
+
+## Project Docs
+
+- `PRODUCT.md` defines product positioning, audience, and content priorities.
+- `DESIGN.md` documents the active visual system.
+- `.impeccable/design.json` is the machine-readable design-system sidecar.
+- `AGENTS.md` records repository conventions for coding agents alongside TanStack Intent guidance.

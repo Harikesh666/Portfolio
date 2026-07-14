@@ -1,4 +1,13 @@
-# React State Management Architecture: A Guided Deep Dive
+---
+title: "React State Management Architecture"
+description: "How to choose where state lives, avoid contradictions, and scale shared state without unnecessary complexity."
+category: "Architecture"
+readTime: "55 min read"
+date: "May 2026"
+publishedAt: "2026-05-01"
+order: 3
+series: "react-internals"
+---
 
 > Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025). Version-specific and library-specific claims are noted inline.
 

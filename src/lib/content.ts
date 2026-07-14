@@ -1,181 +1,157 @@
-export type Post = {
-    order: number;
+export const seriesIndex = {
+    "react-internals": {
+        title: "React, from the inside out",
+        description:
+            "Ten long-form guides for building a durable mental model of React, from rendering fundamentals to Server Components.",
+        readingTime: "8 hours",
+        updatedAt: "May 2026",
+    },
+} as const;
+
+export type SeriesId = keyof typeof seriesIndex;
+
+export type PostSummary = {
     slug: string;
+    title: string;
+    description: string;
     category: string;
     readTime: string;
     date: string;
     publishedAt: string;
-    title: string;
-    description: string;
+    series?: SeriesId;
+    order?: number;
+};
+
+export type Post = PostSummary & {
     html: string;
 };
 
-export const series = {
-    title: "React, from the inside out",
-    description:
-        "Ten long-form guides for building a durable mental model of React, from rendering fundamentals to Server Components.",
-    readingTime: "8 hours",
-    updatedAt: "May 2026",
-} as const;
-
-type PostSummary = Omit<Post, "html"> & {
-    loadContent: () => Promise<{ default: string }>;
+type PostRecord = PostSummary & {
+    path: string;
 };
 
-export const posts = [
-    {
-        order: 1,
-        slug: "react-rendering-reconciliation-internals",
-        category: "Foundation",
-        readTime: "45 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React Rendering and Reconciliation Internals",
-        description:
-            "A guided deep dive into how React turns state into UI, compares trees, and keeps updates responsive.",
-        loadContent: () =>
-            import("../content/guides/react-rendering-reconciliation-internals.md"),
-    },
-    {
-        order: 2,
-        slug: "react-hooks-and-effects-internals",
-        category: "Foundation",
-        readTime: "60 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React Hooks and Effects",
-        description:
-            "A practical mental model for hooks, renders, effects, closures, and React's update queues.",
-        loadContent: () =>
-            import("../content/guides/react-hooks-and-effects-internals.md"),
-    },
-    {
-        order: 3,
-        slug: "react-state-management-architecture",
-        category: "Architecture",
-        readTime: "55 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React State Management Architecture",
-        description:
-            "How to choose where state lives, avoid contradictions, and scale shared state without unnecessary complexity.",
-        loadContent: () =>
-            import("../content/guides/react-state-management-architecture.md"),
-    },
-    {
-        order: 4,
-        slug: "react-data-fetching-server-state",
-        category: "Architecture",
-        readTime: "55 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React Data Fetching and Server State",
-        description:
-            "A guide to remote data as a cache: query keys, stale data, mutations, optimistic updates, and Suspense.",
-        loadContent: () =>
-            import("../content/guides/react-data-fetching-server-state.md"),
-    },
-    {
-        order: 5,
-        slug: "react-performance-architecture",
-        category: "Architecture",
-        readTime: "55 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React Performance Architecture",
-        description:
-            "A measured approach to rendering cost, memoization, concurrency, virtualization, and bundle size.",
-        loadContent: () =>
-            import("../content/guides/react-performance-architecture.md"),
-    },
-    {
-        order: 6,
-        slug: "react-event-system-internals",
-        category: "Internals",
-        readTime: "45 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React's Event System",
-        description:
-            "How synthetic events, delegation, propagation, portals, and event priority work in modern React.",
-        loadContent: () =>
-            import("../content/guides/react-event-system-internals.md"),
-    },
-    {
-        order: 7,
-        slug: "react-scheduler-and-lanes-internals",
-        category: "Internals",
-        readTime: "45 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React's Scheduler and Lanes",
-        description:
-            "A guided tour of cooperative scheduling, update priority, lanes, and React's concurrent work loop.",
-        loadContent: () =>
-            import("../content/guides/react-scheduler-and-lanes-internals.md"),
-    },
-    {
-        order: 8,
-        slug: "react-error-boundaries-resilience",
-        category: "Internals",
-        readTime: "45 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React Error Boundaries and Resilience",
-        description:
-            "What React catches, how it recovers, and how error boundaries contain failures in real applications.",
-        loadContent: () =>
-            import("../content/guides/react-error-boundaries-resilience.md"),
-    },
-    {
-        order: 9,
-        slug: "react-suspense-internals",
-        category: "Internals",
-        readTime: "45 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React Suspense Internals",
-        description:
-            "How promises suspend rendering, boundaries reveal content, retries work, and transitions prevent jarring fallbacks.",
-        loadContent: () =>
-            import("../content/guides/react-suspense-internals.md"),
-    },
-    {
-        order: 10,
-        slug: "react-server-components-internals",
-        category: "Framework",
-        readTime: "30 min read",
-        date: "May 2026",
-        publishedAt: "2026-05-01",
-        title: "React Server Components and the Server/Client Boundary",
-        description:
-            "A clear model of Server Components, Client Components, serialization, streaming, and framework boundaries.",
-        loadContent: () =>
-            import("../content/guides/react-server-components-internals.md"),
-    },
-] as const satisfies readonly PostSummary[];
+const meta = import.meta.glob<Record<string, unknown>>(
+    "../content/guides/**/*.md",
+    { import: "frontmatter", eager: true },
+);
 
-export const featuredPosts = posts.slice(0, 2);
+const loaders = import.meta.glob<string>("../content/guides/**/*.md", {
+    import: "default",
+});
 
-export function getPostNeighbors(order: number) {
-    const toPreview = (post: PostSummary | undefined) => {
-        if (!post) return undefined;
+function assertString(value: unknown, field: string, filename: string) {
+    if (typeof value !== "string" || value.trim() === "") {
+        throw new Error(`Invalid ${field} in ${filename}`);
+    }
 
-        const { loadContent, ...metadata } = post;
-        return metadata;
-    };
+    return value;
+}
+
+function assertOrder(value: unknown, filename: string) {
+    if (typeof value !== "number" || !Number.isInteger(value)) {
+        throw new Error(`Invalid order in ${filename}`);
+    }
+
+    return value;
+}
+
+function isSeriesId(value: string): value is SeriesId {
+    return value in seriesIndex;
+}
+
+function getSlug(path: string) {
+    const filename = path.split("/").at(-1);
+    if (!filename?.endsWith(".md")) {
+        throw new Error(`Invalid content filename: ${path}`);
+    }
+
+    return filename.slice(0, -3);
+}
+
+function toPost(path: string, frontmatter: Record<string, unknown>): PostRecord {
+    const filename = path.split("/").at(-1) ?? path;
+    const seriesValue = frontmatter.series;
+    const series =
+        seriesValue === undefined
+            ? undefined
+            : assertString(seriesValue, "series", filename);
+
+    if (series !== undefined && !isSeriesId(series)) {
+        throw new Error(`Invalid series in ${filename}`);
+    }
+
+    const order =
+        frontmatter.order === undefined
+            ? undefined
+            : assertOrder(frontmatter.order, filename);
+
+    if (series !== undefined && order === undefined) {
+        throw new Error(`Invalid order in ${filename}`);
+    }
 
     return {
-        previous: toPreview(posts[order - 2]),
-        next: toPreview(posts[order]),
+        path,
+        slug: getSlug(path),
+        title: assertString(frontmatter.title, "title", filename),
+        description: assertString(frontmatter.description, "description", filename),
+        category: assertString(frontmatter.category, "category", filename),
+        readTime: assertString(frontmatter.readTime, "readTime", filename),
+        date: assertString(frontmatter.date, "date", filename),
+        publishedAt: assertString(frontmatter.publishedAt, "publishedAt", filename),
+        series,
+        order,
+    };
+}
+
+const postRecords = Object.entries(meta)
+    .map(([path, frontmatter]) => toPost(path, frontmatter))
+    .sort((first, second) => {
+        if (first.series && second.series) {
+            if (first.series === second.series) {
+                return (first.order ?? 0) - (second.order ?? 0);
+            }
+
+            return String(first.series).localeCompare(String(second.series));
+        }
+
+        if (!first.series && !second.series) {
+            return second.publishedAt.localeCompare(first.publishedAt);
+        }
+
+        return first.series ? -1 : 1;
+    });
+
+export const posts = postRecords.map(({ path: _, ...post }) => post);
+
+export const featuredPosts = posts
+    .filter((post) => post.series === "react-internals")
+    .slice(0, 2);
+
+export function getPostNeighbors(post: PostSummary) {
+    if (!post.series || post.order === undefined) {
+        return { previous: undefined, next: undefined };
+    }
+
+    const seriesPosts = posts.filter((item) => item.series === post.series);
+    const index = seriesPosts.findIndex((item) => item.slug === post.slug);
+
+    return {
+        previous: index > 0 ? seriesPosts[index - 1] : undefined,
+        next: index >= 0 ? seriesPosts[index + 1] : undefined,
     };
 }
 
 export async function getPost(slug: string): Promise<Post | undefined> {
-    const post = posts.find((item) => item.slug === slug);
+    const post = postRecords.find((item) => item.slug === slug);
     if (!post) return undefined;
 
-    const { loadContent, ...metadata } = post;
-    const { default: html } = await loadContent();
+    const loader = loaders[post.path];
+    if (!loader) {
+        throw new Error(`Missing content loader for ${post.path}`);
+    }
+
+    const { path: _, ...metadata } = post;
+    const html = await loader();
+
     return { ...metadata, html };
 }
