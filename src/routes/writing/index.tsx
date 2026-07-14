@@ -1,16 +1,16 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { posts } from "../../lib/content";
+import { posts, series } from "../../lib/content";
 import { site } from "../../lib/site";
 
 const writingDescription =
-    "Notes on design, the web, creative practice, and making things with a point of view.";
+    "A long-form React guide series about the mental models behind modern React applications.";
 
 export const Route = createFileRoute("/writing/")({
     head: () => ({
         meta: [
-            { title: `Writing — ${site.name}` },
+            { title: `Writing - ${site.name}` },
             { name: "description", content: writingDescription },
-            { property: "og:title", content: `Writing — ${site.name}` },
+            { property: "og:title", content: `Writing - ${site.name}` },
             { property: "og:description", content: writingDescription },
         ],
         links: [{ rel: "canonical", href: `${site.url}/writing` }],
@@ -41,55 +41,128 @@ export const Route = createFileRoute("/writing/")({
 
 function WritingPage() {
     return (
-        <main className="mx-auto w-[calc(100%-2rem)] max-w-[520px] pt-7 sm:w-[calc(100%-3rem)]">
-            <section className="max-w-[500px] text-[15px] leading-[1.65] tracking-[-0.018em] text-foreground">
-                <p>
-                    I write when there’s something worth saying about design,
-                    building for the web, and the long practice of learning how
-                    to make useful things.
-                </p>
-            </section>
-            <ul className="mt-7 space-y-3">
-                {posts.map((post) => (
-                    <li
-                        className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-5 text-[15px]"
-                        key={post.slug}
+        <main className="mx-auto w-[calc(100%-2rem)] max-w-[1120px] pb-16 pt-10 sm:w-[calc(100%-3rem)] sm:pt-16">
+            <section className="border-y border-divider py-8 sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.6fr)] sm:gap-12 sm:py-14">
+                <div className="min-w-0">
+                    <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-marker-coral">
+                        Writing / React internals
+                    </p>
+                    <h1 className="mt-5 max-w-[720px] text-balance font-serif text-[clamp(3rem,7vw,6.5rem)] font-medium leading-[0.88] tracking-[-0.06em] text-foreground-strong">
+                        {series.title}
+                    </h1>
+                    <p className="mt-6 max-w-[610px] text-[17px] leading-7 tracking-[-0.02em] text-foreground sm:text-[19px]">
+                        {series.description}
+                    </p>
+                    <Link
+                        className="editorial-link mt-8 inline-flex items-center gap-3 border-b border-foreground-strong pb-1 text-[15px] font-semibold text-foreground-strong"
+                        to="/writing/$slug"
+                        params={{ slug: posts[0].slug }}
                     >
-                        <Link
-                            className="font-semibold tracking-[-0.025em] text-foreground-strong hover:underline hover:underline-offset-2"
-                            to="/writing/$slug"
-                            params={{ slug: post.slug }}
-                        >
-                            {post.title}
-                        </Link>
-                        <time
-                            className="font-mono text-[11px] text-muted font-medium"
-                            dateTime={post.publishedAt}
-                        >
-                            {post.date}
-                        </time>
-                    </li>
-                ))}
-            </ul>
-            <div className="pt-10 text-center">
-                <div
-                    className="mb-3 flex justify-center gap-1.5"
-                    aria-hidden="true"
-                >
-                    <i className="size-1.5 rounded-full bg-marker-coral" />
-                    <i className="size-1.5 rounded-full bg-marker-amber" />
-                    <i className="size-1.5 rounded-full bg-marker-green" />
+                        Start with the foundation
+                        <span aria-hidden="true">→</span>
+                    </Link>
                 </div>
-                <p className="text-[12px] text-muted">
-                    Occasional notes, when there is something worth sharing.
-                </p>
-                <a
-                    className="mt-3 inline-flex text-[14px] font-semibold italic underline decoration-foreground/25 underline-offset-2 hover:text-foreground-strong"
-                    href={`mailto:${site.email}?subject=Newsletter`}
-                >
-                    Get in touch <span aria-hidden="true">→</span>
-                </a>
-            </div>
+                <aside className="mt-10 border-l border-divider pl-5 sm:mt-1 sm:self-end">
+                    <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted">
+                        The series
+                    </p>
+                    <dl className="mt-5 grid gap-4 text-[14px] leading-5 text-foreground">
+                        <div>
+                            <dt className="text-muted">Format</dt>
+                            <dd className="font-medium text-foreground-strong">
+                                {posts.length} guided essays
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-muted">Reading time</dt>
+                            <dd className="font-medium text-foreground-strong">
+                                About {series.readingTime}
+                            </dd>
+                        </div>
+                        <div>
+                            <dt className="text-muted">Updated</dt>
+                            <dd className="font-medium text-foreground-strong">
+                                {series.updatedAt}
+                            </dd>
+                        </div>
+                    </dl>
+                </aside>
+            </section>
+
+            <section className="grid min-w-0 gap-10 pt-14 lg:grid-cols-[minmax(0,1fr)_240px] lg:gap-16">
+                <div className="min-w-0">
+                    <div className="flex items-end justify-between gap-6 border-b border-divider pb-4">
+                        <div>
+                            <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted">
+                                Reading path
+                            </p>
+                            <h2 className="mt-2 font-serif text-3xl font-medium tracking-[-0.045em] text-foreground-strong">
+                                Learn in order, or follow the question.
+                            </h2>
+                        </div>
+                    </div>
+                    <ol className="mt-2">
+                        {posts.map((post) => (
+                            <li className="series-card" key={post.slug}>
+                                <Link
+                                    className="group grid gap-4 py-6 sm:grid-cols-[52px_minmax(0,1fr)_auto] sm:gap-6"
+                                    to="/writing/$slug"
+                                    params={{ slug: post.slug }}
+                                >
+                                    <span className="font-mono text-[12px] font-medium text-marker-coral">
+                                        {String(post.order).padStart(2, "0")}
+                                    </span>
+                                    <span>
+                                        <span className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted">
+                                            {post.category}
+                                        </span>
+                                        <span className="mt-2 block font-serif text-[clamp(1.65rem,3vw,2.35rem)] font-medium leading-[0.98] tracking-[-0.04em] text-foreground-strong">
+                                            {post.title}
+                                        </span>
+                                        <span className="mt-3 block max-w-[650px] text-[15px] leading-6 text-foreground">
+                                            {post.description}
+                                        </span>
+                                    </span>
+                                    <span className="flex items-center gap-3 text-[13px] text-muted sm:pt-1">
+                                        {post.readTime}
+                                        <span
+                                            className="text-[18px] text-foreground-strong"
+                                            aria-hidden="true"
+                                        >
+                                            →
+                                        </span>
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ol>
+                </div>
+                <aside className="self-start border-t border-divider pt-5 lg:sticky lg:top-8">
+                    <p className="font-mono text-[11px] font-medium uppercase tracking-[0.1em] text-muted">
+                        How to read it
+                    </p>
+                    <ol className="mt-5 space-y-5 text-[14px] leading-6 text-foreground">
+                        <li>
+                            <span className="font-medium text-foreground-strong">
+                                First pass.
+                            </span>{" "}
+                            Read the itch and short version to build the map.
+                        </li>
+                        <li>
+                            <span className="font-medium text-foreground-strong">
+                                Second pass.
+                            </span>{" "}
+                            Return when a real problem makes the mechanism useful.
+                        </li>
+                        <li>
+                            <span className="font-medium text-foreground-strong">
+                                Third pass.
+                            </span>{" "}
+                            Follow the primary sources when you want to go deeper.
+                        </li>
+                    </ol>
+                </aside>
+            </section>
         </main>
     );
 }

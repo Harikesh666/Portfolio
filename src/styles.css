@@ -1,5 +1,6 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Newsreader:opsz,ital,wght@6..72,ital@6..72,400;6..72,500&display=swap");
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 @theme {
     --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
@@ -10,9 +11,12 @@
     --color-foreground-strong: #474741;
     --color-muted: #a7a79d;
     --color-divider: #e8e8e1;
+    --color-accent: #d65243;
+    --color-accent-soft: #f5dfda;
     --color-marker-coral: #eb6653;
     --color-marker-amber: #e5b63e;
     --color-marker-green: #64a85d;
+    --ease-editorial: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 @layer base {
@@ -43,5 +47,93 @@
     a:focus-visible {
         outline: 2px solid var(--color-foreground-strong);
         outline-offset: 3px;
+    }
+}
+
+@layer components {
+    .editorial-link,
+    .series-card,
+    .article-next-link {
+        transition: color 160ms var(--ease-editorial),
+            border-color 160ms var(--ease-editorial),
+            background-color 160ms var(--ease-editorial);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .editorial-link:hover,
+        .article-next-link:hover {
+            color: var(--color-accent);
+        }
+
+        .series-card:hover {
+            border-color: var(--color-foreground-strong);
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .editorial-link,
+        .series-card,
+        .article-next-link {
+            transition: none;
+        }
+    }
+
+    .series-card {
+        border-bottom: 1px solid var(--color-divider);
+    }
+
+    .guide-content > h1:first-child {
+        display: none;
+    }
+
+    .guide-content {
+        min-width: 0;
+        overflow-wrap: break-word;
+        font-size: 1.0625rem;
+        line-height: 1.75;
+    }
+
+    .guide-content h2 {
+        margin-top: 5rem;
+        scroll-margin-top: 2rem;
+    }
+
+    .guide-content h3 {
+        margin-top: 2.75rem;
+        scroll-margin-top: 2rem;
+    }
+
+    .guide-content :not(pre) > code {
+        border-radius: 0.25rem;
+        background: var(--color-accent-soft);
+        padding: 0.1rem 0.3rem;
+        color: var(--color-foreground-strong);
+        font-family: var(--font-mono);
+        font-size: 0.84em;
+        font-weight: 500;
+    }
+
+    .guide-content pre {
+        margin-block: 2rem;
+        max-width: 100%;
+        overflow-x: auto;
+        border: 1px solid #363631;
+        border-radius: 0.75rem;
+        background: var(--color-foreground-strong);
+        padding: 1.25rem 1.5rem;
+        color: var(--color-surface);
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        line-height: 1.6;
+        tab-size: 2;
+    }
+
+    .guide-content pre code {
+        display: block;
+        min-width: max-content;
+        padding: 0;
+        background: transparent;
+        color: var(--color-surface);
+        font: inherit;
     }
 }

@@ -1,10 +1,15 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { getPost } from "../../lib/content";
+import {
+    getPost,
+    getPostNeighbors,
+    posts,
+    series,
+} from "../../lib/content";
 import { site } from "../../lib/site";
 
 export const Route = createFileRoute("/writing/$slug")({
-    loader: ({ params }) => {
-        const post = getPost(params.slug);
+    loader: async ({ params }) => {
+        const post = await getPost(params.slug);
         if (!post) throw notFound();
         return post;
     },
@@ -50,57 +55,135 @@ export const Route = createFileRoute("/writing/$slug")({
 
 function PostPage() {
     const post = Route.useLoaderData();
+    const { previous, next } = getPostNeighbors(post.order);
+
     return (
-        <main className="mx-auto w-[calc(100%-2rem)] max-w-[520px] pt-10 sm:w-[calc(100%-3rem)]">
-            <nav className="flex flex-wrap gap-x-2 sm:text-[11px] text-[11px] text-muted font-medium">
-                <Link className="hover:text-foreground-strong" to="/">
-                    {site.name}
+        <main className="mx-auto w-[calc(100%-2rem)] max-w-190 pb-16 pt-7 sm:w-[calc(100%-3rem)] sm:pt-10">
+            <nav
+                className="flex items-center gap-3 text-[13px] font-medium text-muted"
+                aria-label="Breadcrumb"
+            >
+                <Link className="editorial-link" to="/writing">
+                    ← All guides
                 </Link>
-                <span>/</span>
-                <Link className="hover:text-foreground-strong" to="/writing">
-                    Writing
-                </Link>
-                <span>/</span>
-                <span>{post.title}</span>
+                <span aria-hidden="true">/</span>
+                <span>{String(post.order).padStart(2, "0")}</span>
             </nav>
-            <article className="pt-9">
-                <header>
-                    <h1 className="font-serif text-[clamp(40px,6vw,56px)] leading-[0.95] tracking-[-0.052em] text-foreground-strong italic">
-                        {post.title}
-                    </h1>
-                    <p className="mt-5 max-w-[480px] text-[16px] leading-[1.6] tracking-[-0.018em] text-muted">
-                        {post.description}
+
+            <header className="article-intro border-b border-divider pb-10 pt-12 sm:pb-14 sm:pt-16">
+                <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-marker-coral">
+                    {post.category} / Guide {String(post.order).padStart(2, "0")} of {posts.length}
+                </p>
+                <h1 className="mt-5 max-w-[940px] text-balance font-serif text-[clamp(3rem,7vw,6.75rem)] font-medium leading-[0.88] tracking-[-0.06em] text-foreground-strong">
+                    {post.title}
+                </h1>
+                <p className="mt-7 max-w-[700px] text-[18px] leading-8 tracking-[-0.02em] text-foreground sm:text-[21px]">
+                    {post.description}
+                </p>
+                <dl className="mt-9 grid grid-cols-2 gap-x-6 gap-y-4 border-t border-divider pt-5 text-[13px] text-foreground sm:flex sm:flex-wrap sm:gap-x-8">
+                    <div className="col-span-2 sm:col-span-1">
+                        <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted">
+                            Read
+                        </dt>
+                        <dd className="mt-1 font-medium text-foreground-strong">
+                            {post.readTime}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted">
+                            Updated
+                        </dt>
+                        <dd className="mt-1 font-medium text-foreground-strong">
+                            {post.date}
+                        </dd>
+                    </div>
+                    <div>
+                        <dt className="font-mono text-[10px] uppercase tracking-[0.1em] text-muted">
+                            Series
+                        </dt>
+                        <dd className="mt-1 font-medium text-foreground-strong">
+                            {series.title}
+                        </dd>
+                    </div>
+                </dl>
+            </header>
+
+            <div className=" min-w-0 gap-10 pt-10 xl:grid-cols-[170px_minmax(0,720px)] xl:justify-center xl:gap-14">
+                <aside className="min-w-0 border-y border-divider py-5 xl:sticky xl:top-8 xl:self-start xl:border-b-0">
+                    <p className="font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-muted">
+                        In this series
                     </p>
-                </header>
-                <div className="mt-8 space-y-5 text-[17px] leading-[1.65] tracking-[-0.018em] text-foreground">
-                    {post.body.map((paragraph, index) => (
-                        <p
-                            className={
-                                index === 0
-                                    ? "first-letter:float-left first-letter:mr-2 first-letter:mt-1 first-letter:font-serif first-letter:text-[64px] first-letter:leading-[0.68] first-letter:text-foreground-strong"
-                                    : ""
-                            }
-                            key={paragraph}
-                        >
-                            {paragraph}
-                        </p>
-                    ))}
-                </div>
-            </article>
-            <div className="mt-8 flex justify-between text-[14px]">
-                <Link
-                    className="font-semibold italic underline decoration-foreground/25 underline-offset-2 hover:text-foreground-strong"
-                    to="/writing"
-                >
-                    ← All writing
-                </Link>
-                <a
-                    className="font-semibold italic underline decoration-foreground/25 underline-offset-2 hover:text-foreground-strong"
-                    href={`mailto:${site.email}`}
-                >
-                    Start a conversation ↗
-                </a>
+                    <p className="mt-3 font-serif text-2xl font-medium leading-none tracking-[-0.04em] text-foreground-strong">
+                        {String(post.order).padStart(2, "0")} / {String(posts.length).padStart(2, "0")}
+                    </p>
+                    <p className="mt-4 text-[13px] leading-5 text-foreground">
+                        Read this guide in three passes, then continue when the
+                        next question arrives.
+                    </p>
+                    <Link
+                        className="editorial-link mt-4 inline-flex text-[13px] font-semibold text-foreground-strong"
+                        to="/writing"
+                    >
+                        View reading path →
+                    </Link>
+                </aside>
+                <article
+                    className="guide-content prose prose-zinc min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-serif prose-headings:font-medium prose-headings:tracking-[-0.035em] prose-headings:text-foreground-strong prose-h2:text-3xl prose-h3:text-xl prose-img:rounded-lg prose-li:marker:text-marker-coral prose-p:text-foreground prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto"
+                    dangerouslySetInnerHTML={{ __html: post.html }}
+                />
             </div>
+
+            <nav
+                className="mt-16 grid gap-px overflow-hidden border border-divider bg-divider sm:grid-cols-2"
+                aria-label="Series navigation"
+            >
+                {previous ? (
+                    <Link
+                        className="article-next-link min-w-0 bg-surface p-6 sm:p-8"
+                        to="/writing/$slug"
+                        params={{ slug: previous.slug }}
+                    >
+                        <span className="font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-muted">
+                            Previous guide
+                        </span>
+                        <span className="mt-3 block font-serif text-2xl font-medium leading-[0.98] tracking-[-0.04em] text-foreground-strong">
+                            ← {previous.title}
+                        </span>
+                    </Link>
+                ) : (
+                    <div className="bg-surface p-6 sm:p-8">
+                        <span className="font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-muted">
+                            You are here
+                        </span>
+                        <span className="mt-3 block font-serif text-2xl font-medium leading-[0.98] tracking-[-0.04em] text-foreground-strong">
+                            Start of the series
+                        </span>
+                    </div>
+                )}
+                {next ? (
+                    <Link
+                        className="article-next-link min-w-0 bg-surface p-6 text-right sm:p-8"
+                        to="/writing/$slug"
+                        params={{ slug: next.slug }}
+                    >
+                        <span className="font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-muted">
+                            Next guide
+                        </span>
+                        <span className="mt-3 block font-serif text-2xl font-medium leading-[0.98] tracking-[-0.04em] text-foreground-strong">
+                            {next.title} →
+                        </span>
+                    </Link>
+                ) : (
+                    <div className="bg-surface p-6 text-right sm:p-8">
+                        <span className="font-mono text-[10px] font-medium uppercase tracking-[0.1em] text-muted">
+                            Complete
+                        </span>
+                        <span className="mt-3 block font-serif text-2xl font-medium leading-[0.98] tracking-[-0.04em] text-foreground-strong">
+                            End of the series
+                        </span>
+                    </div>
+                )}
+            </nav>
         </main>
     );
 }
