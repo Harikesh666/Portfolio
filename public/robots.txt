@@ -1,4 +1,3 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://harikesh.xyz/sitemap.xml
+Sitemap: https://www.harikesh.xyz/sitemap.xml

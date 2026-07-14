@@ -1,7 +1,7 @@
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
-import { site } from "../lib/site";
+import { absoluteUrl, site } from "../lib/site";
 
 import appCss from "../styles.css?url";
 
@@ -22,8 +22,19 @@ export const Route = createRootRoute({
             { name: "viewport", content: "width=device-width, initial-scale=1" },
             { title: `${site.name} - Full-stack developer` },
             { name: "description", content: site.description },
+            { property: "og:title", content: `${site.name} - Full-stack developer` },
+            { property: "og:description", content: site.description },
+            { property: "og:type", content: "website" },
+            { property: "og:url", content: absoluteUrl() },
+            { property: "og:image", content: absoluteUrl("/og.png") },
+            { name: "twitter:card", content: "summary_large_image" },
+            { name: "twitter:title", content: `${site.name} - Full-stack developer` },
+            { name: "twitter:description", content: site.description },
+            { name: "twitter:image", content: absoluteUrl("/og.png") },
         ],
-        links: [{ rel: "stylesheet", href: appCss }],
+        links: [
+            { rel: "stylesheet", href: appCss },
+        ],
     }),
     shellComponent: RootDocument,
 });

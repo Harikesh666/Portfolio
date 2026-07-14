@@ -1,8 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://harikesh.xyz/</loc></url>
-  <url><loc>https://harikesh.xyz/writing</loc></url>
-  <url><loc>https://harikesh.xyz/writing/the-case-for-a-little-friction</loc></url>
-  <url><loc>https://harikesh.xyz/writing/a-website-is-not-a-pdf</loc></url>
-  <url><loc>https://harikesh.xyz/writing/making-room-for-taste</loc></url>
+  <url><loc>https://www.harikesh.xyz</loc><lastmod>2026-07-15</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing</loc><lastmod>2026-07-15</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-data-fetching-server-state</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-error-boundaries-resilience</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-event-system-internals</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-hooks-and-effects-internals</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-performance-architecture</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-rendering-reconciliation-internals</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-scheduler-and-lanes-internals</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-server-components-internals</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-state-management-architecture</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/react-suspense-internals</loc><lastmod>2026-05-01</lastmod></url>
 </urlset>

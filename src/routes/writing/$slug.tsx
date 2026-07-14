@@ -1,6 +1,6 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { getPost, getPostNeighbors, posts } from "../../lib/content";
-import { site } from "../../lib/site";
+import { absoluteUrl, site } from "../../lib/site";
 
 export const Route = createFileRoute("/writing/$slug")({
     loader: async ({ params }) => {
@@ -8,45 +8,56 @@ export const Route = createFileRoute("/writing/$slug")({
         if (!post) throw notFound();
         return post;
     },
-    head: ({ loaderData }) => ({
-        meta: [
-            { title: `${loaderData?.title ?? "Writing"} - ${site.name}` },
-            {
-                name: "description",
-                content: loaderData?.description ?? site.description,
-            },
-            { property: "og:title", content: loaderData?.title ?? "Writing" },
-            {
-                property: "og:description",
-                content: loaderData?.description ?? site.description,
-            },
-            { property: "og:type", content: "article" },
-            { property: "og:image", content: `${site.url}/og.png` },
-            { name: "twitter:image", content: `${site.url}/og.png` },
-        ],
-        links: [
-            {
-                rel: "canonical",
-                href: `${site.url}/writing/${loaderData?.slug ?? ""}`,
-            },
-        ],
-        scripts: loaderData
-            ? [
-                  {
-                      type: "application/ld+json",
-                      children: JSON.stringify({
-                          "@context": "https://schema.org",
-                          "@type": "Article",
-                          headline: loaderData.title,
-                          description: loaderData.description,
-                          datePublished: loaderData.publishedAt,
-                          author: { "@type": "Person", name: site.name },
-                          mainEntityOfPage: `${site.url}/writing/${loaderData.slug}`,
-                      }),
-                  },
-              ]
-            : [],
-    }),
+    head: ({ loaderData }) => {
+        const title = loaderData?.title ?? "Writing";
+        const description = loaderData?.description ?? site.description;
+        const canonicalUrl = absoluteUrl(`/writing/${loaderData?.slug ?? ""}`);
+        const imageUrl = absoluteUrl(`/og/${loaderData?.slug ?? ""}.png`);
+
+        return {
+            meta: [
+                { title: `${title} - ${site.name}` },
+                { name: "description", content: description },
+                { property: "og:title", content: title },
+                { property: "og:description", content: description },
+                { property: "og:type", content: "article" },
+                { property: "og:url", content: canonicalUrl },
+                { property: "og:image", content: imageUrl },
+                { property: "article:published_time", content: loaderData?.publishedAt ?? "" },
+                { property: "article:modified_time", content: loaderData?.publishedAt ?? "" },
+                { property: "article:author", content: absoluteUrl() },
+                { name: "twitter:card", content: "summary_large_image" },
+                { name: "twitter:title", content: title },
+                { name: "twitter:description", content: description },
+                { name: "twitter:image", content: imageUrl },
+            ],
+            links: [{ rel: "canonical", href: canonicalUrl }],
+            scripts: loaderData
+                ? [
+                      {
+                          type: "application/ld+json",
+                          children: JSON.stringify({
+                              "@context": "https://schema.org",
+                              "@type": "TechArticle",
+                              headline: loaderData.title,
+                              description: loaderData.description,
+                              datePublished: loaderData.publishedAt,
+                              dateModified: loaderData.publishedAt,
+                              inLanguage: "en",
+                              author: {
+                                  "@type": "Person",
+                                  "@id": `${absoluteUrl()}#person`,
+                                  name: site.name,
+                                  url: absoluteUrl(),
+                              },
+                              image: absoluteUrl(`/og/${loaderData.slug}.png`),
+                              mainEntityOfPage: canonicalUrl,
+                          }),
+                      },
+                  ]
+                : [],
+        };
+    },
     component: PostPage,
 });
 

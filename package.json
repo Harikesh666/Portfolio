@@ -8,9 +8,10 @@
     "scripts": {
         "dev": "vite dev --port 3000",
         "generate-routes": "tsr generate",
+        "prebuild": "node scripts/generate-og.mjs",
         "build": "vite build",
         "preview": "vite preview",
-        "test": "vitest run"
+        "test": "vitest run --passWithNoTests"
     },
     "dependencies": {
         "@tailwindcss/vite": "^4.1.18",
@@ -26,6 +27,7 @@
         "tailwindcss": "^4.1.18"
     },
     "devDependencies": {
+        "@resvg/resvg-js": "^2.6.2",
         "@tailwindcss/typography": "^0.5.16",
         "@tanstack/devtools-vite": "latest",
         "@tanstack/router-cli": "^1.132.0",
@@ -37,6 +39,7 @@
         "@vitejs/plugin-react": "^6.0.1",
         "jsdom": "^28.1.0",
         "nitro": "3.0.260610-beta",
+        "satori": "^0.26.0",
         "satteri": "^0.9.5",
         "satteri-expressive-code": "0.1.18",
         "typescript": "^6.0.2",

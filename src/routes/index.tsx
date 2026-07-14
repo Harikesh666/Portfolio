@@ -1,31 +1,48 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { posts } from "../lib/content";
-import { site } from "../lib/site";
+import { absoluteUrl, site } from "../lib/site";
+
+const homeTitle = `${site.name} - Full-stack developer`;
+const homeUrl = absoluteUrl();
+const homeImage = absoluteUrl("/og.png");
 
 export const Route = createFileRoute("/")({
     head: () => ({
         meta: [
-            { title: `${site.name} - Full-stack developer` },
+            { title: homeTitle },
             { name: "description", content: site.description },
-            { property: "og:title", content: `${site.name} - Full-stack developer` },
+            { property: "og:title", content: homeTitle },
             { property: "og:description", content: site.description },
             { property: "og:type", content: "website" },
-            { property: "og:url", content: site.url },
-            { property: "og:image", content: `${site.url}/og.png` },
+            { property: "og:url", content: homeUrl },
+            { property: "og:image", content: homeImage },
             { name: "twitter:card", content: "summary_large_image" },
-            { name: "twitter:image", content: `${site.url}/og.png` },
+            { name: "twitter:title", content: homeTitle },
+            { name: "twitter:description", content: site.description },
+            { name: "twitter:image", content: homeImage },
         ],
-        links: [{ rel: "canonical", href: site.url }],
+        links: [{ rel: "canonical", href: homeUrl }],
         scripts: [
             {
                 type: "application/ld+json",
                 children: JSON.stringify({
                     "@context": "https://schema.org",
-                    "@type": "Person",
-                    name: site.name,
-                    url: site.url,
-                    jobTitle: "Full-stack developer",
-                    description: site.description,
+                    "@graph": [
+                        {
+                            "@type": "WebSite",
+                            "@id": `${absoluteUrl()}#website`,
+                            url: absoluteUrl(),
+                            name: site.name,
+                        },
+                        {
+                            "@type": "Person",
+                            "@id": `${absoluteUrl()}#person`,
+                            name: site.name,
+                            url: absoluteUrl(),
+                            jobTitle: "Full-stack developer",
+                            sameAs: [site.socials.github, site.socials.linkedin],
+                        },
+                    ],
                 }),
             },
         ],

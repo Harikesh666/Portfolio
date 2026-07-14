@@ -1,42 +1,29 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { posts, seriesIndex } from "../../lib/content";
-import { site } from "../../lib/site";
+import { absoluteUrl, site } from "../../lib/site";
 
 const writingDescription =
     "A long-form React guide series about the mental models behind modern React applications.";
+const writingTitle = `Writing - ${site.name}`;
+const writingUrl = absoluteUrl("/writing");
+const writingImage = absoluteUrl("/og.png");
 
 export const Route = createFileRoute("/writing/")({
     head: () => ({
         meta: [
-            { title: `Writing - ${site.name}` },
+            { title: writingTitle },
             { name: "description", content: writingDescription },
-            { property: "og:title", content: `Writing - ${site.name}` },
+            { property: "og:title", content: writingTitle },
             { property: "og:description", content: writingDescription },
-            { property: "og:image", content: `${site.url}/og.png` },
-            { name: "twitter:image", content: `${site.url}/og.png` },
+            { property: "og:type", content: "website" },
+            { property: "og:url", content: writingUrl },
+            { property: "og:image", content: writingImage },
+            { name: "twitter:card", content: "summary_large_image" },
+            { name: "twitter:title", content: writingTitle },
+            { name: "twitter:description", content: writingDescription },
+            { name: "twitter:image", content: writingImage },
         ],
-        links: [{ rel: "canonical", href: `${site.url}/writing` }],
-        scripts: [
-            {
-                type: "application/ld+json",
-                children: JSON.stringify({
-                    "@context": "https://schema.org",
-                    "@type": "CollectionPage",
-                    name: `Writing by ${site.name}`,
-                    description: writingDescription,
-                    url: `${site.url}/writing`,
-                    mainEntity: {
-                        "@type": "ItemList",
-                        itemListElement: posts.map((post, index) => ({
-                            "@type": "ListItem",
-                            position: index + 1,
-                            url: `${site.url}/writing/${post.slug}`,
-                            name: post.title,
-                        })),
-                    },
-                }),
-            },
-        ],
+        links: [{ rel: "canonical", href: writingUrl }],
     }),
     component: WritingPage,
 });
