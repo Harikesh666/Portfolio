@@ -41,13 +41,13 @@ export const Route = createFileRoute("/writing/")({
 
 function WritingPage() {
     return (
-        <main className="mx-auto w-[calc(100%-2rem)] max-w-[1120px] pb-16 pt-10 sm:w-[calc(100%-3rem)] sm:pt-16">
+        <main id="main-content" className="mx-auto w-[calc(100%-2rem)] max-w-[1120px] pb-16 pt-10 sm:w-[calc(100%-3rem)] sm:pt-16">
             <section className="border-y border-divider py-8 sm:grid sm:grid-cols-[minmax(0,1.4fr)_minmax(220px,0.6fr)] sm:gap-12 sm:py-14">
                 <div className="min-w-0">
                     <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-marker-coral">
                         Writing / React internals
                     </p>
-                    <h1 className="mt-5 max-w-[720px] text-balance font-serif text-[clamp(3rem,7vw,6.5rem)] font-medium leading-[0.88] tracking-[-0.06em] text-foreground-strong">
+                    <h1 className="mt-5 max-w-[720px] text-balance font-serif text-[clamp(3rem,7vw,6.5rem)] font-medium leading-[0.93] tracking-[-0.038em] text-foreground-strong">
                         {series.title}
                     </h1>
                     <p className="mt-6 max-w-[610px] text-[17px] leading-7 tracking-[-0.02em] text-foreground sm:text-[19px]">

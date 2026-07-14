@@ -58,7 +58,7 @@ function PostPage() {
     const { previous, next } = getPostNeighbors(post.order);
 
     return (
-        <main className="mx-auto w-[calc(100%-2rem)] max-w-190 pb-16 pt-7 sm:w-[calc(100%-3rem)] sm:pt-10">
+        <main id="main-content" className="mx-auto w-[calc(100%-2rem)] max-w-190 pb-16 pt-7 sm:w-[calc(100%-3rem)] sm:pt-10">
             <nav
                 className="flex items-center gap-3 text-[13px] font-medium text-muted"
                 aria-label="Breadcrumb"
@@ -74,7 +74,7 @@ function PostPage() {
                 <p className="font-mono text-[11px] font-medium uppercase tracking-[0.12em] text-marker-coral">
                     {post.category} / Guide {String(post.order).padStart(2, "0")} of {posts.length}
                 </p>
-                <h1 className="mt-5 max-w-[940px] text-balance font-serif text-[clamp(3rem,7vw,6.75rem)] font-medium leading-[0.88] tracking-[-0.06em] text-foreground-strong">
+                <h1 className="mt-5 max-w-[940px] text-balance font-serif text-[clamp(3rem,7vw,6rem)] font-medium leading-[0.93] tracking-[-0.038em] text-foreground-strong">
                     {post.title}
                 </h1>
                 <p className="mt-7 max-w-[700px] text-[18px] leading-8 tracking-[-0.02em] text-foreground sm:text-[21px]">

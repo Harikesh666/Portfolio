@@ -16,7 +16,7 @@ export const Route = createRootRoute({
                 content: "width=device-width, initial-scale=1",
             },
             {
-                title: `${site.name} - Independent designer & creative developer`,
+                title: `${site.name} - Full-stack developer`,
             },
             {
                 name: "description",
@@ -40,9 +40,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 <HeadContent />
             </head>
             <body
-                className="font-sans selection:bg-black selection:text-white"
+                className="font-sans selection:bg-accent selection:text-surface"
                 suppressHydrationWarning
             >
+                <a className="skip-link" href="#main-content">
+                    Skip to content
+                </a>
                 <Header />
                 {children}
                 <Footer />

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-07-14T00:00:00+05:30",
+  "title": "Design System: Harikesh Mishra Portfolio",
+  "extensions": {
+    "colorMeta": {
+      "surface": { "role": "neutral", "displayName": "Cool Paper", "canonical": "oklch(0.985 0.003 247)", "tonalRamp": ["oklch(0.985 0.003 247)", "oklch(0.93 0.006 247)", "oklch(0.89 0.008 255)"] },
+      "foreground-strong": { "role": "neutral", "displayName": "Operational Ink", "canonical": "oklch(0.235 0.022 255)", "tonalRamp": ["oklch(0.235 0.022 255)", "oklch(0.37 0.018 255)", "oklch(0.53 0.016 255)"] },
+      "accent": { "role": "primary", "displayName": "Decision Coral", "canonical": "oklch(0.61 0.18 35)", "tonalRamp": ["oklch(0.93 0.035 35)", "oklch(0.76 0.12 35)", "oklch(0.61 0.18 35)"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Source Serif 4 Display", "purpose": "Major claims and article-level headings." },
+      "body": { "displayName": "Atkinson Hyperlegible Body", "purpose": "Accessible operational copy and long-form reading." }
+    },
+    "shadows": [],
+    "motion": [
+      { "name": "standard", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Short color and transform feedback only; removed for reduced motion." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Contact Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The primary route to a role conversation.",
+      "html": "<button class=\"ds-button-primary\">Email me about a role</button>",
+      "css": ".ds-button-primary { border: 0; border-radius: 6px; background: var(--color-foreground-strong); color: var(--color-surface); padding: 12px 20px; font: 700 14px var(--font-sans); cursor: pointer; transition: background-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-primary:hover { background: var(--color-accent); } .ds-button-primary:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
+    },
+    {
+      "name": "Secondary Reading Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "A low-noise route into the writing series.",
+      "html": "<button class=\"ds-button-secondary\">Start reading</button>",
+      "css": ".ds-button-secondary { border: 1px solid var(--color-divider); border-radius: 6px; background: var(--color-surface); color: var(--color-foreground-strong); padding: 12px 20px; font: 700 14px var(--font-sans); cursor: pointer; transition: border-color 160ms cubic-bezier(0.16, 1, 0.3, 1), background-color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-button-secondary:hover { border-color: var(--color-foreground-strong); background: var(--color-accent-soft); } .ds-button-secondary:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
+    },
+    {
+      "name": "Evidence Row",
+      "kind": "custom",
+      "refersTo": "evidence-row",
+      "description": "A scan-friendly production outcome in a ruled list.",
+      "html": "<article class=\"ds-evidence\"><strong>Sales Copilot</strong><p>Built reusable admin primitives across a production module.</p><span>130K+ records · ~190ms page requests</span></article>",
+      "css": ".ds-evidence { display: grid; gap: 10px; border-bottom: 1px solid var(--color-divider); padding: 24px 0; color: var(--color-foreground); font: 400 16px/1.6 var(--font-sans); } .ds-evidence strong { color: var(--color-foreground-strong); font-weight: 700; } .ds-evidence p { margin: 0; } .ds-evidence span { color: var(--color-accent); font-size: 14px; font-weight: 700; }"
+    },
+    {
+      "name": "Writing List Item",
+      "kind": "card",
+      "refersTo": "writing-list-item",
+      "description": "A ruled article link that gives title, explanation, and reading time equal structure.",
+      "html": "<a class=\"ds-writing-item\" href=\"#\"><span>01</span><b>React Rendering and Reconciliation Internals</b><em>45 min read</em></a>",
+      "css": ".ds-writing-item { display: grid; gap: 8px; border-bottom: 1px solid var(--color-divider); padding: 20px 0; color: inherit; text-decoration: none; } .ds-writing-item span { color: var(--color-accent); font: 700 14px var(--font-sans); } .ds-writing-item b { color: var(--color-foreground-strong); font: 500 24px/1.2 var(--font-serif); transition: color 160ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-writing-item em { color: var(--color-muted); font: 600 14px var(--font-sans); font-style: normal; } .ds-writing-item:hover b { color: var(--color-accent); } .ds-writing-item:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
+    },
+    {
+      "name": "Portfolio Navigation",
+      "kind": "nav",
+      "refersTo": "main-navigation",
+      "description": "Compact identity and direct navigational choices, divided from content by a rule.",
+      "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Writing</a><a href=\"#\">Contact</a></nav>",
+      "css": ".ds-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; border-bottom: 1px solid var(--color-divider); padding: 20px 0; color: var(--color-foreground); font: 600 14px var(--font-sans); } .ds-nav strong { color: var(--color-foreground-strong); margin-right: auto; } .ds-nav a { color: inherit; text-decoration: none; } .ds-nav a:last-child { color: var(--color-foreground-strong); text-decoration: underline 2px var(--color-accent); text-underline-offset: 4px; } .ds-nav a:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Production Notebook",
+    "overview": "A proof-led personal portfolio and technical writing system. It uses calm structure, real metrics, and a dedicated reading hierarchy to express rigor without corporate gloss.",
+    "keyCharacteristics": ["Proof-led", "Flat and structural", "Readable at depth", "Directly actionable"],
+    "rules": [
+      { "name": "The Signal Rule", "body": "Coral marks actions, proof, and focused attention—not ambient decoration.", "section": "colors" },
+      { "name": "The Mechanism Rule", "body": "Every strong claim should be followed by a concrete mechanism or metric.", "section": "typography" },
+      { "name": "The Evidence Rule", "body": "Rules organize proof and never frame generic card content.", "section": "elevation" }
+    ],
+    "dos": ["Lead with concrete outcomes.", "Keep long-form reading comfortable.", "Use coral only to direct attention."],
+    "donts": ["Do not use generic template portfolio patterns.", "Do not use buzzword-heavy copy.", "Do not use flashy motion showcases."]
+  }
+}
