@@ -1,54 +1,66 @@
-import { Link, useLocation } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router";
+import { Moon, Sun } from "lucide-react";
 import { site } from "../lib/site";
 
-const initials = site.name
-    .split(" ")
-    .map((part) => part[0])
-    .join("");
-
 export default function Header() {
-    const pathname = useLocation({ select: (location) => location.pathname });
-    const isArticle =
-        pathname.startsWith("/writing/") && pathname !== "/writing/";
+    const [theme, setTheme] = useState<"light" | "dark">("light");
 
-    if (isArticle) return null;
+    useEffect(() => {
+        setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+    }, []);
+
+    function toggleTheme() {
+        const nextTheme = theme === "dark" ? "light" : "dark";
+        document.documentElement.dataset.theme = nextTheme;
+        window.localStorage.setItem("theme", nextTheme);
+        setTheme(nextTheme);
+    }
 
     return (
-        <header className="mx-auto flex w-[calc(100%-2rem)] max-w-[1120px] items-end justify-between gap-6 border-b border-divider py-5 sm:w-[calc(100%-3rem)] sm:py-7">
-            <Link className="group min-w-0" to="/">
-                <span
-                    className="flex size-8 items-center justify-center rounded-md bg-foreground-strong text-[10px] font-bold tracking-[-0.1em] text-surface transition-transform duration-200 ease-out group-hover:-rotate-6 motion-reduce:transition-none"
-                    aria-hidden="true"
-                >
-                    {initials}
-                </span>
-                <span className="mt-2 block text-[15px] font-bold tracking-[-0.025em] text-foreground-strong">
-                    {site.name}
-                </span>
-                <span className="mt-0.5 block text-xs text-muted">
-                    Full-stack developer · Mumbai
-                </span>
+        <header className="mx-auto flex w-full max-w-[42rem] items-center justify-between gap-2 border-b border-divider px-5 py-4">
+            <Link
+                className="shrink-0 text-[15px] font-bold tracking-[-0.02em] text-foreground-strong"
+                to="/"
+            >
+                {site.name}
             </Link>
-            <nav className="flex flex-wrap justify-end gap-x-4 gap-y-2 text-sm font-semibold text-foreground" aria-label="Main navigation">
-                <Link
-                    to="/"
-                    activeOptions={{ exact: true }}
-                    activeProps={{ className: "text-foreground-strong" }}
-                >
-                    Home
-                </Link>
-                <Link
-                    to="/writing"
-                    activeProps={{ className: "text-foreground-strong" }}
-                >
+            <nav
+                className="flex shrink-0 items-center gap-2 whitespace-nowrap text-sm text-foreground"
+                aria-label="Main navigation"
+            >
+                <Link className="hover:text-accent" to="/writing">
                     Writing
                 </Link>
-                <a className="hidden sm:inline" href="/#work">
-                    Work
+                <a
+                    className="hover:text-accent"
+                    href={site.socials.github}
+                    target="_blank"
+                    rel="noreferrer"
+                >
+                    GitHub
                 </a>
-                <a className="text-foreground-strong underline decoration-accent decoration-2 underline-offset-4" href={`mailto:${site.email}`}>
-                    Contact
+                <a
+                    className="hover:text-accent"
+                    href="/Harikesh_Mishra_Resume.pdf"
+                    target="_blank"
+                    rel="noreferrer"
+                >
+                    Resume
                 </a>
+                <button
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center text-foreground-strong hover:text-accent"
+                    type="button"
+                    aria-label="Toggle theme"
+                    aria-pressed={theme === "dark"}
+                    onClick={toggleTheme}
+                >
+                    {theme === "dark" ? (
+                        <Sun aria-hidden="true" size={18} />
+                    ) : (
+                        <Moon aria-hidden="true" size={18} />
+                    )}
+                </button>
             </nav>
         </header>
     );
