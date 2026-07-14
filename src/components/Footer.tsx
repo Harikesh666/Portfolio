@@ -11,7 +11,7 @@ export default function Footer() {
                 <i className="size-1.5 rounded-full bg-marker-amber" />
                 <i className="size-1.5 rounded-full bg-marker-green" />
             </div>
-            <p className="text-base! font-medium tracking-[-0.015em] text-muted sm:text-lg!">
+            <p className="text-base! font-medium tracking-[-0.015em] text-muted sm:text-sm!">
                 © {new Date().getFullYear()} {site.name}. Built with care.
             </p>
         </footer>
