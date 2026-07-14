@@ -10,7 +10,7 @@ export const Route = createFileRoute("/writing/$slug")({
     },
     head: ({ loaderData }) => ({
         meta: [
-            { title: `${loaderData?.title ?? "Writing"} — ${site.name}` },
+            { title: `${loaderData?.title ?? "Writing"} - ${site.name}` },
             {
                 name: "description",
                 content: loaderData?.description ?? site.description,
@@ -52,7 +52,7 @@ function PostPage() {
     const post = Route.useLoaderData();
     return (
         <main className="mx-auto w-[calc(100%-2rem)] max-w-[520px] pt-10 sm:w-[calc(100%-3rem)]">
-            <nav className="flex flex-wrap gap-x-2 text-[11px] text-muted">
+            <nav className="flex flex-wrap gap-x-2 sm:text-[11px] text-[11px] text-muted font-medium">
                 <Link className="hover:text-foreground-strong" to="/">
                     {site.name}
                 </Link>
