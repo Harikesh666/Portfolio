@@ -23,8 +23,14 @@ export const Route = createFileRoute("/writing/$slug")({
                 { property: "og:type", content: "article" },
                 { property: "og:url", content: canonicalUrl },
                 { property: "og:image", content: imageUrl },
-                { property: "article:published_time", content: loaderData?.publishedAt ?? "" },
-                { property: "article:modified_time", content: loaderData?.publishedAt ?? "" },
+                {
+                    property: "article:published_time",
+                    content: loaderData?.publishedAt ?? "",
+                },
+                {
+                    property: "article:modified_time",
+                    content: loaderData?.publishedAt ?? "",
+                },
                 { property: "article:author", content: absoluteUrl() },
                 { name: "twitter:card", content: "summary_large_image" },
                 { name: "twitter:title", content: title },
@@ -71,7 +77,7 @@ function PostPage() {
     return (
         <main
             id="main-content"
-            className="mx-auto w-full max-w-[42rem] px-5 pb-12 pt-8"
+            className="mx-auto w-full max-w-2xl px-5 pb-12 pt-8"
         >
             <Link
                 className="font-mono text-sm text-muted hover:text-accent"

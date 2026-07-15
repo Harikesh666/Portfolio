@@ -64,7 +64,7 @@ function HomePage() {
                     Full-stack developer, Mumbai
                 </p>
                 <p className="mt-7 text-foreground">
-                    I work across React, Node.js, FastAPI, and PostgreSQL—shipping reliable product features, finding the bugs that matter, and making complex systems easier to operate.
+                    I work across React, Node.js, FastAPI, and PostgreSQL - shipping reliable product features, finding the bugs that matter, and making complex systems easier to operate.
                 </p>
                 <p className="mt-5 flex flex-wrap items-center gap-x-2 font-mono text-sm text-foreground">
                     <a className="underline decoration-accent underline-offset-4 hover:text-accent" href={`mailto:${site.email}`}>

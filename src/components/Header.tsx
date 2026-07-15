@@ -7,7 +7,11 @@ export default function Header() {
     const [theme, setTheme] = useState<"light" | "dark">("light");
 
     useEffect(() => {
-        setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
+        setTheme(
+            document.documentElement.dataset.theme === "dark"
+                ? "dark"
+                : "light",
+        );
     }, []);
 
     function toggleTheme() {

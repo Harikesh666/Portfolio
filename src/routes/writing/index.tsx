@@ -38,7 +38,7 @@ function WritingPage() {
     return (
         <main
             id="main-content"
-            className="mx-auto w-full max-w-[42rem] px-5 pb-12 pt-10"
+            className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
             <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
                 {series.title}

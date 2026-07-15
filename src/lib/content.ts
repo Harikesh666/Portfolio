@@ -68,7 +68,10 @@ function getSlug(path: string) {
     return filename.slice(0, -3);
 }
 
-function toPost(path: string, frontmatter: Record<string, unknown>): PostRecord {
+function toPost(
+    path: string,
+    frontmatter: Record<string, unknown>,
+): PostRecord {
     const filename = path.split("/").at(-1) ?? path;
     const seriesValue = frontmatter.series;
     const series =
@@ -93,11 +96,19 @@ function toPost(path: string, frontmatter: Record<string, unknown>): PostRecord 
         path,
         slug: getSlug(path),
         title: assertString(frontmatter.title, "title", filename),
-        description: assertString(frontmatter.description, "description", filename),
+        description: assertString(
+            frontmatter.description,
+            "description",
+            filename,
+        ),
         category: assertString(frontmatter.category, "category", filename),
         readTime: assertString(frontmatter.readTime, "readTime", filename),
         date: assertString(frontmatter.date, "date", filename),
-        publishedAt: assertString(frontmatter.publishedAt, "publishedAt", filename),
+        publishedAt: assertString(
+            frontmatter.publishedAt,
+            "publishedAt",
+            filename,
+        ),
         series,
         order,
     };

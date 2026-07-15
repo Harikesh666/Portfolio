@@ -1,7 +1,11 @@
 import { defineHastPlugin } from "satteri";
 
 const slugify = (s: string) =>
-    s.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
+    s
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9\s-]/g, "")
+        .replace(/\s+/g, "-");
 
 export const headingIds = defineHastPlugin({
     name: "heading-ids",
