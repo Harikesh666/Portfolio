@@ -115,7 +115,13 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 ### Article Content
 - **Structure:** Back link, title, muted metadata, prose, then optional previous/next links.
 - **Anchors:** H2–H4 headings have stable IDs and a 2rem scroll margin.
+- **Desktop Table of Contents:** At `xl` and above, a fixed rail summarizes eligible H2s as bars. Hover or keyboard focus reveals a 240px, scrollable, single-line label panel; the active section uses coral and the links retain native hash navigation. The authored in-content table of contents is hidden only at this breakpoint.
+- **Reading Progress:** A 2px coral top hairline uses CSS scroll-driven animation where supported; it is absent for reduced-motion preferences.
 - **Code:** Expressive Code frames retain their generated theme and copy behavior; local CSS only styles inline code.
+
+### Motion
+- **Route and entry:** Route changes use a 200ms view transition. Each page uses at most a title-group and content-group rise-in animation (350ms, with an 80ms content delay).
+- **Restraint:** Motion is limited to opacity and transforms, has no scroll-triggered reveals, and is disabled for `prefers-reduced-motion: reduce`.
 
 ## 6. Do's and Don'ts
 

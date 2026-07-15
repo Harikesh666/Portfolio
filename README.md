@@ -46,13 +46,13 @@ order: 11
 - Series definitions live in `src/lib/content.ts`. Add the series there before assigning its ID in frontmatter.
 - `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk.
 
-Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control.
+Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control. At `xl` and above, article H2s also populate a fixed, keyboard-accessible floating table of contents; it replaces the Markdown table of contents visually on desktop while the in-content version remains available below that breakpoint.
 
 ## Theme and Accessibility
 
 The visual system lives in `src/styles.css`. It uses semantic CSS variables mapped into Tailwind v4, with explicit `data-theme="light"` and `data-theme="dark"` values set before paint and persisted in local storage.
 
-The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts.
+The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts. Route and page-entry motion are short opacity/transform transitions only; article reading progress appears only in browsers with CSS scroll-driven animation support and is omitted when reduced motion is requested.
 
 ## Project Docs
 

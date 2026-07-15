@@ -47,4 +47,4 @@ Avoid generic template portfolios, buzzword-heavy copy, and flashy motion showca
 
 ## Accessibility & Inclusion
 
-Use strong text contrast, keyboard-accessible interactions, responsive layouts, explicit light and dark themes, and reduced-motion support. Deliver excellent technical SEO through server rendering, semantic content, accurate metadata, canonical URLs, structured data, and crawlable routes. Article navigation must retain heading anchors, readable code blocks, and copy controls.
+Use strong text contrast, keyboard-accessible interactions, responsive layouts, explicit light and dark themes, and reduced-motion support. Deliver excellent technical SEO through server rendering, semantic content, accurate metadata, canonical URLs, structured data, and crawlable routes. Article navigation must retain heading anchors, readable code blocks, copy controls, and the desktop floating table of contents with native hash links and scrollspy context.
