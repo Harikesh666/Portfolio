@@ -8,12 +8,14 @@ import tailwindcss from "@tailwindcss/vite";
 import satteri from "vite-plugin-satteri";
 import { headingIds } from "./src/lib/satteri-plugins";
 import { nitro } from "nitro/vite";
+import pierreDark from "@pierre/theme/pierre-dark";
+import pierreLight from "@pierre/theme/pierre-light";
 
 const config = defineConfig({
     resolve: { tsconfigPaths: true },
     plugins: [
         tanstackStart({ prerender: { enabled: true, crawlLinks: true } }),
-        nitro(), 
+        nitro(),
         tailwindcss(),
         viteReact(),
         satteri({
@@ -24,7 +26,7 @@ const config = defineConfig({
             hastPlugins: [
                 headingIds,
                 expressiveCode({
-                    themes: ["github-dark", "github-light"],
+                    themes: [pierreDark, pierreLight],
                     useDarkModeMediaQuery: false,
                     themeCssSelector: (theme) => `[data-theme='${theme.type}']`,
                 }),
