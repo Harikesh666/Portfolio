@@ -56,7 +56,7 @@ function HomePage() {
             id="main-content"
             className="mx-auto w-full max-w-[42rem] px-5 pb-12 pt-10"
         >
-            <section>
+            <section className="rise-in">
                 <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
                     Harikesh Mishra
                 </h1>
@@ -85,82 +85,84 @@ function HomePage() {
                 </p>
             </section>
 
-            <section id="work" className="mt-14">
-                <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
-                    Work
-                </h2>
-                <div className="mt-4 border-t border-divider">
-                    <article className="border-b border-divider py-5">
-                        <h3 className="font-bold text-foreground-strong">
-                            Sales Copilot
-                        </h3>
-                        <p className="mt-2 text-sm text-foreground">
-                            Built eight admin data-management pages end to end, then established reusable table, modal, and edit-form patterns across the module.
-                        </p>
-                        <p className="mt-3 text-sm text-accent">
-                            130K+ records · ~190ms page requests · 60% fewer files per page
-                        </p>
-                    </article>
-                    <article className="border-b border-divider py-5">
-                        <h3 className="font-bold text-foreground-strong">
-                            Multi-tenant LMS
-                        </h3>
-                        <p className="mt-2 text-sm text-foreground">
-                            Architected tenant isolation for five client organizations and traced a critical routing defect before it continued sending new chatbots to the wrong database.
-                        </p>
-                        <p className="mt-3 text-sm text-accent">
-                            5 organizations · 35+ frontend files · critical fix shipped same day
-                        </p>
-                    </article>
-                    <article className="border-b border-divider py-5">
-                        <h3 className="font-bold text-foreground-strong">
-                            Reporting & AI
-                        </h3>
-                        <p className="mt-2 text-sm text-foreground">
-                            Built dynamic reporting for training leadership and a solo interview chatbot with LLM scoring, deployed across Vercel and GCP Cloud Run.
-                        </p>
-                        <p className="mt-3 text-sm text-accent">
-                            35% faster SQL · stakeholder demoed · end-to-end delivery
-                        </p>
-                    </article>
-                </div>
-            </section>
+            <div className="rise-in-delayed">
+                <section id="work" className="mt-14">
+                    <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                        Work
+                    </h2>
+                    <div className="mt-4 border-t border-divider">
+                        <article className="border-b border-divider py-5">
+                            <h3 className="font-bold text-foreground-strong">
+                                Sales Copilot
+                            </h3>
+                            <p className="mt-2 text-sm text-foreground">
+                                Built eight admin data-management pages end to end, then established reusable table, modal, and edit-form patterns across the module.
+                            </p>
+                            <p className="mt-3 text-sm text-accent">
+                                130K+ records · ~190ms page requests · 60% fewer files per page
+                            </p>
+                        </article>
+                        <article className="border-b border-divider py-5">
+                            <h3 className="font-bold text-foreground-strong">
+                                Multi-tenant LMS
+                            </h3>
+                            <p className="mt-2 text-sm text-foreground">
+                                Architected tenant isolation for five client organizations and traced a critical routing defect before it continued sending new chatbots to the wrong database.
+                            </p>
+                            <p className="mt-3 text-sm text-accent">
+                                5 organizations · 35+ frontend files · critical fix shipped same day
+                            </p>
+                        </article>
+                        <article className="border-b border-divider py-5">
+                            <h3 className="font-bold text-foreground-strong">
+                                Reporting & AI
+                            </h3>
+                            <p className="mt-2 text-sm text-foreground">
+                                Built dynamic reporting for training leadership and a solo interview chatbot with LLM scoring, deployed across Vercel and GCP Cloud Run.
+                            </p>
+                            <p className="mt-3 text-sm text-accent">
+                                35% faster SQL · stakeholder demoed · end-to-end delivery
+                            </p>
+                        </article>
+                    </div>
+                </section>
 
-            <section className="mt-14">
-                <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
-                    Writing
-                </h2>
-                <ol className="mt-4 border-t border-divider">
-                    {posts.map((post) => (
-                        <li className="border-b border-divider" key={post.slug}>
-                            <Link
-                                className="group block py-5"
-                                to="/writing/$slug"
-                                params={{ slug: post.slug }}
-                            >
-                                <span className="font-mono text-sm text-accent">
-                                    {String(post.order).padStart(2, "0")}
-                                </span>
-                                <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
-                                    {post.title}
-                                </span>
-                                <span className="mt-1 block text-sm text-muted">
-                                    {post.description}
-                                </span>
-                                <span className="mt-2 block text-sm text-foreground">
-                                    {post.readTime}
-                                </span>
-                            </Link>
-                        </li>
-                    ))}
-                </ol>
-                <Link
-                    className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
-                    to="/writing"
-                >
-                    View all writing →
-                </Link>
-            </section>
+                <section className="mt-14">
+                    <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                        Writing
+                    </h2>
+                    <ol className="mt-4 border-t border-divider">
+                        {posts.map((post) => (
+                            <li className="border-b border-divider" key={post.slug}>
+                                <Link
+                                    className="group block py-5"
+                                    to="/writing/$slug"
+                                    params={{ slug: post.slug }}
+                                >
+                                    <span className="font-mono text-sm text-accent">
+                                        {String(post.order).padStart(2, "0")}
+                                    </span>
+                                    <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
+                                        {post.title}
+                                    </span>
+                                    <span className="mt-1 block text-sm text-muted">
+                                        {post.description}
+                                    </span>
+                                    <span className="mt-2 block text-sm text-foreground">
+                                        {post.readTime}
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ol>
+                    <Link
+                        className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
+                        to="/writing"
+                    >
+                        View all writing →
+                    </Link>
+                </section>
+            </div>
         </main>
     );
 }

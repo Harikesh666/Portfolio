@@ -134,6 +134,14 @@
         font-weight: 500;
     }
 
+    .rise-in {
+        animation: rise-in 350ms cubic-bezier(0.16, 1, 0.3, 1) both;
+    }
+
+    .rise-in-delayed {
+        animation: rise-in 350ms cubic-bezier(0.16, 1, 0.3, 1) 80ms both;
+    }
+
     @media (prefers-reduced-motion: reduce) {
         html {
             scroll-behavior: auto;
@@ -150,8 +158,104 @@
     }
 }
 
+@keyframes rise-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes reading-progress {
+    from {
+        transform: scaleX(0);
+    }
+
+    to {
+        transform: scaleX(1);
+    }
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+    animation-duration: 200ms;
+}
+
+.reading-progress {
+    display: none;
+}
+
+.group\/toc:hover .floating-toc-list,
+.group\/toc:focus-within .floating-toc-list {
+    scrollbar-width: none;
+    scrollbar-gutter: stable;
+    mask-image: linear-gradient(
+        to bottom,
+        transparent,
+        black 16px,
+        black calc(100% - 16px),
+        transparent
+    );
+}
+
+.group\/toc:hover .floating-toc-list::-webkit-scrollbar,
+.group\/toc:focus-within .floating-toc-list::-webkit-scrollbar {
+    display: none;
+}
+
+.group\/toc:hover .floating-toc-title,
+.group\/toc:focus-within .floating-toc-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@supports (animation-timeline: scroll()) {
+    .reading-progress {
+        position: fixed;
+        z-index: 30;
+        top: 0;
+        right: 0;
+        left: 0;
+        display: block;
+        height: 2px;
+        transform: scaleX(0);
+        transform-origin: left;
+        background: var(--accent);
+        animation: reading-progress linear both;
+        animation-timeline: scroll(root);
+    }
+}
+
 @media (prefers-reduced-motion: no-preference) {
     html {
         scroll-behavior: smooth;
+    }
+}
+
+@media (min-width: 1280px) {
+    .guide-content #table-of-contents,
+    .guide-content #table-of-contents + ol {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    ::view-transition-old(root),
+    ::view-transition-new(root) {
+        animation: none !important;
+    }
+
+    .rise-in,
+    .rise-in-delayed {
+        animation: none !important;
+    }
+
+    .reading-progress {
+        display: none !important;
     }
 }
