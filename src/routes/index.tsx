@@ -2,7 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { posts } from "../lib/content";
 import { absoluteUrl, site } from "../lib/site";
 
-const homeTitle = `${site.name} - Full-stack developer`;
+const homeTitle = `${site.name} - Software developer`;
 const homeUrl = absoluteUrl();
 const homeImage = absoluteUrl("/og.png");
 
@@ -39,7 +39,7 @@ export const Route = createFileRoute("/")({
                             "@id": `${absoluteUrl()}#person`,
                             name: site.name,
                             url: absoluteUrl(),
-                            jobTitle: "Full-stack developer",
+                            jobTitle: "Software developer",
                             sameAs: [site.socials.github, site.socials.linkedin],
                         },
                     ],
@@ -61,7 +61,7 @@ function HomePage() {
                     Harikesh Mishra
                 </h1>
                 <p className="mt-1 text-muted">
-                    Full-stack developer, Mumbai
+                    Software developer, Mumbai
                 </p>
                 <p className="mt-7 text-foreground">
                     I work across React, Node.js, FastAPI, and PostgreSQL - shipping reliable product features, finding the bugs that matter, and making complex systems easier to operate.
