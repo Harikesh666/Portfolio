@@ -242,13 +242,13 @@ export function FloatingToc() {
 
                     return (
                         <motion.li
-                            className="flex h-[10px] items-center"
+                            className="flex h-2.5 items-center"
                             key={item.id}
                             variants={railItemVariants}
                         >
                             <motion.span
                                 aria-hidden="true"
-                                className={`block h-[2px] rounded-full transition-colors ${
+                                className={`block h-0.5 rounded-full transition-colors ${
                                     isActive ? "bg-accent" : "bg-divider"
                                 }`}
                                 animate={{ width: isActive ? 24 : 16 }}

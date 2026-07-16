@@ -1,7 +1,9 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../../components/PageEnter";
 import { Reveal } from "../../components/Reveal";
 import { posts, seriesIndex } from "../../lib/content";
+import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
 
 const writingDescription =
@@ -31,6 +33,7 @@ export const Route = createFileRoute("/writing/")({
 });
 
 function WritingPage() {
+    const shouldReduceMotion = useReducedMotion();
     const series = seriesIndex["react-internals"];
     const seriesPosts = posts.filter(
         (post) => post.series === "react-internals",
@@ -69,18 +72,27 @@ function WritingPage() {
                                 to="/writing/$slug"
                                 params={{ slug: post.slug }}
                             >
-                                <span className="font-mono text-sm text-accent">
-                                    {String(post.order).padStart(2, "0")}
-                                </span>
-                                <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
-                                    {post.title}
-                                </span>
-                                <span className="mt-1 block text-sm text-muted">
-                                    {post.description}
-                                </span>
-                                <span className="mt-2 block text-sm text-foreground">
-                                    {post.readTime}
-                                </span>
+                                <motion.div
+                                    whileHover={
+                                        shouldReduceMotion
+                                            ? undefined
+                                            : { x: 2 }
+                                    }
+                                    transition={snappySpring}
+                                >
+                                    <span className="font-mono text-sm text-accent">
+                                        {String(post.order).padStart(2, "0")}
+                                    </span>
+                                    <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
+                                        {post.title}
+                                    </span>
+                                    <span className="mt-1 block text-sm text-muted">
+                                        {post.description}
+                                    </span>
+                                    <span className="mt-2 block text-sm text-foreground">
+                                        {post.readTime}
+                                    </span>
+                                </motion.div>
                             </Link>
                         </Reveal>
                     ))}
@@ -100,21 +112,30 @@ function WritingPage() {
                                     className="border-b border-divider"
                                     key={post.slug}
                                 >
-                                    <Link
-                                        className="group block py-5"
-                                        to="/writing/$slug"
-                                        params={{ slug: post.slug }}
-                                    >
-                                        <span className="block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
-                                            {post.title}
-                                        </span>
-                                        <span className="mt-1 block text-sm text-muted">
-                                            {post.description}
-                                        </span>
-                                        <span className="mt-2 block text-sm text-foreground">
-                                            {post.readTime}
-                                        </span>
-                                    </Link>
+                                        <Link
+                                            className="group block py-5"
+                                            to="/writing/$slug"
+                                            params={{ slug: post.slug }}
+                                        >
+                                            <motion.div
+                                                whileHover={
+                                                    shouldReduceMotion
+                                                        ? undefined
+                                                        : { x: 2 }
+                                                }
+                                                transition={snappySpring}
+                                            >
+                                                <span className="block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
+                                                    {post.title}
+                                                </span>
+                                                <span className="mt-1 block text-sm text-muted">
+                                                    {post.description}
+                                                </span>
+                                                <span className="mt-2 block text-sm text-foreground">
+                                                    {post.readTime}
+                                                </span>
+                                            </motion.div>
+                                        </Link>
                                 </Reveal>
                             ))}
                         </ol>

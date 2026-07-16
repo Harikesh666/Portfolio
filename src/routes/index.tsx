@@ -1,7 +1,9 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
 import { posts } from "../lib/content";
+import { snappySpring } from "../lib/motion";
 import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 
@@ -57,6 +59,8 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
+    const shouldReduceMotion = useReducedMotion();
+
     return (
         <main
             id="main-content"
@@ -198,18 +202,27 @@ function HomePage() {
                                     to="/writing/$slug"
                                     params={{ slug: post.slug }}
                                 >
-                                    <span className="font-mono text-sm text-accent">
-                                        {String(post.order).padStart(2, "0")}
-                                    </span>
-                                    <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
-                                        {post.title}
-                                    </span>
-                                    <span className="mt-1 block text-sm text-muted">
-                                        {post.description}
-                                    </span>
-                                    <span className="mt-2 block text-sm text-foreground">
-                                        {post.readTime}
-                                    </span>
+                                    <motion.div
+                                        whileHover={
+                                            shouldReduceMotion
+                                                ? undefined
+                                                : { x: 2 }
+                                        }
+                                        transition={snappySpring}
+                                    >
+                                        <span className="font-mono text-sm text-accent">
+                                            {String(post.order).padStart(2, "0")}
+                                        </span>
+                                        <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
+                                            {post.title}
+                                        </span>
+                                        <span className="mt-1 block text-sm text-muted">
+                                            {post.description}
+                                        </span>
+                                        <span className="mt-2 block text-sm text-foreground">
+                                            {post.readTime}
+                                        </span>
+                                    </motion.div>
                                 </Link>
                             </Reveal>
                         ))}

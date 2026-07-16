@@ -23,9 +23,18 @@ export default function Header() {
 
     function toggleTheme() {
         const nextTheme = theme === "dark" ? "light" : "dark";
-        document.documentElement.dataset.theme = nextTheme;
-        window.localStorage.setItem("theme", nextTheme);
-        setTheme(nextTheme);
+        const applyTheme = () => {
+            document.documentElement.dataset.theme = nextTheme;
+            window.localStorage.setItem("theme", nextTheme);
+            setTheme(nextTheme);
+        };
+
+        if (shouldReduceMotion || !document.startViewTransition) {
+            applyTheme();
+            return;
+        }
+
+        document.startViewTransition(applyTheme);
     }
 
     return (

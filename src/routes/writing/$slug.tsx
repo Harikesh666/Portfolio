@@ -1,6 +1,8 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { motion, useReducedMotion } from "motion/react";
 import { FloatingToc } from "../../components/FloatingToc";
 import { getPost, getPostNeighbors, posts } from "../../lib/content";
+import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
 
 export const Route = createFileRoute("/writing/$slug")({
@@ -69,6 +71,7 @@ export const Route = createFileRoute("/writing/$slug")({
 });
 
 function PostPage() {
+    const shouldReduceMotion = useReducedMotion();
     const post = Route.useLoaderData();
     const { previous, next } = getPostNeighbors(post);
     const seriesPostCount = post.series
@@ -113,22 +116,62 @@ function PostPage() {
                             aria-label="Series navigation"
                         >
                             {previous && (
-                                <Link
-                                    className="block text-[17px] font-bold text-foreground-strong hover:text-accent"
-                                    to="/writing/$slug"
-                                    params={{ slug: previous.slug }}
+                                <motion.div
+                                    initial="idle"
+                                    animate="idle"
+                                    whileHover={
+                                        shouldReduceMotion
+                                            ? undefined
+                                            : "hover"
+                                    }
                                 >
-                                    ← {previous.title}
-                                </Link>
+                                    <Link
+                                        className="block text-[17px] font-bold text-foreground-strong hover:text-accent"
+                                        to="/writing/$slug"
+                                        params={{ slug: previous.slug }}
+                                    >
+                                        <motion.span
+                                            className="inline-block"
+                                            variants={{
+                                                idle: { x: 0 },
+                                                hover: { x: -2 },
+                                            }}
+                                            transition={snappySpring}
+                                        >
+                                            ←
+                                        </motion.span>{" "}
+                                        {previous.title}
+                                    </Link>
+                                </motion.div>
                             )}
                             {next && (
-                                <Link
-                                    className="block text-[17px] font-bold text-foreground-strong hover:text-accent"
-                                    to="/writing/$slug"
-                                    params={{ slug: next.slug }}
+                                <motion.div
+                                    initial="idle"
+                                    animate="idle"
+                                    whileHover={
+                                        shouldReduceMotion
+                                            ? undefined
+                                            : "hover"
+                                    }
                                 >
-                                    {next.title} →
-                                </Link>
+                                    <Link
+                                        className="block text-[17px] font-bold text-foreground-strong hover:text-accent"
+                                        to="/writing/$slug"
+                                        params={{ slug: next.slug }}
+                                    >
+                                        {next.title}{" "}
+                                        <motion.span
+                                            className="inline-block"
+                                            variants={{
+                                                idle: { x: 0 },
+                                                hover: { x: 2 },
+                                            }}
+                                            transition={snappySpring}
+                                        >
+                                            →
+                                        </motion.span>
+                                    </Link>
+                                </motion.div>
                             )}
                         </nav>
                     )}
