@@ -170,6 +170,18 @@
     }
 }
 
+@keyframes list-enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 @keyframes reading-progress {
     from {
         transform: scaleX(0);
@@ -189,8 +201,7 @@
     display: none;
 }
 
-.group\/toc:hover .floating-toc-list,
-.group\/toc:focus-within .floating-toc-list {
+.floating-toc-list {
     scrollbar-width: none;
     scrollbar-gutter: stable;
     mask-image: linear-gradient(
@@ -202,16 +213,40 @@
     );
 }
 
-.group\/toc:hover .floating-toc-list::-webkit-scrollbar,
-.group\/toc:focus-within .floating-toc-list::-webkit-scrollbar {
+.floating-toc-list::-webkit-scrollbar {
     display: none;
 }
 
-.group\/toc:hover .floating-toc-title,
-.group\/toc:focus-within .floating-toc-title {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+.floating-toc-rail {
+    transition: opacity 120ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.floating-toc-rail-hidden {
+    pointer-events: none;
+    opacity: 0;
+}
+
+.floating-toc-panel {
+    pointer-events: none;
+    transform: translateX(calc(100% - 1.5rem));
+    opacity: 0;
+    transition:
+        transform 180ms cubic-bezier(0.23, 1, 0.32, 1),
+        opacity 180ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.floating-toc-panel-expanded {
+    pointer-events: auto;
+    transform: translateX(0);
+    opacity: 1;
+}
+
+.floating-toc-instant {
+    transition: none !important;
+}
+
+.list-enter {
+    animation: list-enter 240ms cubic-bezier(0.23, 1, 0.32, 1) both;
 }
 
 @supports (animation-timeline: scroll()) {
@@ -257,5 +292,16 @@
 
     .reading-progress {
         display: none !important;
+    }
+
+    .floating-toc-rail,
+    .floating-toc-panel {
+        transition: none !important;
+    }
+
+    .list-enter {
+        animation: none !important;
+        transform: none !important;
+        opacity: 1 !important;
     }
 }

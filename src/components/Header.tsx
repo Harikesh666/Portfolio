@@ -22,7 +22,7 @@ export default function Header() {
     }
 
     return (
-        <header className="mx-auto flex w-full max-w-[42rem] items-center justify-between gap-2 border-b border-divider px-5 py-4">
+        <header className="mx-auto flex w-full max-w-2xl items-center justify-between gap-2 border-b border-divider px-5 py-4">
             <Link
                 className="shrink-0 text-[15px] font-bold tracking-[-0.02em] text-foreground-strong"
                 to="/"
@@ -44,14 +44,9 @@ export default function Header() {
                 >
                     GitHub
                 </a>
-                <a
-                    className="hover:text-accent"
-                    href="/Harikesh_Mishra_Resume.pdf"
-                    target="_blank"
-                    rel="noreferrer"
-                >
+                <Link className="hover:text-accent" to="/resume">
                     Resume
-                </a>
+                </Link>
                 <button
                     className="inline-flex min-h-11 min-w-11 items-center justify-center text-foreground-strong hover:text-accent"
                     type="button"

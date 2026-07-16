@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { posts } from "../lib/content";
+import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 
 const homeTitle = `${site.name} - Software developer`;
@@ -54,7 +55,7 @@ function HomePage() {
     return (
         <main
             id="main-content"
-            className="mx-auto w-full max-w-[42rem] px-5 pb-12 pt-10"
+            className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
             <section className="rise-in">
                 <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
@@ -85,45 +86,57 @@ function HomePage() {
                 </p>
             </section>
 
-            <div className="rise-in-delayed">
+            <div>
                 <section id="work" className="mt-14">
                     <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
                         Work
                     </h2>
                     <div className="mt-4 border-t border-divider">
-                        <article className="border-b border-divider py-5">
-                            <h3 className="font-bold text-foreground-strong">
-                                Sales Copilot
-                            </h3>
-                            <p className="mt-2 text-sm text-foreground">
-                                Built eight admin data-management pages end to end, then established reusable table, modal, and edit-form patterns across the module.
-                            </p>
-                            <p className="mt-3 text-sm text-accent">
-                                130K+ records · ~190ms page requests · 60% fewer files per page
-                            </p>
-                        </article>
-                        <article className="border-b border-divider py-5">
-                            <h3 className="font-bold text-foreground-strong">
-                                Multi-tenant LMS
-                            </h3>
-                            <p className="mt-2 text-sm text-foreground">
-                                Architected tenant isolation for five client organizations and traced a critical routing defect before it continued sending new chatbots to the wrong database.
-                            </p>
-                            <p className="mt-3 text-sm text-accent">
-                                5 organizations · 35+ frontend files · critical fix shipped same day
-                            </p>
-                        </article>
-                        <article className="border-b border-divider py-5">
-                            <h3 className="font-bold text-foreground-strong">
-                                Reporting & AI
-                            </h3>
-                            <p className="mt-2 text-sm text-foreground">
-                                Built dynamic reporting for training leadership and a solo interview chatbot with LLM scoring, deployed across Vercel and GCP Cloud Run.
-                            </p>
-                            <p className="mt-3 text-sm text-accent">
-                                35% faster SQL · stakeholder demoed · end-to-end delivery
-                            </p>
-                        </article>
+                        {resumeExperience.map((experience, experienceIndex) => (
+                            <article
+                                className="list-enter border-b border-divider py-5"
+                                key={experience.company}
+                                style={{
+                                    animationDelay: `${Math.min(experienceIndex * 40, 240)}ms`,
+                                }}
+                            >
+                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                                        <h3 className="font-bold text-foreground-strong">
+                                            {experience.role}, {experience.company}
+                                        </h3>
+                                        <p className="shrink-0 font-mono text-sm text-muted">
+                                            {experience.dates}
+                                        </p>
+                                    </div>
+
+                                    {experience.projects?.map((project) => (
+                                        <section className="mt-5" key={project.name}>
+                                            <h4 className="text-sm font-bold text-foreground-strong">
+                                                {project.name}
+                                            </h4>
+                                            <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
+                                                {project.highlights
+                                                    .filter((highlight) => !highlight.resumeOnly)
+                                                    .map((highlight) => (
+                                                        <li key={highlight.content}>
+                                                            {highlight.content}
+                                                        </li>
+                                                    ))}
+                                            </ul>
+                                        </section>
+                                    ))}
+
+                                    {experience.highlights && (
+                                        <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
+                                            {experience.highlights.map((highlight) => (
+                                                <li key={highlight.content}>
+                                                    {highlight.content}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                            </article>
+                        ))}
                     </div>
                 </section>
 
@@ -132,8 +145,14 @@ function HomePage() {
                         Writing
                     </h2>
                     <ol className="mt-4 border-t border-divider">
-                        {posts.map((post) => (
-                            <li className="border-b border-divider" key={post.slug}>
+                        {posts.map((post, index) => (
+                            <li
+                                className="list-enter border-b border-divider"
+                                key={post.slug}
+                                style={{
+                                    animationDelay: `${Math.min(index * 40, 240)}ms`,
+                                }}
+                            >
                                 <Link
                                     className="group block py-5"
                                     to="/writing/$slug"

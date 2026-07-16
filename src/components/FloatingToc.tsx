@@ -12,21 +12,25 @@ const excludedIds = (id: string) =>
 export function FloatingToc() {
     const [items, setItems] = useState<TocItem[]>([]);
     const [activeId, setActiveId] = useState("");
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [shouldAnimate, setShouldAnimate] = useState(false);
     const activeItemRef = useRef<HTMLAnchorElement>(null);
     const isPointerOver = useRef(false);
     const isFocusWithin = useRef(false);
-    const isExpanded = useRef(false);
+    const isExpandedRef = useRef(false);
 
     const updateExpandedState = () => {
         const nextIsExpanded = isPointerOver.current || isFocusWithin.current;
 
-        if (nextIsExpanded && !isExpanded.current) {
-            isExpanded.current = true;
+        if (nextIsExpanded === isExpandedRef.current) return;
+
+        isExpandedRef.current = nextIsExpanded;
+        setIsExpanded(nextIsExpanded);
+
+        if (nextIsExpanded) {
             window.requestAnimationFrame(() => {
                 activeItemRef.current?.scrollIntoView({ block: "nearest" });
             });
-        } else if (!nextIsExpanded) {
-            isExpanded.current = false;
         }
     };
 
@@ -124,28 +128,63 @@ export function FloatingToc() {
     return (
         <nav
             aria-label="Table of contents"
-            className="rise-in-delayed group/toc fixed right-6 top-1/2 z-20 hidden w-60 max-w-[240px] -translate-y-1/2 isolate xl:block"
+            className="rise-in-delayed fixed right-6 top-1/2 z-20 hidden w-60 max-w-60 -translate-y-1/2 isolate xl:block"
             onBlurCapture={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget)) {
+                    setShouldAnimate(isPointerOver.current);
                     isFocusWithin.current = false;
                     updateExpandedState();
                 }
             }}
             onFocusCapture={() => {
+                setShouldAnimate(isPointerOver.current);
                 isFocusWithin.current = true;
                 updateExpandedState();
             }}
             onMouseEnter={() => {
+                setShouldAnimate(true);
                 isPointerOver.current = true;
                 updateExpandedState();
             }}
             onMouseLeave={() => {
+                setShouldAnimate(true);
                 isPointerOver.current = false;
                 updateExpandedState();
             }}
         >
-            <div className="floating-toc-panel relative overflow-hidden rounded-lg before:pointer-events-none before:absolute before:inset-0 before:-z-10 before:translate-x-2 before:rounded-lg before:border before:border-divider before:bg-surface before:opacity-0 before:shadow-sm before:transition-[opacity,transform] before:duration-200 before:ease-out group-hover/toc:before:translate-x-0 group-hover/toc:before:opacity-100 group-focus-within/toc:before:translate-x-0 group-focus-within/toc:before:opacity-100">
-                <ol className="floating-toc-list flex min-w-0 flex-col items-stretch gap-1.5 group-hover/toc:max-h-[min(60vh,520px)] group-hover/toc:overflow-y-auto group-hover/toc:overflow-x-hidden group-hover/toc:overscroll-contain group-hover/toc:gap-0.5 group-hover/toc:px-4 group-hover/toc:py-3 group-focus-within/toc:max-h-[min(60vh,520px)] group-focus-within/toc:overflow-y-auto group-focus-within/toc:overflow-x-hidden group-focus-within/toc:overscroll-contain group-focus-within/toc:gap-0.5 group-focus-within/toc:px-4 group-focus-within/toc:py-3">
+            <ol
+                aria-hidden="true"
+                className={`floating-toc-rail ml-auto flex w-6 flex-col items-end gap-1.5 ${
+                    isExpanded ? "floating-toc-rail-hidden" : ""
+                } ${
+                    shouldAnimate ? "" : "floating-toc-instant"
+                }`}
+            >
+                {items.map((item) => {
+                    const isActive = item.id === activeId;
+
+                    return (
+                        <li className="w-full" key={item.id}>
+                            <span
+                                className={`ml-auto block h-[2px] rounded-full ${
+                                    isActive
+                                        ? "w-6 bg-accent"
+                                        : "w-4 bg-divider"
+                                }`}
+                            />
+                        </li>
+                    );
+                })}
+            </ol>
+
+            <div
+                className={`floating-toc-panel absolute right-0 top-0 w-60 overflow-hidden rounded-lg border border-divider bg-surface shadow-sm ${
+                    isExpanded ? "floating-toc-panel-expanded" : ""
+                } ${
+                    shouldAnimate ? "" : "floating-toc-instant"
+                }`}
+            >
+                <ol className="floating-toc-list flex max-h-[min(60vh,520px)] min-w-0 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-3">
                     {items.map((item) => {
                         const isActive = item.id === activeId;
 
@@ -153,7 +192,7 @@ export function FloatingToc() {
                             <li className="w-full min-w-0" key={item.id}>
                                 <a
                                     aria-current={isActive ? "true" : undefined}
-                                    className={`relative block w-full min-w-0 truncate rounded-sm py-1 pr-8 text-left text-[12px] leading-snug hover:text-foreground-strong group-hover/toc:pr-0 group-focus-within/toc:pr-0 ${
+                                    className={`block min-w-0 truncate rounded-sm py-1 text-left text-[12px] leading-snug hover:text-foreground-strong ${
                                         isActive
                                             ? "text-accent"
                                             : "text-muted"
@@ -161,17 +200,7 @@ export function FloatingToc() {
                                     href={`#${item.id}`}
                                     ref={isActive ? activeItemRef : undefined}
                                 >
-                                    <span className="floating-toc-title sr-only block min-w-0 truncate group-hover/toc:not-sr-only group-focus-within/toc:not-sr-only">
-                                        {item.title}
-                                    </span>
-                                    <span
-                                        aria-hidden="true"
-                                        className={`absolute right-0 top-1/2 h-[2px] -translate-y-1/2 rounded-full transition-[width,color] duration-200 group-hover/toc:hidden group-focus-within/toc:hidden ${
-                                            isActive
-                                                ? "w-6 bg-accent"
-                                                : "w-4 bg-divider"
-                                        }`}
-                                    />
+                                    {item.title}
                                 </a>
                             </li>
                         );
