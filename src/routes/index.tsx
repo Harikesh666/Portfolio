@@ -69,10 +69,10 @@ function HomePage() {
             <PageEnter>
             <PageEnter.Item hero>
             <header>
-                <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
-                    Harikesh Mishra
+                <h1 className="sr-only">
+                    Harikesh Mishra — Software developer in Mumbai
                 </h1>
-                <p className="mt-1 text-muted">Software developer, Mumbai</p>
+                <p className="text-muted">Software developer, Mumbai</p>
             </header>
             </PageEnter.Item>
             <PageEnter.Item>
