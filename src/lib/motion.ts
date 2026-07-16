@@ -9,3 +9,26 @@ export const settleSpring = {
     visualDuration: 0.3,
     bounce: 0.1,
 };
+
+export const expressiveSpring = {
+    type: "spring" as const,
+    visualDuration: 0.45,
+    bounce: 0.18,
+};
+
+export const bouncySpring = {
+    type: "spring" as const,
+    visualDuration: 0.35,
+    bounce: 0.35,
+};
+
+export const enterItem = {
+    hidden: { opacity: 0, y: 14, filter: "blur(5px)" },
+    visible: {
+        opacity: 1,
+        y: 0,
+        filter: "blur(0px)",
+        transition: expressiveSpring,
+        transitionEnd: { filter: "none" },
+    },
+};

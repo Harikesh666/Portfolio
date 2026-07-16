@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { settleSpring } from "../lib/motion";
+import { enterItem } from "../lib/motion";
 
 type RevealProps = Readonly<{
     children: ReactNode;
@@ -25,10 +25,10 @@ export function Reveal({
 
     const motionProps = {
         className,
-        initial: { opacity: 0, y: 8 },
-        whileInView: { opacity: 1, y: 0 },
+        initial: "hidden",
+        whileInView: "visible",
         viewport: { once: true, margin: "-40px" },
-        transition: settleSpring,
+        variants: enterItem,
     };
 
     return as === "li" ? (

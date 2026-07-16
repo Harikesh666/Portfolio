@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { snappySpring } from "../lib/motion";
+import { expressiveSpring, snappySpring } from "../lib/motion";
 
 type TocItem = {
     id: string;
@@ -20,43 +20,79 @@ export function FloatingToc() {
     const isFocusWithin = useRef(false);
     const isExpandedRef = useRef(false);
     const shouldReduceMotion = useReducedMotion();
-    const transition = shouldReduceMotion ? { duration: 0 } : snappySpring;
+    const snappyTransition = shouldReduceMotion
+        ? { duration: 0 }
+        : snappySpring;
+    const expressiveTransition = shouldReduceMotion
+        ? { duration: 0 }
+        : expressiveSpring;
     const itemStagger =
         items.length > 1 ? Math.min(0.015, 0.25 / (items.length - 1)) : 0;
     const panelListVariants = {
         collapsed: {
             transition: {
-                ...transition,
+                ...snappyTransition,
                 delayChildren: 0,
                 staggerChildren: 0,
             },
         },
         expanded: {
             transition: {
-                ...transition,
+                ...expressiveTransition,
                 delayChildren: 0,
                 staggerChildren: itemStagger,
             },
         },
     };
     const panelItemVariants = {
-        collapsed: { opacity: 0, y: 5, transition },
-        expanded: { opacity: 1, y: 0, transition },
-    };
-    const panelVariants = {
         collapsed: {
             opacity: 0,
-            x: 16,
-            scale: 0.97,
-            visibility: "hidden" as const,
-            transition,
+            y: shouldReduceMotion ? 0 : 6,
+            filter: shouldReduceMotion ? "none" : "blur(4px)",
+            transition: snappyTransition,
         },
         expanded: {
             opacity: 1,
-            x: 0,
-            scale: 1,
+            y: 0,
+            filter: "blur(0px)",
+            transition: expressiveTransition,
+            transitionEnd: { filter: "none" },
+        },
+    };
+    const panelVariants = {
+        collapsed: {
+            clipPath: "inset(0 0 0 100%)",
+            opacity: 0.9,
+            transition: expressiveTransition,
+            transitionEnd: { visibility: "hidden" as const },
+        },
+        expanded: {
+            clipPath: "inset(0 0 0 0)",
+            opacity: 1,
             visibility: "visible" as const,
-            transition,
+            transition: expressiveTransition,
+        },
+    };
+    const railVariants = {
+        collapsed: {
+            transition: {
+                ...snappyTransition,
+                staggerChildren: 0,
+            },
+        },
+        expanded: {
+            transition: {
+                ...snappyTransition,
+                staggerChildren: shouldReduceMotion ? 0 : 0.012,
+            },
+        },
+    };
+    const railItemVariants = {
+        collapsed: { opacity: 1, x: 0, transition: snappyTransition },
+        expanded: {
+            opacity: 0,
+            x: shouldReduceMotion ? 0 : 4,
+            transition: snappyTransition,
         },
     };
     const panelAnimationState = isExpanded ? "expanded" : "collapsed";
@@ -196,28 +232,29 @@ export function FloatingToc() {
             <motion.ol
                 aria-hidden="true"
                 className="ml-auto flex w-6 flex-col items-end gap-1.5"
-                initial={{ opacity: 0, scale: 0.97 }}
-                animate={{
-                    opacity: isExpanded ? 0 : 1,
-                    scale: isExpanded ? 0.97 : 1,
-                }}
+                variants={railVariants}
+                initial="collapsed"
+                animate={panelAnimationState}
                 style={{ pointerEvents: isExpanded ? "none" : "auto" }}
-                transition={transition}
             >
                 {items.map((item) => {
                     const isActive = item.id === activeId;
 
                     return (
-                        <li className="flex h-[10px] items-center" key={item.id}>
+                        <motion.li
+                            className="flex h-[10px] items-center"
+                            key={item.id}
+                            variants={railItemVariants}
+                        >
                             <motion.span
                                 aria-hidden="true"
                                 className={`block h-[2px] rounded-full transition-colors ${
                                     isActive ? "bg-accent" : "bg-divider"
                                 }`}
                                 animate={{ width: isActive ? 24 : 16 }}
-                                transition={transition}
+                                transition={snappyTransition}
                             />
-                        </li>
+                        </motion.li>
                     );
                 })}
             </motion.ol>
@@ -248,19 +285,23 @@ export function FloatingToc() {
                                         aria-hidden="true"
                                         className="absolute left-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-accent"
                                         layoutId="toc-active"
-                                        transition={transition}
+                                        transition={snappyTransition}
                                     />
                                 )}
-                                <a
+                                <motion.a
                                     aria-current={isActive ? "true" : undefined}
                                     className={`block min-w-0 truncate rounded-sm py-1 pl-3 text-left text-[12px] leading-snug hover:text-foreground-strong ${
                                         isActive ? "text-accent" : "text-muted"
                                     }`}
                                     href={`#${item.id}`}
                                     ref={isActive ? activeItemRef : undefined}
+                                    whileHover={
+                                        shouldReduceMotion ? undefined : { x: 2 }
+                                    }
+                                    transition={snappyTransition}
                                 >
                                     {item.title}
-                                </a>
+                                </motion.a>
                             </motion.li>
                         );
                     })}

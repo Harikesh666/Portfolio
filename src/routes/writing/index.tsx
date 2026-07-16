@@ -1,4 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { PageEnter } from "../../components/PageEnter";
+import { Reveal } from "../../components/Reveal";
 import { posts, seriesIndex } from "../../lib/content";
 import { absoluteUrl, site } from "../../lib/site";
 
@@ -40,7 +42,9 @@ function WritingPage() {
             id="main-content"
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
-            <header className="rise-in">
+            <PageEnter>
+            <PageEnter.Item>
+            <header>
                 <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
                     {series.title}
                 </h1>
@@ -50,11 +54,16 @@ function WritingPage() {
                     updated {series.updatedAt}
                 </p>
             </header>
+            </PageEnter.Item>
 
-            <div className="rise-in-delayed">
+            <PageEnter.Item>
                 <ol className="mt-10 border-t border-divider">
                     {seriesPosts.map((post) => (
-                        <li className="border-b border-divider" key={post.slug}>
+                        <Reveal
+                            as="li"
+                            className="border-b border-divider"
+                            key={post.slug}
+                        >
                             <Link
                                 className="group block py-5"
                                 to="/writing/$slug"
@@ -73,18 +82,21 @@ function WritingPage() {
                                     {post.readTime}
                                 </span>
                             </Link>
-                        </li>
+                        </Reveal>
                     ))}
                 </ol>
+            </PageEnter.Item>
 
                 {standalonePosts.length > 0 && (
+                    <PageEnter.Item>
                     <section className="mt-14">
                         <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
                             Standalone
                         </h2>
                         <ol className="mt-4 border-t border-divider">
                             {standalonePosts.map((post) => (
-                                <li
+                                <Reveal
+                                    as="li"
                                     className="border-b border-divider"
                                     key={post.slug}
                                 >
@@ -103,12 +115,13 @@ function WritingPage() {
                                             {post.readTime}
                                         </span>
                                     </Link>
-                                </li>
+                                </Reveal>
                             ))}
                         </ol>
                     </section>
+                    </PageEnter.Item>
                 )}
-            </div>
+            </PageEnter>
         </main>
     );
 }

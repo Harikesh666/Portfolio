@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Download } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
+import { PageEnter } from "../components/PageEnter";
 import { snappySpring } from "../lib/motion";
 import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 
 const resumeTitle = `Resume - ${site.name}`;
 const resumeDescription =
-    "Harikesh Mishra is a full-stack developer specializing in production React applications and FastAPI and Node.js backends.";
+    "Harikesh Mishra is a software developer specializing in production React applications and FastAPI and Node.js backends.";
 const resumeUrl = absoluteUrl("/resume");
 const resumeImage = absoluteUrl("/og.png");
 
@@ -39,7 +40,9 @@ function ResumePage() {
             id="main-content"
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
-            <header className="rise-in">
+            <PageEnter>
+            <PageEnter.Item>
+            <header>
                 <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
                     Harikesh Mishra
                 </h1>
@@ -73,6 +76,9 @@ function ResumePage() {
                         className="inline-flex items-center gap-2 border border-divider px-3 py-2 font-mono text-sm text-foreground-strong hover:border-accent hover:text-accent"
                         href="/Harikesh_Mishra_Resume.pdf"
                         download="Harikesh_Mishra_Resume.pdf"
+                        whileHover={
+                            shouldReduceMotion ? undefined : { y: -1 }
+                        }
                         whileTap={
                             shouldReduceMotion ? undefined : { scale: 0.97 }
                         }
@@ -95,14 +101,17 @@ function ResumePage() {
                     </a>
                 </div>
             </header>
+            </PageEnter.Item>
 
-            <div className="rise-in-delayed">
+                <PageEnter.Item>
                 <ResumeSection title="Summary">
                     <p className="text-foreground">
                         Full-stack developer specializing in FastAPI and Node.js backends with production React frontends. Built and maintained features across a field sales automation platform and a multi-tenant LMS, from architecting DB isolation across 5 client orgs to catching same-day critical bugs in production. Strongest at debugging across systems and shipping end-to-end under real constraints.
                     </p>
                 </ResumeSection>
+                </PageEnter.Item>
 
+                <PageEnter.Item>
                 <ResumeSection title="Technical Skills">
                     <dl className="space-y-2 text-sm text-foreground">
                         <SkillRow label="Languages" value="JavaScript, TypeScript, Python, SQL" />
@@ -111,7 +120,9 @@ function ResumePage() {
                         <SkillRow label="Cloud & DevOps" value="AWS (EC2, Lambda, S3, ECR, Amplify, CloudTrail), GCP, Docker, CI/CD" />
                     </dl>
                 </ResumeSection>
+                </PageEnter.Item>
 
+                <PageEnter.Item>
                 <ResumeSection title="Experience">
                     <div className="border-t border-divider">
                         {resumeExperience.map((experience) => (
@@ -155,7 +166,9 @@ function ResumePage() {
                         ))}
                     </div>
                 </ResumeSection>
+                </PageEnter.Item>
 
+                <PageEnter.Item>
                 <ResumeSection title="Education">
                     <div className="space-y-4 text-foreground">
                         <p>
@@ -172,7 +185,8 @@ function ResumePage() {
                         </p>
                     </div>
                 </ResumeSection>
-            </div>
+                </PageEnter.Item>
+            </PageEnter>
         </main>
     );
 }

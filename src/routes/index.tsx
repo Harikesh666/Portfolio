@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
 import { posts } from "../lib/content";
 import { resumeExperience } from "../lib/resume";
@@ -61,11 +62,17 @@ function HomePage() {
             id="main-content"
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
-            <section className="rise-in">
+            <PageEnter>
+            <PageEnter.Item>
+            <header>
                 <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
                     Harikesh Mishra
                 </h1>
                 <p className="mt-1 text-muted">Software developer, Mumbai</p>
+            </header>
+            </PageEnter.Item>
+            <PageEnter.Item>
+            <div>
                 <p className="mt-7 text-foreground">
                     I work across React, Node.js, FastAPI, and PostgreSQL -
                     shipping reliable product features, finding the bugs that
@@ -106,9 +113,10 @@ function HomePage() {
                         Resume
                     </a>
                 </p>
-            </section>
+            </div>
+            </PageEnter.Item>
 
-            <div>
+                <PageEnter.Item>
                 <section id="work" className="mt-14">
                     <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
                         Work
@@ -171,7 +179,9 @@ function HomePage() {
                         ))}
                     </div>
                 </section>
+                </PageEnter.Item>
 
+                <PageEnter.Item>
                 <section className="mt-14">
                     <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
                         Writing
@@ -211,7 +221,8 @@ function HomePage() {
                         View all writing →
                     </Link>
                 </section>
-            </div>
+                </PageEnter.Item>
+            </PageEnter>
         </main>
     );
 }
