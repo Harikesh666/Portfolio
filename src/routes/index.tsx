@@ -114,8 +114,8 @@ function HomePage() {
                         Work
                     </h2>
                     <div className="mt-4 border-t border-divider">
-                        {resumeExperience.map((experience, experienceIndex) => (
-                            <Reveal index={experienceIndex} key={experience.company}>
+                        {resumeExperience.map((experience) => (
+                            <Reveal key={experience.company}>
                                 <article className="border-b border-divider py-5">
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                                     <h3 className="font-bold text-foreground-strong">
@@ -177,11 +177,10 @@ function HomePage() {
                         Writing
                     </h2>
                     <ol className="mt-4 border-t border-divider">
-                        {posts.map((post, index) => (
+                        {posts.map((post) => (
                             <Reveal
                                 as="li"
                                 className="border-b border-divider"
-                                index={index}
                                 key={post.slug}
                             >
                                 <Link

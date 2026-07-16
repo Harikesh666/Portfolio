@@ -4,14 +4,12 @@ import { settleSpring } from "../lib/motion";
 
 type RevealProps = Readonly<{
     children: ReactNode;
-    index: number;
     as?: "div" | "li";
     className?: string;
 }>;
 
 export function Reveal({
     children,
-    index,
     as = "div",
     className,
 }: RevealProps) {
@@ -30,10 +28,7 @@ export function Reveal({
         initial: { opacity: 0, y: 8 },
         whileInView: { opacity: 1, y: 0 },
         viewport: { once: true, margin: "-40px" },
-        transition: {
-            ...settleSpring,
-            delay: Math.min(index * 0.04, 0.3),
-        },
+        transition: settleSpring,
     };
 
     return as === "li" ? (
