@@ -5,7 +5,10 @@ export function getRouter() {
     const router = createTanStackRouter({
         routeTree,
         scrollRestoration: true,
-        defaultViewTransition: true,
+        // View transitions are intentionally NOT enabled router-wide:
+        // they snapshot the incoming page while Motion enter states are
+        // still hidden, masking the page-assembly cascade. The theme
+        // toggle drives its own document.startViewTransition directly.
         defaultPreload: "intent",
         defaultPreloadStaleTime: 0,
     });
