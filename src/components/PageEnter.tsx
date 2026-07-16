@@ -1,9 +1,14 @@
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { enterItem } from "../lib/motion";
+import { enterItem, heroEnter } from "../lib/motion";
 
 type PageEnterProps = Readonly<{
     children: ReactNode;
+}>;
+
+type PageEnterItemProps = Readonly<{
+    children: ReactNode;
+    hero?: boolean;
 }>;
 
 function PageEnterRoot({ children }: PageEnterProps) {
@@ -20,8 +25,8 @@ function PageEnterRoot({ children }: PageEnterProps) {
                 hidden: {},
                 visible: {
                     transition: {
-                        staggerChildren: 0.07,
-                        delayChildren: 0.05,
+                        staggerChildren: 0.06,
+                        delayChildren: 0.1,
                     },
                 },
             }}
@@ -31,12 +36,16 @@ function PageEnterRoot({ children }: PageEnterProps) {
     );
 }
 
-function PageEnterItem({ children }: PageEnterProps) {
+function PageEnterItem({ children, hero = false }: PageEnterItemProps) {
     const shouldReduceMotion = useReducedMotion();
 
     if (shouldReduceMotion) return children;
 
-    return <motion.div variants={enterItem}>{children}</motion.div>;
+    return (
+        <motion.div variants={hero ? heroEnter : enterItem}>
+            {children}
+        </motion.div>
+    );
 }
 
 export const PageEnter = Object.assign(PageEnterRoot, {

@@ -1,12 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import {
-    bouncySpring,
-    expressiveSpring,
-    snappySpring,
-} from "../lib/motion";
+import { bouncySpring, settleSpring, snappySpring } from "../lib/motion";
 import { site } from "../lib/site";
 
 const navLinkClassName =
@@ -15,6 +11,7 @@ const navLinkClassName =
 export default function Header() {
     const [theme, setTheme] = useState<"light" | "dark">("light");
     const shouldReduceMotion = useReducedMotion();
+    const pathname = useLocation({ select: (location) => location.pathname });
 
     useEffect(() => {
         setTheme(
@@ -32,14 +29,25 @@ export default function Header() {
     }
 
     return (
-        <motion.header
-            className="mx-auto flex w-full max-w-2xl items-center justify-between gap-2 border-b border-divider px-5 py-4"
-            initial={shouldReduceMotion ? false : { opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={
-                shouldReduceMotion ? { duration: 0 } : expressiveSpring
-            }
-        >
+        <header className="mx-auto w-full max-w-2xl border-b border-divider">
+            <motion.div
+                className="flex items-center justify-between gap-2 px-5 py-4"
+                key={shouldReduceMotion ? "static" : pathname}
+                initial={
+                    shouldReduceMotion
+                        ? false
+                        : { opacity: 0, y: -8, filter: "blur(2px)" }
+                }
+                animate={{
+                    opacity: 1,
+                    y: 0,
+                    filter: "blur(0px)",
+                    transitionEnd: { filter: "none" },
+                }}
+                transition={
+                    shouldReduceMotion ? { duration: 0 } : settleSpring
+                }
+            >
             <Link
                 className="shrink-0 text-[15px] font-bold tracking-[-0.02em] text-foreground-strong"
                 to="/"
@@ -110,6 +118,7 @@ export default function Header() {
                     )}
                 </motion.button>
             </nav>
-        </motion.header>
+            </motion.div>
+        </header>
     );
 }

@@ -22,6 +22,23 @@ export const bouncySpring = {
     bounce: 0.35,
 };
 
+export const heroSpring = {
+    type: "spring" as const,
+    visualDuration: 0.55,
+    bounce: 0.12,
+};
+
+export const heroEnter = {
+    hidden: { opacity: 0, y: 18, filter: "blur(6px)" },
+    visible: {
+        opacity: 1,
+        y: 0,
+        filter: "blur(0px)",
+        transition: heroSpring,
+        transitionEnd: { filter: "none" },
+    },
+};
+
 export const enterItem = {
     hidden: { opacity: 0, y: 14, filter: "blur(5px)" },
     visible: {

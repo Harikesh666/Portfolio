@@ -47,13 +47,13 @@ export function FloatingToc() {
     const panelItemVariants = {
         collapsed: {
             opacity: 0,
-            y: shouldReduceMotion ? 0 : 6,
+            x: shouldReduceMotion ? 0 : 10,
             filter: shouldReduceMotion ? "none" : "blur(4px)",
             transition: snappyTransition,
         },
         expanded: {
             opacity: 1,
-            y: 0,
+            x: 0,
             filter: "blur(0px)",
             transition: expressiveTransition,
             transitionEnd: { filter: "none" },

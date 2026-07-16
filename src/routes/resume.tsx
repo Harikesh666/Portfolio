@@ -41,7 +41,7 @@ function ResumePage() {
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
             <PageEnter>
-            <PageEnter.Item>
+            <PageEnter.Item hero>
             <header>
                 <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
                     Harikesh Mishra
