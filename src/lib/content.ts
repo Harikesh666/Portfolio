@@ -2,7 +2,7 @@ export const seriesIndex = {
     "react-internals": {
         title: "React, from the inside out",
         description:
-            "Ten long-form guides for building a durable mental model of React, from rendering fundamentals to Server Components.",
+            "Ten long-form guides for building a durable mental model of React, from rendering fundamentals to Server Components. Not written by me.",
         readingTime: "8 hours",
         updatedAt: "May 2026",
     },
