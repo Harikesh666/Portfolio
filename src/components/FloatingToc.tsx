@@ -1,4 +1,11 @@
 import { useEffect, useRef, useState } from "react";
+import {
+    AnimatePresence,
+    LayoutGroup,
+    motion,
+    useReducedMotion,
+} from "motion/react";
+import { snappySpring } from "../lib/motion";
 
 type TocItem = {
     id: string;
@@ -13,11 +20,34 @@ export function FloatingToc() {
     const [items, setItems] = useState<TocItem[]>([]);
     const [activeId, setActiveId] = useState("");
     const [isExpanded, setIsExpanded] = useState(false);
-    const [shouldAnimate, setShouldAnimate] = useState(false);
     const activeItemRef = useRef<HTMLAnchorElement>(null);
     const isPointerOver = useRef(false);
     const isFocusWithin = useRef(false);
     const isExpandedRef = useRef(false);
+    const shouldReduceMotion = useReducedMotion();
+    const transition = shouldReduceMotion ? { duration: 0 } : snappySpring;
+    const itemStagger =
+        items.length > 1 ? Math.min(0.015, 0.25 / (items.length - 1)) : 0;
+    const panelListVariants = {
+        collapsed: {
+            transition: {
+                ...transition,
+                delayChildren: 0,
+                staggerChildren: 0,
+            },
+        },
+        expanded: {
+            transition: {
+                ...transition,
+                delayChildren: 0,
+                staggerChildren: itemStagger,
+            },
+        },
+    };
+    const panelItemVariants = {
+        collapsed: { opacity: 0, y: 5, transition },
+        expanded: { opacity: 1, y: 0, transition },
+    };
 
     const updateExpandedState = () => {
         const nextIsExpanded = isPointerOver.current || isFocusWithin.current;
@@ -129,84 +159,117 @@ export function FloatingToc() {
         <nav
             aria-label="Table of contents"
             className="rise-in-delayed fixed right-6 top-1/2 z-20 hidden w-60 max-w-60 -translate-y-1/2 isolate xl:block"
+            tabIndex={0}
             onBlurCapture={(event) => {
                 if (!event.currentTarget.contains(event.relatedTarget)) {
-                    setShouldAnimate(isPointerOver.current);
                     isFocusWithin.current = false;
                     updateExpandedState();
                 }
             }}
             onFocusCapture={() => {
-                setShouldAnimate(isPointerOver.current);
                 isFocusWithin.current = true;
                 updateExpandedState();
             }}
             onMouseEnter={() => {
-                setShouldAnimate(true);
                 isPointerOver.current = true;
                 updateExpandedState();
             }}
             onMouseLeave={() => {
-                setShouldAnimate(true);
                 isPointerOver.current = false;
                 updateExpandedState();
             }}
         >
-            <ol
-                aria-hidden="true"
-                className={`floating-toc-rail ml-auto flex w-6 flex-col items-end gap-1.5 ${
-                    isExpanded ? "floating-toc-rail-hidden" : ""
-                } ${
-                    shouldAnimate ? "" : "floating-toc-instant"
-                }`}
-            >
-                {items.map((item) => {
-                    const isActive = item.id === activeId;
+            <LayoutGroup id="floating-toc">
+                <AnimatePresence initial={false} mode="popLayout">
+                    {!isExpanded ? (
+                        <motion.ol
+                            aria-hidden="true"
+                            className="ml-auto flex w-6 flex-col items-end gap-1.5"
+                            initial={{ opacity: 0, scale: 0.97 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.97 }}
+                            transition={transition}
+                            key="rail"
+                        >
+                            {items.map((item) => {
+                                const isActive = item.id === activeId;
 
-                    return (
-                        <li className="w-full" key={item.id}>
-                            <span
-                                className={`ml-auto block h-[2px] rounded-full ${
-                                    isActive
-                                        ? "w-6 bg-accent"
-                                        : "w-4 bg-divider"
-                                }`}
-                            />
-                        </li>
-                    );
-                })}
-            </ol>
+                                return (
+                                    <li className="flex h-[10px] items-center" key={item.id}>
+                                        <motion.span
+                                            aria-hidden="true"
+                                            className="block h-[2px] rounded-full"
+                                            animate={{
+                                                width: isActive ? 24 : 16,
+                                                backgroundColor: isActive
+                                                    ? "var(--accent)"
+                                                    : "var(--divider)",
+                                            }}
+                                            transition={transition}
+                                        />
+                                    </li>
+                                );
+                            })}
+                        </motion.ol>
+                    ) : (
+                        <motion.div
+                            className="absolute right-0 top-0 w-60 overflow-hidden rounded-lg border border-divider bg-surface shadow-sm"
+                            initial={{ opacity: 0, x: 16, scale: 0.97 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: 8, scale: 0.98 }}
+                            transition={transition}
+                            key="panel"
+                        >
+                            <motion.ol
+                                className="floating-toc-list flex max-h-[min(60vh,520px)] min-w-0 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-3"
+                                variants={panelListVariants}
+                                initial="collapsed"
+                                animate="expanded"
+                                exit="collapsed"
+                            >
+                                {items.map((item) => {
+                                    const isActive = item.id === activeId;
 
-            <div
-                className={`floating-toc-panel absolute right-0 top-0 w-60 overflow-hidden rounded-lg border border-divider bg-surface shadow-sm ${
-                    isExpanded ? "floating-toc-panel-expanded" : ""
-                } ${
-                    shouldAnimate ? "" : "floating-toc-instant"
-                }`}
-            >
-                <ol className="floating-toc-list flex max-h-[min(60vh,520px)] min-w-0 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-3">
-                    {items.map((item) => {
-                        const isActive = item.id === activeId;
-
-                        return (
-                            <li className="w-full min-w-0" key={item.id}>
-                                <a
-                                    aria-current={isActive ? "true" : undefined}
-                                    className={`block min-w-0 truncate rounded-sm py-1 text-left text-[12px] leading-snug hover:text-foreground-strong ${
-                                        isActive
-                                            ? "text-accent"
-                                            : "text-muted"
-                                    }`}
-                                    href={`#${item.id}`}
-                                    ref={isActive ? activeItemRef : undefined}
-                                >
-                                    {item.title}
-                                </a>
-                            </li>
-                        );
-                    })}
-                </ol>
-            </div>
+                                    return (
+                                        <motion.li
+                                            className="relative w-full min-w-0"
+                                            key={item.id}
+                                            variants={panelItemVariants}
+                                        >
+                                            {isActive && (
+                                                <motion.span
+                                                    aria-hidden="true"
+                                                    className="absolute left-0 top-1/2 h-1 w-1 -translate-y-1/2 rounded-full bg-accent"
+                                                    layoutId="toc-active"
+                                                    transition={transition}
+                                                />
+                                            )}
+                                            <a
+                                                aria-current={
+                                                    isActive ? "true" : undefined
+                                                }
+                                                className={`block min-w-0 truncate rounded-sm py-1 pl-3 text-left text-[12px] leading-snug hover:text-foreground-strong ${
+                                                    isActive
+                                                        ? "text-accent"
+                                                        : "text-muted"
+                                                }`}
+                                                href={`#${item.id}`}
+                                                ref={
+                                                    isActive
+                                                        ? activeItemRef
+                                                        : undefined
+                                                }
+                                            >
+                                                {item.title}
+                                            </a>
+                                        </motion.li>
+                                    );
+                                })}
+                            </motion.ol>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </LayoutGroup>
         </nav>
     );
 }

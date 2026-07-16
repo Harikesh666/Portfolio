@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Download } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
+import { snappySpring } from "../lib/motion";
 import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 
@@ -30,6 +32,8 @@ export const Route = createFileRoute("/resume")({
 });
 
 function ResumePage() {
+    const shouldReduceMotion = useReducedMotion();
+
     return (
         <main
             id="main-content"
@@ -65,14 +69,22 @@ function ResumePage() {
                     </a>
                 </p>
                 <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
-                    <a
+                    <motion.a
                         className="inline-flex items-center gap-2 border border-divider px-3 py-2 font-mono text-sm text-foreground-strong hover:border-accent hover:text-accent"
                         href="/Harikesh_Mishra_Resume.pdf"
                         download="Harikesh_Mishra_Resume.pdf"
+                        whileTap={
+                            shouldReduceMotion ? undefined : { scale: 0.97 }
+                        }
+                        transition={
+                            shouldReduceMotion
+                                ? { duration: 0 }
+                                : snappySpring
+                        }
                     >
                         <Download aria-hidden="true" size={16} />
                         Download PDF
-                    </a>
+                    </motion.a>
                     <a
                         className="font-mono text-sm text-muted underline decoration-accent underline-offset-4 hover:text-accent"
                         href="/Harikesh_Mishra_Resume.pdf"

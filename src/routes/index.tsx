@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { Reveal } from "../components/Reveal";
 import { posts } from "../lib/content";
 import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
@@ -114,13 +115,8 @@ function HomePage() {
                     </h2>
                     <div className="mt-4 border-t border-divider">
                         {resumeExperience.map((experience, experienceIndex) => (
-                            <article
-                                className="list-enter border-b border-divider py-5"
-                                key={experience.company}
-                                style={{
-                                    animationDelay: `${Math.min(experienceIndex * 40, 240)}ms`,
-                                }}
-                            >
+                            <Reveal index={experienceIndex} key={experience.company}>
+                                <article className="border-b border-divider py-5">
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                                     <h3 className="font-bold text-foreground-strong">
                                         {experience.role}, {experience.company}
@@ -170,7 +166,8 @@ function HomePage() {
                                             )}
                                         </ul>
                                     )}
-                            </article>
+                                </article>
+                            </Reveal>
                         ))}
                     </div>
                 </section>
@@ -181,12 +178,11 @@ function HomePage() {
                     </h2>
                     <ol className="mt-4 border-t border-divider">
                         {posts.map((post, index) => (
-                            <li
-                                className="list-enter border-b border-divider"
+                            <Reveal
+                                as="li"
+                                className="border-b border-divider"
+                                index={index}
                                 key={post.slug}
-                                style={{
-                                    animationDelay: `${Math.min(index * 40, 240)}ms`,
-                                }}
                             >
                                 <Link
                                     className="group block py-5"
@@ -206,7 +202,7 @@ function HomePage() {
                                         {post.readTime}
                                     </span>
                                 </Link>
-                            </li>
+                            </Reveal>
                         ))}
                     </ol>
                     <Link
