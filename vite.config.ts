@@ -14,7 +14,20 @@ import pierreLight from "@pierre/theme/pierre-light";
 const config = defineConfig({
     resolve: { tsconfigPaths: true },
     plugins: [
-        tanstackStart({ prerender: { enabled: true, crawlLinks: true } }),
+        tanstackStart({
+            prerender: {
+                enabled: true,
+                crawlLinks: true,
+                // Never "prerender" binary public assets: the crawler
+                // round-trips them as text, corrupting the bytes that
+                // get deployed from .output/public (e.g. the resume PDF
+                // rendering as blank pages in production).
+                filter: (page) =>
+                    !/\.(pdf|png|jpe?g|gif|webp|svg|ico|zip)$/i.test(
+                        page.path,
+                    ),
+            },
+        }),
         nitro(),
         tailwindcss(),
         viteReact(),

@@ -13,7 +13,7 @@ export const settleSpring = {
 export const expressiveSpring = {
     type: "spring" as const,
     visualDuration: 0.45,
-    bounce: 0.18,
+    bounce: 0.1,
 };
 
 export const bouncySpring = {
@@ -25,11 +25,11 @@ export const bouncySpring = {
 export const heroSpring = {
     type: "spring" as const,
     visualDuration: 0.55,
-    bounce: 0.12,
+    bounce: 0.08,
 };
 
 export const heroEnter = {
-    hidden: { opacity: 0, y: 18, filter: "blur(6px)" },
+    hidden: { opacity: 0, y: -16, filter: "blur(6px)" },
     visible: {
         opacity: 1,
         y: 0,
@@ -40,7 +40,7 @@ export const heroEnter = {
 };
 
 export const enterItem = {
-    hidden: { opacity: 0, y: 14, filter: "blur(5px)" },
+    hidden: { opacity: 0, y: -12, filter: "blur(5px)" },
     visible: {
         opacity: 1,
         y: 0,
