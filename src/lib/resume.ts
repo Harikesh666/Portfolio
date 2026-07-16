@@ -16,7 +16,7 @@ export type ResumeExperience = {
     highlights?: readonly ResumeHighlight[];
 };
 
-export const resumeExperience = [
+export const resumeExperience: readonly ResumeExperience[] = [
     {
         company: "EduvanceAI",
         role: "Junior Software Developer",
@@ -59,4 +59,4 @@ export const resumeExperience = [
             { content: "Built REST APIs with Node.js/Express for a production CRM and resolved client-reported bugs across active deployments" },
         ],
     },
-] as const satisfies readonly ResumeExperience[];
+];

@@ -46,34 +46,35 @@ function WritingPage() {
                 </h1>
                 <p className="mt-3 text-foreground">{series.description}</p>
                 <p className="mt-4 font-mono text-sm text-muted">
-                    {seriesPosts.length} guides · about {series.readingTime} · updated {series.updatedAt}
+                    {seriesPosts.length} guides · about {series.readingTime} ·
+                    updated {series.updatedAt}
                 </p>
             </header>
 
             <div className="rise-in-delayed">
                 <ol className="mt-10 border-t border-divider">
-                {seriesPosts.map((post) => (
-                    <li className="border-b border-divider" key={post.slug}>
-                        <Link
-                            className="group block py-5"
-                            to="/writing/$slug"
-                            params={{ slug: post.slug }}
-                        >
-                            <span className="font-mono text-sm text-accent">
-                                {String(post.order).padStart(2, "0")}
-                            </span>
-                            <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
-                                {post.title}
-                            </span>
-                            <span className="mt-1 block text-sm text-muted">
-                                {post.description}
-                            </span>
-                            <span className="mt-2 block text-sm text-foreground">
-                                {post.readTime}
-                            </span>
-                        </Link>
-                    </li>
-                ))}
+                    {seriesPosts.map((post) => (
+                        <li className="border-b border-divider" key={post.slug}>
+                            <Link
+                                className="group block py-5"
+                                to="/writing/$slug"
+                                params={{ slug: post.slug }}
+                            >
+                                <span className="font-mono text-sm text-accent">
+                                    {String(post.order).padStart(2, "0")}
+                                </span>
+                                <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
+                                    {post.title}
+                                </span>
+                                <span className="mt-1 block text-sm text-muted">
+                                    {post.description}
+                                </span>
+                                <span className="mt-2 block text-sm text-foreground">
+                                    {post.readTime}
+                                </span>
+                            </Link>
+                        </li>
+                    ))}
                 </ol>
 
                 {standalonePosts.length > 0 && (
@@ -83,7 +84,10 @@ function WritingPage() {
                         </h2>
                         <ol className="mt-4 border-t border-divider">
                             {standalonePosts.map((post) => (
-                                <li className="border-b border-divider" key={post.slug}>
+                                <li
+                                    className="border-b border-divider"
+                                    key={post.slug}
+                                >
                                     <Link
                                         className="group block py-5"
                                         to="/writing/$slug"

@@ -113,7 +113,8 @@ function ResumePage() {
                                     </p>
                                 </div>
 
-                                {experience.projects?.map((project) => (
+                                {"projects" in experience &&
+                                    experience.projects?.map((project) => (
                                     <section className="mt-5" key={project.name}>
                                         <h4 className="text-sm font-bold text-foreground-strong">
                                             {project.name}
@@ -126,9 +127,10 @@ function ResumePage() {
                                             ))}
                                         </ul>
                                     </section>
-                                ))}
+                                    ))}
 
-                                {experience.highlights && (
+                                {"highlights" in experience &&
+                                    experience.highlights && (
                                     <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
                                         {experience.highlights.map((highlight) => (
                                             <li key={highlight.content}>
@@ -136,7 +138,7 @@ function ResumePage() {
                                             </li>
                                         ))}
                                     </ul>
-                                )}
+                                    )}
                             </article>
                         ))}
                     </div>

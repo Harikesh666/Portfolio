@@ -41,7 +41,10 @@ export const Route = createFileRoute("/")({
                             name: site.name,
                             url: absoluteUrl(),
                             jobTitle: "Software developer",
-                            sameAs: [site.socials.github, site.socials.linkedin],
+                            sameAs: [
+                                site.socials.github,
+                                site.socials.linkedin,
+                            ],
                         },
                     ],
                 }),
@@ -61,26 +64,44 @@ function HomePage() {
                 <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
                     Harikesh Mishra
                 </h1>
-                <p className="mt-1 text-muted">
-                    Software developer, Mumbai
-                </p>
+                <p className="mt-1 text-muted">Software developer, Mumbai</p>
                 <p className="mt-7 text-foreground">
-                    I work across React, Node.js, FastAPI, and PostgreSQL - shipping reliable product features, finding the bugs that matter, and making complex systems easier to operate.
+                    I work across React, Node.js, FastAPI, and PostgreSQL -
+                    shipping reliable product features, finding the bugs that
+                    matter, and making complex systems easier to operate.
                 </p>
                 <p className="mt-5 flex flex-wrap items-center gap-x-2 font-mono text-sm text-foreground">
-                    <a className="underline decoration-accent underline-offset-4 hover:text-accent" href={`mailto:${site.email}`}>
+                    <a
+                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        href={`mailto:${site.email}`}
+                    >
                         Email
                     </a>
                     <span aria-hidden="true">·</span>
-                    <a className="underline decoration-accent underline-offset-4 hover:text-accent" href={site.socials.github} target="_blank" rel="noreferrer">
+                    <a
+                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        href={site.socials.github}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
                         GitHub
                     </a>
                     <span aria-hidden="true">·</span>
-                    <a className="underline decoration-accent underline-offset-4 hover:text-accent" href={site.socials.linkedin} target="_blank" rel="noreferrer">
+                    <a
+                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        href={site.socials.linkedin}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
                         LinkedIn
                     </a>
                     <span aria-hidden="true">·</span>
-                    <a className="underline decoration-accent underline-offset-4 hover:text-accent" href="/Harikesh_Mishra_Resume.pdf" target="_blank" rel="noreferrer">
+                    <a
+                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        href="/Harikesh_Mishra_Resume.pdf"
+                        target="_blank"
+                        rel="noreferrer"
+                    >
                         Resume
                     </a>
                 </p>
@@ -100,25 +121,36 @@ function HomePage() {
                                     animationDelay: `${Math.min(experienceIndex * 40, 240)}ms`,
                                 }}
                             >
-                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-                                        <h3 className="font-bold text-foreground-strong">
-                                            {experience.role}, {experience.company}
-                                        </h3>
-                                        <p className="shrink-0 font-mono text-sm text-muted">
-                                            {experience.dates}
-                                        </p>
-                                    </div>
+                                <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
+                                    <h3 className="font-bold text-foreground-strong">
+                                        {experience.role}, {experience.company}
+                                    </h3>
+                                    <p className="shrink-0 font-mono text-sm text-muted">
+                                        {experience.dates}
+                                    </p>
+                                </div>
 
-                                    {experience.projects?.map((project) => (
-                                        <section className="mt-5" key={project.name}>
+                                {"projects" in experience &&
+                                    experience.projects?.map((project) => (
+                                        <section
+                                            className="mt-5"
+                                            key={project.name}
+                                        >
                                             <h4 className="text-sm font-bold text-foreground-strong">
                                                 {project.name}
                                             </h4>
                                             <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
                                                 {project.highlights
-                                                    .filter((highlight) => !highlight.resumeOnly)
+                                                    .filter(
+                                                        (highlight) =>
+                                                            !highlight.resumeOnly,
+                                                    )
                                                     .map((highlight) => (
-                                                        <li key={highlight.content}>
+                                                        <li
+                                                            key={
+                                                                highlight.content
+                                                            }
+                                                        >
                                                             {highlight.content}
                                                         </li>
                                                     ))}
@@ -126,13 +158,16 @@ function HomePage() {
                                         </section>
                                     ))}
 
-                                    {experience.highlights && (
+                                {"highlights" in experience &&
+                                    experience.highlights && (
                                         <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
-                                            {experience.highlights.map((highlight) => (
-                                                <li key={highlight.content}>
-                                                    {highlight.content}
-                                                </li>
-                                            ))}
+                                            {experience.highlights.map(
+                                                (highlight) => (
+                                                    <li key={highlight.content}>
+                                                        {highlight.content}
+                                                    </li>
+                                                ),
+                                            )}
                                         </ul>
                                     )}
                             </article>
