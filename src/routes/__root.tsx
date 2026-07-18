@@ -169,7 +169,9 @@ function RoutePage({
     isInitialPage: boolean;
     onEntranceSettled: (routeId: string) => void;
     routeId: string;
-    routeContainerVariants: typeof routePageContainer;
+    routeContainerVariants:
+        | typeof routePageContainer
+        | typeof reducedPageContainer;
     scrollTarget: number;
     shouldDeferEntrance: boolean;
     shouldReduceMotion: boolean;

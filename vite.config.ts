@@ -41,7 +41,10 @@ const compilerPreset = reactCompilerPreset(
                       process.stdout.write(
                           `${JSON.stringify({
                               type: "react-compiler",
-                              filename: relative(process.cwd(), filename),
+                              filename:
+                                  filename === null
+                                      ? null
+                                      : relative(process.cwd(), filename),
                               event,
                           })}\n`,
                       );

@@ -43,8 +43,9 @@ export function useScrollSpy(
                 return;
             }
 
-            let container = containerRef.current;
-            if (!container?.isConnected) return;
+            const initialContainer = containerRef.current;
+            if (!initialContainer?.isConnected) return;
+            let container = initialContainer;
             const resolveHeadings = () =>
                 items.flatMap((item) => {
                     const heading = container.querySelector<HTMLElement>(
