@@ -20,6 +20,7 @@ import {
     useSpring,
     useTransform,
     useVelocity,
+    type MotionValue,
 } from "motion/react";
 import type { TocItem } from "../lib/content-headings";
 import {
@@ -66,6 +67,8 @@ const neighborTickScale = 20 / 28;
 const baseTickScale = 14 / 28;
 const maximumIndicatorStretch = 0.6;
 const indicatorVelocityScale = 0.02;
+
+type TocStaggerPhase = "expanding" | "collapsing";
 
 function getNextTocRegistrationId() {
     nextTocRegistrationId += 1;
@@ -215,6 +218,220 @@ export function useHasFloatingTocRegistration() {
     return useContext(FloatingTocRegistrationContext) !== null;
 }
 
+type FloatingTocRailTickProps = Readonly<{
+    enterDelay: number;
+    hasPaintedActiveSection: boolean;
+    id: string;
+    isActive: boolean;
+    isExpanded: boolean;
+    isRead: boolean;
+    progress: MotionValue<number> | undefined;
+    shouldReduceMotion: boolean | null;
+    tickScale: number;
+    trackColor: string;
+}>;
+
+function FloatingTocRailTick({
+    enterDelay,
+    hasPaintedActiveSection,
+    id,
+    isActive,
+    isExpanded,
+    isRead,
+    progress,
+    shouldReduceMotion,
+    tickScale,
+    trackColor,
+}: FloatingTocRailTickProps) {
+    const instantTransition = { duration: 0 };
+    const activeTransition = hasPaintedActiveSection
+        ? shouldReduceMotion
+            ? instantTransition
+            : snappySpring
+        : instantTransition;
+
+    return (
+        <li className="flex h-2.5 items-center justify-end">
+            {!isExpanded && (
+                <motion.span
+                    aria-hidden="true"
+                    className="relative block h-2.5 w-7"
+                    layoutId={`toc-item-${id}`}
+                    transition={{
+                        layout: {
+                            ...(isExpanded ? tocMorphSpring : tocCollapseSpring),
+                            delay: enterDelay,
+                        },
+                    }}
+                >
+                    <motion.span
+                        className="absolute right-0 top-1/2 h-0.5 w-full -translate-y-1/2 origin-right rounded-full"
+                        animate={{
+                            opacity: isActive ? 0.38 : 1,
+                            scaleX: tickScale,
+                        }}
+                        style={{ backgroundColor: trackColor }}
+                        transition={activeTransition}
+                    />
+                    <motion.span
+                        className="absolute right-0 top-1/2 h-0.5 w-full -translate-y-1/2 origin-right rounded-full"
+                        animate={{ scaleX: tickScale }}
+                        transition={activeTransition}
+                    >
+                        <motion.span
+                            className="block h-full w-full origin-left rounded-full"
+                            style={{
+                                backgroundColor: isActive
+                                    ? "var(--accent)"
+                                    : "var(--accent-soft)",
+                                scaleX: isActive
+                                    ? progress
+                                    : isRead
+                                      ? 1
+                                      : 0,
+                            }}
+                        />
+                    </motion.span>
+                </motion.span>
+            )}
+        </li>
+    );
+}
+
+type FloatingTocPanelRowProps = Readonly<{
+    activeItemRef: RefObject<HTMLAnchorElement | null>;
+    enterDelay: number;
+    hasPaintedActiveSection: boolean;
+    href: string;
+    id: string;
+    indicatorScaleY: MotionValue<number>;
+    indicatorTransformOrigin: MotionValue<"50% 0%" | "50% 100%">;
+    isActive: boolean;
+    isExpanded: boolean;
+    isHovered: boolean;
+    onHover: (id: string) => void;
+    onNavigate: (id: string) => void;
+    onStaggerComplete: (() => void) | undefined;
+    shouldReduceMotion: boolean | null;
+    title: string;
+}>;
+
+function FloatingTocPanelRow({
+    activeItemRef,
+    enterDelay,
+    hasPaintedActiveSection,
+    href,
+    id,
+    indicatorScaleY,
+    indicatorTransformOrigin,
+    isActive,
+    isExpanded,
+    isHovered,
+    onHover,
+    onNavigate,
+    onStaggerComplete,
+    shouldReduceMotion,
+    title,
+}: FloatingTocPanelRowProps) {
+    const instantTransition = { duration: 0 };
+
+    return (
+        <motion.li
+            animate={{
+                opacity: isExpanded ? 1 : 0,
+                x: isExpanded || shouldReduceMotion ? 0 : 8,
+            }}
+            className="relative w-full min-w-0"
+            initial={false}
+            onAnimationComplete={onStaggerComplete}
+            onPointerEnter={() => onHover(id)}
+            transition={{
+                ...(isExpanded ? tocMorphSpring : tocCollapseSpring),
+                delay: enterDelay,
+            }}
+        >
+            <AnimatePresence initial={false}>
+                {isHovered && (
+                    <motion.span
+                        animate={{ opacity: 1 }}
+                        aria-hidden="true"
+                        className="absolute inset-0 z-0 rounded-sm bg-accent-soft"
+                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0 }}
+                        layoutId="toc-hover"
+                        transition={
+                            shouldReduceMotion
+                                ? instantTransition
+                                : {
+                                      layout: snappySpring,
+                                      opacity: hoverExitTween,
+                                  }
+                        }
+                    />
+                )}
+            </AnimatePresence>
+            {isActive && (
+                <motion.span
+                    aria-hidden="true"
+                    className="absolute inset-y-0 left-0 z-10 w-0.5 rounded-full bg-accent"
+                    layoutId="toc-active"
+                    style={
+                        shouldReduceMotion
+                            ? undefined
+                            : {
+                                  scaleY: indicatorScaleY,
+                                  transformOrigin: indicatorTransformOrigin,
+                              }
+                    }
+                    transition={{
+                        layout: shouldReduceMotion
+                            ? instantTransition
+                            : stretchSpring,
+                    }}
+                />
+            )}
+            {isExpanded && (
+                <motion.span
+                    aria-hidden="true"
+                    className="absolute left-1 top-1/2 z-10 block h-2 w-1.5 -translate-y-1/2"
+                    layoutId={`toc-item-${id}`}
+                    transition={{
+                        layout: {
+                            ...(isExpanded ? tocMorphSpring : tocCollapseSpring),
+                            delay: enterDelay,
+                        },
+                    }}
+                >
+                    <span className="absolute left-0 top-1/2 block h-0.5 w-1.5 -translate-y-1/2 rounded-full bg-divider" />
+                </motion.span>
+            )}
+            <a
+                aria-current={isActive ? "true" : undefined}
+                className={`relative z-10 block min-w-0 truncate rounded-sm py-1 pl-4 text-left text-[12px] leading-snug hover:text-foreground-strong ${
+                    hasPaintedActiveSection ? "transition-colors" : ""
+                } ${isActive ? "text-accent" : "text-muted"}`}
+                href={href}
+                onClick={(event) => {
+                    if (
+                        event.button !== 0 ||
+                        event.metaKey ||
+                        event.ctrlKey ||
+                        event.shiftKey ||
+                        event.altKey
+                    ) {
+                        return;
+                    }
+                    event.preventDefault();
+                    onNavigate(id);
+                }}
+                ref={isActive ? activeItemRef : undefined}
+            >
+                {title}
+            </a>
+        </motion.li>
+    );
+}
+
 function FloatingTocView({
     containerRef,
     items,
@@ -225,6 +442,8 @@ function FloatingTocView({
     Readonly<{ lifecycleRef: Ref<FloatingTocLifecycle> }>) {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
+    const [staggerPhase, setStaggerPhase] =
+        useState<TocStaggerPhase | null>(null);
     const activeItemRef = useRef<HTMLAnchorElement>(null);
     const [hasPaintedActiveSection, setHasPaintedActiveSection] =
         useState(false);
@@ -257,15 +476,6 @@ function FloatingTocView({
     );
     const shouldReduceMotion = useReducedMotion();
     const instantTransition = { duration: 0 };
-    const snappyTransition = shouldReduceMotion
-        ? instantTransition
-        : snappySpring;
-    const activeTransition = hasPaintedActiveSection
-        ? snappyTransition
-        : instantTransition;
-    const stretchTransition = shouldReduceMotion
-        ? instantTransition
-        : stretchSpring;
 
     useEffect(() => {
         if (activeId !== null) {
@@ -278,21 +488,19 @@ function FloatingTocView({
         : 0;
 
     const getItemDelay = (index: number) => {
-        if (shouldReduceMotion || !hasActiveItem) return 0;
+        if (shouldReduceMotion || !hasActiveItem || staggerPhase === null) {
+            return 0;
+        }
 
         const distance = Math.abs(index - activeIndex);
-        const staggerDistance = isExpanded
+        const isExpanding = staggerPhase === "expanding";
+        const staggerDistance = isExpanding
             ? distance
             : maximumItemDistance - distance;
         const delay = getTocItemDelay(staggerDistance);
 
-        return isExpanded ? delay : delay * collapseDelayRatio;
+        return isExpanding ? delay : delay * collapseDelayRatio;
     };
-
-    const getItemTransition = (index: number) => ({
-        ...(isExpanded ? tocMorphSpring : tocCollapseSpring),
-        delay: getItemDelay(index),
-    });
 
     const updateExpandedState = () => {
         const nextIsExpanded = isPointerOver.current || isFocusWithin.current;
@@ -300,6 +508,7 @@ function FloatingTocView({
         if (nextIsExpanded === isExpandedRef.current) return;
 
         isExpandedRef.current = nextIsExpanded;
+        setStaggerPhase(nextIsExpanded ? "expanding" : "collapsing");
         setIsExpanded(nextIsExpanded);
 
         if (nextIsExpanded) {
@@ -318,6 +527,17 @@ function FloatingTocView({
     if (items.length === 0) return null;
 
     const panelId = `floating-toc-panel-${slug}`;
+    const outwardStaggerEndIndex = hasActiveItem
+        ? activeIndex <= items.length - 1 - activeIndex
+            ? items.length - 1
+            : 0
+        : items.length - 1;
+    const staggerCompletionIndex =
+        staggerPhase === "expanding"
+            ? outwardStaggerEndIndex
+            : staggerPhase === "collapsing"
+              ? (activeIndex ?? items.length - 1)
+              : -1;
 
     return (
         <LayoutGroup id={`floating-toc-${slug}`}>
@@ -379,52 +599,27 @@ function FloatingTocView({
                                 : "var(--divider)";
 
                         return (
-                            <li
-                                className="flex h-2.5 items-center justify-end"
+                            <FloatingTocRailTick
+                                enterDelay={getItemDelay(index)}
+                                hasPaintedActiveSection={
+                                    hasPaintedActiveSection
+                                }
+                                id={item.id}
+                                isActive={isActive}
+                                isExpanded={isExpanded}
+                                isRead={isRead}
                                 key={item.id}
-                            >
-                                {!isExpanded && (
-                                    <motion.span
-                                        aria-hidden="true"
-                                        className="relative block h-2.5 w-7"
-                                        layoutId={`toc-item-${item.id}`}
-                                        transition={{
-                                            layout: getItemTransition(index),
-                                        }}
-                                    >
-                                        <motion.span
-                                            className="absolute right-0 top-1/2 h-0.5 w-full -translate-y-1/2 origin-right rounded-full"
-                                            animate={{
-                                                opacity: isActive ? 0.38 : 1,
-                                                scaleX: tickScale,
-                                            }}
-                                            style={{ backgroundColor: trackColor }}
-                                            transition={activeTransition}
-                                        />
-                                        <motion.span
-                                            className="absolute right-0 top-1/2 h-0.5 w-full -translate-y-1/2 origin-right rounded-full"
-                                            animate={{ scaleX: tickScale }}
-                                            transition={activeTransition}
-                                        >
-                                            <motion.span
-                                                className="block h-full w-full origin-left rounded-full"
-                                                style={{
-                                                    backgroundColor: isActive
-                                                        ? "var(--accent)"
-                                                        : "var(--accent-soft)",
-                                                    scaleX: isActive
-                                                        ? shouldReduceMotion
-                                                            ? sectionProgress
-                                                            : animatedSectionProgress
-                                                        : isRead
-                                                          ? 1
-                                                          : 0,
-                                                }}
-                                            />
-                                        </motion.span>
-                                    </motion.span>
-                                )}
-                            </li>
+                                progress={
+                                    isActive
+                                        ? shouldReduceMotion
+                                            ? sectionProgress
+                                            : animatedSectionProgress
+                                        : undefined
+                                }
+                                shouldReduceMotion={shouldReduceMotion}
+                                tickScale={tickScale}
+                                trackColor={trackColor}
+                            />
                         );
                     })}
                 </ol>
@@ -465,109 +660,38 @@ function FloatingTocView({
                             const isActive = item.id === activeId;
 
                             return (
-                                <motion.li
-                                    animate={{
-                                        opacity: isExpanded ? 1 : 0,
-                                        x:
-                                            isExpanded || shouldReduceMotion
-                                                ? 0
-                                                : 8,
-                                    }}
-                                    className="relative w-full min-w-0"
-                                    initial={false}
+                                <FloatingTocPanelRow
+                                    activeItemRef={activeItemRef}
+                                    enterDelay={getItemDelay(index)}
+                                    hasPaintedActiveSection={
+                                        hasPaintedActiveSection
+                                    }
+                                    href={`#${item.id}`}
+                                    id={item.id}
+                                    indicatorScaleY={indicatorScaleY}
+                                    indicatorTransformOrigin={
+                                        indicatorTransformOrigin
+                                    }
+                                    isActive={isActive}
+                                    isExpanded={isExpanded}
+                                    isHovered={hoveredId === item.id}
                                     key={item.id}
-                                    onPointerEnter={() => setHoveredId(item.id)}
-                                    transition={getItemTransition(index)}
-                                >
-                                    <AnimatePresence initial={false}>
-                                        {hoveredId === item.id && (
-                                            <motion.span
-                                                animate={{ opacity: 1 }}
-                                                aria-hidden="true"
-                                                className="absolute inset-0 z-0 rounded-sm bg-accent-soft"
-                                                exit={{ opacity: 0 }}
-                                                initial={{ opacity: 0 }}
-                                                layoutId="toc-hover"
-                                                transition={
-                                                    shouldReduceMotion
-                                                        ? instantTransition
-                                                        : {
-                                                              layout: snappySpring,
-                                                              opacity:
-                                                                  hoverExitTween,
-                                                          }
-                                                }
-                                            />
-                                        )}
-                                    </AnimatePresence>
-                                    {isActive && (
-                                        <motion.span
-                                            aria-hidden="true"
-                                            className="absolute inset-y-0 left-0 z-10 w-0.5 rounded-full bg-accent"
-                                            layoutId="toc-active"
-                                            style={
-                                                shouldReduceMotion
-                                                    ? undefined
-                                                    : {
-                                                          scaleY:
-                                                              indicatorScaleY,
-                                                          transformOrigin:
-                                                              indicatorTransformOrigin,
-                                                      }
-                                            }
-                                            transition={{
-                                                layout: stretchTransition,
-                                            }}
-                                        />
-                                    )}
-                                    {isExpanded && (
-                                        <motion.span
-                                            aria-hidden="true"
-                                            className="absolute left-1 top-1/2 z-10 block h-2 w-1.5 -translate-y-1/2"
-                                            layoutId={`toc-item-${item.id}`}
-                                            transition={{
-                                                layout: getItemTransition(index),
-                                            }}
-                                        >
-                                            <span className="absolute left-0 top-1/2 block h-0.5 w-1.5 -translate-y-1/2 rounded-full bg-divider" />
-                                        </motion.span>
-                                    )}
-                                    <a
-                                        aria-current={
-                                            isActive ? "true" : undefined
-                                        }
-                                        className={`relative z-10 block min-w-0 truncate rounded-sm py-1 pl-4 text-left text-[12px] leading-snug hover:text-foreground-strong ${
-                                            hasPaintedActiveSection
-                                                ? "transition-colors"
-                                                : ""
-                                        } ${
-                                            isActive
-                                                ? "text-accent"
-                                                : "text-muted"
-                                        }`}
-                                        href={`#${item.id}`}
-                                        onClick={(event) => {
-                                            if (
-                                                event.button !== 0 ||
-                                                event.metaKey ||
-                                                event.ctrlKey ||
-                                                event.shiftKey ||
-                                                event.altKey
-                                            ) {
-                                                return;
-                                            }
-                                            event.preventDefault();
-                                            onNavigate(item.id);
-                                        }}
-                                        ref={
-                                            isActive
-                                                ? activeItemRef
-                                                : undefined
-                                        }
-                                    >
-                                        {item.title}
-                                    </a>
-                                </motion.li>
+                                    onHover={setHoveredId}
+                                    onNavigate={onNavigate}
+                                    onStaggerComplete={
+                                        index === staggerCompletionIndex &&
+                                        staggerPhase !== null
+                                            ? () =>
+                                                  setStaggerPhase((current) =>
+                                                      current === staggerPhase
+                                                          ? null
+                                                          : current,
+                                                  )
+                                            : undefined
+                                    }
+                                    shouldReduceMotion={shouldReduceMotion}
+                                    title={item.title}
+                                />
                             );
                         })}
                     </ol>

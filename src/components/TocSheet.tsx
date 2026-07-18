@@ -45,6 +45,92 @@ type TocSheetProps = Readonly<{
 const focusableSelector =
     'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
+type TocSheetRowProps = Readonly<{
+    activeItemRef: RefObject<HTMLAnchorElement | null>;
+    enterDelay: number;
+    href: string;
+    id: string;
+    isActive: boolean;
+    onNavigate: (id: string) => void;
+    onStaggerComplete: (() => void) | undefined;
+    shouldReduceMotion: boolean | null;
+    title: string;
+}>;
+
+function TocSheetRow({
+    activeItemRef,
+    enterDelay,
+    href,
+    id,
+    isActive,
+    onNavigate,
+    onStaggerComplete,
+    shouldReduceMotion,
+    title,
+}: TocSheetRowProps) {
+    return (
+        <motion.li
+            animate={{ opacity: 1, y: 0 }}
+            className="relative min-w-0"
+            initial={
+                shouldReduceMotion
+                    ? false
+                    : {
+                          opacity: 0,
+                          y: 6,
+                      }
+            }
+            onAnimationComplete={onStaggerComplete}
+            transition={
+                shouldReduceMotion
+                    ? { duration: 0 }
+                    : {
+                          ...sheetRowTween,
+                          delay: enterDelay,
+                      }
+            }
+        >
+            {isActive && (
+                <motion.span
+                    aria-hidden="true"
+                    className="absolute inset-y-1 left-1 w-0.5 rounded-full bg-accent"
+                    layoutId="toc-sheet-active"
+                    transition={{
+                        layout: shouldReduceMotion
+                            ? {
+                                  duration: 0,
+                              }
+                            : snappySpring,
+                    }}
+                />
+            )}
+            <a
+                aria-current={isActive ? "true" : undefined}
+                className={`block min-w-0 truncate rounded-md px-4 py-2.5 text-[13px] leading-snug hover:bg-accent-soft hover:text-foreground-strong ${
+                    isActive ? "text-accent" : "text-muted"
+                }`}
+                href={href}
+                onClick={(event) => {
+                    if (
+                        event.button !== 0 ||
+                        event.metaKey ||
+                        event.ctrlKey ||
+                        event.shiftKey ||
+                        event.altKey
+                    ) {
+                        return;
+                    }
+                    event.preventDefault();
+                    onNavigate(id);
+                }}
+                ref={isActive ? activeItemRef : undefined}
+            >
+                {title}
+            </a>
+        </motion.li>
+    );
+}
+
 export function TocSheet({
     containerRef,
     items,
@@ -69,6 +155,7 @@ export function TocSheet({
     const [sheetHeight, setSheetHeight] = useState(1);
     const [isOpen, setIsOpen] = useState(false);
     const [isSheetMounted, setIsSheetMounted] = useState(false);
+    const [isSheetRowStaggering, setIsSheetRowStaggering] = useState(false);
     const [isListAtTop, setIsListAtTop] = useState(true);
     const supportsDirectionalTouchAction =
         typeof CSS !== "undefined" &&
@@ -106,6 +193,7 @@ export function TocSheet({
         isSheetMountedRef.current = false;
         setIsOpen(false);
         setIsSheetMounted(false);
+        setIsSheetRowStaggering(false);
     }, [dragControls, isRouteActive]);
 
     const returnFocus = () => {
@@ -127,6 +215,7 @@ export function TocSheet({
 
         if (!isSheetMountedRef.current) {
             isSheetMountedRef.current = true;
+            setIsSheetRowStaggering(!shouldReduceMotion);
             setIsSheetMounted(true);
             return;
         }
@@ -174,9 +263,14 @@ export function TocSheet({
 
             isSheetMountedRef.current = false;
             setIsSheetMounted(false);
+            setIsSheetRowStaggering(false);
             returnFocus();
             onClosed?.();
         });
+    };
+
+    const navigateFromSheet = (id: string) => {
+        closeSheet(sheetNavigationFadeTween, 0, () => onNavigate(id));
     };
 
     useLayoutEffect(() => {
@@ -338,6 +432,12 @@ export function TocSheet({
     ) => settleDrag(info.offset.y, info.velocity.y);
     const handleTouchDragStart = useEffectEvent(handleDragStart);
     const settleTouchDrag = useEffectEvent(settleDrag);
+    const sheetStaggerCompletionIndex =
+        activeIndex === null
+            ? items.length - 1
+            : activeIndex <= items.length - 1 - activeIndex
+              ? items.length - 1
+              : 0;
 
     useEffect(() => {
         const list = listRef.current;
@@ -603,7 +703,8 @@ export function TocSheet({
                                         const isActive = item.id === activeId;
                                         const delay =
                                             shouldReduceMotion ||
-                                            activeIndex === null
+                                            activeIndex === null ||
+                                            !isSheetRowStaggering
                                                 ? 0
                                                 : getTocItemDelay(
                                                       Math.abs(
@@ -612,82 +713,29 @@ export function TocSheet({
                                                   );
 
                                         return (
-                                            <motion.li
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="relative min-w-0"
-                                                initial={
-                                                    shouldReduceMotion
-                                                        ? false
-                                                        : {
-                                                              opacity: 0,
-                                                              y: 6,
-                                                          }
-                                                }
+                                            <TocSheetRow
+                                                activeItemRef={activeItemRef}
+                                                enterDelay={delay}
+                                                href={`#${item.id}`}
+                                                id={item.id}
+                                                isActive={isActive}
                                                 key={item.id}
-                                                transition={
-                                                    shouldReduceMotion
-                                                        ? { duration: 0 }
-                                                        : {
-                                                              ...sheetRowTween,
-                                                              delay,
-                                                          }
+                                                onNavigate={navigateFromSheet}
+                                                onStaggerComplete={
+                                                    isSheetRowStaggering &&
+                                                    index ===
+                                                        sheetStaggerCompletionIndex
+                                                        ? () =>
+                                                              setIsSheetRowStaggering(
+                                                                  false,
+                                                              )
+                                                        : undefined
                                                 }
-                                            >
-                                                {isActive && (
-                                                    <motion.span
-                                                        aria-hidden="true"
-                                                        className="absolute inset-y-1 left-1 w-0.5 rounded-full bg-accent"
-                                                        layoutId="toc-sheet-active"
-                                                        transition={{
-                                                            layout: shouldReduceMotion
-                                                                ? {
-                                                                      duration: 0,
-                                                                  }
-                                                                : snappySpring,
-                                                        }}
-                                                    />
-                                                )}
-                                                <a
-                                                    aria-current={
-                                                        isActive
-                                                            ? "true"
-                                                            : undefined
-                                                    }
-                                                    className={`block min-w-0 truncate rounded-md px-4 py-2.5 text-[13px] leading-snug hover:bg-accent-soft hover:text-foreground-strong ${
-                                                        isActive
-                                                            ? "text-accent"
-                                                            : "text-muted"
-                                                    }`}
-                                                    href={`#${item.id}`}
-                                                    onClick={(event) => {
-                                                        if (
-                                                            event.button !== 0 ||
-                                                            event.metaKey ||
-                                                            event.ctrlKey ||
-                                                            event.shiftKey ||
-                                                            event.altKey
-                                                        ) {
-                                                            return;
-                                                        }
-                                                        event.preventDefault();
-                                                        closeSheet(
-                                                            sheetNavigationFadeTween,
-                                                            0,
-                                                            () =>
-                                                                onNavigate(
-                                                                    item.id,
-                                                                ),
-                                                        );
-                                                    }}
-                                                    ref={
-                                                        isActive
-                                                            ? activeItemRef
-                                                            : undefined
-                                                    }
-                                                >
-                                                    {item.title}
-                                                </a>
-                                            </motion.li>
+                                                shouldReduceMotion={
+                                                    shouldReduceMotion
+                                                }
+                                                title={item.title}
+                                            />
                                         );
                                     })}
                                 </ol>
