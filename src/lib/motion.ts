@@ -11,6 +11,8 @@ export const tocMorphSpring = {
     bounce: 0.08,
 };
 
+export const pageEase = [0.16, 1, 0.3, 1] as const;
+
 // Reverses the TOC morph faster than expansion without losing interruptibility.
 export const tocCollapseSpring = {
     type: "spring" as const,
@@ -22,6 +24,20 @@ export const tocCollapseSpring = {
 export const stretchSpring = {
     type: "spring" as const,
     visualDuration: 0.36,
+    bounce: 0,
+};
+
+// Opens the mobile TOC sheet with a restrained physical overshoot.
+export const sheetSpring = {
+    type: "spring" as const,
+    visualDuration: 0.4,
+    bounce: 0.12,
+};
+
+// Dismisses the mobile TOC sheet faster than it opens.
+export const sheetCloseSpring = {
+    type: "spring" as const,
+    visualDuration: 0.28,
     bounce: 0,
 };
 
@@ -43,11 +59,27 @@ export const hoverExitTween = {
     ease: "easeIn" as const,
 };
 
+// Fades the reduced-motion sheet without positional movement.
+export const sheetFadeTween = {
+    duration: 0.15,
+    ease: pageEase,
+};
+
+// Starts reduced-motion section navigation as the sheet quickly fades.
+export const sheetNavigationFadeTween = {
+    duration: 0.12,
+    ease: pageEase,
+};
+
+// Reveals mobile TOC rows with a quiet active-outward cascade.
+export const sheetRowTween = {
+    duration: 0.18,
+    ease: pageEase,
+};
+
 export const tocItemDelayStep = 0.016;
 export const tocItemDelayCap = 0.25;
 export const pageEnterStagger = 0.04;
-
-export const pageEase = [0.16, 1, 0.3, 1] as const;
 
 export const pageEnterTween = {
     duration: 0.4,

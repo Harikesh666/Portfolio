@@ -16,7 +16,7 @@ pnpm build
 pnpm test
 ```
 
-`pnpm build` prerenders the portfolio, writing index, and every crawled article route. No Vitest test files are currently committed, so `pnpm test` reports that condition; use `pnpm exec vitest run --passWithNoTests` only when you need a successful empty-suite check.
+`pnpm build` prerenders the portfolio, writing index, and every crawled article route. `pnpm test` runs the focused content-heading and table-of-contents behavior checks.
 
 ## Site Configuration
 
@@ -46,13 +46,13 @@ order: 11
 - Series definitions live in `src/lib/content.ts`. Add the series there before assigning its ID in frontmatter.
 - `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk.
 
-Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control. At `xl` and above, article H2s also populate a fixed, keyboard-accessible floating table of contents; its progress rail morphs into a scrollable label panel on hover or focus, while the in-content table of contents remains available below that breakpoint.
+Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control. At `xl` and above, article H2s populate a fixed, keyboard-accessible floating table of contents whose progress rail morphs into a scrollable label panel. Below `xl`, a persistent section-progress pill opens the same headings in an accessible, draggable bottom sheet with native hash navigation.
 
 ## Theme and Accessibility
 
 The visual system lives in `src/styles.css`. It uses semantic CSS variables mapped into Tailwind v4, with explicit `data-theme="light"` and `data-theme="dark"` values set before paint and persisted in local storage.
 
-The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts. Header, coarse route blocks, and footer share a short transform/opacity entrance timeline; the route-owned desktop table of contents mounts instantly, and reduced motion collapses the entrance to a 150ms opacity fade. The article top progress line appears only in browsers with CSS scroll-driven animation support and is omitted when reduced motion is requested.
+The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts. Header, coarse route blocks, footer, and the mobile article-navigation pill share a short transform/opacity entrance timeline. The mobile sheet traps focus, locks background scrolling, accounts for safe areas, and reduces its motion to a short opacity fade. The article top progress line appears only in browsers with CSS scroll-driven animation support and is omitted when reduced motion is requested.
 
 Every route navigation, including browser back and forward traversal, resets the window to the top rather than restoring a cached reading position.
 

@@ -42,12 +42,13 @@
       },
       {
         "name": "reading-motion",
-        "value": "400ms first load; 280ms route enter; 150ms route exit; 40ms block stagger; cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Materializes the header, coarse page blocks, and footer on one shell-level timeline while keeping the route-owned table of contents instant and preserving its interruptible interaction springs."
+        "value": "400ms first load; 280ms route enter; 150ms route exit; 40ms block stagger; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Materializes the header, coarse page blocks, footer, and mobile TOC pill on one shell-level timeline while preserving interruptible desktop morph and mobile sheet springs."
       }
     ],
     "breakpoints": [
-      { "name": "sm", "value": "640px" }
+      { "name": "sm", "value": "640px" },
+      { "name": "xl", "value": "1280px" }
     ]
   },
   "components": [
@@ -82,6 +83,14 @@
       "description": "An xl-only fixed H2 progress rail whose section markers morph into a bounded label panel with shared active and hover indicators, native hash links, and reduced-motion parity.",
       "html": "<nav aria-label=\"Table of contents\"><a href=\"#section\">Section title</a></nav>",
       "css": ".floating-toc { position: fixed; right: 24px; top: 50%; max-width: 240px; } .floating-toc-panel { overflow: hidden; border-radius: 8px; } .floating-toc-list { max-height: min(60vh, 520px); overflow-y: auto; }"
+    },
+    {
+      "name": "Mobile Article Table of Contents",
+      "kind": "dialog",
+      "refersTo": "toc-sheet",
+      "description": "A below-xl active-section pill and safe-area-aware bottom sheet with coupled backdrop progress, focus containment, native list momentum, and velocity-or-distance dismissal.",
+      "html": "<button aria-expanded=\"false\" aria-controls=\"toc-sheet\">Section title</button><div id=\"toc-sheet\" role=\"dialog\" aria-modal=\"true\" aria-label=\"Table of contents\"><a href=\"#section\">Section title</a></div>",
+      "css": ".toc-sheet-trigger { position: fixed; min-height: 44px; bottom: calc(1rem + env(safe-area-inset-bottom)); } .toc-sheet { max-height: min(72dvh, 560px); overflow: hidden; border-radius: 16px 16px 0 0; } .toc-sheet-list { overflow-y: auto; overscroll-behavior: contain; }"
     }
   ],
   "narrative": {

@@ -185,6 +185,14 @@
     display: none;
 }
 
+.toc-sheet-list {
+    scrollbar-width: none;
+}
+
+.toc-sheet-list::-webkit-scrollbar {
+    display: none;
+}
+
 @supports (animation-timeline: scroll()) {
     .reading-progress {
         position: fixed;

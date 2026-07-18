@@ -1,11 +1,17 @@
 import { useRef } from "react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
-import { FloatingToc } from "../../components/FloatingToc";
+import {
+    FloatingToc,
+    useHasFloatingTocRegistration,
+} from "../../components/FloatingToc";
 import { PageEnter } from "../../components/PageEnter";
+import { TocSheet } from "../../components/TocSheet";
 import { getPost, getPostNeighbors, posts } from "../../lib/content";
 import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
+import { desktopQuery } from "../../lib/toc";
+import { useMediaQuery } from "../../lib/use-media-query";
 
 export const Route = createFileRoute("/writing/$slug")({
     loader: async ({ params }) => {
@@ -74,6 +80,8 @@ export const Route = createFileRoute("/writing/$slug")({
 
 function PostPage() {
     const shouldReduceMotion = useReducedMotion();
+    const isDesktop = useMediaQuery(desktopQuery);
+    const hasDesktopTocRegistration = useHasFloatingTocRegistration();
     const post = Route.useLoaderData();
     const articleRef = useRef<HTMLElement>(null);
     const { previous, next } = getPostNeighbors(post);
@@ -185,12 +193,22 @@ function PostPage() {
                 </PageEnter.Item>
                 </PageEnter>
             </main>
-            <FloatingToc
-                containerRef={articleRef}
-                items={post.toc}
-                key={post.slug}
-                slug={post.slug}
-            />
+            {isDesktop === true && (
+                <FloatingToc
+                    containerRef={articleRef}
+                    items={post.toc}
+                    key={post.slug}
+                    slug={post.slug}
+                />
+            )}
+            {isDesktop === false && !hasDesktopTocRegistration && (
+                <TocSheet
+                    containerRef={articleRef}
+                    items={post.toc}
+                    key={post.slug}
+                    slug={post.slug}
+                />
+            )}
         </>
     );
 }

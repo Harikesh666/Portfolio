@@ -26,10 +26,10 @@ import {
     snappySpring,
     stretchSpring,
     tocCollapseSpring,
-    tocItemDelayCap,
-    tocItemDelayStep,
     tocMorphSpring,
 } from "../lib/motion";
+import { getTocItemDelay } from "../lib/toc";
+import { useScrollSpy } from "../lib/use-scroll-spy";
 
 type FloatingTocProps = Readonly<{
     containerRef: RefObject<HTMLElement | null>;
@@ -48,8 +48,6 @@ const FloatingTocContext = createContext<RegisterToc | null>(null);
 const FloatingTocRegistrationContext =
     createContext<TocRegistration | null>(null);
 
-const desktopQuery = "(min-width: 1280px)";
-const viewportThreshold = 120;
 const collapsedPanelScale = 0.08;
 const collapseDelayRatio = 0.65;
 const activeTickScale = 1;
@@ -117,12 +115,15 @@ export function FloatingTocHost() {
     ) : null;
 }
 
+export function useHasFloatingTocRegistration() {
+    return useContext(FloatingTocRegistrationContext) !== null;
+}
+
 function FloatingTocView({
     containerRef,
     items,
     slug,
 }: FloatingTocProps) {
-    const [activeId, setActiveId] = useState<string | null>(null);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const activeItemRef = useRef<HTMLAnchorElement>(null);
@@ -130,7 +131,10 @@ function FloatingTocView({
     const isPointerOver = useRef(false);
     const isFocusWithin = useRef(false);
     const isExpandedRef = useRef(false);
-    const sectionProgress = useMotionValue(0);
+    const { activeId, activeIndex, sectionProgress } = useScrollSpy(
+        items,
+        containerRef,
+    );
     const animatedSectionProgress = useSpring(sectionProgress, snappySpring);
     const activePosition = useMotionValue(0);
     const animatedActivePosition = useSpring(activePosition, stretchSpring);
@@ -163,10 +167,7 @@ function FloatingTocView({
             hasPaintedActiveSection.current = true;
         }
     }, [activeId]);
-    const activeIndex = activeId
-        ? items.findIndex((item) => item.id === activeId)
-        : -1;
-    const hasActiveItem = activeIndex >= 0;
+    const hasActiveItem = activeIndex !== null;
     const maximumItemDistance = hasActiveItem
         ? Math.max(activeIndex, items.length - 1 - activeIndex)
         : 0;
@@ -178,10 +179,7 @@ function FloatingTocView({
         const staggerDistance = isExpanded
             ? distance
             : maximumItemDistance - distance;
-        const delay = Math.min(
-            staggerDistance * tocItemDelayStep,
-            tocItemDelayCap,
-        );
+        const delay = getTocItemDelay(staggerDistance);
 
         return isExpanded ? delay : delay * collapseDelayRatio;
     };
@@ -211,129 +209,6 @@ function FloatingTocView({
     useEffect(() => {
         if (hasActiveItem) activePosition.set(activeIndex);
     }, [activeIndex, activePosition, hasActiveItem]);
-
-    useEffect(() => {
-        const mediaQuery = window.matchMedia(desktopQuery);
-        let animationFrame: number | undefined;
-        let removeScrollListener: (() => void) | undefined;
-
-        const stopScrollspy = () => {
-            if (animationFrame !== undefined) {
-                window.cancelAnimationFrame(animationFrame);
-                animationFrame = undefined;
-            }
-
-            removeScrollListener?.();
-            removeScrollListener = undefined;
-        };
-
-        const startScrollspy = () => {
-            if (!mediaQuery.matches) return;
-
-            if (items.length === 0) {
-                setActiveId(null);
-                sectionProgress.set(0);
-                return;
-            }
-
-            const updateActiveSection = () => {
-                animationFrame = undefined;
-                const container = containerRef.current;
-                if (!container?.isConnected) return;
-
-                const headings = items.flatMap((item) => {
-                    const heading = container.querySelector<HTMLElement>(
-                        `[id="${CSS.escape(item.id)}"]`,
-                    );
-                    return heading?.isConnected ? [heading] : [];
-                });
-                if (headings.length === 0) return;
-
-                let nextActiveIndex = 0;
-                const firstHeading = headings[0];
-                if (!firstHeading.isConnected) return;
-
-                let activeTop = firstHeading.getBoundingClientRect().top;
-                let nextTop: number | undefined;
-
-                for (let index = 0; index < headings.length; index += 1) {
-                    const heading = headings[index];
-                    if (!heading.isConnected) continue;
-
-                    const headingTop =
-                        index === 0
-                            ? activeTop
-                            : heading.getBoundingClientRect().top;
-
-                    if (headingTop <= viewportThreshold) {
-                        nextActiveIndex = index;
-                        activeTop = headingTop;
-                    } else {
-                        nextTop = headingTop;
-                        break;
-                    }
-                }
-
-                const sectionEnd =
-                    nextTop ??
-                    container.getBoundingClientRect().bottom;
-                const sectionLength = Math.max(sectionEnd - activeTop, 1);
-                const nextProgress = Math.min(
-                    Math.max(
-                        (viewportThreshold - activeTop) / sectionLength,
-                        0,
-                    ),
-                    1,
-                );
-                const activeHeading = headings[nextActiveIndex];
-                if (!activeHeading?.isConnected) return;
-
-                const nextActiveId = activeHeading.id;
-
-                sectionProgress.set(nextProgress);
-                setActiveId((currentId) =>
-                    currentId === nextActiveId ? currentId : nextActiveId,
-                );
-            };
-
-            const scheduleActiveSectionUpdate = () => {
-                if (animationFrame === undefined) {
-                    animationFrame = window.requestAnimationFrame(
-                        updateActiveSection,
-                    );
-                }
-            };
-
-            window.addEventListener("scroll", scheduleActiveSectionUpdate, {
-                passive: true,
-            });
-            removeScrollListener = () =>
-                window.removeEventListener(
-                    "scroll",
-                    scheduleActiveSectionUpdate,
-                );
-            scheduleActiveSectionUpdate();
-        };
-
-        const handleMediaChange = () => {
-            stopScrollspy();
-
-            if (mediaQuery.matches) {
-                startScrollspy();
-            } else {
-                setActiveId(null);
-                sectionProgress.set(0);
-            }
-        };
-
-        startScrollspy();
-        mediaQuery.addEventListener("change", handleMediaChange);
-
-        return () => {
-            stopScrollspy();
-            mediaQuery.removeEventListener("change", handleMediaChange);
-        };
-    }, [containerRef, items, sectionProgress]);
 
     if (items.length === 0) return null;
 

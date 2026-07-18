@@ -116,12 +116,13 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 - **Structure:** Back link, title, muted metadata, prose, then optional previous/next links.
 - **Anchors:** H2–H4 headings have stable IDs and a 2rem scroll margin.
 - **Desktop Table of Contents:** At `xl` and above, a fixed progress rail summarizes eligible H2s as magnified bars. Hover or keyboard focus morphs each bar into the leading marker of a 240px, scrollable label panel; active and hover indicators move between rows without layout shift, and links retain native hash navigation. The authored in-content table of contents is hidden only at this breakpoint.
+- **Mobile Table of Contents:** Below `xl`, a bottom-centered 44px progress pill names the active H2 and opens a portal-based sheet capped at `min(72dvh, 560px)`. The sheet uses a tokenized surface, divider, safe-area padding, focus trap, background inerting, native list momentum, and drag-to-dismiss only when the list is at its top boundary.
 - **Reading Progress:** A 2px coral top hairline uses CSS scroll-driven animation where supported; it is absent for reduced-motion preferences.
 - **Code:** Expressive Code frames retain their generated theme and copy behavior; local CSS only styles inline code.
 
 ### Motion
 - **Route and entry:** Header, coarse page blocks, and footer share one root timeline. Blocks materialize with opacity, a 10px rise, and `0.985` scale on an expo-out curve; first load uses a 400ms tween and route changes use 280ms tweens with a 40ms stagger. Routes keep the 150ms opacity-and-rise exit, while the route-owned desktop table of contents mounts instantly to avoid a second late timeline.
-- **Signature interaction:** The floating table of contents receives the motion budget through interruptible shared-element morphs, active-outward staggering, velocity-aware active-section stretch, hover tracking, and within-section rail progress.
+- **Signature interaction:** The responsive table of contents receives the motion budget through desktop shared-element morphs and mobile physical sheet drag. Both views use active-outward staggering and within-section progress; mobile backdrop opacity is coupled directly to sheet position, while velocity-aware stretch remains desktop-only.
 - **Restraint:** Repeated motion is limited to transforms and opacity; entrances are one-shot, coarse, and never per paragraph. `prefers-reduced-motion: reduce` removes entrance transforms and uses a 150ms opacity fade.
 
 ## 6. Do's and Don'ts
