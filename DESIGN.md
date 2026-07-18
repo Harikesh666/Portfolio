@@ -115,13 +115,14 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 ### Article Content
 - **Structure:** Back link, title, muted metadata, prose, then optional previous/next links.
 - **Anchors:** H2–H4 headings have stable IDs and a 2rem scroll margin.
-- **Desktop Table of Contents:** At `xl` and above, a fixed rail summarizes eligible H2s as bars. Hover or keyboard focus reveals a 240px, scrollable, single-line label panel; the active section uses coral and the links retain native hash navigation. The authored in-content table of contents is hidden only at this breakpoint.
+- **Desktop Table of Contents:** At `xl` and above, a fixed progress rail summarizes eligible H2s as magnified bars. Hover or keyboard focus morphs each bar into the leading marker of a 240px, scrollable label panel; active and hover indicators move between rows without layout shift, and links retain native hash navigation. The authored in-content table of contents is hidden only at this breakpoint.
 - **Reading Progress:** A 2px coral top hairline uses CSS scroll-driven animation where supported; it is absent for reduced-motion preferences.
 - **Code:** Expressive Code frames retain their generated theme and copy behavior; local CSS only styles inline code.
 
 ### Motion
-- **Route and entry:** Route changes use a 200ms view transition. Each page uses at most a title-group and content-group rise-in animation (350ms, with an 80ms content delay).
-- **Restraint:** Motion is limited to opacity and transforms, has no scroll-triggered reveals, and is disabled for `prefers-reduced-motion: reduce`.
+- **Route and entry:** Routes leave with a 150ms opacity and 6px rise before the next page assembles. Ordinary groups settle within 300ms with a 40ms stagger and 50ms initial delay; hero groups settle within 480ms.
+- **Signature interaction:** The floating table of contents receives the motion budget through interruptible shared-element morphs, active-outward staggering, velocity-aware active-section stretch, hover tracking, and within-section rail progress.
+- **Restraint:** Repeated motion is limited to transforms and opacity; entrances are one-shot and de-blurred. `prefers-reduced-motion: reduce` keeps every state change functional and instant.
 
 ## 6. Do's and Don'ts
 

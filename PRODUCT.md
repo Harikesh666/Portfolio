@@ -44,7 +44,8 @@ Avoid generic template portfolios, buzzword-heavy copy, and flashy motion showca
 4. Make the best next action obvious: contacting Harikesh and entering the writing should always feel effortless.
 5. Treat discoverability as quality: fast rendering, semantic structure, metadata, and structured data are part of the product.
 6. Keep the interface quiet: a narrow reading column, direct navigation, and dark mode should remove friction rather than add personality for its own sake.
+7. Spend motion deliberately: the article table of contents may carry spatial context and reading progress, while ordinary page content should settle quickly and quietly.
 
 ## Accessibility & Inclusion
 
-Use strong text contrast, keyboard-accessible interactions, responsive layouts, explicit light and dark themes, and reduced-motion support. Deliver excellent technical SEO through server rendering, semantic content, accurate metadata, canonical URLs, structured data, and crawlable routes. Article navigation must retain heading anchors, readable code blocks, copy controls, and the desktop floating table of contents with native hash links and scrollspy context.
+Use strong text contrast, keyboard-accessible interactions, responsive layouts, explicit light and dark themes, and reduced-motion support. Deliver excellent technical SEO through server rendering, semantic content, accurate metadata, canonical URLs, structured data, and crawlable routes. Article navigation must retain heading anchors, readable code blocks, copy controls, and the desktop floating table of contents with native hash links, scrollspy context, and non-animated reduced-motion state changes.

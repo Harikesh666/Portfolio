@@ -10,10 +10,25 @@ export const settleSpring = {
     bounce: 0.1,
 };
 
-export const expressiveSpring = {
+// Carries TOC items between the compact rail and expanded panel.
+export const tocMorphSpring = {
     type: "spring" as const,
-    visualDuration: 0.45,
-    bounce: 0.1,
+    visualDuration: 0.34,
+    bounce: 0.08,
+};
+
+// Reverses the TOC morph faster than expansion without losing interruptibility.
+export const tocCollapseSpring = {
+    type: "spring" as const,
+    visualDuration: 0.22,
+    bounce: 0,
+};
+
+// Settles the directional active-section stretch without overshooting its row.
+export const stretchSpring = {
+    type: "spring" as const,
+    visualDuration: 0.36,
+    bounce: 0,
 };
 
 export const bouncySpring = {
@@ -24,28 +39,41 @@ export const bouncySpring = {
 
 export const heroSpring = {
     type: "spring" as const,
-    visualDuration: 0.55,
+    visualDuration: 0.48,
     bounce: 0.08,
 };
 
+// Removes outgoing routes before the faster incoming content settle.
+export const exitTween = {
+    duration: 0.15,
+    ease: "easeIn" as const,
+};
+
+// Fades a vacated TOC hover row without delaying the next hover target.
+export const hoverExitTween = {
+    duration: 0.12,
+    ease: "easeIn" as const,
+};
+
+export const tocItemDelayStep = 0.016;
+export const tocItemDelayCap = 0.25;
+export const pageEnterStagger = 0.04;
+export const pageEnterDelay = 0.05;
+
 export const heroEnter = {
-    hidden: { opacity: 0, y: -16, filter: "blur(6px)" },
+    hidden: { opacity: 0, y: -12 },
     visible: {
         opacity: 1,
         y: 0,
-        filter: "blur(0px)",
         transition: heroSpring,
-        transitionEnd: { filter: "none" },
     },
 };
 
 export const enterItem = {
-    hidden: { opacity: 0, y: -12, filter: "blur(5px)" },
+    hidden: { opacity: 0, y: -8 },
     visible: {
         opacity: 1,
         y: 0,
-        filter: "blur(0px)",
-        transition: expressiveSpring,
-        transitionEnd: { filter: "none" },
+        transition: settleSpring,
     },
 };

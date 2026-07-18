@@ -1,6 +1,13 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import {
+    HeadContent,
+    Scripts,
+    createRootRoute,
+    useLocation,
+} from "@tanstack/react-router";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import Footer from "../components/Footer";
 import Header from "../components/Header";
+import { exitTween } from "../lib/motion";
 import { absoluteUrl, site } from "../lib/site";
 
 import appCss from "../styles.css?url";
@@ -68,10 +75,37 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                     Skip to content
                 </a>
                 <Header />
-                {children}
+                <RouteTransition>{children}</RouteTransition>
                 <Footer />
                 <Scripts />
             </body>
         </html>
+    );
+}
+
+function RouteTransition({ children }: { children: React.ReactNode }) {
+    const pathname = useLocation({
+        select: (location) => location.pathname,
+    });
+    const shouldReduceMotion = useReducedMotion();
+    const instantTransition = { duration: 0 };
+
+    return (
+        <AnimatePresence mode="popLayout">
+            <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full"
+                exit={
+                    shouldReduceMotion
+                        ? { opacity: 1, y: 0 }
+                        : { opacity: 0, y: -6 }
+                }
+                initial={{ opacity: 1, y: 0 }}
+                key={pathname}
+                transition={shouldReduceMotion ? instantTransition : exitTween}
+            >
+                {children}
+            </motion.div>
+        </AnimatePresence>
     );
 }

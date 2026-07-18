@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-14T00:00:00+05:30",
+  "generatedAt": "2026-07-18T00:00:00+05:30",
   "title": "Design System: Harikesh Mishra Portfolio",
   "extensions": {
     "colorMeta": {
@@ -42,8 +42,8 @@
       },
       {
         "name": "reading-motion",
-        "value": "200ms view transition; 350ms rise-in",
-        "purpose": "Keeps route and entry motion quiet, transform-and-opacity-only, and disabled for reduced-motion preferences."
+        "value": "150ms route exit; 300ms content settle; 480ms hero settle",
+        "purpose": "Keeps route and entry motion quiet while reserving shared-element, progress, and velocity-aware motion for the floating table of contents."
       }
     ],
     "breakpoints": [
@@ -79,7 +79,7 @@
       "name": "Floating Article Table of Contents",
       "kind": "nav",
       "refersTo": "floating-toc",
-      "description": "An xl-only fixed H2 navigation rail that expands into a bounded, single-line label panel with native hash links and active-section context.",
+      "description": "An xl-only fixed H2 progress rail whose section markers morph into a bounded label panel with shared active and hover indicators, native hash links, and reduced-motion parity.",
       "html": "<nav aria-label=\"Table of contents\"><a href=\"#section\">Section title</a></nav>",
       "css": ".floating-toc { position: fixed; right: 24px; top: 50%; max-width: 240px; } .floating-toc-panel { overflow: hidden; border-radius: 8px; } .floating-toc-list { max-height: min(60vh, 520px); overflow-y: auto; }"
     }

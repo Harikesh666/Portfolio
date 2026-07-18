@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { enterItem, heroEnter } from "../lib/motion";
+import {
+    enterItem,
+    heroEnter,
+    pageEnterDelay,
+    pageEnterStagger,
+} from "../lib/motion";
 
 type PageEnterProps = Readonly<{
     children: ReactNode;
@@ -25,8 +30,8 @@ function PageEnterRoot({ children }: PageEnterProps) {
                 hidden: {},
                 visible: {
                     transition: {
-                        staggerChildren: 0.06,
-                        delayChildren: 0.1,
+                        staggerChildren: pageEnterStagger,
+                        delayChildren: pageEnterDelay,
                     },
                 },
             }}
