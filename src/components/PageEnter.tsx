@@ -1,6 +1,10 @@
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { reducedPageBlock, routePageBlock } from "../lib/motion";
+import {
+    reducedPageBlock,
+    routeFadeBlock,
+    routeMaterializeBlock,
+} from "../lib/motion";
 
 type PageEnterProps = Readonly<{
     children: ReactNode;
@@ -19,7 +23,21 @@ function PageEnterItem({ children }: PageEnterItemProps) {
 
     return (
         <motion.div
-            variants={shouldReduceMotion ? reducedPageBlock : routePageBlock}
+            variants={
+                shouldReduceMotion ? reducedPageBlock : routeMaterializeBlock
+            }
+        >
+            {children}
+        </motion.div>
+    );
+}
+
+function PageEnterFade({ children }: PageEnterItemProps) {
+    const shouldReduceMotion = useReducedMotion();
+
+    return (
+        <motion.div
+            variants={shouldReduceMotion ? reducedPageBlock : routeFadeBlock}
         >
             {children}
         </motion.div>
@@ -27,5 +45,6 @@ function PageEnterItem({ children }: PageEnterItemProps) {
 }
 
 export const PageEnter = Object.assign(PageEnterRoot, {
+    Fade: PageEnterFade,
     Item: PageEnterItem,
 });

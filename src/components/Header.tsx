@@ -1,12 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
-import {
-    AnimatePresence,
-    LayoutGroup,
-    motion,
-    useReducedMotion,
-} from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
     bouncySpring,
     headerContentExitTween,
@@ -21,6 +16,35 @@ const navLinkClassName =
     "py-1 text-muted hover:text-foreground-strong data-[status=active]:font-semibold data-[status=active]:text-foreground-strong";
 
 type HeaderMode = "breadcrumb" | "identity";
+
+const headerGeometry = {
+    identity: {
+        avatarSize: 44, // h-11 → 44px
+        avatarY: 32, // pt-8 → 32px
+        height: 188, // pt-8 + h-11 + mt-4 + leading-9 + mt-2 + h-11 + pb-2 → 188px
+        toggleY: 136, // 188px header - pb-2 (8px) - h-11 (44px) → 136px
+    },
+    breadcrumb: {
+        avatarSize: 24, // h-6 → 24px
+        avatarY: 26, // py-4 (16px) + centered within h-11 ((44px - 24px) / 2) → 26px
+        height: 76, // py-4 + h-11 + py-4 → 76px
+        toggleY: 16, // py-4 → 16px
+    },
+} as const;
+
+const avatarBreadcrumbScale =
+    headerGeometry.breadcrumb.avatarSize / headerGeometry.identity.avatarSize;
+
+function getHeaderPost(pathname: string) {
+    const slug = pathname.match(/^\/writing\/([^/]+)\/?$/)?.[1];
+
+    return slug ? posts.find((entry) => entry.slug === slug) : undefined;
+}
+
+export function getHeaderHeight(pathname: string) {
+    return headerGeometry[getHeaderPost(pathname) ? "breadcrumb" : "identity"]
+        .height;
+}
 
 function Avatar({ size }: Readonly<{ size: number }>) {
     const initials = site.name
@@ -53,9 +77,11 @@ function Avatar({ size }: Readonly<{ size: number }>) {
     );
 }
 
-function ThemeToggle({ mode }: Readonly<{ mode: HeaderMode }>) {
+function ThemeToggle({
+    mode,
+    shouldReduceMotion,
+}: Readonly<{ mode: HeaderMode; shouldReduceMotion: boolean }>) {
     const [theme, setTheme] = useState<"light" | "dark">("light");
-    const shouldReduceMotion = useReducedMotion();
 
     useEffect(() => {
         setTheme(
@@ -83,16 +109,10 @@ function ThemeToggle({ mode }: Readonly<{ mode: HeaderMode }>) {
 
     return (
         <motion.button
+            animate={{ y: headerGeometry[mode].toggleY }}
             className="absolute z-10 inline-flex min-h-11 min-w-11 items-center justify-center text-foreground-strong hover:text-accent"
-            layout={shouldReduceMotion ? false : true}
-            layoutId={
-                shouldReduceMotion ? undefined : "header-theme-toggle"
-            }
-            style={
-                mode === "breadcrumb"
-                    ? { top: 16, right: 20 }
-                    : { right: 20, bottom: 8 }
-            }
+            initial={false}
+            style={{ top: 0, right: 20 }}
             type="button"
             aria-label="Toggle theme"
             aria-pressed={theme === "dark"}
@@ -101,7 +121,7 @@ function ThemeToggle({ mode }: Readonly<{ mode: HeaderMode }>) {
             transition={
                 shouldReduceMotion
                     ? { duration: 0 }
-                    : { layout: headerMorphTween, scale: snappySpring }
+                    : { y: headerMorphTween, scale: snappySpring }
             }
         >
             {shouldReduceMotion ? (
@@ -141,7 +161,7 @@ function IdentityHeader() {
     return (
         <div className="flex flex-col px-5 pb-2 pt-8">
             <span aria-hidden="true" className="h-11 w-11" />
-            <p className="mt-4 flex flex-wrap items-baseline gap-x-2">
+            <p className="mt-4 flex flex-wrap items-baseline gap-x-2 leading-9">
                 <Link
                     className="text-[1.4rem] font-bold tracking-[-0.02em] text-foreground-strong"
                     to="/"
@@ -231,28 +251,32 @@ function SharedAvatar({
     mode: HeaderMode;
     shouldReduceMotion: boolean;
 }>) {
-    const size = mode === "breadcrumb" ? 24 : 44;
+    const scale = mode === "breadcrumb" ? avatarBreadcrumbScale : 1;
 
     return (
         <motion.div
+            animate={{
+                scale,
+                y: headerGeometry[mode].avatarY,
+            }}
             className="absolute z-10"
-            layout={shouldReduceMotion ? false : true}
-            layoutId={shouldReduceMotion ? undefined : "header-avatar"}
+            initial={false}
             style={{
-                top: mode === "breadcrumb" ? 26 : 32,
+                top: 0,
                 left: 20,
-                width: size,
-                height: size,
+                width: headerGeometry.identity.avatarSize,
+                height: headerGeometry.identity.avatarSize,
                 borderRadius: 9999,
+                transformOrigin: "top left",
             }}
             transition={
                 shouldReduceMotion
                     ? { duration: 0 }
-                    : { layout: headerMorphTween }
+                    : headerMorphTween
             }
         >
             <Link aria-label="Home" className="block h-full w-full" to="/">
-                <Avatar size={size} />
+                <Avatar size={headerGeometry.identity.avatarSize} />
             </Link>
         </motion.div>
     );
@@ -262,63 +286,57 @@ export default function Header() {
     const pathname = useLocation({ select: (location) => location.pathname });
     const shouldReduceMotion = useReducedMotion() ?? false;
 
-    const slug = pathname.match(/^\/writing\/([^/]+)\/?$/)?.[1];
-    const post = slug ? posts.find((entry) => entry.slug === slug) : undefined;
+    const post = getHeaderPost(pathname);
     const mode: HeaderMode = post ? "breadcrumb" : "identity";
 
     return (
         <header className="mx-auto w-full max-w-2xl">
-            <LayoutGroup id="site-header">
-                <motion.div
-                    className="relative min-w-0"
-                    layout={shouldReduceMotion ? false : true}
-                    layoutDependency={mode}
-                    transition={
-                        shouldReduceMotion
-                            ? { duration: 0 }
-                            : { layout: headerMorphTween }
-                    }
-                >
-                    <AnimatePresence initial={false} mode="popLayout">
-                        <motion.div
-                            animate={{
-                                opacity: 1,
-                                y: 0,
-                                transition: shouldReduceMotion
-                                    ? { duration: 0 }
-                                    : routePageEnterTween,
-                            }}
-                            className="relative min-w-0"
-                            exit={{
-                                opacity: shouldReduceMotion ? 1 : 0,
-                                transition: shouldReduceMotion
-                                    ? { duration: 0 }
-                                    : headerContentExitTween,
-                            }}
-                            initial={
-                                shouldReduceMotion
-                                    ? false
-                                    : {
-                                          opacity: 0,
-                                          y: mode === "breadcrumb" ? -4 : 4,
-                                      }
-                            }
-                            key={mode}
-                        >
-                            {post ? (
-                                <BreadcrumbHeader postTitle={post.title} />
-                            ) : (
-                                <IdentityHeader />
-                            )}
-                        </motion.div>
-                    </AnimatePresence>
-                    <SharedAvatar
-                        mode={mode}
-                        shouldReduceMotion={shouldReduceMotion}
-                    />
-                    <ThemeToggle mode={mode} />
-                </motion.div>
-            </LayoutGroup>
+            <div
+                className="relative min-w-0"
+                style={{ height: headerGeometry[mode].height }}
+            >
+                <AnimatePresence initial={false}>
+                    <motion.div
+                        animate={{
+                            opacity: 1,
+                            y: 0,
+                            transition: shouldReduceMotion
+                                ? { duration: 0 }
+                                : routePageEnterTween,
+                        }}
+                        className="absolute inset-x-0 top-0 min-w-0"
+                        exit={{
+                            opacity: 0,
+                            transition: shouldReduceMotion
+                                ? { duration: 0 }
+                                : headerContentExitTween,
+                        }}
+                        initial={
+                            shouldReduceMotion
+                                ? false
+                                : {
+                                      opacity: 0,
+                                      y: mode === "breadcrumb" ? -4 : 4,
+                                  }
+                        }
+                        key={mode}
+                    >
+                        {post ? (
+                            <BreadcrumbHeader postTitle={post.title} />
+                        ) : (
+                            <IdentityHeader />
+                        )}
+                    </motion.div>
+                </AnimatePresence>
+                <SharedAvatar
+                    mode={mode}
+                    shouldReduceMotion={shouldReduceMotion}
+                />
+                <ThemeToggle
+                    mode={mode}
+                    shouldReduceMotion={shouldReduceMotion}
+                />
+            </div>
         </header>
     );
 }

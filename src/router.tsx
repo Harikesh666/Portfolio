@@ -5,8 +5,10 @@ import { NotFound } from "./components/NotFound";
 export function getRouter() {
     const router = createTanStackRouter({
         routeTree,
-        scrollRestoration: true,
+        scrollRestoration: () => false,
         scrollRestorationBehavior: "instant",
+        // RouteTransition places scroll during the hidden incoming commit so
+        // wait-mode exits never visibly move the outgoing page.
         // View transitions are intentionally NOT enabled router-wide:
         // they snapshot the incoming page while Motion enter states are
         // still hidden, masking the page-assembly cascade. The theme

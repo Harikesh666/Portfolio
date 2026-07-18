@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.harikesh.xyz</loc><lastmod>2026-07-16</lastmod></url>
-  <url><loc>https://www.harikesh.xyz/writing</loc><lastmod>2026-07-16</lastmod></url>
+  <url><loc>https://www.harikesh.xyz</loc><lastmod>2026-07-19</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing</loc><lastmod>2026-07-19</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-data-fetching-server-state</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-error-boundaries-resilience</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-event-system-internals</loc><lastmod>2026-05-01</lastmod></url>

@@ -7,6 +7,7 @@ import {
     type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { useLocation } from "@tanstack/react-router";
 import { TableOfContents } from "lucide-react";
 import {
     AnimatePresence,
@@ -22,7 +23,7 @@ import {
 } from "motion/react";
 import type { TocItem } from "../lib/content-headings";
 import {
-    pageBlock,
+    materializeBlock,
     reducedPageBlock,
     sheetCloseSpring,
     sheetFadeTween,
@@ -37,16 +38,28 @@ import { useScrollSpy } from "../lib/use-scroll-spy";
 type TocSheetProps = Readonly<{
     containerRef: RefObject<HTMLElement | null>;
     items: TocItem[];
+    onNavigate: (id: string) => void;
     slug: string;
 }>;
 
 const focusableSelector =
     'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function TocSheet({ containerRef, items, slug }: TocSheetProps) {
+export function TocSheet({
+    containerRef,
+    items,
+    onNavigate,
+    slug,
+}: TocSheetProps) {
+    const currentRouteId = useLocation({
+        select: (location) => location.pathname,
+    });
+    const routeId = useRef(currentRouteId).current;
+    const isRouteActive = currentRouteId === routeId;
     const { activeId, activeIndex, sectionProgress } = useScrollSpy(
         items,
         containerRef,
+        isRouteActive,
     );
     const shouldReduceMotion = useReducedMotion();
     const dragControls = useDragControls();
@@ -83,11 +96,25 @@ export function TocSheet({ containerRef, items, slug }: TocSheetProps) {
             : (items[activeIndex]?.title ?? "Table of contents");
     const sheetId = `toc-sheet-${slug}`;
 
+    useLayoutEffect(() => {
+        if (isRouteActive) return;
+
+        animationSequenceRef.current += 1;
+        animationRef.current?.stop();
+        dragControls.cancel();
+        isOpenRef.current = false;
+        isSheetMountedRef.current = false;
+        setIsOpen(false);
+        setIsSheetMounted(false);
+    }, [dragControls, isRouteActive]);
+
     const returnFocus = useCallback(() => {
         window.requestAnimationFrame(() => {
-            if (returnFocusRef.current?.isConnected) {
-                returnFocusRef.current.focus({ preventScroll: true });
-            }
+            window.requestAnimationFrame(() => {
+                if (returnFocusRef.current?.isConnected) {
+                    returnFocusRef.current.focus({ preventScroll: true });
+                }
+            });
         });
     }, []);
 
@@ -118,7 +145,11 @@ export function TocSheet({ containerRef, items, slug }: TocSheetProps) {
     }, [sheetOpacity, sheetY, shouldReduceMotion]);
 
     const closeSheet = useCallback(
-        (reducedTransition = sheetFadeTween, velocity = 0) => {
+        (
+            reducedTransition = sheetFadeTween,
+            velocity = 0,
+            onClosed?: () => void,
+        ) => {
             if (!isSheetMountedRef.current) return;
 
             isOpenRef.current = false;
@@ -145,6 +176,7 @@ export function TocSheet({ containerRef, items, slug }: TocSheetProps) {
                 isSheetMountedRef.current = false;
                 setIsSheetMounted(false);
                 returnFocus();
+                onClosed?.();
             });
         },
         [returnFocus, sheetOpacity, sheetY, shouldReduceMotion],
@@ -196,8 +228,8 @@ export function TocSheet({ containerRef, items, slug }: TocSheetProps) {
         };
     }, [isSheetMounted, sheetOpacity, sheetY, shouldReduceMotion]);
 
-    useEffect(() => {
-        if (!isSheetMounted || !portalRef.current) return;
+    useLayoutEffect(() => {
+        if (!isRouteActive || !isSheetMounted || !portalRef.current) return;
 
         const html = document.documentElement;
         const body = document.body;
@@ -239,7 +271,7 @@ export function TocSheet({ containerRef, items, slug }: TocSheetProps) {
                 }
             });
         };
-    }, [isSheetMounted]);
+    }, [isRouteActive, isSheetMounted]);
 
     useEffect(
         () => () => {
@@ -415,7 +447,7 @@ export function TocSheet({ containerRef, items, slug }: TocSheetProps) {
         supportsDirectionalTouchAction,
     ]);
 
-    if (items.length === 0) return null;
+    if (!isRouteActive || items.length === 0) return null;
 
     return (
         <>
@@ -430,7 +462,9 @@ export function TocSheet({ containerRef, items, slug }: TocSheetProps) {
                     width: "min(calc(100% - 2rem), 22rem)",
                 }}
                 type="button"
-                variants={shouldReduceMotion ? reducedPageBlock : pageBlock}
+                variants={
+                    shouldReduceMotion ? reducedPageBlock : materializeBlock
+                }
             >
                 <TableOfContents
                     aria-hidden="true"
@@ -635,11 +669,26 @@ export function TocSheet({ containerRef, items, slug }: TocSheetProps) {
                                                             : "text-muted"
                                                     }`}
                                                     href={`#${item.id}`}
-                                                    onClick={() =>
+                                                    onClick={(event) => {
+                                                        if (
+                                                            event.button !== 0 ||
+                                                            event.metaKey ||
+                                                            event.ctrlKey ||
+                                                            event.shiftKey ||
+                                                            event.altKey
+                                                        ) {
+                                                            return;
+                                                        }
+                                                        event.preventDefault();
                                                         closeSheet(
                                                             sheetNavigationFadeTween,
-                                                        )
-                                                    }
+                                                            0,
+                                                            () =>
+                                                                onNavigate(
+                                                                    item.id,
+                                                                ),
+                                                        );
+                                                    }}
                                                     ref={
                                                         isActive
                                                             ? activeItemRef

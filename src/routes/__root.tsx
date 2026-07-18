@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
     HeadContent,
     Scripts,
@@ -19,16 +19,17 @@ import {
     FloatingTocHost,
     FloatingTocProvider,
 } from "../components/FloatingToc";
-import Header from "../components/Header";
+import Header, { getHeaderHeight } from "../components/Header";
 import {
     exitTween,
-    pageBlock,
+    materializeBlock,
     pageContainer,
     pageEnterTween,
     reducedPageBlock,
     reducedPageContainer,
     reducedPageEnterTween,
-    routePageBlock,
+    routeMaterializeBlock,
+    routePageContainer,
     routePageEnterTween,
 } from "../lib/motion";
 import { absoluteUrl, site } from "../lib/site";
@@ -108,7 +109,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 
 function ExitScrollCompensation({
     children,
-}: Readonly<{ children: React.ReactNode }>) {
+    headerHeight,
+}: Readonly<{ children: React.ReactNode; headerHeight: number }>) {
     const isPresent = useIsPresent();
     const exitScrollY: number = usePresenceData() ?? 0;
     const scrollOffset = useMotionValue(0);
@@ -120,16 +122,144 @@ function ExitScrollCompensation({
         }
 
         function syncScrollOffset() {
-            scrollOffset.set(window.scrollY - exitScrollY);
+            scrollOffset.set(headerHeight - window.scrollY);
         }
 
         syncScrollOffset();
         window.addEventListener("scroll", syncScrollOffset, { passive: true });
 
         return () => window.removeEventListener("scroll", syncScrollOffset);
-    }, [exitScrollY, isPresent, scrollOffset]);
+    }, [headerHeight, isPresent, scrollOffset]);
 
-    return <motion.div style={{ y: scrollOffset }}>{children}</motion.div>;
+    return (
+        <div
+            className={isPresent ? undefined : "pointer-events-none"}
+            style={
+                isPresent
+                    ? undefined
+                    : { height: `calc(100dvh + ${exitScrollY}px)` }
+            }
+        >
+            <div
+                className={
+                    isPresent
+                        ? undefined
+                        : "fixed inset-0 h-dvh overflow-clip"
+                }
+            >
+                <motion.div style={{ y: scrollOffset }}>{children}</motion.div>
+            </div>
+        </div>
+    );
+}
+
+function RoutePage({
+    children,
+    headerHeight,
+    isInitialPage,
+    onEntranceSettled,
+    routeId,
+    routeContainerVariants,
+    scrollTarget,
+    shouldDeferEntrance,
+    shouldReduceMotion,
+}: Readonly<{
+    children: React.ReactNode;
+    headerHeight: number;
+    isInitialPage: boolean;
+    onEntranceSettled: (routeId: string) => void;
+    routeId: string;
+    routeContainerVariants: typeof routePageContainer;
+    scrollTarget: number;
+    shouldDeferEntrance: boolean;
+    shouldReduceMotion: boolean;
+}>) {
+    const [canEnter, setCanEnter] = useState(
+        isInitialPage || shouldReduceMotion || !shouldDeferEntrance,
+    );
+    const hasSettled = useRef(false);
+    const hasPlacedScroll = useRef(false);
+    const settleFrame = useRef<number | undefined>(undefined);
+
+    useLayoutEffect(() => {
+        if (hasPlacedScroll.current) return;
+        hasPlacedScroll.current = true;
+        if (isInitialPage) return;
+
+        window.scrollTo({ left: 0, top: scrollTarget });
+        performance.mark("portfolio-route-enter-commit");
+        if (!shouldDeferEntrance) {
+            performance.mark("portfolio-route-enter-start");
+        }
+    }, [isInitialPage, scrollTarget, shouldDeferEntrance]);
+
+    useEffect(() => {
+        if (isInitialPage || shouldReduceMotion || !shouldDeferEntrance) return;
+
+        const frame = window.requestAnimationFrame(() => {
+            performance.mark("portfolio-route-enter-start");
+            setCanEnter(true);
+        });
+
+        return () => window.cancelAnimationFrame(frame);
+    }, [isInitialPage, shouldDeferEntrance, shouldReduceMotion]);
+
+    useEffect(() => {
+        if (isInitialPage) return;
+
+        const timeout = window.setTimeout(() => {
+            if (hasSettled.current) return;
+            hasSettled.current = true;
+            performance.mark("portfolio-route-enter-complete");
+            onEntranceSettled(routeId);
+        }, 600);
+
+        return () => {
+            window.clearTimeout(timeout);
+            if (settleFrame.current !== undefined) {
+                window.cancelAnimationFrame(settleFrame.current);
+            }
+        };
+    }, [isInitialPage, onEntranceSettled, routeId]);
+
+    const signalEntranceSettled = () => {
+        if (isInitialPage || hasSettled.current) return;
+
+        hasSettled.current = true;
+        performance.mark("portfolio-route-enter-complete");
+        settleFrame.current = window.requestAnimationFrame(() =>
+            onEntranceSettled(routeId),
+        );
+    };
+
+    return (
+        <motion.div
+            animate={
+                isInitialPage ? undefined : canEnter ? "visible" : "hidden"
+            }
+            className="relative w-full"
+            exit={
+                shouldReduceMotion
+                    ? {
+                          opacity: 0,
+                          transition: reducedPageEnterTween,
+                      }
+                    : {
+                          opacity: 0,
+                          transition: exitTween,
+                      }
+            }
+            initial={isInitialPage ? undefined : "hidden"}
+            onAnimationComplete={(definition) => {
+                if (definition === "visible") signalEntranceSettled();
+            }}
+            variants={routeContainerVariants}
+        >
+            <ExitScrollCompensation headerHeight={headerHeight}>
+                {children}
+            </ExitScrollCompensation>
+        </motion.div>
+    );
 }
 
 function RouteTransition({ children }: { children: React.ReactNode }) {
@@ -138,8 +268,16 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
     });
     const shouldReduceMotion = useReducedMotion();
     const isFirstRender = useRef(true);
+    const [settledRouteId, setSettledRouteId] = useState(pathname);
+    const scrollPositions = useRef(new Map<string, number>());
     const scrollY = useRef(0);
     const isInitialPage = isFirstRender.current;
+    const locationKey = useLocation({
+        select: (location) =>
+            location.state.__TSR_key ?? location.href,
+    });
+    const scrollTarget = scrollPositions.current.get(locationKey) ?? 0;
+    const shouldDeferEntrance = pathname.startsWith("/writing/");
 
     useEffect(() => {
         isFirstRender.current = false;
@@ -148,6 +286,9 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         function captureScrollY() {
             scrollY.current = window.scrollY;
+            const currentLocationKey =
+                window.history.state?.__TSR_key ?? window.location.href;
+            scrollPositions.current.set(currentLocationKey, window.scrollY);
         }
 
         captureScrollY();
@@ -164,10 +305,15 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
     const containerVariants = shouldReduceMotion
         ? reducedPageContainer
         : pageContainer;
-    const blockVariants = shouldReduceMotion ? reducedPageBlock : pageBlock;
+    const blockVariants = shouldReduceMotion
+        ? reducedPageBlock
+        : materializeBlock;
     const routeBlockVariants = shouldReduceMotion
         ? reducedPageBlock
-        : routePageBlock;
+        : routeMaterializeBlock;
+    const routeContainerVariants = shouldReduceMotion
+        ? reducedPageContainer
+        : routePageContainer;
 
     return (
         <MotionConfig reducedMotion="user" transition={pageTransition}>
@@ -188,35 +334,26 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                 >
                     <AnimatePresence
                         custom={scrollY.current}
-                        mode="popLayout"
+                        mode="wait"
                     >
-                        <motion.div
-                            animate={isInitialPage ? undefined : "visible"}
-                            className="relative w-full"
-                            exit={
-                                shouldReduceMotion
-                                    ? {
-                                          opacity: 0,
-                                          transition: reducedPageEnterTween,
-                                      }
-                                    : {
-                                          opacity: 0,
-                                          transition: exitTween,
-                                      }
-                            }
-                            initial={isInitialPage ? undefined : "hidden"}
+                        <RoutePage
+                            headerHeight={getHeaderHeight(pathname)}
+                            isInitialPage={isInitialPage}
                             key={pathname}
-                            variants={containerVariants}
+                            onEntranceSettled={setSettledRouteId}
+                            routeId={pathname}
+                            routeContainerVariants={routeContainerVariants}
+                            scrollTarget={scrollTarget}
+                            shouldDeferEntrance={shouldDeferEntrance}
+                            shouldReduceMotion={shouldReduceMotion ?? false}
                         >
-                            <ExitScrollCompensation>
-                                {children}
-                            </ExitScrollCompensation>
-                        </motion.div>
+                            {children}
+                        </RoutePage>
                     </AnimatePresence>
                     <motion.div variants={routeBlockVariants}>
                         <Footer />
                     </motion.div>
-                    <FloatingTocHost />
+                    <FloatingTocHost settledRouteId={settledRouteId} />
                 </MotionConfig>
             </motion.div>
         </MotionConfig>

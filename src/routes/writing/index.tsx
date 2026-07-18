@@ -58,7 +58,7 @@ function WritingPage() {
             </header>
             </PageEnter.Item>
 
-            <PageEnter.Item>
+            <PageEnter.Fade>
                 <ol className="mt-10 border-t border-divider">
                     {seriesPosts.map((post) => (
                         <li
@@ -95,10 +95,10 @@ function WritingPage() {
                         </li>
                     ))}
                 </ol>
-            </PageEnter.Item>
+            </PageEnter.Fade>
 
                 {standalonePosts.length > 0 && (
-                    <PageEnter.Item>
+                    <PageEnter.Fade>
                     <section className="mt-14">
                         <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
                             Standalone
@@ -137,7 +137,7 @@ function WritingPage() {
                             ))}
                         </ol>
                     </section>
-                    </PageEnter.Item>
+                    </PageEnter.Fade>
                 )}
             </PageEnter>
         </main>

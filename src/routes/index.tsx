@@ -119,7 +119,7 @@ function HomePage() {
             </div>
             </PageEnter.Item>
 
-                <PageEnter.Item>
+                <PageEnter.Fade>
                 <section id="work" className="mt-14">
                     <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
                         Work
@@ -183,9 +183,9 @@ function HomePage() {
                         ))}
                     </div>
                 </section>
-                </PageEnter.Item>
+                </PageEnter.Fade>
 
-                <PageEnter.Item>
+                <PageEnter.Fade>
                 <section className="mt-14">
                     <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
                         Writing
@@ -233,7 +233,7 @@ function HomePage() {
                         View all writing →
                     </Link>
                 </section>
-                </PageEnter.Item>
+                </PageEnter.Fade>
             </PageEnter>
         </main>
     );

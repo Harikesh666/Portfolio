@@ -12,6 +12,7 @@ import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
 import { desktopQuery } from "../../lib/toc";
 import { useMediaQuery } from "../../lib/use-media-query";
+import { useTocNavigation } from "../../lib/use-toc-navigation";
 
 export const Route = createFileRoute("/writing/$slug")({
     loader: async ({ params }) => {
@@ -84,6 +85,7 @@ function PostPage() {
     const hasDesktopTocRegistration = useHasFloatingTocRegistration();
     const post = Route.useLoaderData();
     const articleRef = useRef<HTMLElement>(null);
+    const navigateToTocItem = useTocNavigation(articleRef);
     const { previous, next } = getPostNeighbors(post);
     const seriesPostCount = post.series
         ? posts.filter((item) => item.series === post.series).length
@@ -118,7 +120,7 @@ function PostPage() {
                 </header>
                 </PageEnter.Item>
 
-                <PageEnter.Item>
+                <PageEnter.Fade>
                     <article
                         className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:text-foreground-strong prose-headings:tracking-[-0.02em] prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:before:content-none prose-code:after:content-none"
                         dangerouslySetInnerHTML={{ __html: post.html }}
@@ -190,7 +192,7 @@ function PostPage() {
                             )}
                         </nav>
                     )}
-                </PageEnter.Item>
+                </PageEnter.Fade>
                 </PageEnter>
             </main>
             {isDesktop === true && (
@@ -198,6 +200,7 @@ function PostPage() {
                     containerRef={articleRef}
                     items={post.toc}
                     key={post.slug}
+                    onNavigate={navigateToTocItem}
                     slug={post.slug}
                 />
             )}
@@ -206,6 +209,7 @@ function PostPage() {
                     containerRef={articleRef}
                     items={post.toc}
                     key={post.slug}
+                    onNavigate={navigateToTocItem}
                     slug={post.slug}
                 />
             )}

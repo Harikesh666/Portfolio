@@ -1,12 +1,15 @@
 import {
     createContext,
+    memo,
     useCallback,
     useContext,
     useEffect,
+    useImperativeHandle,
     useLayoutEffect,
     useRef,
     useState,
     type ReactNode,
+    type Ref,
     type RefObject,
 } from "react";
 import { useLocation } from "@tanstack/react-router";
@@ -34,19 +37,29 @@ import { useScrollSpy } from "../lib/use-scroll-spy";
 type FloatingTocProps = Readonly<{
     containerRef: RefObject<HTMLElement | null>;
     items: TocItem[];
+    onNavigate: (id: string) => void;
     slug: string;
 }>;
 
 type TocRegistration = FloatingTocProps & {
+    instanceId: number;
     routeId: string;
     token: symbol;
 };
 
-type RegisterToc = (toc: Omit<TocRegistration, "token">) => () => void;
+type FloatingTocLifecycle = {
+    activate: () => void;
+    deactivate: () => void;
+};
+
+type RegisterToc = (
+    toc: Omit<TocRegistration, "instanceId" | "token">,
+) => () => void;
 
 const FloatingTocContext = createContext<RegisterToc | null>(null);
 const FloatingTocRegistrationContext =
     createContext<TocRegistration | null>(null);
+let nextTocRegistrationId = 0;
 
 const collapsedPanelScale = 0.08;
 const collapseDelayRatio = 0.65;
@@ -58,12 +71,12 @@ const indicatorVelocityScale = 0.02;
 export function FloatingToc({
     containerRef,
     items,
+    onNavigate,
     slug,
 }: FloatingTocProps) {
     const registerToc = useContext(FloatingTocContext);
     const currentRouteId = useLocation({
-        select: (location) =>
-            `${location.state.__TSR_key ?? location.state.key}:${location.pathname}`,
+        select: (location) => location.pathname,
     });
     const routeId = useRef(currentRouteId).current;
 
@@ -71,10 +84,23 @@ export function FloatingToc({
         throw new Error("FloatingToc must be rendered inside FloatingTocProvider");
     }
 
-    useLayoutEffect(
-        () => registerToc({ containerRef, items, routeId, slug }),
-        [containerRef, items, registerToc, routeId, slug],
-    );
+    useEffect(() => {
+        let unregister: (() => void) | undefined;
+        const frame = window.requestAnimationFrame(() => {
+            unregister = registerToc({
+                containerRef,
+                items,
+                onNavigate,
+                routeId,
+                slug,
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(frame);
+            unregister?.();
+        };
+    }, [containerRef, items, onNavigate, registerToc, routeId, slug]);
 
     return null;
 }
@@ -85,7 +111,11 @@ export function FloatingTocProvider({
     const [registration, setRegistration] =
         useState<TocRegistration | null>(null);
     const registerToc = useCallback<RegisterToc>((toc) => {
-        const registration = { ...toc, token: Symbol() };
+        const registration = {
+            ...toc,
+            instanceId: ++nextTocRegistrationId,
+            token: Symbol(),
+        };
         setRegistration(registration);
 
         return () =>
@@ -103,15 +133,77 @@ export function FloatingTocProvider({
     );
 }
 
-export function FloatingTocHost() {
+export function FloatingTocHost({
+    settledRouteId,
+}: Readonly<{ settledRouteId: string }>) {
     const registration = useContext(FloatingTocRegistrationContext);
     const currentRouteId = useLocation({
-        select: (location) =>
-            `${location.state.__TSR_key ?? location.state.key}:${location.pathname}`,
+        select: (location) => location.pathname,
     });
+    const [hostedRegistration, setHostedRegistration] =
+        useState<TocRegistration | null>(null);
+    const lifecycleRef = useRef<FloatingTocLifecycle>(null);
+    const activeRegistration =
+        registration?.routeId === currentRouteId &&
+        registration.containerRef.current?.isConnected &&
+        settledRouteId === currentRouteId
+            ? registration
+            : null;
+    const isActive =
+        hostedRegistration !== null &&
+        hostedRegistration.token === activeRegistration?.token;
 
-    return registration?.routeId === currentRouteId ? (
-        <FloatingTocView {...registration} key={registration.routeId} />
+    useLayoutEffect(() => {
+        if (activeRegistration) {
+            if (hostedRegistration?.token === activeRegistration.token) {
+                lifecycleRef.current?.activate();
+                return;
+            }
+            setHostedRegistration((current) => {
+                if (current?.token === activeRegistration.token) {
+                    return current;
+                }
+                if (current) {
+                    performance.mark("portfolio-toc-dispose");
+                }
+                return activeRegistration;
+            });
+            return;
+        }
+
+        if (hostedRegistration?.routeId !== currentRouteId) {
+            lifecycleRef.current?.deactivate();
+        }
+
+        if (
+            hostedRegistration?.routeId !== currentRouteId &&
+            settledRouteId === currentRouteId
+        ) {
+            performance.mark("portfolio-toc-dispose");
+            setHostedRegistration(null);
+        }
+    }, [
+        activeRegistration,
+        currentRouteId,
+        hostedRegistration,
+        settledRouteId,
+    ]);
+
+    return hostedRegistration ? (
+        <div
+            aria-hidden={!isActive}
+            className={isActive ? undefined : "pointer-events-none"}
+            data-floating-toc-host={isActive ? "active" : "retained"}
+            data-floating-toc-slug={hostedRegistration.slug}
+            inert={isActive ? undefined : true}
+            style={isActive ? undefined : { display: "none" }}
+        >
+            <FloatingTocView
+                {...hostedRegistration}
+                key={hostedRegistration.instanceId}
+                lifecycleRef={lifecycleRef}
+            />
+        </div>
     ) : null;
 }
 
@@ -119,11 +211,14 @@ export function useHasFloatingTocRegistration() {
     return useContext(FloatingTocRegistrationContext) !== null;
 }
 
-function FloatingTocView({
+const FloatingTocView = memo(function FloatingTocView({
     containerRef,
     items,
+    lifecycleRef,
+    onNavigate,
     slug,
-}: FloatingTocProps) {
+}: FloatingTocProps &
+    Readonly<{ lifecycleRef: Ref<FloatingTocLifecycle> }>) {
     const [hoveredId, setHoveredId] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const activeItemRef = useRef<HTMLAnchorElement>(null);
@@ -131,9 +226,14 @@ function FloatingTocView({
     const isPointerOver = useRef(false);
     const isFocusWithin = useRef(false);
     const isExpandedRef = useRef(false);
-    const { activeId, activeIndex, sectionProgress } = useScrollSpy(
+    const { activeId, activeIndex, sectionProgress, start, stop } = useScrollSpy(
         items,
         containerRef,
+    );
+    useImperativeHandle(
+        lifecycleRef,
+        () => ({ activate: start, deactivate: stop }),
+        [start, stop],
     );
     const animatedSectionProgress = useSpring(sectionProgress, snappySpring);
     const activePosition = useMotionValue(0);
@@ -441,6 +541,19 @@ function FloatingTocView({
                                                 : "text-muted"
                                         }`}
                                         href={`#${item.id}`}
+                                        onClick={(event) => {
+                                            if (
+                                                event.button !== 0 ||
+                                                event.metaKey ||
+                                                event.ctrlKey ||
+                                                event.shiftKey ||
+                                                event.altKey
+                                            ) {
+                                                return;
+                                            }
+                                            event.preventDefault();
+                                            onNavigate(item.id);
+                                        }}
                                         ref={
                                             isActive
                                                 ? activeItemRef
@@ -458,4 +571,4 @@ function FloatingTocView({
             </div>
         </LayoutGroup>
     );
-}
+});

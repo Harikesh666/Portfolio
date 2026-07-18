@@ -111,3 +111,56 @@ tanstackIntent:
 - Preserve accessibility safeguards: skip link, visible focus styles, reduced-motion handling, `overflow-x: clip`, and `min-width`/`minmax(0, 1fr)` guards where applicable.
 - Fenced code is owned by Sätteri Expressive Code. Keep heading IDs, copy controls, and theme selectors intact; only style inline code locally.
 - Update `README.md`, `PRODUCT.md`, `DESIGN.md`, and `.impeccable/design.json` when a change alters setup, publishing, product behavior, or the design system.
+
+
+
+# AGENTS.md — Standing rules for agent work on this repo
+
+You are an executor working under an external orchestrator. Phase prompts define *what* to build; this file defines the permanent constraints that apply to every phase. If a phase prompt conflicts with this file, stop and flag it instead of choosing silently.
+
+## Stack facts (do not rediscover)
+
+- Vite + React 19.2 + TypeScript, TanStack Start (file routes in `src/routes/`, prerender enabled), Tailwind v4, `motion/react` (motion.dev — never `framer-motion` imports), Pierre theme tokens.
+- Markdown content is processed at build time by Sätteri (highlighting included); TOC items are extracted at build time (`extractTocItems` in vite config → `content-headings`). The DOM is never the source of truth for TOC items.
+- Scrollspy lives in `src/lib/use-scroll-spy.ts`: rAF-throttled, scoped to the article container ref, `isConnected`-guarded, nullable active index until first pass. Exactly one instance runs at any viewport size.
+
+## Motion system invariants
+
+- All springs/tweens/variants live in `src/lib/motion.ts`, each with a one-line comment. No inline magic timing numbers in components.
+- **Transforms (`y`/`scale`) only on elements ≈ one viewport tall or smaller. Anything larger animates opacity only.** This rule is why the site is smooth; never re-add transforms to route containers or full-article trees.
+- No `filter` (blur etc.) on any animation that fires more than once per page view; avoid blur entirely.
+- Enter = ease-out/spring, fast. Exit = ~60–70% of enter, ease-in, no bounce. Everything interruptible: springs from current velocity; never sequence awaited tweens on interactive elements.
+- `useReducedMotion` parity for every animation: instant or opacity-only equivalents, never broken layout, all functionality reachable.
+- The header morph is **deterministic**: constants-based transforms (documented against their Tailwind classes), single-frame height snap at route commit. Never reintroduce `layout`/`layoutId`/`LayoutGroup` into the header, and never measure header geometry at runtime.
+- Route boundary uses `AnimatePresence mode="wait"`, projection-free. No `popLayout` at the route boundary.
+- TOC-internal `layoutId`s (rail↔panel morph, indicators, sheet bar) are the sanctioned exception — they project only within the TOC subtree on user interaction. The exiting TOC host is retained `display:none`/inert through transitions and disposed after settle (max one retained instance; scrollspy/locks torn down synchronously at navigation start).
+
+## Dependencies & scope
+
+- **No new runtime dependencies.** Build-time-only exceptions granted so far: `babel-plugin-react-compiler`. Anything else requires explicit authorization before installing.
+- No vaul, radix, GSAP, lenis, smooth-scroll or focus-trap libraries; these capabilities are implemented in-repo by design.
+- Never remove features to gain performance. Feel tokens (spring/tween values) change only when a phase prompt explicitly says so.
+
+## Performance protocol
+
+- All reported traces: **production build** (`pnpm build` + preview), median of 3 runs with range, 4× CPU throttle for throttled scenarios. State the command used.
+- Standing budgets: zero Motion-attributed forced layout during route transitions; no composited animated layer approaching full-article height; back-navigation longest task ≤ 300ms (4×); blog open bounded by the React commit itself.
+- Fix causes, not symptoms: no `will-change` sprinkling, no timeouts/polling/MutationObservers to dodge race conditions, no debouncing router state to hide sync issues.
+- If a trace contradicts the phase prompt's attribution, stop and present the trace before implementing an alternative.
+
+## Accessibility invariants (regression-test every phase)
+
+- One `<header>` landmark; focus survives header morphs; ThemeToggle never remounts across modes.
+- Sheet: dialog semantics, focus trap, `inert` background, Escape, focus return to trigger; body scroll lock never outlives the route.
+- TOC rows are semantic anchors; section clicks push hash history; back/forward re-traverse positions; deep links land exactly (settle-loop if `content-visibility` is active).
+- `aria-current`/`aria-expanded` stay truthful; keyboard paths exercised, not assumed.
+
+## Verification honesty (Zed environment)
+
+You have terminal + filesystem but **no browser or DevTools**. Self-verify only what you can observe: builds, tests, lints, greps, trace harness output (`scripts/profile-route-transitions.mjs`), profiler dumps. Anything visual — frame scrubs, FPS meter, React DevTools badges, real-device behavior — must be reported as **"needs human verification"**, never as "passed". Misreporting an unobserved check as verified is a hard failure.
+
+## Workflow
+
+- One branch per phase; commit per sub-milestone with conventional messages matching the repo's style (`ui:`, `router:`, `perf:` …).
+- `pnpm build`, `pnpm test`, `git diff --check` before declaring any phase complete.
+- End every phase report with: numbers table (where applicable), list of human-verification items, and any constraint you were forced to bend — bending one without flagging it is worse than failing the phase.

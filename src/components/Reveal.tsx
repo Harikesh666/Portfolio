@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { pageBlock } from "../lib/motion";
+import { materializeBlock } from "../lib/motion";
 
 type RevealProps = Readonly<{
     children: ReactNode;
@@ -28,7 +28,7 @@ export function Reveal({
         initial: "hidden",
         whileInView: "visible",
         viewport: { once: true, margin: "-40px" },
-        variants: pageBlock,
+        variants: materializeBlock,
     };
 
     return as === "li" ? (

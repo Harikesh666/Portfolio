@@ -46,7 +46,7 @@ order: 11
 - Series definitions live in `src/lib/content.ts`. Add the series there before assigning its ID in frontmatter.
 - `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk.
 
-Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control. At `xl` and above, article H2s populate a fixed, keyboard-accessible floating table of contents whose progress rail morphs into a scrollable label panel. Below `xl`, a persistent section-progress pill opens the same headings in an accessible, draggable bottom sheet with native hash navigation.
+Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control. At `xl` and above, article H2s populate a fixed, keyboard-accessible floating table of contents whose progress rail morphs into a scrollable label panel. Below `xl`, a persistent section-progress pill opens the same headings in an accessible, draggable bottom sheet. Both views push shareable hash entries, support back/forward section traversal, and restore the pre-section scroll position when returning to the hashless entry.
 
 ## Theme and Accessibility
 
@@ -54,7 +54,7 @@ The visual system lives in `src/styles.css`. It uses semantic CSS variables mapp
 
 The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts. Coarse route blocks, footer, and the mobile article-navigation pill share a short transform/opacity entrance timeline; article navigation morphs the persistent avatar and theme toggle between identity and breadcrumb headers. The mobile sheet traps focus, locks background scrolling, accounts for safe areas, and reduces its motion to a short opacity fade. The article top progress line appears only in browsers with CSS scroll-driven animation support and is omitted when reduced motion is requested.
 
-New route navigation starts at the top, while browser back and forward traversal restores the cached scroll position before the entering page becomes visible.
+New route navigation starts at the top, while browser back and forward traversal restores the cached scroll position before the entering page becomes visible. Same-route hash traversal bypasses route animation and settles headings to their 2rem scroll margin, instantly when reduced motion is requested.
 
 ## Project Docs
 

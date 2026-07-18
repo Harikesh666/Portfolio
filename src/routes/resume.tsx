@@ -122,7 +122,7 @@ function ResumePage() {
                 </ResumeSection>
                 </PageEnter.Item>
 
-                <PageEnter.Item>
+                <PageEnter.Fade>
                 <ResumeSection title="Experience">
                     <div className="border-t border-divider">
                         {resumeExperience.map((experience) => (
@@ -166,7 +166,7 @@ function ResumePage() {
                         ))}
                     </div>
                 </ResumeSection>
-                </PageEnter.Item>
+                </PageEnter.Fade>
 
                 <PageEnter.Item>
                 <ResumeSection title="Education">

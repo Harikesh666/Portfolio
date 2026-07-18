@@ -1,3 +1,5 @@
+// Motion rule: y/scale transforms are only permitted on elements approximately
+// one viewport tall or smaller; larger elements must animate opacity only.
 export const snappySpring = {
     type: "spring" as const,
     visualDuration: 0.2,
@@ -47,9 +49,9 @@ export const bouncySpring = {
     bounce: 0.35,
 };
 
-// Removes outgoing routes before the faster incoming content settle.
+// Removes outgoing routes quickly enough to keep wait-mode blank time minimal.
 export const exitTween = {
-    duration: 0.15,
+    duration: 0.09,
     ease: "easeIn" as const,
 };
 
@@ -87,7 +89,7 @@ export const pageEnterTween = {
 };
 
 export const routePageEnterTween = {
-    duration: 0.28,
+    duration: 0.24,
     ease: pageEase,
 };
 
@@ -106,7 +108,7 @@ export const reducedPageEnterTween = {
     ease: pageEase,
 };
 
-export const pageBlock = {
+export const materializeBlock = {
     hidden: { opacity: 0, y: 10, scale: 0.985 },
     visible: {
         opacity: 1,
@@ -115,10 +117,18 @@ export const pageBlock = {
     },
 };
 
-export const routePageBlock = {
-    hidden: pageBlock.hidden,
+export const routeMaterializeBlock = {
+    hidden: materializeBlock.hidden,
     visible: {
-        ...pageBlock.visible,
+        ...materializeBlock.visible,
+        transition: routePageEnterTween,
+    },
+};
+
+export const routeFadeBlock = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
         transition: routePageEnterTween,
     },
 };
@@ -132,6 +142,17 @@ export const pageContainer = {
     hidden: {},
     visible: {
         transition: {
+            staggerChildren: pageEnterStagger,
+        },
+    },
+};
+
+export const routePageContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            ...routePageEnterTween,
             staggerChildren: pageEnterStagger,
         },
     },
