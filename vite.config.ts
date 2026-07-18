@@ -1,10 +1,12 @@
 import { defineConfig } from "vite";
 import type { Plugin } from "vite";
 import { readFile } from "node:fs/promises";
+import { relative } from "node:path";
 
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
-import viteReact from "@vitejs/plugin-react";
+import babel from "@rolldown/plugin-babel";
+import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import expressiveCode from "satteri-expressive-code";
 import tailwindcss from "@tailwindcss/vite";
 import satteri from "vite-plugin-satteri";
@@ -31,6 +33,25 @@ function guideToc(): Plugin {
     };
 }
 
+const compilerPreset = reactCompilerPreset(
+    process.env.COMPILER_REPORT === "1"
+        ? {
+              logger: {
+                  logEvent(filename, event) {
+                      process.stdout.write(
+                          `${JSON.stringify({
+                              type: "react-compiler",
+                              filename: relative(process.cwd(), filename),
+                              event,
+                          })}\n`,
+                      );
+                  },
+              },
+          }
+        : {},
+);
+compilerPreset.rolldown.applyToEnvironmentHook = () => true;
+
 const config = defineConfig({
     resolve: { tsconfigPaths: true },
     plugins: [
@@ -50,7 +71,11 @@ const config = defineConfig({
         }),
         nitro(),
         tailwindcss(),
-        viteReact(),
+        react(),
+        babel({
+            include: /[\\/]src[\\/].*\.[jt]sx(?:$|\?)/,
+            presets: [compilerPreset],
+        }),
         satteri({
             features: {
                 gfm: true,

@@ -137,7 +137,8 @@ You are an executor working under an external orchestrator. Phase prompts define
 
 ## Dependencies & scope
 
-- **No new runtime dependencies.** Build-time-only exceptions granted so far: `babel-plugin-react-compiler`. Anything else requires explicit authorization before installing.
+- **No new runtime dependencies.** Build-time-only compiler exceptions granted so far: `babel-plugin-react-compiler`, `@rolldown/plugin-babel`, `@babel/core`, `@types/babel__core`, and `oxlint`. Anything else requires explicit authorization before installing.
+- **Compiler lint/coverage invariant:** use oxlint + compiler build report, not ESLint.
 - No vaul, radix, GSAP, lenis, smooth-scroll or focus-trap libraries; these capabilities are implemented in-repo by design.
 - Never remove features to gain performance. Feel tokens (spring/tween values) change only when a phase prompt explicitly says so.
 

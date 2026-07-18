@@ -267,35 +267,34 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
         select: (location) => location.pathname,
     });
     const shouldReduceMotion = useReducedMotion();
-    const isFirstRender = useRef(true);
+    const [initialPathname] = useState(pathname);
+    const [hasNavigated, setHasNavigated] = useState(false);
     const [settledRouteId, setSettledRouteId] = useState(pathname);
-    const scrollPositions = useRef(new Map<string, number>());
-    const scrollY = useRef(0);
-    const isInitialPage = isFirstRender.current;
+    const [scrollPositions] = useState(() => new Map<string, number>());
+    const isInitialPage = !hasNavigated && pathname === initialPathname;
     const locationKey = useLocation({
         select: (location) =>
             location.state.__TSR_key ?? location.href,
     });
-    const scrollTarget = scrollPositions.current.get(locationKey) ?? 0;
+    const scrollTarget = scrollPositions.get(locationKey) ?? 0;
     const shouldDeferEntrance = pathname.startsWith("/writing/");
 
     useEffect(() => {
-        isFirstRender.current = false;
-    }, []);
+        if (pathname !== initialPathname) setHasNavigated(true);
+    }, [initialPathname, pathname]);
 
     useEffect(() => {
         function captureScrollY() {
-            scrollY.current = window.scrollY;
             const currentLocationKey =
                 window.history.state?.__TSR_key ?? window.location.href;
-            scrollPositions.current.set(currentLocationKey, window.scrollY);
+            scrollPositions.set(currentLocationKey, window.scrollY);
         }
 
         captureScrollY();
         window.addEventListener("scroll", captureScrollY, { passive: true });
 
         return () => window.removeEventListener("scroll", captureScrollY);
-    }, []);
+    }, [scrollPositions]);
 
     const pageTransition = shouldReduceMotion
         ? reducedPageEnterTween
@@ -332,10 +331,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                             : routePageEnterTween
                     }
                 >
-                    <AnimatePresence
-                        custom={scrollY.current}
-                        mode="wait"
-                    >
+                    <AnimatePresence mode="wait">
                         <RoutePage
                             headerHeight={getHeaderHeight(pathname)}
                             isInitialPage={isInitialPage}

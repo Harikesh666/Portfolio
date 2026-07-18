@@ -1,7 +1,5 @@
 import {
     createContext,
-    memo,
-    useCallback,
     useContext,
     useEffect,
     useImperativeHandle,
@@ -68,6 +66,12 @@ const neighborTickScale = 20 / 28;
 const baseTickScale = 14 / 28;
 const maximumIndicatorStretch = 0.6;
 const indicatorVelocityScale = 0.02;
+
+function getNextTocRegistrationId() {
+    nextTocRegistrationId += 1;
+    return nextTocRegistrationId;
+}
+
 export function FloatingToc({
     containerRef,
     items,
@@ -78,7 +82,7 @@ export function FloatingToc({
     const currentRouteId = useLocation({
         select: (location) => location.pathname,
     });
-    const routeId = useRef(currentRouteId).current;
+    const [routeId] = useState(currentRouteId);
 
     if (!registerToc) {
         throw new Error("FloatingToc must be rendered inside FloatingTocProvider");
@@ -110,10 +114,10 @@ export function FloatingTocProvider({
 }: Readonly<{ children: ReactNode }>) {
     const [registration, setRegistration] =
         useState<TocRegistration | null>(null);
-    const registerToc = useCallback<RegisterToc>((toc) => {
+    const registerToc: RegisterToc = (toc) => {
         const registration = {
             ...toc,
-            instanceId: ++nextTocRegistrationId,
+            instanceId: getNextTocRegistrationId(),
             token: Symbol(),
         };
         setRegistration(registration);
@@ -122,7 +126,7 @@ export function FloatingTocProvider({
             setRegistration((current) =>
                 current?.token === registration.token ? null : current,
             );
-    }, []);
+    };
 
     return (
         <FloatingTocContext value={registerToc}>
@@ -211,7 +215,7 @@ export function useHasFloatingTocRegistration() {
     return useContext(FloatingTocRegistrationContext) !== null;
 }
 
-const FloatingTocView = memo(function FloatingTocView({
+function FloatingTocView({
     containerRef,
     items,
     lifecycleRef,
@@ -222,7 +226,8 @@ const FloatingTocView = memo(function FloatingTocView({
     const [hoveredId, setHoveredId] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const activeItemRef = useRef<HTMLAnchorElement>(null);
-    const hasPaintedActiveSection = useRef(false);
+    const [hasPaintedActiveSection, setHasPaintedActiveSection] =
+        useState(false);
     const isPointerOver = useRef(false);
     const isFocusWithin = useRef(false);
     const isExpandedRef = useRef(false);
@@ -255,7 +260,7 @@ const FloatingTocView = memo(function FloatingTocView({
     const snappyTransition = shouldReduceMotion
         ? instantTransition
         : snappySpring;
-    const activeTransition = hasPaintedActiveSection.current
+    const activeTransition = hasPaintedActiveSection
         ? snappyTransition
         : instantTransition;
     const stretchTransition = shouldReduceMotion
@@ -264,7 +269,7 @@ const FloatingTocView = memo(function FloatingTocView({
 
     useEffect(() => {
         if (activeId !== null) {
-            hasPaintedActiveSection.current = true;
+            setHasPaintedActiveSection(true);
         }
     }, [activeId]);
     const hasActiveItem = activeIndex !== null;
@@ -532,7 +537,7 @@ const FloatingTocView = memo(function FloatingTocView({
                                             isActive ? "true" : undefined
                                         }
                                         className={`relative z-10 block min-w-0 truncate rounded-sm py-1 pl-4 text-left text-[12px] leading-snug hover:text-foreground-strong ${
-                                            hasPaintedActiveSection.current
+                                            hasPaintedActiveSection
                                                 ? "transition-colors"
                                                 : ""
                                         } ${
@@ -571,4 +576,4 @@ const FloatingTocView = memo(function FloatingTocView({
             </div>
         </LayoutGroup>
     );
-});
+}

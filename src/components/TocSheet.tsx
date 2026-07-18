@@ -1,6 +1,6 @@
 import {
-    useCallback,
     useEffect,
+    useEffectEvent,
     useLayoutEffect,
     useRef,
     useState,
@@ -54,7 +54,7 @@ export function TocSheet({
     const currentRouteId = useLocation({
         select: (location) => location.pathname,
     });
-    const routeId = useRef(currentRouteId).current;
+    const [routeId] = useState(currentRouteId);
     const isRouteActive = currentRouteId === routeId;
     const { activeId, activeIndex, sectionProgress } = useScrollSpy(
         items,
@@ -108,7 +108,7 @@ export function TocSheet({
         setIsSheetMounted(false);
     }, [dragControls, isRouteActive]);
 
-    const returnFocus = useCallback(() => {
+    const returnFocus = () => {
         window.requestAnimationFrame(() => {
             window.requestAnimationFrame(() => {
                 if (returnFocusRef.current?.isConnected) {
@@ -116,9 +116,9 @@ export function TocSheet({
                 }
             });
         });
-    }, []);
+    };
 
-    const openSheet = useCallback(() => {
+    const openSheet = () => {
         returnFocusRef.current = triggerRef.current;
         isOpenRef.current = true;
         setIsOpen(true);
@@ -142,45 +142,42 @@ export function TocSheet({
             sheetOpacity.set(1);
             animationRef.current = animate(sheetY, 0, sheetSpring);
         }
-    }, [sheetOpacity, sheetY, shouldReduceMotion]);
+    };
 
-    const closeSheet = useCallback(
-        (
-            reducedTransition = sheetFadeTween,
-            velocity = 0,
-            onClosed?: () => void,
-        ) => {
-            if (!isSheetMountedRef.current) return;
+    const closeSheet = (
+        reducedTransition = sheetFadeTween,
+        velocity = 0,
+        onClosed?: () => void,
+    ) => {
+        if (!isSheetMountedRef.current) return;
 
-            isOpenRef.current = false;
-            setIsOpen(false);
-            const sequence = ++animationSequenceRef.current;
-            animationRef.current?.stop();
+        isOpenRef.current = false;
+        setIsOpen(false);
+        const sequence = ++animationSequenceRef.current;
+        animationRef.current?.stop();
 
-            const animation = shouldReduceMotion
-                ? animate(sheetOpacity, 0, reducedTransition)
-                : animate(sheetY, sheetHeightRef.current, {
-                      ...sheetCloseSpring,
-                      velocity,
-                  });
+        const animation = shouldReduceMotion
+            ? animate(sheetOpacity, 0, reducedTransition)
+            : animate(sheetY, sheetHeightRef.current, {
+                  ...sheetCloseSpring,
+                  velocity,
+              });
 
-            animationRef.current = animation;
-            void animation.then(() => {
-                if (
-                    sequence !== animationSequenceRef.current ||
-                    isOpenRef.current
-                ) {
-                    return;
-                }
+        animationRef.current = animation;
+        void animation.then(() => {
+            if (
+                sequence !== animationSequenceRef.current ||
+                isOpenRef.current
+            ) {
+                return;
+            }
 
-                isSheetMountedRef.current = false;
-                setIsSheetMounted(false);
-                returnFocus();
-                onClosed?.();
-            });
-        },
-        [returnFocus, sheetOpacity, sheetY, shouldReduceMotion],
-    );
+            isSheetMountedRef.current = false;
+            setIsSheetMounted(false);
+            returnFocus();
+            onClosed?.();
+        });
+    };
 
     useLayoutEffect(() => {
         if (!isSheetMounted || !panelRef.current) return;
@@ -307,45 +304,40 @@ export function TocSheet({
         }
     };
 
-    const handleDragStart = useCallback(() => {
+    const handleDragStart = () => {
         hasDraggedRef.current = true;
         animationSequenceRef.current += 1;
         animationRef.current?.stop();
         isOpenRef.current = true;
         setIsOpen(true);
         sheetOpacity.set(1);
-    }, [sheetOpacity]);
+    };
 
-    const settleDrag = useCallback(
-        (offset: number, velocity: number) => {
-            if (
-                shouldDismissSheet(
-                    offset,
-                    velocity,
-                    sheetHeightRef.current,
-                )
-            ) {
-                closeSheet(sheetFadeTween, velocity);
-            } else if (shouldReduceMotion) {
-                sheetY.set(0);
-            } else {
-                animationRef.current = animate(sheetY, 0, {
-                    ...sheetSpring,
-                    velocity,
-                });
-            }
+    const settleDrag = (offset: number, velocity: number) => {
+        if (
+            shouldDismissSheet(offset, velocity, sheetHeightRef.current)
+        ) {
+            closeSheet(sheetFadeTween, velocity);
+        } else if (shouldReduceMotion) {
+            sheetY.set(0);
+        } else {
+            animationRef.current = animate(sheetY, 0, {
+                ...sheetSpring,
+                velocity,
+            });
+        }
 
-            window.setTimeout(() => {
-                hasDraggedRef.current = false;
-            }, 0);
-        },
-        [closeSheet, sheetY, shouldReduceMotion],
-    );
+        window.setTimeout(() => {
+            hasDraggedRef.current = false;
+        }, 0);
+    };
 
     const handleDragEnd = (
         _event: MouseEvent | TouchEvent | PointerEvent,
         info: PanInfo,
     ) => settleDrag(info.offset.y, info.velocity.y);
+    const handleTouchDragStart = useEffectEvent(handleDragStart);
+    const settleTouchDrag = useEffectEvent(settleDrag);
 
     useEffect(() => {
         const list = listRef.current;
@@ -403,7 +395,7 @@ export function TocSheet({
                     return;
                 }
 
-                handleDragStart();
+                handleTouchDragStart();
                 gesture.dragging = true;
             }
 
@@ -419,7 +411,7 @@ export function TocSheet({
 
         const finishTouch = () => {
             if (gesture?.dragging) {
-                settleDrag(gesture.offset, gesture.velocity);
+                settleTouchDrag(gesture.offset, gesture.velocity);
             }
             gesture = undefined;
         };
@@ -440,9 +432,7 @@ export function TocSheet({
             list.removeEventListener("touchcancel", finishTouch);
         };
     }, [
-        handleDragStart,
         isSheetMounted,
-        settleDrag,
         sheetY,
         supportsDirectionalTouchAction,
     ]);
