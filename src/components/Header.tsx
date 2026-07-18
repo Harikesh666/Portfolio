@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { bouncySpring, snappySpring } from "../lib/motion";
+import {
+    AnimatePresence,
+    LayoutGroup,
+    motion,
+    useReducedMotion,
+} from "motion/react";
+import {
+    bouncySpring,
+    headerContentExitTween,
+    headerMorphTween,
+    routePageEnterTween,
+    snappySpring,
+} from "../lib/motion";
 import { posts } from "../lib/content";
 import { site } from "../lib/site";
 
 const navLinkClassName =
     "py-1 text-muted hover:text-foreground-strong data-[status=active]:font-semibold data-[status=active]:text-foreground-strong";
+
+type HeaderMode = "breadcrumb" | "identity";
 
 function Avatar({ size }: Readonly<{ size: number }>) {
     const initials = site.name
@@ -40,7 +53,7 @@ function Avatar({ size }: Readonly<{ size: number }>) {
     );
 }
 
-function ThemeToggle() {
+function ThemeToggle({ mode }: Readonly<{ mode: HeaderMode }>) {
     const [theme, setTheme] = useState<"light" | "dark">("light");
     const shouldReduceMotion = useReducedMotion();
 
@@ -70,13 +83,26 @@ function ThemeToggle() {
 
     return (
         <motion.button
-            className="inline-flex min-h-11 min-w-11 items-center justify-center text-foreground-strong hover:text-accent"
+            className="absolute z-10 inline-flex min-h-11 min-w-11 items-center justify-center text-foreground-strong hover:text-accent"
+            layout={shouldReduceMotion ? false : true}
+            layoutId={
+                shouldReduceMotion ? undefined : "header-theme-toggle"
+            }
+            style={
+                mode === "breadcrumb"
+                    ? { top: 16, right: 20 }
+                    : { right: 20, bottom: 8 }
+            }
             type="button"
             aria-label="Toggle theme"
             aria-pressed={theme === "dark"}
             onClick={toggleTheme}
             whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
-            transition={shouldReduceMotion ? { duration: 0 } : snappySpring}
+            transition={
+                shouldReduceMotion
+                    ? { duration: 0 }
+                    : { layout: headerMorphTween, scale: snappySpring }
+            }
         >
             {shouldReduceMotion ? (
                 theme === "dark" ? (
@@ -114,9 +140,7 @@ function ThemeToggle() {
 function IdentityHeader() {
     return (
         <div className="flex flex-col px-5 pb-2 pt-8">
-            <Link aria-label="Home" className="w-fit" to="/">
-                <Avatar size={44} />
-            </Link>
+            <span aria-hidden="true" className="h-11 w-11" />
             <p className="mt-4 flex flex-wrap items-baseline gap-x-2">
                 <Link
                     className="text-[1.4rem] font-bold tracking-[-0.02em] text-foreground-strong"
@@ -163,9 +187,7 @@ function IdentityHeader() {
                 >
                     GitHub
                 </a>
-                <span className="ml-auto">
-                    <ThemeToggle />
-                </span>
+                <span aria-hidden="true" className="ml-auto h-11 w-11" />
             </nav>
         </div>
     );
@@ -174,14 +196,12 @@ function IdentityHeader() {
 function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
     return (
         <div className="flex min-w-0 items-center gap-2 px-5 py-4 text-sm">
+            <span aria-hidden="true" className="h-6 w-6 shrink-0" />
             <Link
-                className="flex shrink-0 items-center gap-2 text-foreground-strong hover:text-accent"
+                className="hidden shrink-0 font-medium text-foreground-strong hover:text-accent sm:inline"
                 to="/"
             >
-                <Avatar size={24} />
-                <span className="hidden font-medium sm:inline">
-                    {site.name}
-                </span>
+                {site.name}
             </Link>
             <span aria-hidden="true" className="shrink-0 text-divider">
                 /
@@ -196,26 +216,109 @@ function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
                 /
             </span>
             <span className="min-w-0 truncate text-muted">{postTitle}</span>
-            <span className="ml-auto shrink-0 pl-2">
-                <ThemeToggle />
-            </span>
+            <span
+                aria-hidden="true"
+                className="ml-auto h-11 w-[3.25rem] shrink-0"
+            />
         </div>
+    );
+}
+
+function SharedAvatar({
+    mode,
+    shouldReduceMotion,
+}: Readonly<{
+    mode: HeaderMode;
+    shouldReduceMotion: boolean;
+}>) {
+    const size = mode === "breadcrumb" ? 24 : 44;
+
+    return (
+        <motion.div
+            className="absolute z-10"
+            layout={shouldReduceMotion ? false : true}
+            layoutId={shouldReduceMotion ? undefined : "header-avatar"}
+            style={{
+                top: mode === "breadcrumb" ? 26 : 32,
+                left: 20,
+                width: size,
+                height: size,
+                borderRadius: 9999,
+            }}
+            transition={
+                shouldReduceMotion
+                    ? { duration: 0 }
+                    : { layout: headerMorphTween }
+            }
+        >
+            <Link aria-label="Home" className="block h-full w-full" to="/">
+                <Avatar size={size} />
+            </Link>
+        </motion.div>
     );
 }
 
 export default function Header() {
     const pathname = useLocation({ select: (location) => location.pathname });
+    const shouldReduceMotion = useReducedMotion() ?? false;
 
     const slug = pathname.match(/^\/writing\/([^/]+)\/?$/)?.[1];
     const post = slug ? posts.find((entry) => entry.slug === slug) : undefined;
+    const mode: HeaderMode = post ? "breadcrumb" : "identity";
 
     return (
         <header className="mx-auto w-full max-w-2xl">
-            {post ? (
-                <BreadcrumbHeader postTitle={post.title} />
-            ) : (
-                <IdentityHeader />
-            )}
+            <LayoutGroup id="site-header">
+                <motion.div
+                    className="relative min-w-0"
+                    layout={shouldReduceMotion ? false : true}
+                    layoutDependency={mode}
+                    transition={
+                        shouldReduceMotion
+                            ? { duration: 0 }
+                            : { layout: headerMorphTween }
+                    }
+                >
+                    <AnimatePresence initial={false} mode="popLayout">
+                        <motion.div
+                            animate={{
+                                opacity: 1,
+                                y: 0,
+                                transition: shouldReduceMotion
+                                    ? { duration: 0 }
+                                    : routePageEnterTween,
+                            }}
+                            className="relative min-w-0"
+                            exit={{
+                                opacity: shouldReduceMotion ? 1 : 0,
+                                transition: shouldReduceMotion
+                                    ? { duration: 0 }
+                                    : headerContentExitTween,
+                            }}
+                            initial={
+                                shouldReduceMotion
+                                    ? false
+                                    : {
+                                          opacity: 0,
+                                          y: mode === "breadcrumb" ? -4 : 4,
+                                      }
+                            }
+                            key={mode}
+                        >
+                            {post ? (
+                                <BreadcrumbHeader postTitle={post.title} />
+                            ) : (
+                                <IdentityHeader />
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
+                    <SharedAvatar
+                        mode={mode}
+                        shouldReduceMotion={shouldReduceMotion}
+                    />
+                    <ThemeToggle mode={mode} />
+                </motion.div>
+            </LayoutGroup>
         </header>
     );
 }

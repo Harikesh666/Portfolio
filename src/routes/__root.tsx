@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import {
     HeadContent,
     Scripts,
@@ -9,6 +9,9 @@ import {
     AnimatePresence,
     MotionConfig,
     motion,
+    useIsPresent,
+    useMotionValue,
+    usePresenceData,
     useReducedMotion,
 } from "motion/react";
 import Footer from "../components/Footer";
@@ -103,16 +106,54 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     );
 }
 
+function ExitScrollCompensation({
+    children,
+}: Readonly<{ children: React.ReactNode }>) {
+    const isPresent = useIsPresent();
+    const exitScrollY: number = usePresenceData() ?? 0;
+    const scrollOffset = useMotionValue(0);
+
+    useLayoutEffect(() => {
+        if (isPresent) {
+            scrollOffset.set(0);
+            return;
+        }
+
+        function syncScrollOffset() {
+            scrollOffset.set(window.scrollY - exitScrollY);
+        }
+
+        syncScrollOffset();
+        window.addEventListener("scroll", syncScrollOffset, { passive: true });
+
+        return () => window.removeEventListener("scroll", syncScrollOffset);
+    }, [exitScrollY, isPresent, scrollOffset]);
+
+    return <motion.div style={{ y: scrollOffset }}>{children}</motion.div>;
+}
+
 function RouteTransition({ children }: { children: React.ReactNode }) {
     const pathname = useLocation({
         select: (location) => location.pathname,
     });
     const shouldReduceMotion = useReducedMotion();
     const isFirstRender = useRef(true);
+    const scrollY = useRef(0);
     const isInitialPage = isFirstRender.current;
 
     useEffect(() => {
         isFirstRender.current = false;
+    }, []);
+
+    useEffect(() => {
+        function captureScrollY() {
+            scrollY.current = window.scrollY;
+        }
+
+        captureScrollY();
+        window.addEventListener("scroll", captureScrollY, { passive: true });
+
+        return () => window.removeEventListener("scroll", captureScrollY);
     }, []);
 
     const pageTransition = shouldReduceMotion
@@ -145,7 +186,10 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                             : routePageEnterTween
                     }
                 >
-                    <AnimatePresence mode="popLayout">
+                    <AnimatePresence
+                        custom={scrollY.current}
+                        mode="popLayout"
+                    >
                         <motion.div
                             animate={isInitialPage ? undefined : "visible"}
                             className="relative w-full"
@@ -157,7 +201,6 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                                       }
                                     : {
                                           opacity: 0,
-                                          y: -6,
                                           transition: exitTween,
                                       }
                             }
@@ -165,7 +208,9 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                             key={pathname}
                             variants={containerVariants}
                         >
-                            {children}
+                            <ExitScrollCompensation>
+                                {children}
+                            </ExitScrollCompensation>
                         </motion.div>
                     </AnimatePresence>
                     <motion.div variants={routeBlockVariants}>

@@ -42,8 +42,8 @@
       },
       {
         "name": "reading-motion",
-        "value": "400ms first load; 280ms route enter; 150ms route exit; 40ms block stagger; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Materializes the header, coarse page blocks, footer, and mobile TOC pill on one shell-level timeline while preserving interruptible desktop morph and mobile sheet springs."
+        "value": "400ms first load; 280ms route enter; 300ms header morph; 150ms route exit; 40ms block stagger; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Materializes coarse page blocks, footer, and the mobile TOC pill on one shell-level timeline while preserving an interruptible article-header morph, scroll-stable route exit, desktop TOC morph, and mobile sheet springs."
       }
     ],
     "breakpoints": [
@@ -56,7 +56,7 @@
       "name": "Global Navigation",
       "kind": "nav",
       "refersTo": "main-navigation",
-      "description": "A compact ruled row with writing, GitHub, resume, and a persistent theme control.",
+      "description": "A persistent identity header that morphs into the article breadcrumb through one shared avatar and focus-preserving theme control.",
       "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Writing</a><a href=\"#\">GitHub</a><button aria-label=\"Toggle theme\">Theme</button></nav>",
       "css": ".ds-nav { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-divider); padding: 16px 20px; color: var(--color-foreground); font: 400 14px var(--font-sans); } .ds-nav strong { margin-right: auto; color: var(--color-foreground-strong); font-weight: 700; } .ds-nav button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--color-foreground-strong); } .ds-nav :focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
     },

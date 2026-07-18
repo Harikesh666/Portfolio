@@ -121,9 +121,10 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 - **Code:** Expressive Code frames retain their generated theme and copy behavior; local CSS only styles inline code.
 
 ### Motion
-- **Route and entry:** Header, coarse page blocks, and footer share one root timeline. Blocks materialize with opacity, a 10px rise, and `0.985` scale on an expo-out curve; first load uses a 400ms tween and route changes use 280ms tweens with a 40ms stagger. Routes keep the 150ms opacity-and-rise exit, while the route-owned desktop table of contents mounts instantly to avoid a second late timeline.
+- **Route and entry:** Header, coarse page blocks, and footer share one root timeline. Blocks materialize with opacity, a 10px rise, and `0.985` scale on an expo-out curve; first load uses a 400ms tween and route changes use 280ms tweens with a 40ms stagger. Routes use a 150ms in-place opacity exit with live scroll compensation, while the route-owned desktop table of contents mounts instantly to avoid a second late timeline.
+- **Header continuity:** Article navigation morphs one persistent avatar and theme control between the identity and breadcrumb layouts over 300ms on the route curve. Non-shared navigation and breadcrumb content crossfade, focus remains on the persistent theme control, and identity-to-identity navigation does not retrigger the header.
 - **Signature interaction:** The responsive table of contents receives the motion budget through desktop shared-element morphs and mobile physical sheet drag. Both views use active-outward staggering and within-section progress; mobile backdrop opacity is coupled directly to sheet position, while velocity-aware stretch remains desktop-only.
-- **Restraint:** Repeated motion is limited to transforms and opacity; entrances are one-shot, coarse, and never per paragraph. `prefers-reduced-motion: reduce` removes entrance transforms and uses a 150ms opacity fade.
+- **Restraint:** Repeated motion is limited to transforms and opacity; entrances are one-shot, coarse, and never per paragraph. `prefers-reduced-motion: reduce` snaps the header layout, removes entrance transforms, and uses a 150ms route opacity fade.
 
 ## 6. Do's and Don'ts
 

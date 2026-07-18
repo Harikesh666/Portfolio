@@ -91,6 +91,16 @@ export const routePageEnterTween = {
     ease: pageEase,
 };
 
+export const headerMorphTween = {
+    duration: 0.3,
+    ease: pageEase,
+};
+
+export const headerContentExitTween = {
+    duration: 0.12,
+    ease: "easeIn" as const,
+};
+
 export const reducedPageEnterTween = {
     duration: 0.15,
     ease: pageEase,
