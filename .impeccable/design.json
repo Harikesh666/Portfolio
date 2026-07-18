@@ -42,8 +42,8 @@
       },
       {
         "name": "reading-motion",
-        "value": "150ms route exit; 300ms content settle; 480ms hero settle",
-        "purpose": "Keeps route and entry motion quiet while reserving shared-element, progress, and velocity-aware motion for the floating table of contents."
+        "value": "400ms first load; 280ms route enter; 150ms route exit; 40ms block stagger; cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Materializes the header, coarse page blocks, and footer on one shell-level timeline while keeping the route-owned table of contents instant and preserving its interruptible interaction springs."
       }
     ],
     "breakpoints": [

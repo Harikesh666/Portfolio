@@ -52,7 +52,9 @@ Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 hea
 
 The visual system lives in `src/styles.css`. It uses semantic CSS variables mapped into Tailwind v4, with explicit `data-theme="light"` and `data-theme="dark"` values set before paint and persisted in local storage.
 
-The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts. Route exits, page entrances, and the floating table of contents use short transform/opacity motion with instant reduced-motion equivalents; the article top progress line appears only in browsers with CSS scroll-driven animation support and is omitted when reduced motion is requested.
+The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts. Header, coarse route blocks, and footer share a short transform/opacity entrance timeline; the route-owned desktop table of contents mounts instantly, and reduced motion collapses the entrance to a 150ms opacity fade. The article top progress line appears only in browsers with CSS scroll-driven animation support and is omitted when reduced motion is requested.
+
+Every route navigation, including browser back and forward traversal, resets the window to the top rather than restoring a cached reading position.
 
 ## Project Docs
 

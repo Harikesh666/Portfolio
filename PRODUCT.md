@@ -44,7 +44,7 @@ Avoid generic template portfolios, buzzword-heavy copy, and flashy motion showca
 4. Make the best next action obvious: contacting Harikesh and entering the writing should always feel effortless.
 5. Treat discoverability as quality: fast rendering, semantic structure, metadata, and structured data are part of the product.
 6. Keep the interface quiet: a narrow reading column, direct navigation, and dark mode should remove friction rather than add personality for its own sake.
-7. Spend motion deliberately: the article table of contents may carry spatial context and reading progress, while ordinary page content should settle quickly and quietly.
+7. Spend motion deliberately: each page should materialize as one fast shell-level gesture, while the article table of contents may retain richer spatial context and reading progress.
 
 ## Accessibility & Inclusion
 

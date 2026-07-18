@@ -4,12 +4,6 @@ export const snappySpring = {
     bounce: 0.15,
 };
 
-export const settleSpring = {
-    type: "spring" as const,
-    visualDuration: 0.3,
-    bounce: 0.1,
-};
-
 // Carries TOC items between the compact rail and expanded panel.
 export const tocMorphSpring = {
     type: "spring" as const,
@@ -37,12 +31,6 @@ export const bouncySpring = {
     bounce: 0.35,
 };
 
-export const heroSpring = {
-    type: "spring" as const,
-    visualDuration: 0.48,
-    bounce: 0.08,
-};
-
 // Removes outgoing routes before the faster incoming content settle.
 export const exitTween = {
     duration: 0.15,
@@ -58,22 +46,56 @@ export const hoverExitTween = {
 export const tocItemDelayStep = 0.016;
 export const tocItemDelayCap = 0.25;
 export const pageEnterStagger = 0.04;
-export const pageEnterDelay = 0.05;
 
-export const heroEnter = {
-    hidden: { opacity: 0, y: -12 },
+export const pageEase = [0.16, 1, 0.3, 1] as const;
+
+export const pageEnterTween = {
+    duration: 0.4,
+    ease: pageEase,
+};
+
+export const routePageEnterTween = {
+    duration: 0.28,
+    ease: pageEase,
+};
+
+export const reducedPageEnterTween = {
+    duration: 0.15,
+    ease: pageEase,
+};
+
+export const pageBlock = {
+    hidden: { opacity: 0, y: 10, scale: 0.985 },
     visible: {
         opacity: 1,
         y: 0,
-        transition: heroSpring,
+        scale: 1,
     },
 };
 
-export const enterItem = {
-    hidden: { opacity: 0, y: -8 },
+export const routePageBlock = {
+    hidden: pageBlock.hidden,
     visible: {
-        opacity: 1,
-        y: 0,
-        transition: settleSpring,
+        ...pageBlock.visible,
+        transition: routePageEnterTween,
     },
+};
+
+export const reducedPageBlock = {
+    hidden: { opacity: 0, y: 0, scale: 1 },
+    visible: { opacity: 1, y: 0, scale: 1 },
+};
+
+export const pageContainer = {
+    hidden: {},
+    visible: {
+        transition: {
+            staggerChildren: pageEnterStagger,
+        },
+    },
+};
+
+export const reducedPageContainer = {
+    hidden: {},
+    visible: {},
 };

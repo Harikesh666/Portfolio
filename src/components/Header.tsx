@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { bouncySpring, settleSpring, snappySpring } from "../lib/motion";
+import { bouncySpring, snappySpring } from "../lib/motion";
 import { posts } from "../lib/content";
 import { site } from "../lib/site";
 
 const navLinkClassName =
-    "py-1 text-muted transition-colors hover:text-foreground-strong data-[status=active]:font-semibold data-[status=active]:text-foreground-strong motion-reduce:transition-none";
+    "py-1 text-muted hover:text-foreground-strong data-[status=active]:font-semibold data-[status=active]:text-foreground-strong";
 
 function Avatar({ size }: Readonly<{ size: number }>) {
     const initials = site.name
@@ -156,7 +156,7 @@ function IdentityHeader() {
                     Resume
                 </Link>
                 <a
-                    className="py-1 text-muted transition-colors hover:text-foreground-strong motion-reduce:transition-none"
+                    className="py-1 text-muted hover:text-foreground-strong"
                     href={site.socials.github}
                     rel="noreferrer"
                     target="_blank"
@@ -204,7 +204,6 @@ function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
 }
 
 export default function Header() {
-    const shouldReduceMotion = useReducedMotion();
     const pathname = useLocation({ select: (location) => location.pathname });
 
     const slug = pathname.match(/^\/writing\/([^/]+)\/?$/)?.[1];
@@ -212,29 +211,11 @@ export default function Header() {
 
     return (
         <header className="mx-auto w-full max-w-2xl">
-            <motion.div
-                key={shouldReduceMotion ? "static" : pathname}
-                initial={
-                    shouldReduceMotion
-                        ? false
-                        : { opacity: 0, y: -8, filter: "blur(2px)" }
-                }
-                animate={{
-                    opacity: 1,
-                    y: 0,
-                    filter: "blur(0px)",
-                    transitionEnd: { filter: "none" },
-                }}
-                transition={
-                    shouldReduceMotion ? { duration: 0 } : settleSpring
-                }
-            >
-                {post ? (
-                    <BreadcrumbHeader postTitle={post.title} />
-                ) : (
-                    <IdentityHeader />
-                )}
-            </motion.div>
+            {post ? (
+                <BreadcrumbHeader postTitle={post.title} />
+            ) : (
+                <IdentityHeader />
+            )}
         </header>
     );
 }

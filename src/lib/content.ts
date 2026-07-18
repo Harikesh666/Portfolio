@@ -1,3 +1,5 @@
+import type { TocItem } from "./content-headings";
+
 export const seriesIndex = {
     "react-internals": {
         title: "React, from the inside out",
@@ -24,6 +26,7 @@ export type PostSummary = {
 
 export type Post = PostSummary & {
     html: string;
+    toc: TocItem[];
 };
 
 type PostRecord = PostSummary & {
@@ -37,6 +40,10 @@ const meta = import.meta.glob<Record<string, unknown>>(
 
 const loaders = import.meta.glob<string>("../content/guides/**/*.md", {
     import: "default",
+});
+
+const tocLoaders = import.meta.glob<TocItem[]>("../content/guides/**/*.md", {
+    import: "toc",
 });
 
 function assertString(value: unknown, field: string, filename: string) {
@@ -157,12 +164,13 @@ export async function getPost(slug: string): Promise<Post | undefined> {
     if (!post) return undefined;
 
     const loader = loaders[post.path];
-    if (!loader) {
+    const tocLoader = tocLoaders[post.path];
+    if (!loader || !tocLoader) {
         throw new Error(`Missing content loader for ${post.path}`);
     }
 
     const { path: _, ...metadata } = post;
-    const html = await loader();
+    const [html, toc] = await Promise.all([loader(), tocLoader()]);
 
-    return { ...metadata, html };
+    return { ...metadata, html, toc };
 }

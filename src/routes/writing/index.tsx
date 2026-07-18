@@ -1,7 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../../components/PageEnter";
-import { Reveal } from "../../components/Reveal";
 import { posts, seriesIndex } from "../../lib/content";
 import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
@@ -46,7 +45,7 @@ function WritingPage() {
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
             <PageEnter>
-            <PageEnter.Item hero>
+            <PageEnter.Item>
             <header>
                 <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
                     {series.title}
@@ -62,8 +61,7 @@ function WritingPage() {
             <PageEnter.Item>
                 <ol className="mt-10 border-t border-divider">
                     {seriesPosts.map((post) => (
-                        <Reveal
-                            as="li"
+                        <li
                             className="border-b border-divider"
                             key={post.slug}
                         >
@@ -94,7 +92,7 @@ function WritingPage() {
                                     </span>
                                 </motion.div>
                             </Link>
-                        </Reveal>
+                        </li>
                     ))}
                 </ol>
             </PageEnter.Item>
@@ -107,8 +105,7 @@ function WritingPage() {
                         </h2>
                         <ol className="mt-4 border-t border-divider">
                             {standalonePosts.map((post) => (
-                                <Reveal
-                                    as="li"
+                                <li
                                     className="border-b border-divider"
                                     key={post.slug}
                                 >
@@ -136,7 +133,7 @@ function WritingPage() {
                                                 </span>
                                             </motion.div>
                                         </Link>
-                                </Reveal>
+                                </li>
                             ))}
                         </ol>
                     </section>

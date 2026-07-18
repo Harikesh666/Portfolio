@@ -1,13 +1,33 @@
+import { useEffect, useRef } from "react";
 import {
     HeadContent,
     Scripts,
     createRootRoute,
     useLocation,
 } from "@tanstack/react-router";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import {
+    AnimatePresence,
+    MotionConfig,
+    motion,
+    useReducedMotion,
+} from "motion/react";
 import Footer from "../components/Footer";
+import {
+    FloatingTocHost,
+    FloatingTocProvider,
+} from "../components/FloatingToc";
 import Header from "../components/Header";
-import { exitTween } from "../lib/motion";
+import {
+    exitTween,
+    pageBlock,
+    pageContainer,
+    pageEnterTween,
+    reducedPageBlock,
+    reducedPageContainer,
+    reducedPageEnterTween,
+    routePageBlock,
+    routePageEnterTween,
+} from "../lib/motion";
 import { absoluteUrl, site } from "../lib/site";
 
 import appCss from "../styles.css?url";
@@ -74,9 +94,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 <a className="skip-link" href="#main-content">
                     Skip to content
                 </a>
-                <Header />
-                <RouteTransition>{children}</RouteTransition>
-                <Footer />
+                <FloatingTocProvider>
+                    <RouteTransition>{children}</RouteTransition>
+                </FloatingTocProvider>
                 <Scripts />
             </body>
         </html>
@@ -88,24 +108,72 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
         select: (location) => location.pathname,
     });
     const shouldReduceMotion = useReducedMotion();
-    const instantTransition = { duration: 0 };
+    const isFirstRender = useRef(true);
+    const isInitialPage = isFirstRender.current;
+
+    useEffect(() => {
+        isFirstRender.current = false;
+    }, []);
+
+    const pageTransition = shouldReduceMotion
+        ? reducedPageEnterTween
+        : isInitialPage
+          ? pageEnterTween
+          : routePageEnterTween;
+    const containerVariants = shouldReduceMotion
+        ? reducedPageContainer
+        : pageContainer;
+    const blockVariants = shouldReduceMotion ? reducedPageBlock : pageBlock;
+    const routeBlockVariants = shouldReduceMotion
+        ? reducedPageBlock
+        : routePageBlock;
 
     return (
-        <AnimatePresence mode="popLayout">
+        <MotionConfig reducedMotion="user" transition={pageTransition}>
             <motion.div
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full"
-                exit={
-                    shouldReduceMotion
-                        ? { opacity: 1, y: 0 }
-                        : { opacity: 0, y: -6 }
-                }
-                initial={{ opacity: 1, y: 0 }}
-                key={pathname}
-                transition={shouldReduceMotion ? instantTransition : exitTween}
+                animate="visible"
+                initial="hidden"
+                variants={containerVariants}
             >
-                {children}
+                <motion.div variants={blockVariants}>
+                    <Header />
+                </motion.div>
+                <MotionConfig
+                    transition={
+                        shouldReduceMotion
+                            ? reducedPageEnterTween
+                            : routePageEnterTween
+                    }
+                >
+                    <AnimatePresence mode="popLayout">
+                        <motion.div
+                            animate={isInitialPage ? undefined : "visible"}
+                            className="relative w-full"
+                            exit={
+                                shouldReduceMotion
+                                    ? {
+                                          opacity: 0,
+                                          transition: reducedPageEnterTween,
+                                      }
+                                    : {
+                                          opacity: 0,
+                                          y: -6,
+                                          transition: exitTween,
+                                      }
+                            }
+                            initial={isInitialPage ? undefined : "hidden"}
+                            key={pathname}
+                            variants={containerVariants}
+                        >
+                            {children}
+                        </motion.div>
+                    </AnimatePresence>
+                    <motion.div variants={routeBlockVariants}>
+                        <Footer />
+                    </motion.div>
+                    <FloatingTocHost />
+                </MotionConfig>
             </motion.div>
-        </AnimatePresence>
+        </MotionConfig>
     );
 }

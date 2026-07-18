@@ -120,9 +120,9 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 - **Code:** Expressive Code frames retain their generated theme and copy behavior; local CSS only styles inline code.
 
 ### Motion
-- **Route and entry:** Routes leave with a 150ms opacity and 6px rise before the next page assembles. Ordinary groups settle within 300ms with a 40ms stagger and 50ms initial delay; hero groups settle within 480ms.
+- **Route and entry:** Header, coarse page blocks, and footer share one root timeline. Blocks materialize with opacity, a 10px rise, and `0.985` scale on an expo-out curve; first load uses a 400ms tween and route changes use 280ms tweens with a 40ms stagger. Routes keep the 150ms opacity-and-rise exit, while the route-owned desktop table of contents mounts instantly to avoid a second late timeline.
 - **Signature interaction:** The floating table of contents receives the motion budget through interruptible shared-element morphs, active-outward staggering, velocity-aware active-section stretch, hover tracking, and within-section rail progress.
-- **Restraint:** Repeated motion is limited to transforms and opacity; entrances are one-shot and de-blurred. `prefers-reduced-motion: reduce` keeps every state change functional and instant.
+- **Restraint:** Repeated motion is limited to transforms and opacity; entrances are one-shot, coarse, and never per paragraph. `prefers-reduced-motion: reduce` removes entrance transforms and uses a 150ms opacity fade.
 
 ## 6. Do's and Don'ts
 

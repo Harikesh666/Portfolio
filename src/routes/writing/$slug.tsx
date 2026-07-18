@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { FloatingToc } from "../../components/FloatingToc";
@@ -74,6 +75,7 @@ export const Route = createFileRoute("/writing/$slug")({
 function PostPage() {
     const shouldReduceMotion = useReducedMotion();
     const post = Route.useLoaderData();
+    const articleRef = useRef<HTMLElement>(null);
     const { previous, next } = getPostNeighbors(post);
     const seriesPostCount = post.series
         ? posts.filter((item) => item.series === post.series).length
@@ -87,7 +89,7 @@ function PostPage() {
                 className="mx-auto w-full max-w-2xl px-5 pb-12 pt-8"
             >
                 <PageEnter key={post.slug}>
-                <PageEnter.Item hero>
+                <PageEnter.Item>
                 <header>
                     <Link
                         className="font-mono text-sm text-muted hover:text-accent"
@@ -112,6 +114,7 @@ function PostPage() {
                     <article
                         className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:text-foreground-strong prose-headings:tracking-[-0.02em] prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:before:content-none prose-code:after:content-none"
                         dangerouslySetInnerHTML={{ __html: post.html }}
+                        ref={articleRef}
                     />
 
                     {(previous || next) && (
@@ -182,7 +185,12 @@ function PostPage() {
                 </PageEnter.Item>
                 </PageEnter>
             </main>
-            <FloatingToc key={post.slug} />
+            <FloatingToc
+                containerRef={articleRef}
+                items={post.toc}
+                key={post.slug}
+                slug={post.slug}
+            />
         </>
     );
 }

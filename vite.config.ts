@@ -1,4 +1,6 @@
 import { defineConfig } from "vite";
+import type { Plugin } from "vite";
+import { readFile } from "node:fs/promises";
 
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
@@ -7,9 +9,27 @@ import expressiveCode from "satteri-expressive-code";
 import tailwindcss from "@tailwindcss/vite";
 import satteri from "vite-plugin-satteri";
 import { headingIds } from "./src/lib/satteri-plugins";
+import { extractTocItems } from "./src/lib/content-headings";
 import { nitro } from "nitro/vite";
 import pierreDark from "@pierre/theme/pierre-dark";
 import pierreLight from "@pierre/theme/pierre-light";
+
+function guideToc(): Plugin {
+    return {
+        name: "guide-toc",
+        enforce: "post",
+        async transform(code, id) {
+            const filename = id.replace(/\?.*$/, "");
+            if (!filename.endsWith(".md")) return null;
+
+            const source = await readFile(filename, "utf8");
+            return {
+                code: `${code}\nexport const toc = ${JSON.stringify(extractTocItems(source))};`,
+                map: null,
+            };
+        },
+    };
+}
 
 const config = defineConfig({
     resolve: { tsconfigPaths: true },
@@ -45,6 +65,7 @@ const config = defineConfig({
                 }),
             ],
         }),
+        guideToc(),
     ],
 });
 

@@ -13,7 +13,7 @@ export function NotFound() {
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
             <PageEnter key={pathname}>
-            <PageEnter.Item hero>
+            <PageEnter.Item>
             <header>
                 <p className="font-mono text-sm text-muted">404</p>
                 <h1 className="mt-3 text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">

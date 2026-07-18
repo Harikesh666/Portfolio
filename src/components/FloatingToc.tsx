@@ -1,4 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+    type ReactNode,
+    type RefObject,
+} from "react";
+import { useLocation } from "@tanstack/react-router";
 import {
     AnimatePresence,
     LayoutGroup,
@@ -9,6 +20,7 @@ import {
     useTransform,
     useVelocity,
 } from "motion/react";
+import type { TocItem } from "../lib/content-headings";
 import {
     hoverExitTween,
     snappySpring,
@@ -19,10 +31,22 @@ import {
     tocMorphSpring,
 } from "../lib/motion";
 
-type TocItem = {
-    id: string;
-    title: string;
+type FloatingTocProps = Readonly<{
+    containerRef: RefObject<HTMLElement | null>;
+    items: TocItem[];
+    slug: string;
+}>;
+
+type TocRegistration = FloatingTocProps & {
+    routeId: string;
+    token: symbol;
 };
+
+type RegisterToc = (toc: Omit<TocRegistration, "token">) => () => void;
+
+const FloatingTocContext = createContext<RegisterToc | null>(null);
+const FloatingTocRegistrationContext =
+    createContext<TocRegistration | null>(null);
 
 const desktopQuery = "(min-width: 1280px)";
 const viewportThreshold = 120;
@@ -33,15 +57,76 @@ const neighborTickScale = 20 / 28;
 const baseTickScale = 14 / 28;
 const maximumIndicatorStretch = 0.6;
 const indicatorVelocityScale = 0.02;
-const excludedIds = (id: string) =>
-    id === "table-of-contents" || id.startsWith("read-this-first");
+export function FloatingToc({
+    containerRef,
+    items,
+    slug,
+}: FloatingTocProps) {
+    const registerToc = useContext(FloatingTocContext);
+    const currentRouteId = useLocation({
+        select: (location) =>
+            `${location.state.__TSR_key ?? location.state.key}:${location.pathname}`,
+    });
+    const routeId = useRef(currentRouteId).current;
 
-export function FloatingToc() {
-    const [items, setItems] = useState<TocItem[]>([]);
-    const [activeId, setActiveId] = useState("");
+    if (!registerToc) {
+        throw new Error("FloatingToc must be rendered inside FloatingTocProvider");
+    }
+
+    useLayoutEffect(
+        () => registerToc({ containerRef, items, routeId, slug }),
+        [containerRef, items, registerToc, routeId, slug],
+    );
+
+    return null;
+}
+
+export function FloatingTocProvider({
+    children,
+}: Readonly<{ children: ReactNode }>) {
+    const [registration, setRegistration] =
+        useState<TocRegistration | null>(null);
+    const registerToc = useCallback<RegisterToc>((toc) => {
+        const registration = { ...toc, token: Symbol() };
+        setRegistration(registration);
+
+        return () =>
+            setRegistration((current) =>
+                current?.token === registration.token ? null : current,
+            );
+    }, []);
+
+    return (
+        <FloatingTocContext value={registerToc}>
+            <FloatingTocRegistrationContext value={registration}>
+                {children}
+            </FloatingTocRegistrationContext>
+        </FloatingTocContext>
+    );
+}
+
+export function FloatingTocHost() {
+    const registration = useContext(FloatingTocRegistrationContext);
+    const currentRouteId = useLocation({
+        select: (location) =>
+            `${location.state.__TSR_key ?? location.state.key}:${location.pathname}`,
+    });
+
+    return registration?.routeId === currentRouteId ? (
+        <FloatingTocView {...registration} key={registration.routeId} />
+    ) : null;
+}
+
+function FloatingTocView({
+    containerRef,
+    items,
+    slug,
+}: FloatingTocProps) {
+    const [activeId, setActiveId] = useState<string | null>(null);
     const [hoveredId, setHoveredId] = useState<string | null>(null);
     const [isExpanded, setIsExpanded] = useState(false);
     const activeItemRef = useRef<HTMLAnchorElement>(null);
+    const hasPaintedActiveSection = useRef(false);
     const isPointerOver = useRef(false);
     const isFocusWithin = useRef(false);
     const isExpandedRef = useRef(false);
@@ -66,20 +151,28 @@ export function FloatingToc() {
     const snappyTransition = shouldReduceMotion
         ? instantTransition
         : snappySpring;
+    const activeTransition = hasPaintedActiveSection.current
+        ? snappyTransition
+        : instantTransition;
     const stretchTransition = shouldReduceMotion
         ? instantTransition
         : stretchSpring;
-    const activeIndex = Math.max(
-        0,
-        items.findIndex((item) => item.id === activeId),
-    );
-    const maximumItemDistance = Math.max(
-        activeIndex,
-        items.length - 1 - activeIndex,
-    );
+
+    useEffect(() => {
+        if (activeId !== null) {
+            hasPaintedActiveSection.current = true;
+        }
+    }, [activeId]);
+    const activeIndex = activeId
+        ? items.findIndex((item) => item.id === activeId)
+        : -1;
+    const hasActiveItem = activeIndex >= 0;
+    const maximumItemDistance = hasActiveItem
+        ? Math.max(activeIndex, items.length - 1 - activeIndex)
+        : 0;
 
     const getItemDelay = (index: number) => {
-        if (shouldReduceMotion) return 0;
+        if (shouldReduceMotion || !hasActiveItem) return 0;
 
         const distance = Math.abs(index - activeIndex);
         const staggerDistance = isExpanded
@@ -116,8 +209,8 @@ export function FloatingToc() {
     };
 
     useEffect(() => {
-        activePosition.set(activeIndex);
-    }, [activeIndex, activePosition]);
+        if (hasActiveItem) activePosition.set(activeIndex);
+    }, [activeIndex, activePosition, hasActiveItem]);
 
     useEffect(() => {
         const mediaQuery = window.matchMedia(desktopQuery);
@@ -137,33 +230,40 @@ export function FloatingToc() {
         const startScrollspy = () => {
             if (!mediaQuery.matches) return;
 
-            const headings = Array.from(
-                document.querySelectorAll<HTMLElement>(".guide-content h2[id]"),
-            ).filter((heading) => !excludedIds(heading.id));
-            const nextItems = headings.map((heading) => ({
-                id: heading.id,
-                title: heading.textContent?.trim() ?? heading.id,
-            }));
-
-            setItems(nextItems);
-
-            if (nextItems.length === 0) {
-                setActiveId("");
+            if (items.length === 0) {
+                setActiveId(null);
                 sectionProgress.set(0);
                 return;
             }
 
             const updateActiveSection = () => {
                 animationFrame = undefined;
+                const container = containerRef.current;
+                if (!container?.isConnected) return;
+
+                const headings = items.flatMap((item) => {
+                    const heading = container.querySelector<HTMLElement>(
+                        `[id="${CSS.escape(item.id)}"]`,
+                    );
+                    return heading?.isConnected ? [heading] : [];
+                });
+                if (headings.length === 0) return;
+
                 let nextActiveIndex = 0;
-                let activeTop = headings[0].getBoundingClientRect().top;
+                const firstHeading = headings[0];
+                if (!firstHeading.isConnected) return;
+
+                let activeTop = firstHeading.getBoundingClientRect().top;
                 let nextTop: number | undefined;
 
                 for (let index = 0; index < headings.length; index += 1) {
+                    const heading = headings[index];
+                    if (!heading.isConnected) continue;
+
                     const headingTop =
                         index === 0
                             ? activeTop
-                            : headings[index].getBoundingClientRect().top;
+                            : heading.getBoundingClientRect().top;
 
                     if (headingTop <= viewportThreshold) {
                         nextActiveIndex = index;
@@ -176,7 +276,7 @@ export function FloatingToc() {
 
                 const sectionEnd =
                     nextTop ??
-                    document.documentElement.scrollHeight - window.scrollY;
+                    container.getBoundingClientRect().bottom;
                 const sectionLength = Math.max(sectionEnd - activeTop, 1);
                 const nextProgress = Math.min(
                     Math.max(
@@ -185,7 +285,10 @@ export function FloatingToc() {
                     ),
                     1,
                 );
-                const nextActiveId = headings[nextActiveIndex].id;
+                const activeHeading = headings[nextActiveIndex];
+                if (!activeHeading?.isConnected) return;
+
+                const nextActiveId = activeHeading.id;
 
                 sectionProgress.set(nextProgress);
                 setActiveId((currentId) =>
@@ -218,8 +321,7 @@ export function FloatingToc() {
             if (mediaQuery.matches) {
                 startScrollspy();
             } else {
-                setItems([]);
-                setActiveId("");
+                setActiveId(null);
                 sectionProgress.set(0);
             }
         };
@@ -231,42 +333,45 @@ export function FloatingToc() {
             stopScrollspy();
             mediaQuery.removeEventListener("change", handleMediaChange);
         };
-    }, [sectionProgress]);
+    }, [containerRef, items, sectionProgress]);
 
     if (items.length === 0) return null;
 
-    return (
-        <LayoutGroup id="floating-toc">
-            <nav
-                aria-label="Table of contents"
-                className="rise-in-delayed fixed right-6 top-1/2 z-20 hidden w-60 max-w-60 -translate-y-1/2 isolate xl:block"
-                onBlurCapture={(event) => {
-                    if (!event.currentTarget.contains(event.relatedTarget)) {
-                        isFocusWithin.current = false;
-                        updateExpandedState();
-                    }
-                }}
-                onFocusCapture={() => {
-                    isFocusWithin.current = true;
-                    updateExpandedState();
-                }}
-                onKeyDown={(event) => {
-                    if (event.key !== "Escape") return;
+    const panelId = `floating-toc-panel-${slug}`;
 
-                    isFocusWithin.current = false;
-                    (document.activeElement as HTMLElement | null)?.blur();
-                    updateExpandedState();
-                }}
-                onMouseEnter={() => {
-                    isPointerOver.current = true;
-                    updateExpandedState();
-                }}
-                onMouseLeave={() => {
-                    isPointerOver.current = false;
-                    updateExpandedState();
-                }}
-            >
-                <a className="sr-only" href="#floating-toc-panel">
+    return (
+        <LayoutGroup id={`floating-toc-${slug}`}>
+            <div className="pointer-events-none fixed inset-y-0 right-6 z-20 hidden w-60 max-w-60 items-center xl:flex">
+                <motion.nav
+                    aria-label="Table of contents"
+                    className="pointer-events-auto relative isolate w-full"
+                    onBlurCapture={(event) => {
+                        if (!event.currentTarget.contains(event.relatedTarget)) {
+                            isFocusWithin.current = false;
+                            updateExpandedState();
+                        }
+                    }}
+                    onFocusCapture={() => {
+                        isFocusWithin.current = true;
+                        updateExpandedState();
+                    }}
+                    onKeyDown={(event) => {
+                        if (event.key !== "Escape") return;
+
+                        isFocusWithin.current = false;
+                        (document.activeElement as HTMLElement | null)?.blur();
+                        updateExpandedState();
+                    }}
+                    onMouseEnter={() => {
+                        isPointerOver.current = true;
+                        updateExpandedState();
+                    }}
+                    onMouseLeave={() => {
+                        isPointerOver.current = false;
+                        updateExpandedState();
+                    }}
+                >
+                <a className="sr-only" href={`#${panelId}`}>
                     Table of contents
                 </a>
                 <ol
@@ -275,9 +380,11 @@ export function FloatingToc() {
                     style={{ pointerEvents: isExpanded ? "none" : "auto" }}
                 >
                     {items.map((item, index) => {
-                        const distance = Math.abs(index - activeIndex);
-                        const isActive = distance === 0;
-                        const isRead = index < activeIndex;
+                        const distance = hasActiveItem
+                            ? Math.abs(index - activeIndex)
+                            : Number.POSITIVE_INFINITY;
+                        const isActive = hasActiveItem && distance === 0;
+                        const isRead = hasActiveItem && index < activeIndex;
                         const tickScale = isActive
                             ? activeTickScale
                             : distance === 1
@@ -312,12 +419,12 @@ export function FloatingToc() {
                                                 scaleX: tickScale,
                                             }}
                                             style={{ backgroundColor: trackColor }}
-                                            transition={snappyTransition}
+                                            transition={activeTransition}
                                         />
                                         <motion.span
                                             className="absolute right-0 top-1/2 h-0.5 w-full -translate-y-1/2 origin-right rounded-full"
                                             animate={{ scaleX: tickScale }}
-                                            transition={snappyTransition}
+                                            transition={activeTransition}
                                         >
                                             <motion.span
                                                 className="block h-full w-full origin-left rounded-full"
@@ -356,7 +463,7 @@ export function FloatingToc() {
                               }
                     }
                     className="absolute right-0 top-0 w-60 overflow-hidden rounded-lg border border-divider bg-surface shadow-sm"
-                    id="floating-toc-panel"
+                    id={panelId}
                     initial={false}
                     style={{
                         transformOrigin: "100% 50%",
@@ -449,7 +556,11 @@ export function FloatingToc() {
                                         aria-current={
                                             isActive ? "true" : undefined
                                         }
-                                        className={`relative z-10 block min-w-0 truncate rounded-sm py-1 pl-4 text-left text-[12px] leading-snug transition-colors hover:text-foreground-strong ${
+                                        className={`relative z-10 block min-w-0 truncate rounded-sm py-1 pl-4 text-left text-[12px] leading-snug hover:text-foreground-strong ${
+                                            hasPaintedActiveSection.current
+                                                ? "transition-colors"
+                                                : ""
+                                        } ${
                                             isActive
                                                 ? "text-accent"
                                                 : "text-muted"
@@ -468,7 +579,8 @@ export function FloatingToc() {
                         })}
                     </ol>
                 </motion.div>
-            </nav>
+                </motion.nav>
+            </div>
         </LayoutGroup>
     );
 }
