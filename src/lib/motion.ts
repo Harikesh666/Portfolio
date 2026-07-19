@@ -55,6 +55,11 @@ export const exitTween = {
     ease: "easeIn" as const,
 };
 
+// Swaps simple routes without crossing a zero-opacity frame.
+export const instantRouteTween = {
+    duration: 0,
+};
+
 // Fades a vacated TOC hover row without delaying the next hover target.
 export const hoverExitTween = {
     duration: 0.12,

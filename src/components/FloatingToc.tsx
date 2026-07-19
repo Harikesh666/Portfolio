@@ -423,6 +423,7 @@ function FloatingTocPanelRow({
                     }
                     event.preventDefault();
                     onNavigate(id);
+                    if (event.detail > 0) event.currentTarget.blur();
                 }}
                 ref={isActive ? activeItemRef : undefined}
             >

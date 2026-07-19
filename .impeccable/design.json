@@ -43,7 +43,7 @@
       {
         "name": "reading-motion",
         "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Materializes viewport-sized blocks while oversized route and prose trees fade only; light routes enter on mount, article routes retain one deferred frame, and same-route hash history bypasses route motion."
+        "purpose": "Materializes viewport-sized blocks while oversized route and prose trees fade only; simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
       }
     ],
     "breakpoints": [

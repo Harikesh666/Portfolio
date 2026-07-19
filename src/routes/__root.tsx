@@ -22,6 +22,7 @@ import {
 import Header, { getHeaderHeight } from "../components/Header";
 import {
     exitTween,
+    instantRouteTween,
     materializeBlock,
     pageContainer,
     pageEnterTween,
@@ -112,7 +113,8 @@ function ExitScrollCompensation({
     headerHeight,
 }: Readonly<{ children: React.ReactNode; headerHeight: number }>) {
     const isPresent = useIsPresent();
-    const exitScrollY: number = usePresenceData() ?? 0;
+    const presenceData = usePresenceData();
+    const exitScrollY = typeof presenceData === "number" ? presenceData : 0;
     const scrollOffset = useMotionValue(0);
 
     useLayoutEffect(() => {
@@ -162,6 +164,7 @@ function RoutePage({
     routeContainerVariants,
     scrollTarget,
     shouldDeferEntrance,
+    shouldEnterInstantly,
     shouldReduceMotion,
 }: Readonly<{
     children: React.ReactNode;
@@ -174,6 +177,7 @@ function RoutePage({
         | typeof reducedPageContainer;
     scrollTarget: number;
     shouldDeferEntrance: boolean;
+    shouldEnterInstantly: boolean;
     shouldReduceMotion: boolean;
 }>) {
     const [canEnter, setCanEnter] = useState(
@@ -182,6 +186,7 @@ function RoutePage({
     const hasSettled = useRef(false);
     const hasPlacedScroll = useRef(false);
     const settleFrame = useRef<number | undefined>(undefined);
+    const shouldExitInstantly = usePresenceData() === true;
 
     useLayoutEffect(() => {
         if (hasPlacedScroll.current) return;
@@ -237,11 +242,20 @@ function RoutePage({
     return (
         <motion.div
             animate={
-                isInitialPage ? undefined : canEnter ? "visible" : "hidden"
+                isInitialPage
+                    ? undefined
+                    : shouldEnterInstantly || canEnter
+                      ? "visible"
+                      : "hidden"
             }
             className="relative w-full"
             exit={
-                shouldReduceMotion
+                shouldExitInstantly
+                    ? {
+                          opacity: 1,
+                          transition: instantRouteTween,
+                      }
+                    : shouldReduceMotion
                     ? {
                           opacity: 0,
                           transition: reducedPageEnterTween,
@@ -251,7 +265,13 @@ function RoutePage({
                           transition: exitTween,
                       }
             }
-            initial={isInitialPage ? undefined : "hidden"}
+            initial={
+                isInitialPage
+                    ? undefined
+                    : shouldEnterInstantly
+                      ? "visible"
+                      : "hidden"
+            }
             onAnimationComplete={(definition) => {
                 if (definition === "visible") signalEntranceSettled();
             }}
@@ -333,7 +353,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                             : routePageEnterTween
                     }
                 >
-                    <AnimatePresence mode="wait">
+                    <AnimatePresence custom={!shouldDeferEntrance} mode="wait">
                         <RoutePage
                             headerHeight={getHeaderHeight(pathname)}
                             isInitialPage={isInitialPage}
@@ -343,6 +363,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                             routeContainerVariants={routeContainerVariants}
                             scrollTarget={scrollTarget}
                             shouldDeferEntrance={shouldDeferEntrance}
+                            shouldEnterInstantly={!shouldDeferEntrance}
                             shouldReduceMotion={shouldReduceMotion ?? false}
                         >
                             {children}
