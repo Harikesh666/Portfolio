@@ -1,5 +1,4 @@
-// Motion rule: y/scale transforms are only permitted on elements approximately
-// one viewport tall or smaller; larger elements must animate opacity only.
+// Motion rule: scale entrances are limited to small page blocks; larger trees fade only.
 export const snappySpring = {
     type: "spring" as const,
     visualDuration: 0.2,
@@ -86,17 +85,25 @@ export const sheetRowTween = {
 
 export const tocItemDelayStep = 0.016;
 export const tocItemDelayCap = 0.25;
-export const pageEnterStagger = 0.04;
+export const pageEnterStagger = 0.05;
 
 export const pageEnterTween = {
-    duration: 0.4,
+    duration: 2,
     ease: pageEase,
 };
 
 export const routePageEnterTween = {
-    duration: 0.24,
+    duration: 2,
     ease: pageEase,
 };
+
+export const scrollRevealTween = {
+    duration: 2,
+    ease: pageEase,
+};
+
+// Keeps fallback route lifecycle work aligned with the full page entrance.
+export const routeEntranceFallbackMs = routePageEnterTween.duration * 1_000;
 
 export const headerMorphTween = {
     duration: 0.3,
@@ -114,10 +121,9 @@ export const reducedPageEnterTween = {
 };
 
 export const materializeBlock = {
-    hidden: { opacity: 0, y: 10, scale: 0.985 },
+    hidden: { opacity: 0, scale: 0.95 },
     visible: {
         opacity: 1,
-        y: 0,
         scale: 1,
     },
 };
@@ -130,11 +136,21 @@ export const routeMaterializeBlock = {
     },
 };
 
-export const routeFadeBlock = {
+export const scrollRevealBlock = {
+    hidden: { opacity: 0, y: 16 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: scrollRevealTween,
+    },
+};
+
+// Fades oversized content trees without rasterizing their full height each frame.
+export const scrollRevealTree = {
     hidden: { opacity: 0 },
     visible: {
         opacity: 1,
-        transition: routePageEnterTween,
+        transition: scrollRevealTween,
     },
 };
 

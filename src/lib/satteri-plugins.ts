@@ -16,3 +16,23 @@ export const headingIds = defineHastPlugin({
         },
     },
 });
+
+export const scrollRevealTargets = defineHastPlugin({
+    name: "scroll-reveal-targets",
+    element: {
+        filter: ["blockquote", "h2", "h3", "h4", "p"],
+        visit(node, ctx) {
+            ctx.setProperty(node, "data-scroll-reveal", "block");
+        },
+    },
+});
+
+export const scrollRevealTrees = defineHastPlugin({
+    name: "scroll-reveal-trees",
+    element: {
+        filter: ["figure", "ol", "table", "ul"],
+        visit(node, ctx) {
+            ctx.setProperty(node, "data-scroll-reveal", "tree");
+        },
+    },
+});

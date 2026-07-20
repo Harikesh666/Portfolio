@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../../components/PageEnter";
+import { Reveal } from "../../components/Reveal";
 import { posts, seriesIndex } from "../../lib/content";
 import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
@@ -61,7 +62,8 @@ function WritingPage() {
             <PageEnter.Fade>
                 <ol className="mt-10 border-t border-divider">
                     {seriesPosts.map((post) => (
-                        <li
+                        <Reveal
+                            as="li"
                             className="border-b border-divider"
                             key={post.slug}
                         >
@@ -92,7 +94,7 @@ function WritingPage() {
                                     </span>
                                 </motion.div>
                             </Link>
-                        </li>
+                        </Reveal>
                     ))}
                 </ol>
             </PageEnter.Fade>
@@ -105,7 +107,8 @@ function WritingPage() {
                         </h2>
                         <ol className="mt-4 border-t border-divider">
                             {standalonePosts.map((post) => (
-                                <li
+                                <Reveal
+                                    as="li"
                                     className="border-b border-divider"
                                     key={post.slug}
                                 >
@@ -133,7 +136,7 @@ function WritingPage() {
                                                 </span>
                                             </motion.div>
                                         </Link>
-                                </li>
+                                </Reveal>
                             ))}
                         </ol>
                     </section>

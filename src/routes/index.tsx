@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../components/PageEnter";
+import { Reveal } from "../components/Reveal";
 import { posts } from "../lib/content";
 import { snappySpring } from "../lib/motion";
 import { resumeExperience } from "../lib/resume";
@@ -126,7 +127,8 @@ function HomePage() {
                     </h2>
                     <div className="mt-4 border-t border-divider">
                         {resumeExperience.map((experience) => (
-                            <article
+                            <Reveal
+                                as="article"
                                 className="border-b border-divider py-5"
                                 key={experience.company}
                             >
@@ -179,7 +181,7 @@ function HomePage() {
                                             )}
                                         </ul>
                                     )}
-                            </article>
+                            </Reveal>
                         ))}
                     </div>
                 </section>
@@ -192,7 +194,8 @@ function HomePage() {
                     </h2>
                     <ol className="mt-4 border-t border-divider">
                         {posts.map((post) => (
-                            <li
+                            <Reveal
+                                as="li"
                                 className="border-b border-divider"
                                 key={post.slug}
                             >
@@ -223,7 +226,7 @@ function HomePage() {
                                         </span>
                                     </motion.div>
                                 </Link>
-                            </li>
+                            </Reveal>
                         ))}
                     </ol>
                     <Link

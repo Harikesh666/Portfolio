@@ -30,6 +30,7 @@ import {
     reducedPageContainer,
     reducedPageEnterTween,
     routeMaterializeBlock,
+    routeEntranceFallbackMs,
     routePageContainer,
     routePageEnterTween,
 } from "../lib/motion";
@@ -164,7 +165,6 @@ function RoutePage({
     routeContainerVariants,
     scrollTarget,
     shouldDeferEntrance,
-    shouldEnterInstantly,
     shouldReduceMotion,
 }: Readonly<{
     children: React.ReactNode;
@@ -177,7 +177,6 @@ function RoutePage({
         | typeof reducedPageContainer;
     scrollTarget: number;
     shouldDeferEntrance: boolean;
-    shouldEnterInstantly: boolean;
     shouldReduceMotion: boolean;
 }>) {
     const [canEnter, setCanEnter] = useState(
@@ -219,7 +218,7 @@ function RoutePage({
             hasSettled.current = true;
             performance.mark("portfolio-route-enter-complete");
             onEntranceSettled(routeId);
-        }, 600);
+        }, routeEntranceFallbackMs);
 
         return () => {
             window.clearTimeout(timeout);
@@ -241,13 +240,7 @@ function RoutePage({
 
     return (
         <motion.div
-            animate={
-                isInitialPage
-                    ? undefined
-                    : shouldEnterInstantly || canEnter
-                      ? "visible"
-                      : "hidden"
-            }
+            animate={canEnter ? "visible" : "hidden"}
             className="relative w-full"
             exit={
                 shouldExitInstantly
@@ -265,13 +258,7 @@ function RoutePage({
                           transition: exitTween,
                       }
             }
-            initial={
-                isInitialPage
-                    ? undefined
-                    : shouldEnterInstantly
-                      ? "visible"
-                      : "hidden"
-            }
+            initial={shouldReduceMotion ? "visible" : "hidden"}
             onAnimationComplete={(definition) => {
                 if (definition === "visible") signalEntranceSettled();
             }}
@@ -363,7 +350,6 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                             routeContainerVariants={routeContainerVariants}
                             scrollTarget={scrollTarget}
                             shouldDeferEntrance={shouldDeferEntrance}
-                            shouldEnterInstantly={!shouldDeferEntrance}
                             shouldReduceMotion={shouldReduceMotion ?? false}
                         >
                             {children}

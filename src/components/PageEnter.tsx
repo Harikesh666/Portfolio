@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
 import {
     reducedPageBlock,
-    routeFadeBlock,
     routeMaterializeBlock,
+    scrollRevealTree,
 } from "../lib/motion";
+import { useRevealInView } from "../lib/use-reveal-in-view";
 
 type PageEnterProps = Readonly<{
     children: ReactNode;
@@ -20,9 +21,14 @@ function PageEnterRoot({ children }: PageEnterProps) {
 
 function PageEnterItem({ children }: PageEnterItemProps) {
     const shouldReduceMotion = useReducedMotion();
+    const revealRef = useRef<HTMLDivElement>(null);
+    const isInView = useRevealInView(revealRef, shouldReduceMotion);
 
     return (
         <motion.div
+            animate={shouldReduceMotion || isInView ? "visible" : "hidden"}
+            initial={shouldReduceMotion ? false : "hidden"}
+            ref={revealRef}
             variants={
                 shouldReduceMotion ? reducedPageBlock : routeMaterializeBlock
             }
@@ -34,10 +40,15 @@ function PageEnterItem({ children }: PageEnterItemProps) {
 
 function PageEnterFade({ children }: PageEnterItemProps) {
     const shouldReduceMotion = useReducedMotion();
+    const revealRef = useRef<HTMLDivElement>(null);
+    const isInView = useRevealInView(revealRef, shouldReduceMotion);
 
     return (
         <motion.div
-            variants={shouldReduceMotion ? reducedPageBlock : routeFadeBlock}
+            animate={shouldReduceMotion || isInView ? "visible" : "hidden"}
+            initial={shouldReduceMotion ? false : "hidden"}
+            ref={revealRef}
+            variants={shouldReduceMotion ? reducedPageBlock : scrollRevealTree}
         >
             {children}
         </motion.div>

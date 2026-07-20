@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Download } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../components/PageEnter";
+import { Reveal } from "../components/Reveal";
 import { snappySpring } from "../lib/motion";
 import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
@@ -103,15 +104,15 @@ function ResumePage() {
             </header>
             </PageEnter.Item>
 
-                <PageEnter.Item>
+                <Reveal>
                 <ResumeSection title="Summary">
                     <p className="text-foreground">
                         Full-stack developer specializing in FastAPI and Node.js backends with production React frontends. Built and maintained features across a field sales automation platform and a multi-tenant LMS, from architecting DB isolation across 5 client orgs to catching same-day critical bugs in production. Strongest at debugging across systems and shipping end-to-end under real constraints.
                     </p>
                 </ResumeSection>
-                </PageEnter.Item>
+                </Reveal>
 
-                <PageEnter.Item>
+                <Reveal>
                 <ResumeSection title="Technical Skills">
                     <dl className="space-y-2 text-sm text-foreground">
                         <SkillRow label="Languages" value="JavaScript, TypeScript, Python, SQL" />
@@ -120,13 +121,17 @@ function ResumePage() {
                         <SkillRow label="Cloud & DevOps" value="AWS (EC2, Lambda, S3, ECR, Amplify, CloudTrail), GCP, Docker, CI/CD" />
                     </dl>
                 </ResumeSection>
-                </PageEnter.Item>
+                </Reveal>
 
                 <PageEnter.Fade>
                 <ResumeSection title="Experience">
                     <div className="border-t border-divider">
                         {resumeExperience.map((experience) => (
-                            <article className="border-b border-divider py-5" key={experience.company}>
+                            <Reveal
+                                as="article"
+                                className="border-b border-divider py-5"
+                                key={experience.company}
+                            >
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
                                     <h3 className="font-bold text-foreground-strong">
                                         {experience.role}, {experience.company}
@@ -162,13 +167,13 @@ function ResumePage() {
                                         ))}
                                     </ul>
                                     )}
-                            </article>
+                            </Reveal>
                         ))}
                     </div>
                 </ResumeSection>
                 </PageEnter.Fade>
 
-                <PageEnter.Item>
+                <Reveal>
                 <ResumeSection title="Education">
                     <div className="space-y-4 text-foreground">
                         <p>
@@ -185,7 +190,7 @@ function ResumePage() {
                         </p>
                     </div>
                 </ResumeSection>
-                </PageEnter.Item>
+                </Reveal>
             </PageEnter>
         </main>
     );

@@ -10,6 +10,7 @@ import { TocSheet } from "../../components/TocSheet";
 import { getPost, getPostNeighbors, posts } from "../../lib/content";
 import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
+import { useArticleScrollReveals } from "../../lib/use-article-scroll-reveals";
 import { desktopQuery } from "../../lib/toc";
 import { useMediaQuery } from "../../lib/use-media-query";
 import { useTocNavigation } from "../../lib/use-toc-navigation";
@@ -85,6 +86,7 @@ function PostPage() {
     const hasDesktopTocRegistration = useHasFloatingTocRegistration();
     const post = Route.useLoaderData();
     const articleRef = useRef<HTMLElement>(null);
+    useArticleScrollReveals(articleRef, shouldReduceMotion);
     const navigateToTocItem = useTocNavigation(articleRef);
     const { previous, next } = getPostNeighbors(post);
     const seriesPostCount = post.series
