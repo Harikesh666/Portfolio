@@ -267,7 +267,7 @@ function FloatingTocRailTick({
                     <motion.span
                         className="absolute right-0 top-1/2 h-0.5 w-full -translate-y-1/2 origin-right rounded-full"
                         animate={{
-                            opacity: isActive ? 0.38 : 1,
+                            opacity: isActive ? 0.62 : 1,
                             scaleX: tickScale,
                         }}
                         style={{ backgroundColor: trackColor }}
@@ -409,7 +409,7 @@ function FloatingTocPanelRow({
                 aria-current={isActive ? "true" : undefined}
                 className={`relative z-10 block min-w-0 truncate rounded-sm py-1 pl-4 text-left text-[12px] leading-snug hover:text-foreground-strong ${
                     hasPaintedActiveSection ? "transition-colors" : ""
-                } ${isActive ? "text-accent" : "text-muted"}`}
+                } ${isActive ? "text-accent" : "text-foreground"}`}
                 href={href}
                 onClick={(event) => {
                     if (
@@ -594,10 +594,10 @@ function FloatingTocView({
                         const trackColor = isActive
                             ? "var(--accent)"
                             : distance === 1
-                              ? "color-mix(in oklab, var(--accent) 38%, var(--divider))"
+                              ? "color-mix(in oklab, var(--accent) 38%, var(--toc-track))"
                               : isRead
                                 ? "var(--accent-soft)"
-                                : "var(--divider)";
+                                : "var(--toc-track)";
 
                         return (
                             <FloatingTocRailTick
@@ -638,7 +638,7 @@ function FloatingTocView({
                                       : collapsedPanelScale,
                               }
                     }
-                    className="absolute right-0 top-0 w-60 overflow-hidden rounded-lg border border-divider bg-surface shadow-sm"
+                    className="absolute right-0 top-0 w-60 overflow-hidden rounded-lg border border-foreground/20 bg-surface shadow-sm"
                     id={panelId}
                     initial={false}
                     style={{
