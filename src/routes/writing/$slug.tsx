@@ -2,13 +2,12 @@ import { useRef } from "react";
 import { ArrowUUpLeftIcon } from "@phosphor-icons/react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
-import {
-    FloatingToc,
-    useHasFloatingTocRegistration,
-} from "../../components/FloatingToc";
+import { FloatingToc } from "../../components/FloatingToc";
 import { PageEnter } from "../../components/PageEnter";
 import { TocSheet } from "../../components/TocSheet";
-import { getPost, getPostNeighbors, posts } from "../../lib/content";
+import { useHasFloatingTocRegistration } from "../../components/TocRegistry";
+import { getPostNeighbors, posts } from "../../lib/content";
+import { getPost } from "../../lib/content.functions";
 import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
 import { useArticleScrollReveals } from "../../lib/use-article-scroll-reveals";
@@ -18,7 +17,7 @@ import { useTocNavigation } from "../../lib/use-toc-navigation";
 
 export const Route = createFileRoute("/writing/$slug")({
     loader: async ({ params }) => {
-        const post = await getPost(params.slug);
+        const post = await getPost({ data: { slug: params.slug } });
         if (!post) throw notFound();
         return post;
     },

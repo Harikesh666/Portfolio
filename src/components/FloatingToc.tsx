@@ -1,12 +1,9 @@
 import {
-    createContext,
-    useContext,
     useEffect,
     useImperativeHandle,
     useLayoutEffect,
     useRef,
     useState,
-    type ReactNode,
     type Ref,
     type RefObject,
 } from "react";
@@ -22,7 +19,6 @@ import {
     useVelocity,
     type MotionValue,
 } from "motion/react";
-import type { TocItem } from "../lib/content-headings";
 import {
     hoverExitTween,
     snappySpring,
@@ -32,33 +28,17 @@ import {
 } from "../lib/motion";
 import { getTocItemDelay } from "../lib/toc";
 import { useScrollSpy } from "../lib/use-scroll-spy";
-
-type FloatingTocProps = Readonly<{
-    containerRef: RefObject<HTMLElement | null>;
-    items: TocItem[];
-    onNavigate: (id: string) => void;
-    slug: string;
-}>;
-
-type TocRegistration = FloatingTocProps & {
-    instanceId: number;
-    routeId: string;
-    token: symbol;
-};
+import {
+    useTocRegistration,
+    useTocRegistrationValue,
+    type FloatingTocProps,
+    type TocRegistration,
+} from "./TocRegistry";
 
 type FloatingTocLifecycle = {
     activate: () => void;
     deactivate: () => void;
 };
-
-type RegisterToc = (
-    toc: Omit<TocRegistration, "instanceId" | "token">,
-) => () => void;
-
-const FloatingTocContext = createContext<RegisterToc | null>(null);
-const FloatingTocRegistrationContext =
-    createContext<TocRegistration | null>(null);
-let nextTocRegistrationId = 0;
 
 const collapsedPanelScale = 0.08;
 const collapseDelayRatio = 0.65;
@@ -70,26 +50,17 @@ const indicatorVelocityScale = 0.02;
 
 type TocStaggerPhase = "expanding" | "collapsing";
 
-function getNextTocRegistrationId() {
-    nextTocRegistrationId += 1;
-    return nextTocRegistrationId;
-}
-
 export function FloatingToc({
     containerRef,
     items,
     onNavigate,
     slug,
 }: FloatingTocProps) {
-    const registerToc = useContext(FloatingTocContext);
+    const registerToc = useTocRegistration();
     const currentRouteId = useLocation({
         select: (location) => location.pathname,
     });
     const [routeId] = useState(currentRouteId);
-
-    if (!registerToc) {
-        throw new Error("FloatingToc must be rendered inside FloatingTocProvider");
-    }
 
     useEffect(() => {
         let unregister: (() => void) | undefined;
@@ -112,38 +83,10 @@ export function FloatingToc({
     return null;
 }
 
-export function FloatingTocProvider({
-    children,
-}: Readonly<{ children: ReactNode }>) {
-    const [registration, setRegistration] =
-        useState<TocRegistration | null>(null);
-    const registerToc: RegisterToc = (toc) => {
-        const registration = {
-            ...toc,
-            instanceId: getNextTocRegistrationId(),
-            token: Symbol(),
-        };
-        setRegistration(registration);
-
-        return () =>
-            setRegistration((current) =>
-                current?.token === registration.token ? null : current,
-            );
-    };
-
-    return (
-        <FloatingTocContext value={registerToc}>
-            <FloatingTocRegistrationContext value={registration}>
-                {children}
-            </FloatingTocRegistrationContext>
-        </FloatingTocContext>
-    );
-}
-
 export function FloatingTocHost({
     settledRouteId,
 }: Readonly<{ settledRouteId: string }>) {
-    const registration = useContext(FloatingTocRegistrationContext);
+    const registration = useTocRegistrationValue();
     const currentRouteId = useLocation({
         select: (location) => location.pathname,
     });
@@ -212,10 +155,6 @@ export function FloatingTocHost({
             />
         </div>
     ) : null;
-}
-
-export function useHasFloatingTocRegistration() {
-    return useContext(FloatingTocRegistrationContext) !== null;
 }
 
 type FloatingTocRailTickProps = Readonly<{

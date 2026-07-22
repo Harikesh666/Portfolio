@@ -1,4 +1,11 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+    lazy,
+    Suspense,
+    useEffect,
+    useLayoutEffect,
+    useRef,
+    useState,
+} from "react";
 import {
     HeadContent,
     Scripts,
@@ -15,10 +22,7 @@ import {
     useReducedMotion,
 } from "motion/react";
 import Footer from "../components/Footer";
-import {
-    FloatingTocHost,
-    FloatingTocProvider,
-} from "../components/FloatingToc";
+import { FloatingTocProvider } from "../components/TocRegistry";
 import Header, { getHeaderHeight } from "../components/Header";
 import {
     exitTween,
@@ -38,6 +42,14 @@ import { absoluteUrl, site } from "../lib/site";
 
 import appCss from "../styles.css?url";
 
+const fontStylesheetHref =
+    "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500&display=swap";
+
+const LazyFloatingTocHost = lazy(async () => {
+    const { FloatingTocHost } = await import("../components/FloatingToc");
+    return { default: FloatingTocHost };
+});
+
 const themeScript = `(() => {
   const fallback = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   try {
@@ -46,6 +58,13 @@ const themeScript = `(() => {
   } catch {
     document.documentElement.setAttribute("data-theme", fallback);
   }
+})();`;
+
+const fontStylesheetScript = `(() => {
+  const link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = ${JSON.stringify(fontStylesheetHref)};
+  document.head.append(link);
 })();`;
 
 export const Route = createRootRoute({
@@ -74,7 +93,15 @@ export const Route = createRootRoute({
             { name: "twitter:description", content: site.description },
             { name: "twitter:image", content: absoluteUrl("/og.png") },
         ],
-        links: [{ rel: "stylesheet", href: appCss }],
+        links: [
+            { rel: "preconnect", href: "https://fonts.googleapis.com" },
+            {
+                rel: "preconnect",
+                href: "https://fonts.gstatic.com",
+                crossOrigin: "anonymous",
+            },
+            { rel: "stylesheet", href: appCss },
+        ],
     }),
     shellComponent: RootDocument,
 });
@@ -84,6 +111,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <html lang="en" suppressHydrationWarning>
             <head>
                 <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+                <script
+                    dangerouslySetInnerHTML={{ __html: fontStylesheetScript }}
+                />
                 <meta
                     name="theme-color"
                     content="#faf9f5"
@@ -258,7 +288,9 @@ function RoutePage({
                           transition: exitTween,
                       }
             }
-            initial={shouldReduceMotion ? "visible" : "hidden"}
+            initial={
+                shouldReduceMotion || isInitialPage ? "visible" : "hidden"
+            }
             onAnimationComplete={(definition) => {
                 if (definition === "visible") signalEntranceSettled();
             }}
@@ -358,7 +390,13 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                     <motion.div variants={routeBlockVariants}>
                         <Footer />
                     </motion.div>
-                    <FloatingTocHost settledRouteId={settledRouteId} />
+                    {pathname.startsWith("/writing/") ? (
+                        <Suspense fallback={null}>
+                            <LazyFloatingTocHost
+                                settledRouteId={settledRouteId}
+                            />
+                        </Suspense>
+                    ) : null}
                 </MotionConfig>
             </motion.div>
         </MotionConfig>
