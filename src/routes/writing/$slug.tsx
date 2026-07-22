@@ -122,18 +122,17 @@ function PostPage() {
                 </header>
                 </PageEnter.Item>
 
-                <PageEnter.Fade>
-                    <article
-                        className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:text-foreground-strong prose-headings:tracking-[-0.02em] prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:before:content-none prose-code:after:content-none"
-                        dangerouslySetInnerHTML={{ __html: post.html }}
-                        ref={articleRef}
-                    />
+                <article
+                    className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:text-foreground-strong prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:before:content-none prose-code:after:content-none"
+                    dangerouslySetInnerHTML={{ __html: post.html }}
+                    ref={articleRef}
+                />
 
-                    {(previous || next) && (
-                        <nav
-                            className="mt-14 space-y-4 border-t border-divider pt-5"
-                            aria-label="Series navigation"
-                        >
+                {(previous || next) && (
+                    <nav
+                        className="mt-14 space-y-4 border-t border-divider pt-5"
+                        aria-label="Series navigation"
+                    >
                             {previous && (
                                 <motion.div
                                     initial="idle"
@@ -192,9 +191,8 @@ function PostPage() {
                                     </Link>
                                 </motion.div>
                             )}
-                        </nav>
-                    )}
-                </PageEnter.Fade>
+                    </nav>
+                )}
                 </PageEnter>
             </main>
             {isDesktop === true && (
