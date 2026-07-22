@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -8,6 +8,10 @@ import {
     headerMorphTween,
     routePageEnterTween,
     snappySpring,
+    themeToggleButtonHover,
+    themeToggleButtonTap,
+    themeToggleIconVariants,
+    themeGifMaskTransitionStyles,
 } from "../lib/motion";
 import { posts } from "../lib/content";
 import { site } from "../lib/site";
@@ -16,6 +20,22 @@ const navLinkClassName =
     "py-1 text-muted hover:text-foreground-strong data-[status=active]:font-semibold data-[status=active]:text-foreground-strong";
 
 type HeaderMode = "breadcrumb" | "identity";
+
+const themeTransitionStyleId = "theme-gif-mask-transition";
+
+function ensureThemeGifTransitionStyles() {
+    let styleElement = document.getElementById(
+        themeTransitionStyleId,
+    ) as HTMLStyleElement | null;
+
+    if (!styleElement) {
+        styleElement = document.createElement("style");
+        styleElement.id = themeTransitionStyleId;
+        document.head.appendChild(styleElement);
+    }
+
+    styleElement.textContent = themeGifMaskTransitionStyles;
+}
 
 const headerGeometry = {
     identity: {
@@ -82,6 +102,8 @@ function ThemeToggle({
     shouldReduceMotion,
 }: Readonly<{ mode: HeaderMode; shouldReduceMotion: boolean }>) {
     const [theme, setTheme] = useState<"light" | "dark">("light");
+    const themeTransitionId = useRef(0);
+    const iconDirection = theme === "dark" ? 1 : -1;
 
     useEffect(() => {
         setTheme(
@@ -104,7 +126,17 @@ function ThemeToggle({
             return;
         }
 
-        document.startViewTransition(applyTheme);
+        ensureThemeGifTransitionStyles();
+        themeTransitionId.current += 1;
+        const transitionId = String(themeTransitionId.current);
+        document.documentElement.dataset.themeTransition = transitionId;
+
+        const transition = document.startViewTransition(applyTheme);
+        void transition.finished.finally(() => {
+            if (document.documentElement.dataset.themeTransition === transitionId) {
+                delete document.documentElement.dataset.themeTransition;
+            }
+        });
     }
 
     return (
@@ -117,7 +149,10 @@ function ThemeToggle({
             aria-label="Toggle theme"
             aria-pressed={theme === "dark"}
             onClick={toggleTheme}
-            whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+            whileHover={
+                shouldReduceMotion ? undefined : themeToggleButtonHover
+            }
+            whileTap={shouldReduceMotion ? undefined : themeToggleButtonTap}
             transition={
                 shouldReduceMotion
                     ? { duration: 0 }
@@ -131,19 +166,20 @@ function ThemeToggle({
                     <Moon aria-hidden="true" size={18} />
                 )
             ) : (
-                <AnimatePresence initial={false} mode="wait">
+                <AnimatePresence
+                    custom={iconDirection}
+                    initial={false}
+                    mode="wait"
+                >
                     <motion.span
                         className="inline-flex"
+                        custom={iconDirection}
                         key={theme}
-                        initial={{ rotate: -90, scale: 0.5, opacity: 0 }}
-                        animate={{ rotate: 0, scale: 1, opacity: 1 }}
-                        exit={{
-                            rotate: 90,
-                            scale: 0.5,
-                            opacity: 0,
-                            transition: snappySpring,
-                        }}
+                        animate="animate"
+                        exit="exit"
+                        initial="initial"
                         transition={bouncySpring}
+                        variants={themeToggleIconVariants}
                     >
                         {theme === "dark" ? (
                             <Sun aria-hidden="true" size={18} />

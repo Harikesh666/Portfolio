@@ -48,6 +48,40 @@ export const bouncySpring = {
     bounce: 0.35,
 };
 
+// Reveals the incoming theme through the supplied Skiper GIF mask.
+export const themeGifMaskTransitionStyles = `
+html[data-theme-transition]::view-transition-group(root) {
+    animation-timing-function: ease-in;
+}
+
+html[data-theme-transition]::view-transition-new(root) {
+    mask: url("/assets/theme-transition-mask.gif") center / 0 no-repeat;
+    animation: theme-gif-mask-scale 1.8s;
+}
+
+html[data-theme-transition]::view-transition-old(root) {
+    animation: theme-gif-mask-scale 1.8s;
+}
+
+@keyframes theme-gif-mask-scale {
+    0% {
+        mask-size: 0;
+    }
+
+    10% {
+        mask-size: 50vmax;
+    }
+
+    90% {
+        mask-size: 50vmax;
+    }
+
+    100% {
+        mask-size: 2000vmax;
+    }
+}
+`;
+
 // Removes outgoing routes quickly enough to keep wait-mode blank time minimal.
 export const exitTween = {
     duration: 0.09,
@@ -114,6 +148,28 @@ export const headerContentExitTween = {
     duration: 0.12,
     ease: "easeIn" as const,
 };
+
+// Gives the theme glyph a directional orbital swap between celestial states.
+export const themeToggleIconVariants = {
+    initial: (direction: number) => ({
+        rotate: -140 * direction,
+        scale: 0.45,
+        opacity: 0,
+    }),
+    animate: {
+        rotate: 0,
+        scale: 1,
+        opacity: 1,
+    },
+    exit: (direction: number) => ({
+        rotate: 140 * direction,
+        scale: 0.45,
+        opacity: 0,
+    }),
+};
+
+export const themeToggleButtonHover = { scale: 1.08 };
+export const themeToggleButtonTap = { scale: 0.9 };
 
 export const reducedPageEnterTween = {
     duration: 0.15,
