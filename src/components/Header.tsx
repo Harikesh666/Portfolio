@@ -133,7 +133,10 @@ function ThemeToggle({
 
         const transition = document.startViewTransition(applyTheme);
         void transition.finished.finally(() => {
-            if (document.documentElement.dataset.themeTransition === transitionId) {
+            if (
+                document.documentElement.dataset.themeTransition ===
+                transitionId
+            ) {
                 delete document.documentElement.dataset.themeTransition;
             }
         });
@@ -149,9 +152,7 @@ function ThemeToggle({
             aria-label="Toggle theme"
             aria-pressed={theme === "dark"}
             onClick={toggleTheme}
-            whileHover={
-                shouldReduceMotion ? undefined : themeToggleButtonHover
-            }
+            whileHover={shouldReduceMotion ? undefined : themeToggleButtonHover}
             whileTap={shouldReduceMotion ? undefined : themeToggleButtonTap}
             transition={
                 shouldReduceMotion
@@ -272,10 +273,7 @@ function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
                 /
             </span>
             <span className="min-w-0 truncate text-muted">{postTitle}</span>
-            <span
-                aria-hidden="true"
-                className="ml-auto h-11 w-[3.25rem] shrink-0"
-            />
+            <span aria-hidden="true" className="ml-auto h-11 w-13 shrink-0" />
         </div>
     );
 }
@@ -305,11 +303,7 @@ function SharedAvatar({
                 borderRadius: 9999,
                 transformOrigin: "top left",
             }}
-            transition={
-                shouldReduceMotion
-                    ? { duration: 0 }
-                    : headerMorphTween
-            }
+            transition={shouldReduceMotion ? { duration: 0 } : headerMorphTween}
         >
             <Link aria-label="Home" className="block h-full w-full" to="/">
                 <Avatar size={headerGeometry.identity.avatarSize} />

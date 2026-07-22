@@ -13,3 +13,6 @@ __unconfig*
 todos.json
 .agents*
 skills*
+!public/icons/
+!public/icons/skills/
+!public/icons/skills/*.svg
