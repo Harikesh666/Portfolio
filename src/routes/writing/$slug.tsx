@@ -16,6 +16,9 @@ import { useMediaQuery } from "../../lib/use-media-query";
 import { useTocNavigation } from "../../lib/use-toc-navigation";
 
 export const Route = createFileRoute("/writing/$slug")({
+    pendingComponent: PostPending,
+    pendingMs: 0,
+    pendingMinMs: 0,
     loader: async ({ params }) => {
         const post = await getPost({ data: { slug: params.slug } });
         if (!post) throw notFound();
@@ -79,6 +82,19 @@ export const Route = createFileRoute("/writing/$slug")({
     },
     component: PostPage,
 });
+
+function PostPending() {
+    return (
+        <main
+            id="main-content"
+            className="mx-auto w-full max-w-2xl px-5 pb-12 pt-8"
+        >
+            <div aria-live="polite" className="font-mono text-sm text-muted" role="status">
+                Loading article…
+            </div>
+        </main>
+    );
+}
 
 function PostPage() {
     const shouldReduceMotion = useReducedMotion();
