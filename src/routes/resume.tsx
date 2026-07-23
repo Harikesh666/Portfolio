@@ -44,7 +44,7 @@ function ResumePage() {
             <PageEnter>
             <PageEnter.Item>
             <header>
-                <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
+                <h1 className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
                     Harikesh Mishra
                 </h1>
                 <p className="mt-2 flex flex-wrap items-center gap-x-2 font-mono text-sm text-muted">
@@ -133,7 +133,7 @@ function ResumePage() {
                                 key={experience.company}
                             >
                                 <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-                                    <h3 className="font-bold text-foreground-strong">
+                                    <h3 className="font-semibold text-foreground-strong">
                                         {experience.role}, {experience.company}
                                     </h3>
                                     <p className="shrink-0 font-mono text-sm text-muted">
@@ -144,7 +144,7 @@ function ResumePage() {
                                 {"projects" in experience &&
                                     experience.projects?.map((project) => (
                                     <section className="mt-5" key={project.name}>
-                                        <h4 className="text-sm font-bold text-foreground-strong">
+                                        <h4 className="text-sm font-semibold text-foreground-strong">
                                             {project.name}
                                         </h4>
                                         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
@@ -177,13 +177,13 @@ function ResumePage() {
                 <ResumeSection title="Education">
                     <div className="space-y-4 text-foreground">
                         <p>
-                            <span className="font-bold text-foreground-strong">
+                            <span className="font-semibold text-foreground-strong">
                                 M.Sc. Information Technology
                             </span>{" "}
                             · Sathaye College · 2022–2024
                         </p>
                         <p>
-                            <span className="font-bold text-foreground-strong">
+                            <span className="font-semibold text-foreground-strong">
                                 B.Sc. Information Technology
                             </span>{" "}
                             · Raheja College of Arts and Commerce · 2019–2022
@@ -205,7 +205,7 @@ function ResumeSection({
 }>) {
     return (
         <section className="mt-14">
-            <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+            <h2 className="font-mono text-[12px] font-medium uppercase tracking-[0.1em] text-muted">
                 {title}
             </h2>
             <div className="mt-4">{children}</div>
@@ -216,7 +216,7 @@ function ResumeSection({
 function SkillRow({ label, value }: Readonly<{ label: string; value: string }>) {
     return (
         <div className="grid gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
-            <dt className="font-bold text-foreground-strong">{label}:</dt>
+            <dt className="font-semibold text-foreground-strong">{label}:</dt>
             <dd>{value}</dd>
         </div>
     );

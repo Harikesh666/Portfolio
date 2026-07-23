@@ -16,7 +16,7 @@ export function NotFound() {
             <PageEnter.Item>
             <header>
                 <p className="font-mono text-sm text-muted">404</p>
-                <h1 className="mt-3 text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
+                <h1 className="mt-3 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
                     This page doesn't exist
                 </h1>
             </header>

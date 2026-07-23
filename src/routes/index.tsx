@@ -121,12 +121,12 @@ function HomePage() {
                     <h1 className="sr-only">
                         Harikesh Mishra — Software Developer in Mumbai
                     </h1>
-                    <p className="text-muted">Software Developer, Mumbai</p>
+                    <p className="font-medium text-muted">Software Developer, Mumbai</p>
                 </header>
             </PageEnter.Item>
             <PageEnter.Item>
                 <div>
-                    <p className="mt-7 text-foreground">
+                    <p className="mt-7 leading-relaxed text-foreground">
                         I work across React, Node.js, FastAPI, and PostgreSQL -
                         shipping reliable product features, finding the bugs
                         that matter, and making complex systems easier to
@@ -173,7 +173,7 @@ function HomePage() {
                 <PageEnter.Item>
                     <section aria-labelledby="skills-heading" className="mt-14">
                         <h2
-                            className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted font-bold"
+                            className="font-mono text-[12px] font-medium uppercase tracking-[0.1em] text-muted"
                             id="skills-heading"
                         >
                             Skills
@@ -208,7 +208,7 @@ function HomePage() {
 
                 <PageEnter.Fade>
                     <section id="work" className="mt-14">
-                        <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted font-bold">
+                        <h2 className="font-mono text-[12px] font-medium uppercase tracking-[0.1em] text-muted">
                             Work
                         </h2>
                         <div className="mt-4 border-t border-divider">
@@ -227,7 +227,7 @@ function HomePage() {
 
                 <PageEnter.Fade>
                     <section className="mt-14">
-                        <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted font-bold">
+                        <h2 className="font-mono text-[12px] font-medium uppercase tracking-[0.1em] text-muted">
                             Writing
                         </h2>
                         <ol className="mt-4 border-t border-divider">
@@ -256,13 +256,13 @@ function HomePage() {
                                                     "0",
                                                 )}
                                             </span>
-                                            <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
+                                            <span className="mt-1 block text-[17px] font-semibold leading-snug text-foreground-strong group-hover:text-accent">
                                                 {post.title}
                                             </span>
                                             <span className="mt-1 block text-sm text-muted">
                                                 {post.description}
                                             </span>
-                                            <span className="mt-2 block text-sm text-foreground">
+                                            <span className="mt-2 block text-sm text-muted">
                                                 {post.readTime}
                                             </span>
                                         </motion.div>
@@ -301,7 +301,7 @@ function WorkExperience({
                     onClick={() => setIsExpanded((value) => !value)}
                     type="button"
                 >
-                    <span className="font-bold text-foreground-strong">
+                    <span className="font-semibold text-foreground-strong">
                         {experience.role}, {experience.company}
                     </span>
                     <span className="flex shrink-0 items-center gap-3 font-mono text-sm text-muted">
@@ -327,7 +327,7 @@ function WorkExperience({
                 <div id={detailsId}>
                     {experience.projects?.map((project) => (
                         <section className="mt-5" key={project.name}>
-                            <h4 className="text-sm font-bold text-foreground-strong">
+                            <h4 className="text-sm font-semibold text-foreground-strong">
                                 {project.name}
                             </h4>
                             <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">

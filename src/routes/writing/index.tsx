@@ -48,7 +48,7 @@ function WritingPage() {
             <PageEnter>
             <PageEnter.Item>
             <header>
-                <h1 className="text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
+                <h1 className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
                     {series.title}
                 </h1>
                 <p className="mt-3 text-foreground">{series.description}</p>
@@ -83,13 +83,13 @@ function WritingPage() {
                                     <span className="font-mono text-sm text-accent">
                                         {String(post.order).padStart(2, "0")}
                                     </span>
-                                    <span className="mt-1 block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
+                                    <span className="mt-1 block text-[17px] font-semibold leading-snug text-foreground-strong group-hover:text-accent">
                                         {post.title}
                                     </span>
                                     <span className="mt-1 block text-sm text-muted">
                                         {post.description}
                                     </span>
-                                    <span className="mt-2 block text-sm text-foreground">
+                                    <span className="mt-2 block text-sm text-muted">
                                         {post.readTime}
                                     </span>
                                 </motion.div>
@@ -102,7 +102,7 @@ function WritingPage() {
                 {standalonePosts.length > 0 && (
                     <PageEnter.Fade>
                     <section className="mt-14">
-                        <h2 className="font-mono text-[12px] uppercase tracking-[0.08em] text-muted">
+                        <h2 className="font-mono text-[12px] font-medium uppercase tracking-[0.1em] text-muted">
                             Standalone
                         </h2>
                         <ol className="mt-4 border-t border-divider">
@@ -125,13 +125,13 @@ function WritingPage() {
                                                 }
                                                 transition={snappySpring}
                                             >
-                                                <span className="block text-[17px] font-bold text-foreground-strong group-hover:text-accent">
+                                                <span className="block text-[17px] font-semibold leading-snug text-foreground-strong group-hover:text-accent">
                                                     {post.title}
                                                 </span>
                                                 <span className="mt-1 block text-sm text-muted">
                                                     {post.description}
                                                 </span>
-                                                <span className="mt-2 block text-sm text-foreground">
+                                                <span className="mt-2 block text-sm text-muted">
                                                     {post.readTime}
                                                 </span>
                                             </motion.div>

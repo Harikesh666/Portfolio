@@ -7,25 +7,25 @@
       "surface": {
         "role": "neutral",
         "displayName": "Warm Reading Surface",
-        "canonical": "oklch(0.98 0.004 95)",
-        "tonalRamp": ["oklch(0.98 0.004 95)", "oklch(0.9 0.008 95)", "oklch(0.3 0.008 95)"]
+        "canonical": "oklch(0.985 0.003 95)",
+        "tonalRamp": ["oklch(0.985 0.003 95)", "oklch(0.87 0.008 85)", "oklch(0.33 0.008 85)"]
       },
       "foreground-strong": {
         "role": "neutral",
         "displayName": "Reading Ink",
-        "canonical": "oklch(0.22 0.02 95)",
-        "tonalRamp": ["oklch(0.22 0.02 95)", "oklch(0.37 0.015 95)", "oklch(0.52 0.014 95)"]
+        "canonical": "oklch(0.19 0.018 85)",
+        "tonalRamp": ["oklch(0.19 0.018 85)", "oklch(0.33 0.016 85)", "oklch(0.47 0.012 85)"]
       },
       "accent": {
         "role": "primary",
         "displayName": "Coral Signal",
-        "canonical": "oklch(0.61 0.18 35)",
-        "tonalRamp": ["oklch(0.93 0.035 35)", "oklch(0.61 0.18 35)", "oklch(0.72 0.17 35)"]
+        "canonical": "oklch(0.53 0.16 35)",
+        "tonalRamp": ["oklch(0.94 0.035 35)", "oklch(0.53 0.16 35)", "oklch(0.76 0.16 35)"]
       }
     },
     "typographyMeta": {
       "body": {
-        "displayName": "Atkinson Hyperlegible",
+        "displayName": "Atkinson Hyperlegible Next",
         "purpose": "All prose and headings in the quiet single-column interface."
       },
       "mono": {
@@ -58,7 +58,7 @@
       "refersTo": "main-navigation",
       "description": "A persistent identity header that morphs into the article breadcrumb through one shared avatar and focus-preserving theme control.",
       "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Writing</a><a href=\"#\">GitHub</a><button aria-label=\"Toggle theme\">Theme</button></nav>",
-      "css": ".ds-nav { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-divider); padding: 16px 20px; color: var(--color-foreground); font: 400 14px var(--font-sans); } .ds-nav strong { margin-right: auto; color: var(--color-foreground-strong); font-weight: 700; } .ds-nav button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--color-foreground-strong); } .ds-nav :focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
+      "css": ".ds-nav { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-divider); padding: 16px 20px; color: var(--color-foreground); font: 400 14px var(--font-sans); } .ds-nav strong { margin-right: auto; color: var(--color-foreground-strong); font-weight: 600; } .ds-nav button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--color-foreground-strong); } .ds-nav :focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
     },
     {
       "name": "Writing List Item",
@@ -66,7 +66,7 @@
       "refersTo": "writing-list-item",
       "description": "A ruled vertical article link with series number, title, summary, and reading time.",
       "html": "<a class=\"ds-writing-item\" href=\"#\"><span>01</span><b>React Rendering and Reconciliation Internals</b><p>How React turns state into UI.</p><em>45 min read</em></a>",
-      "css": ".ds-writing-item { display: block; border-bottom: 1px solid var(--color-divider); padding: 20px 0; color: var(--color-foreground); text-decoration: none; } .ds-writing-item span { color: var(--color-accent); font: 400 14px var(--font-mono); } .ds-writing-item b { display: block; margin-top: 4px; color: var(--color-foreground-strong); font: 700 17px/1.4 var(--font-sans); } .ds-writing-item p { margin: 4px 0 0; color: var(--color-muted); font: 400 14px/1.6 var(--font-sans); } .ds-writing-item em { display: block; margin-top: 8px; font: 400 14px var(--font-sans); font-style: normal; } .ds-writing-item:hover b { color: var(--color-accent); }"
+      "css": ".ds-writing-item { display: block; border-bottom: 1px solid var(--color-divider); padding: 20px 0; color: var(--color-foreground); text-decoration: none; } .ds-writing-item span { color: var(--color-accent); font: 500 14px var(--font-mono); } .ds-writing-item b { display: block; margin-top: 4px; color: var(--color-foreground-strong); font: 600 17px/1.4 var(--font-sans); } .ds-writing-item p { margin: 4px 0 0; color: var(--color-muted); font: 400 14px/1.6 var(--font-sans); } .ds-writing-item em { display: block; margin-top: 8px; color: var(--color-muted); font: 400 14px var(--font-sans); font-style: normal; } .ds-writing-item:hover b { color: var(--color-accent); }"
     },
     {
       "name": "Article Code Block",

@@ -4,28 +4,28 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-    --surface: oklch(0.98 0.004 95);
-    --foreground: oklch(0.37 0.015 95);
-    --foreground-strong: oklch(0.22 0.02 95);
-    --muted: oklch(0.52 0.014 95);
-    --divider: oklch(0.9 0.008 95);
-    --toc-track: oklch(0.68 0.012 95);
-    --accent: oklch(0.61 0.18 35);
-    --accent-soft: oklch(0.93 0.035 35);
+    --surface: oklch(0.985 0.003 95);
+    --foreground: oklch(0.33 0.016 85);
+    --foreground-strong: oklch(0.19 0.018 85);
+    --muted: oklch(0.47 0.012 85);
+    --divider: oklch(0.87 0.008 85);
+    --toc-track: oklch(0.62 0.012 85);
+    --accent: oklch(0.53 0.16 35);
+    --accent-soft: oklch(0.94 0.035 35);
     --code-surface: var(--foreground-strong);
     --code-foreground: var(--surface);
 }
 
 [data-theme="dark"] {
-    --surface: oklch(0.18 0.006 95);
-    --foreground: oklch(0.78 0.01 95);
-    --foreground-strong: oklch(0.93 0.008 95);
-    --muted: oklch(0.62 0.012 95);
-    --divider: oklch(0.3 0.008 95);
-    --toc-track: oklch(0.48 0.012 95);
-    --accent: oklch(0.72 0.17 35);
-    --accent-soft: oklch(0.32 0.05 35);
-    --code-surface: oklch(0.24 0.006 95);
+    --surface: oklch(0.17 0.007 85);
+    --foreground: oklch(0.84 0.01 85);
+    --foreground-strong: oklch(0.96 0.006 85);
+    --muted: oklch(0.68 0.012 85);
+    --divider: oklch(0.33 0.008 85);
+    --toc-track: oklch(0.53 0.012 85);
+    --accent: oklch(0.76 0.16 35);
+    --accent-soft: oklch(0.34 0.05 35);
+    --code-surface: oklch(0.23 0.007 85);
     --code-foreground: var(--foreground-strong);
 }
 
@@ -38,7 +38,7 @@
     --color-accent: var(--accent);
     --color-accent-soft: var(--accent-soft);
     --color-code-surface: var(--code-surface);
-    --font-sans: "Atkinson Hyperlegible", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
@@ -60,9 +60,12 @@
         background: var(--surface);
         color: var(--foreground);
         font-family: var(--font-sans);
-        font-size: 16px;
+        font-size: 17px;
         font-weight: 400;
-        line-height: 1.6;
+        line-height: 1.65;
+        letter-spacing: 0.002em;
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
     }
 
@@ -94,7 +97,7 @@
         padding: 0.7rem 1rem;
         color: var(--surface);
         font-size: 0.875rem;
-        font-weight: 700;
+        font-weight: 600;
     }
 
     .skip-link:focus {
@@ -104,8 +107,8 @@
     .guide-content {
         min-width: 0;
         overflow-wrap: break-word;
-        font-size: 1.0625rem;
-        line-height: 1.75;
+        font-size: 1.125rem;
+        line-height: 1.78;
     }
 
     .guide-content > h1:first-child {
@@ -114,11 +117,13 @@
 
     .guide-content h2 {
         margin-top: 3rem;
+        letter-spacing: -0.018em;
         text-wrap: balance;
     }
 
     .guide-content h3 {
         margin-top: 2rem;
+        letter-spacing: -0.012em;
         text-wrap: balance;
     }
 

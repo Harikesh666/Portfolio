@@ -43,7 +43,7 @@ import { absoluteUrl, site } from "../lib/site";
 import appCss from "../styles.css?url";
 
 const fontStylesheetHref =
-    "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:wght@400;500&display=swap";
+    "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=JetBrains+Mono:wght@400;500;600&display=swap";
 
 const LazyFloatingTocHost = lazy(async () => {
     const { FloatingTocHost } = await import("../components/FloatingToc");

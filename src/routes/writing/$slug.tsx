@@ -132,7 +132,7 @@ function PostPage() {
                                 Writing
                             </Link>
 
-                            <h1 className="mt-7 text-[1.75rem] font-bold leading-normal tracking-[-0.02em] text-foreground-strong sm:text-[2rem]">
+                            <h1 className="mt-7 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
                                 {post.title}
                             </h1>
                             <p className="mt-3 font-mono text-sm text-muted">
@@ -145,7 +145,7 @@ function PostPage() {
                     </PageEnter.Item>
 
                     <article
-                        className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:text-foreground-strong prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:before:content-none prose-code:after:content-none"
+                        className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:decoration-accent prose-a:decoration-1 prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-semibold prose-headings:text-foreground-strong prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:font-semibold prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:before:content-none prose-code:after:content-none"
                         dangerouslySetInnerHTML={{ __html: post.html }}
                         ref={articleRef}
                     />
@@ -164,7 +164,7 @@ function PostPage() {
                                     }
                                 >
                                     <Link
-                                        className="block text-[17px] font-bold text-foreground-strong hover:text-accent"
+                                        className="block text-[17px] font-semibold leading-snug text-foreground-strong hover:text-accent"
                                         to="/writing/$slug"
                                         params={{ slug: previous.slug }}
                                     >
@@ -191,7 +191,7 @@ function PostPage() {
                                     }
                                 >
                                     <Link
-                                        className="block text-[17px] font-bold text-foreground-strong hover:text-accent"
+                                        className="block text-[17px] font-semibold leading-snug text-foreground-strong hover:text-accent"
                                         to="/writing/$slug"
                                         params={{ slug: next.slug }}
                                     >

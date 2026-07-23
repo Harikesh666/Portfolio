@@ -666,7 +666,7 @@ export function TocSheet({
                                         dragControls.start(event)
                                     }
                                 >
-                                    <h2 className="text-sm font-bold text-foreground-strong">
+                                    <h2 className="text-sm font-semibold text-foreground-strong">
                                         Table of contents
                                     </h2>
                                     <span className="font-mono text-[11px] text-muted">

@@ -2,27 +2,27 @@
 name: Harikesh Mishra Portfolio
 description: A quiet, single-column engineer portfolio and technical writing system.
 colors:
-  surface-light: "oklch(0.98 0.004 95)"
-  foreground-light: "oklch(0.37 0.015 95)"
-  foreground-strong-light: "oklch(0.22 0.02 95)"
-  muted-light: "oklch(0.52 0.014 95)"
-  divider-light: "oklch(0.9 0.008 95)"
-  surface-dark: "oklch(0.18 0.006 95)"
-  foreground-dark: "oklch(0.78 0.01 95)"
-  foreground-strong-dark: "oklch(0.93 0.008 95)"
-  accent: "oklch(0.61 0.18 35)"
+  surface-light: "oklch(0.985 0.003 95)"
+  foreground-light: "oklch(0.33 0.016 85)"
+  foreground-strong-light: "oklch(0.19 0.018 85)"
+  muted-light: "oklch(0.47 0.012 85)"
+  divider-light: "oklch(0.87 0.008 85)"
+  surface-dark: "oklch(0.17 0.007 85)"
+  foreground-dark: "oklch(0.84 0.01 85)"
+  foreground-strong-dark: "oklch(0.96 0.006 85)"
+  accent: "oklch(0.53 0.16 35)"
 typography:
   display:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
+    fontFamily: "Atkinson Hyperlegible Next, ui-sans-serif, system-ui, sans-serif"
     fontSize: "2rem"
-    fontWeight: 700
-    lineHeight: 1.2
-    letterSpacing: "-0.02em"
+    fontWeight: 600
+    lineHeight: 1.15
+    letterSpacing: "-0.025em"
   body:
-    fontFamily: "Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1rem"
+    fontFamily: "Atkinson Hyperlegible Next, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "1.0625rem"
     fontWeight: 400
-    lineHeight: 1.6
+    lineHeight: 1.65
   mono:
     fontFamily: "JetBrains Mono, ui-monospace, monospace"
     fontSize: "0.875rem"
@@ -56,7 +56,7 @@ It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes qui
 **Key Characteristics:**
 - A `42rem` single-column layout across portfolio, writing index, and articles.
 - Explicit light and dark themes using the same semantic tokens.
-- Atkinson Hyperlegible for all prose and headings, JetBrains Mono for metadata and technical labels.
+- Atkinson Hyperlegible Next for all prose and headings, JetBrains Mono for metadata and technical labels.
 - Coral acts as one intentional signal for links, series indices, inline code, focus, and important metrics.
 
 ## 2. Colors
@@ -64,36 +64,37 @@ It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes qui
 The palette is warm and low-chroma rather than editorial or decorative. All components consume semantic variables so light and dark modes switch together.
 
 ### Light Theme
-- **Surface** (`oklch(0.98 0.004 95)`): reading background.
-- **Foreground** (`oklch(0.37 0.015 95)`): body text.
-- **Strong Foreground** (`oklch(0.22 0.02 95)`): headings and key navigation.
-- **Muted** (`oklch(0.52 0.014 95)`): metadata and secondary context.
-- **Divider** (`oklch(0.9 0.008 95)`): list and layout rules.
-- **TOC Track** (`oklch(0.68 0.012 95)`): the floating rail's readable inactive state.
+- **Surface** (`oklch(0.985 0.003 95)`): reading background.
+- **Foreground** (`oklch(0.33 0.016 85)`): body text.
+- **Strong Foreground** (`oklch(0.19 0.018 85)`): headings and key navigation.
+- **Muted** (`oklch(0.47 0.012 85)`): metadata and secondary context.
+- **Divider** (`oklch(0.87 0.008 85)`): list and layout rules.
+- **TOC Track** (`oklch(0.62 0.012 85)`): the floating rail's readable inactive state.
 
 ### Dark Theme
-- **Surface** (`oklch(0.18 0.006 95)`): warm near-black reading background.
-- **Foreground** (`oklch(0.78 0.01 95)`): body text.
-- **Strong Foreground** (`oklch(0.93 0.008 95)`): headings and key navigation.
-- **Divider** (`oklch(0.3 0.008 95)`): quiet structural separation.
-- **TOC Track** (`oklch(0.48 0.012 95)`): the floating rail's readable inactive state.
+- **Surface** (`oklch(0.17 0.007 85)`): warm near-black reading background.
+- **Foreground** (`oklch(0.84 0.01 85)`): body text.
+- **Strong Foreground** (`oklch(0.96 0.006 85)`): headings and key navigation.
+- **Muted** (`oklch(0.68 0.012 85)`): metadata and secondary context.
+- **Divider** (`oklch(0.33 0.008 85)`): quiet structural separation.
+- **TOC Track** (`oklch(0.53 0.012 85)`): the floating rail's readable inactive state.
 
 ### Accent
-- **Coral** (`oklch(0.61 0.18 35)` light; `oklch(0.72 0.17 35)` dark): links, series numbers, inline-code surfaces, focus rings, and selected evidence.
+- **Coral** (`oklch(0.53 0.16 35)` light; `oklch(0.76 0.16 35)` dark): links, series numbers, inline-code surfaces, focus rings, and selected evidence.
 
 **The Signal Rule.** Coral directs attention; it is never used as ambient decoration or a second palette.
 
 ## 3. Typography
 
-**Body and Headings:** Atkinson Hyperlegible, ui-sans-serif, system-ui, sans-serif
+**Body and Headings:** Atkinson Hyperlegible Next, ui-sans-serif, system-ui, sans-serif
 **Technical Labels:** JetBrains Mono, ui-monospace, monospace
 
 ### Hierarchy
-- **Page Title:** 1.75rem on mobile and 2rem from `sm`, bold, normal leading, `-0.02em` tracking.
-- **Section Label:** 12px JetBrains Mono, uppercase, `0.08em` tracking, muted.
-- **Article Link:** 17px bold sans with coral hover.
-- **Body:** 16px Atkinson Hyperlegible at 1.6 line height.
-- **Guide Prose:** 17px at 1.75 line height for long-form reading.
+- **Page Title:** 1.75rem on mobile and 2rem from `sm`, semibold, 1.15 leading, `-0.025em` tracking.
+- **Section Label:** 12px medium JetBrains Mono, uppercase, `0.1em` tracking, muted.
+- **Article Link:** 17px semibold sans with coral hover.
+- **Body:** 17px Atkinson Hyperlegible Next at 1.65 line height.
+- **Guide Prose:** 18px at 1.78 line height for long-form reading.
 
 **The Reading Rule.** No oversized display type or decorative serif hierarchy. Technical ideas earn emphasis through clarity, sequence, and breathing room.
 

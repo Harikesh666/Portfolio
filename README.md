@@ -50,7 +50,7 @@ Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 hea
 
 ## Theme and Accessibility
 
-The visual system lives in `src/styles.css`. It uses semantic CSS variables mapped into Tailwind v4, with explicit `data-theme="light"` and `data-theme="dark"` values set before paint and persisted in local storage.
+The visual system lives in `src/styles.css`. It uses semantic CSS variables mapped into Tailwind v4, Atkinson Hyperlegible Next with real 400–700 weights, and explicit `data-theme="light"` and `data-theme="dark"` values set before paint and persisted in local storage. The reading scale distinguishes high-contrast prose, semibold headings, and quieter metadata without relying on synthetic font weights.
 
 The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts. First loads and article destinations use a short transform/opacity entrance timeline, while Home, Resume, and Writing destinations swap without a zero-opacity frame; article navigation morphs the persistent avatar and theme toggle between identity and breadcrumb headers. The mobile sheet traps focus, locks background scrolling, accounts for safe areas, and reduces its motion to a short opacity fade. The article top progress line appears only in browsers with CSS scroll-driven animation support and is omitted when reduced motion is requested.
 

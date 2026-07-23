@@ -89,7 +89,7 @@ function Avatar({ size }: Readonly<{ size: number }>) {
     return (
         <span
             aria-hidden="true"
-            className="flex select-none items-center justify-center rounded-full bg-accent-soft font-mono font-bold text-accent"
+            className="flex select-none items-center justify-center rounded-full bg-accent-soft font-mono font-semibold text-accent"
             style={{ width: size, height: size, fontSize: size * 0.36 }}
         >
             {initials}
@@ -200,7 +200,7 @@ function IdentityHeader() {
             <span aria-hidden="true" className="h-11 w-11" />
             <p className="mt-4 flex flex-wrap items-baseline gap-x-2 leading-9">
                 <Link
-                    className="text-[1.4rem] font-bold tracking-[-0.02em] text-foreground-strong"
+                    className="text-[1.4rem] font-semibold tracking-[-0.025em] text-foreground-strong"
                     to="/"
                 >
                     {site.name}
@@ -236,14 +236,6 @@ function IdentityHeader() {
                 <Link className={navLinkClassName} to="/resume">
                     Resume
                 </Link>
-                <a
-                    className="py-1 text-muted hover:text-foreground-strong"
-                    href={site.socials.github}
-                    rel="noreferrer"
-                    target="_blank"
-                >
-                    GitHub
-                </a>
                 <span aria-hidden="true" className="ml-auto h-11 w-11" />
             </nav>
         </div>
