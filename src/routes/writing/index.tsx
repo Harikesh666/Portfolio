@@ -71,7 +71,6 @@ function WritingPage() {
                                 className="group block py-5"
                                 to="/writing/$slug"
                                 params={{ slug: post.slug }}
-                                preload="viewport"
                             >
                                 <motion.div
                                     whileHover={
@@ -117,7 +116,6 @@ function WritingPage() {
                                             className="group block py-5"
                                             to="/writing/$slug"
                                             params={{ slug: post.slug }}
-                                            preload="viewport"
                                         >
                                             <motion.div
                                                 whileHover={
