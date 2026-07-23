@@ -19,6 +19,8 @@ export const Route = createFileRoute("/writing/$slug")({
     pendingComponent: PostPending,
     pendingMs: 0,
     pendingMinMs: 0,
+    staleTime: Infinity,
+    preloadStaleTime: Infinity,
     loader: async ({ params }) => {
         const post = await getPost({ data: { slug: params.slug } });
         if (!post) throw notFound();

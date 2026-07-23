@@ -44,7 +44,7 @@ order: 11
 - `title`, `description`, `category`, `readTime`, `date`, and `publishedAt` are required.
 - `series` and `order` are optional together. Omit both for a standalone post; standalone posts sort by `publishedAt` descending.
 - Series definitions live in `src/lib/content.ts`. Add the series there before assigning its ID in frontmatter.
-- `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk.
+- `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk. Visible writing-list links prefetch their article data and reuse it on a direct click.
 
 Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control. At `xl` and above, article H2s populate a fixed, keyboard-accessible floating table of contents whose progress rail morphs into a scrollable label panel. Below `xl`, a persistent section-progress pill opens the same headings in an accessible, draggable bottom sheet. Both views push shareable hash entries, support back/forward section traversal, and restore the pre-section scroll position when returning to the hashless entry.
 
