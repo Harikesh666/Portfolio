@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
 import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
+import { StaggerReveal } from "../components/StaggerReveal";
 import { posts } from "../lib/content";
 import { snappySpring } from "../lib/motion";
 import { resumeExperience, type ResumeExperience } from "../lib/resume";
@@ -12,6 +13,8 @@ import { absoluteUrl, site } from "../lib/site";
 const homeTitle = `${site.name} - Software Developer`;
 const homeUrl = absoluteUrl();
 const homeImage = absoluteUrl("/og.png");
+const homeIntro =
+    "I work across React, Node.js, FastAPI, and PostgreSQL - shipping reliable product features, finding the bugs that matter, and making complex systems easier to operate.";
 
 const skills = [
     {
@@ -116,23 +119,26 @@ function HomePage() {
             id="main-content"
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
-            <PageEnter.Item>
-                <header>
-                    <h1 className="sr-only">
-                        Harikesh Mishra — Software Developer in Mumbai
-                    </h1>
-                    <p className="font-medium text-muted">Software Developer, Mumbai</p>
-                </header>
-            </PageEnter.Item>
-            <PageEnter.Item>
-                <div>
-                    <p className="mt-7 leading-relaxed text-foreground">
-                        I work across React, Node.js, FastAPI, and PostgreSQL -
-                        shipping reliable product features, finding the bugs
-                        that matter, and making complex systems easier to
-                        operate.
-                    </p>
-                    <p className="mt-5 flex flex-wrap items-center gap-x-2 font-mono text-sm text-foreground">
+            <StaggerReveal as="header">
+                <h1 className="sr-only">
+                    Harikesh Mishra — Software Developer in Mumbai
+                </h1>
+                <StaggerReveal.Item
+                    as="p"
+                    className="font-medium text-muted"
+                >
+                    Software Developer, Mumbai
+                </StaggerReveal.Item>
+                <StaggerReveal.Headline
+                    as="p"
+                    className="mt-7 text-pretty leading-relaxed text-foreground"
+                >
+                    {homeIntro}
+                </StaggerReveal.Headline>
+                <StaggerReveal.Item
+                    as="p"
+                    className="mt-5 flex flex-wrap items-center gap-x-2 font-mono text-sm text-foreground"
+                >
                         <a
                             className="underline decoration-accent underline-offset-4 hover:text-accent"
                             href={`mailto:${site.email}`}
@@ -166,14 +172,13 @@ function HomePage() {
                         >
                             Resume
                         </a>
-                    </p>
-                </div>
-            </PageEnter.Item>
+                </StaggerReveal.Item>
+            </StaggerReveal>
             <PageEnter>
                 <PageEnter.Item>
                     <section aria-labelledby="skills-heading" className="mt-14">
                         <h2
-                            className="font-mono text-[12px] font-medium uppercase tracking-[0.1em] text-muted"
+                            className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
                             id="skills-heading"
                         >
                             Skills
@@ -208,7 +213,7 @@ function HomePage() {
 
                 <PageEnter.Fade>
                     <section id="work" className="mt-14">
-                        <h2 className="font-mono text-[12px] font-medium uppercase tracking-[0.1em] text-muted">
+                        <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
                             Work
                         </h2>
                         <div className="mt-4 border-t border-divider">
@@ -227,7 +232,7 @@ function HomePage() {
 
                 <PageEnter.Fade>
                     <section className="mt-14">
-                        <h2 className="font-mono text-[12px] font-medium uppercase tracking-[0.1em] text-muted">
+                        <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
                             Writing
                         </h2>
                         <ol className="mt-4 border-t border-divider">

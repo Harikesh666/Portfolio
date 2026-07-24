@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-18T00:00:00+05:30",
+  "generatedAt": "2026-07-24T00:00:00+05:30",
   "title": "Design System: Harikesh Mishra Portfolio",
   "extensions": {
     "colorMeta": {
@@ -44,6 +44,11 @@
         "name": "reading-motion",
         "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
         "purpose": "Materializes viewport-sized blocks while oversized route and prose trees fade only; simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
+      },
+      {
+        "name": "editorial-stagger",
+        "value": "500ms headline spring; 150ms line stagger; 300ms headline pause; 375ms follower spring; 80ms follower stagger; 0.4em/24px travel; 4px one-shot blur",
+        "purpose": "Makes each route hero its sole entrance owner without changing the route's established typography or spacing; reduced motion renders the complete hero immediately."
       }
     ],
     "breakpoints": [
@@ -67,6 +72,14 @@
       "description": "A ruled vertical article link with series number, title, summary, and reading time.",
       "html": "<a class=\"ds-writing-item\" href=\"#\"><span>01</span><b>React Rendering and Reconciliation Internals</b><p>How React turns state into UI.</p><em>45 min read</em></a>",
       "css": ".ds-writing-item { display: block; border-bottom: 1px solid var(--color-divider); padding: 20px 0; color: var(--color-foreground); text-decoration: none; } .ds-writing-item span { color: var(--color-accent); font: 500 14px var(--font-mono); } .ds-writing-item b { display: block; margin-top: 4px; color: var(--color-foreground-strong); font: 600 17px/1.4 var(--font-sans); } .ds-writing-item p { margin: 4px 0 0; color: var(--color-muted); font: 400 14px/1.6 var(--font-sans); } .ds-writing-item em { display: block; margin-top: 8px; color: var(--color-muted); font: 400 14px var(--font-sans); font-style: normal; } .ds-writing-item:hover b { color: var(--color-accent); }"
+    },
+    {
+      "name": "Editorial Route Hero",
+      "kind": "heading",
+      "refersTo": "editorial-stagger",
+      "description": "A document-order reveal for optional eyebrow copy, a font-aware line-split headline, supporting copy, metadata, and actions on one delay cursor.",
+      "html": "<div><h1 aria-label=\"Writing\">Writing</h1><p>Supporting copy</p></div>",
+      "css": ".editorial-stagger-line { display: block; } .editorial-stagger-word { display: inline-block; vertical-align: top; }"
     },
     {
       "name": "Article Code Block",

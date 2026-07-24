@@ -4,6 +4,7 @@ import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { FloatingToc } from "../../components/FloatingToc";
 import { PageEnter } from "../../components/PageEnter";
+import { StaggerReveal } from "../../components/StaggerReveal";
 import { TocSheet } from "../../components/TocSheet";
 import { useHasFloatingTocRegistration } from "../../components/TocRegistry";
 import { getPostNeighbors, posts } from "../../lib/content";
@@ -119,8 +120,7 @@ function PostPage() {
                 className="mx-auto w-full max-w-2xl px-5 pb-12 pt-8"
             >
                 <PageEnter key={post.slug}>
-                    <PageEnter.Item>
-                        <header>
+                    <header>
                             <Link
                                 className="inline-flex items-center gap-2 font-mono text-sm text-muted hover:text-accent"
                                 to="/writing"
@@ -132,17 +132,21 @@ function PostPage() {
                                 Writing
                             </Link>
 
-                            <h1 className="mt-7 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
+                        <StaggerReveal className="mt-7">
+                            <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
                                 {post.title}
-                            </h1>
-                            <p className="mt-3 font-mono text-sm text-muted">
+                            </StaggerReveal.Headline>
+                            <StaggerReveal.Item
+                                as="p"
+                                className="mt-3 font-mono text-sm text-muted"
+                            >
                                 {post.date} · {post.readTime}
                                 {post.series && post.order !== undefined
                                     ? ` · ${String(post.order).padStart(2, "0")} of ${seriesPostCount}`
                                     : ""}
-                            </p>
-                        </header>
-                    </PageEnter.Item>
+                            </StaggerReveal.Item>
+                        </StaggerReveal>
+                    </header>
 
                     <article
                         className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:decoration-accent prose-a:decoration-1 prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-semibold prose-headings:text-foreground-strong prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:font-semibold prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:before:content-none prose-code:after:content-none"

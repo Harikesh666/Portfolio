@@ -3,6 +3,7 @@ import { Download } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
+import { StaggerReveal } from "../components/StaggerReveal";
 import { snappySpring } from "../lib/motion";
 import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
@@ -42,12 +43,14 @@ function ResumePage() {
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
             <PageEnter>
-            <PageEnter.Item>
-            <header>
-                <h1 className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
+            <StaggerReveal as="header">
+                <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
                     Harikesh Mishra
-                </h1>
-                <p className="mt-2 flex flex-wrap items-center gap-x-2 font-mono text-sm text-muted">
+                </StaggerReveal.Headline>
+                <StaggerReveal.Item
+                    as="p"
+                    className="mt-2 flex flex-wrap items-center gap-x-2 font-mono text-sm text-muted"
+                >
                     <span>Mumbai, IN</span>
                     <span aria-hidden="true">·</span>
                     <a className="hover:text-accent" href={`mailto:${site.email}`}>
@@ -71,8 +74,8 @@ function ResumePage() {
                     >
                         GitHub
                     </a>
-                </p>
-                <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
+                </StaggerReveal.Item>
+                <StaggerReveal.Item className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
                     <motion.a
                         className="inline-flex items-center gap-2 border border-divider px-3 py-2 font-mono text-sm text-foreground-strong hover:border-accent hover:text-accent"
                         href="/Harikesh_Mishra_Resume.pdf"
@@ -100,9 +103,8 @@ function ResumePage() {
                     >
                         Open in new tab
                     </a>
-                </div>
-            </header>
-            </PageEnter.Item>
+                </StaggerReveal.Item>
+            </StaggerReveal>
 
                 <Reveal>
                 <ResumeSection title="Summary">

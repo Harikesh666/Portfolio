@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../../components/PageEnter";
 import { Reveal } from "../../components/Reveal";
+import { StaggerReveal } from "../../components/StaggerReveal";
 import { posts, seriesIndex } from "../../lib/content";
 import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
@@ -46,18 +47,24 @@ function WritingPage() {
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
             <PageEnter>
-            <PageEnter.Item>
-            <header>
-                <h1 className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
+            <StaggerReveal as="header">
+                <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
                     {series.title}
-                </h1>
-                <p className="mt-3 text-foreground">{series.description}</p>
-                <p className="mt-4 font-mono text-sm text-muted">
+                </StaggerReveal.Headline>
+                <StaggerReveal.Item
+                    as="p"
+                    className="mt-3 text-foreground"
+                >
+                    {series.description}
+                </StaggerReveal.Item>
+                <StaggerReveal.Item
+                    as="p"
+                    className="mt-4 font-mono text-sm text-muted"
+                >
                     {seriesPosts.length} guides · about {series.readingTime} ·
                     updated {series.updatedAt}
-                </p>
-            </header>
-            </PageEnter.Item>
+                </StaggerReveal.Item>
+            </StaggerReveal>
 
             <PageEnter.Fade>
                 <ol className="mt-10 border-t border-divider">
