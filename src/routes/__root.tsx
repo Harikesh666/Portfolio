@@ -60,6 +60,9 @@ const themeScript = `(() => {
   }
 })();`;
 
+const motionBootstrapScript =
+    'document.documentElement.setAttribute("data-motion-enabled", "");';
+
 const fontStylesheetScript = `(() => {
   const link = document.createElement("link");
   link.rel = "stylesheet";
@@ -110,6 +113,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
+                <script
+                    dangerouslySetInnerHTML={{ __html: motionBootstrapScript }}
+                />
                 <script dangerouslySetInnerHTML={{ __html: themeScript }} />
                 <script
                     dangerouslySetInnerHTML={{ __html: fontStylesheetScript }}

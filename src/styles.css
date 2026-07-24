@@ -69,6 +69,11 @@
         -webkit-font-smoothing: antialiased;
     }
 
+    html[data-motion-enabled]
+        [data-stagger-reveal]:not([data-stagger-ready]) {
+        visibility: hidden;
+    }
+
     a {
         color: inherit;
     }

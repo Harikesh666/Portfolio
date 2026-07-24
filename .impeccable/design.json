@@ -48,7 +48,7 @@
       {
         "name": "editorial-stagger",
         "value": "500ms headline spring; 150ms line stagger; 300ms headline pause; 375ms follower spring; 80ms follower stagger; 0.4em/24px travel; 4px one-shot blur",
-        "purpose": "Makes each route hero its sole entrance owner without changing the route's established typography or spacing; reduced motion renders the complete hero immediately."
+        "purpose": "Makes each route hero its sole entrance owner without changing the route's established typography or spacing; a pre-paint readiness guard prevents hydration flashes, and reduced motion renders the complete hero immediately."
       }
     ],
     "breakpoints": [

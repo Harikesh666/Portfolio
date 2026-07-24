@@ -127,7 +127,10 @@ function StaggerRevealRoot({
         const initialHeadline = container.querySelector<HTMLElement>(
             `[${headlineAttribute}]`,
         );
-        if (!initialHeadline) return;
+        if (!initialHeadline) {
+            container.setAttribute("data-stagger-ready", "");
+            return;
+        }
 
         if (shouldReduceMotion) {
             const originalText =
@@ -135,13 +138,12 @@ function StaggerRevealRoot({
                 initialHeadline.textContent ??
                 "";
             initialHeadline.textContent = originalText;
-            container.style.visibility = "visible";
+            container.setAttribute("data-stagger-ready", "");
             return;
         }
 
         const animations: AnimationPlaybackControls[] = [];
         let isCancelled = false;
-        container.style.visibility = "hidden";
 
         async function prepareEntrance(currentContainer: HTMLElement) {
             try {
@@ -220,7 +222,7 @@ function StaggerRevealRoot({
                     !isCancelled &&
                     containerRef.current === currentContainer
                 ) {
-                    currentContainer.style.visibility = "visible";
+                    currentContainer.setAttribute("data-stagger-ready", "");
                 }
             }
         }
@@ -235,7 +237,12 @@ function StaggerRevealRoot({
 
     return createElement(
         as,
-        { className, id, ref: containerRef },
+        {
+            "data-stagger-reveal": "",
+            className,
+            id,
+            ref: containerRef,
+        },
         children,
     );
 }
