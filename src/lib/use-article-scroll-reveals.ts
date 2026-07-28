@@ -46,7 +46,10 @@ export function useArticleScrollReveals(
         const observer = new IntersectionObserver(
             (entries) => {
                 for (const entry of entries) {
-                    if (!entry.isIntersecting || !(entry.target instanceof HTMLElement)) {
+                    if (
+                        !entry.isIntersecting ||
+                        !(entry.target instanceof HTMLElement)
+                    ) {
                         continue;
                     }
 

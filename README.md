@@ -20,7 +20,7 @@ pnpm test
 
 ## Site Configuration
 
-Update `src/lib/site.ts` for the site name, email, production URL, and social links. It supplies the shared metadata, canonical URLs, JSON-LD, sitemap, and robots values.
+Update `src/lib/site.ts` for the site name, contact details, production URL, social links, and resume PDF path. It supplies the shared metadata, canonical URLs, JSON-LD, sitemap, and robots values.
 
 `public/og.png` is the shared social card. `public/Harikesh_Mishra_Resume.pdf` is the downloadable resume linked from the global header.
 

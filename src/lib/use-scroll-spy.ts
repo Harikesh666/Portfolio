@@ -116,9 +116,8 @@ export function useScrollSpy(
 
             const scheduleActiveSectionUpdate = () => {
                 if (animationFrame === undefined) {
-                    animationFrame = window.requestAnimationFrame(
-                        updateActiveSection,
-                    );
+                    animationFrame =
+                        window.requestAnimationFrame(updateActiveSection);
                 }
             };
 

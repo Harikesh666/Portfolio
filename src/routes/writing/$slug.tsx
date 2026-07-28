@@ -92,7 +92,11 @@ function PostPending() {
             id="main-content"
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-8"
         >
-            <div aria-live="polite" className="font-mono text-sm text-muted" role="status">
+            <div
+                aria-live="polite"
+                className="font-mono text-sm text-muted"
+                role="status"
+            >
                 Loading article…
             </div>
         </main>
@@ -121,19 +125,16 @@ function PostPage() {
             >
                 <PageEnter key={post.slug}>
                     <header>
-                            <Link
-                                className="inline-flex items-center gap-2 font-mono text-sm text-muted hover:text-accent"
-                                to="/writing"
-                            >
-                                <ArrowUUpLeftIcon
-                                    aria-hidden="true"
-                                    size={18}
-                                />
-                                Writing
-                            </Link>
+                        <Link
+                            className="inline-flex items-center gap-2 font-mono text-sm text-muted hover:text-accent"
+                            to="/writing"
+                        >
+                            <ArrowUUpLeftIcon aria-hidden="true" size={18} />
+                            Writing
+                        </Link>
 
                         <StaggerReveal className="mt-7">
-                            <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
+                            <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-tight text-foreground-strong sm:text-[2rem]">
                                 {post.title}
                             </StaggerReveal.Headline>
                             <StaggerReveal.Item

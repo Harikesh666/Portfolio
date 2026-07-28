@@ -23,40 +23,96 @@ export const resumeExperience: readonly ResumeExperience[] = [
         dates: "Aug 2025 – Present",
         projects: [
             {
+                name: "Workflow Console · Agentic operations workflow platform",
+                highlights: [
+                    {
+                        content:
+                            "Designed a job-based API in Bun, TypeScript, and Express for three multi-step workflows, using Server-Sent Events for live updates, Zod-validated contracts, and retained job state to support reconnection after dropped streams",
+                    },
+                    {
+                        content:
+                            "Automated the procurement pipeline from requirement matching and vendor selection through purchase-order generation, producing PDFs in memory, dispatching them over SMTP, and mapping deliveries to GRN follow-up records",
+                        resumeOnly: true,
+                    },
+                    {
+                        content:
+                            "Built the React console with live progress streaming, shareable workflow URLs, and validated forms using TanStack Router and React Hook Form, then added automated tests with Vitest and Mock Service Worker",
+                        resumeOnly: true,
+                    },
+                    {
+                        content:
+                            "Owned development and deployment from API design through AWS Lambda release, containerizing the service with Docker, publishing images to Amazon ECR, and deploying the console on Vercel",
+                        resumeOnly: true,
+                    },
+                ],
+            },
+            {
                 name: "Sales Copilot · Field sales automation, HR Johnson",
                 highlights: [
-                    { content: "Built 8 admin data-management pages end to end, designing reusable table, modal, and edit-form primitives that cut files-per-page by ~60% and became the module standard" },
-                    { content: "Server-side pagination for a 130K+ record dataset with TanStack Table + Query — 6.4 KB / ~190ms per page request" },
-                    { content: "Excel validation engine for schedule uploads with cell-level error annotations, diffing incoming data against historical records" },
-                    { content: "Traced an auth-token bug logging out all active users and patched it the same day" },
-                    { content: "Built a structured logging pipeline and IST logs export, replacing a legacy export that rendered values in scientific notation", resumeOnly: true },
-                    { content: "Built a persona-aware Order Collection Pitch module for 5 dealer personas", resumeOnly: true },
+                    {
+                        content:
+                            "Built server-side pagination for a 130K+ record dataset supporting 70 client super users, keeping page payloads near 6.4 KB and response times around 190 ms",
+                    },
+                    {
+                        content:
+                            "Delivered 8 admin data-management pages in 3 weeks, creating reusable table, modal, and form components that reduced the implementation files required per page by ~60%",
+                    },
+                    {
+                        content:
+                            "Introduced structured logging across API endpoints and rebuilt the log export with IST-converted timestamps, then traced session records to an authentication defect affecting active users and resolved it the same day",
+                    },
+                    {
+                        content:
+                            "Developed an Excel validation engine for schedule uploads that compares incoming data against existing records and flags unintended edits to historical entries with cell-level error annotations",
+                    },
+                    {
+                        content:
+                            "Implemented a persona-aware Order Collection Pitch module in React for 5 dealer personas, integrating recommendation APIs with client-side caching and responsive multi-tab product journeys",
+                    },
                 ],
             },
             {
-                name: "Multi-tenant LMS",
+                name: "Multi-tenant learning management system",
                 highlights: [
-                    { content: "Architected database isolation across 5 client orgs: 5 PostgreSQL databases, migrated schemas, and a reusable org-header routing hook across 35+ frontend files" },
-                    { content: "Caught chatbots being routed to the default DB instead of tenant DBs; root-caused and restored client data access the same day" },
-                    { content: "Patched a vulnerability leaking deletion authorization codes in API responses within hours" },
-                    { content: "Rebuilt the Admin Report as a dynamic engine; optimized its SQL with CTEs for ~35% faster queries — now used by leadership for training evaluation" },
-                ],
-            },
-            {
-                name: "Chatbots",
-                highlights: [
-                    { content: "Built the Hindi chatbot pipeline end to end with zero regressions to the English flow; rewrote 6 broken APIs and fixed a mid-conversation scoring crash" },
-                    { content: "Solo-built an interview chatbot in under 2 weeks (React on Vercel, Python on GCP Cloud Run) with LLM response scoring — demoed to McKinsey stakeholders" },
+                    {
+                        content:
+                            "Designed database isolation across 5 client organizations, provisioning separate PostgreSQL databases, migrating schemas, and introducing a reusable organization-routing hook across 35+ frontend files",
+                    },
+                    {
+                        content:
+                            "Diagnosed a tenant-routing defect that sent new chatbots to the default database and restored the affected organization's data access the same day",
+                    },
+                    {
+                        content:
+                            "Identified and patched a security vulnerability that exposed deletion authorization codes in API responses, releasing the fix within hours",
+                    },
+                    {
+                        content:
+                            "Replaced a static reporting template with a dynamic Admin Report engine and optimized its SQL using CTEs, eliminating manual report compilation and reducing query execution time by ~35%",
+                    },
+                    {
+                        content:
+                            "Developed the Hindi chatbot pipeline while preserving the existing English flow, rewriting 6 affected APIs and fixing a scoring defect that crashed conversations",
+                        resumeOnly: true,
+                    },
+                    {
+                        content:
+                            "Independently built and deployed a Project Engineer Interview Chatbot in under 2 weeks (React on Vercel, Python on GCP Cloud Run), implementing LLM-based response scoring and single-attempt enforcement before demonstrating it to McKinsey stakeholders",
+                        resumeOnly: true,
+                    },
                 ],
             },
         ],
     },
     {
-        company: "Rabs Net Solutions",
+        company: "Rabs Net Solutions Pvt Ltd",
         role: "Web Developer Intern",
         dates: "Apr 2025 – Aug 2025",
         highlights: [
-            { content: "Built REST APIs with Node.js/Express for a production CRM and resolved client-reported bugs across active deployments" },
+            {
+                content:
+                    "Built REST APIs with Node.js/Express for a production CRM and resolved client-reported bugs across active deployments",
+            },
         ],
     },
 ];

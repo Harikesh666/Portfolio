@@ -58,9 +58,7 @@ function scrollToHeading(id: string, shouldReduceMotion: boolean) {
     };
 }
 
-export function useTocNavigation(
-    containerRef: RefObject<HTMLElement | null>,
-) {
+export function useTocNavigation(containerRef: RefObject<HTMLElement | null>) {
     const router = useRouter();
     const pathname = useLocation({ select: (location) => location.pathname });
     const shouldReduceMotion = useReducedMotion() ?? false;

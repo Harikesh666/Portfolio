@@ -181,9 +181,7 @@ function ExitScrollCompensation({
         >
             <div
                 className={
-                    isPresent
-                        ? undefined
-                        : "fixed inset-0 h-dvh overflow-clip"
+                    isPresent ? undefined : "fixed inset-0 h-dvh overflow-clip"
                 }
             >
                 <motion.div style={{ y: scrollOffset }}>{children}</motion.div>
@@ -209,8 +207,7 @@ function RoutePage({
     onEntranceSettled: (routeId: string) => void;
     routeId: string;
     routeContainerVariants:
-        | typeof routePageContainer
-        | typeof reducedPageContainer;
+        typeof routePageContainer | typeof reducedPageContainer;
     scrollTarget: number;
     shouldDeferEntrance: boolean;
     shouldReduceMotion: boolean;
@@ -285,18 +282,16 @@ function RoutePage({
                           transition: instantRouteTween,
                       }
                     : shouldReduceMotion
-                    ? {
-                          opacity: 0,
-                          transition: reducedPageEnterTween,
-                      }
-                    : {
-                          opacity: 0,
-                          transition: exitTween,
-                      }
+                      ? {
+                            opacity: 0,
+                            transition: reducedPageEnterTween,
+                        }
+                      : {
+                            opacity: 0,
+                            transition: exitTween,
+                        }
             }
-            initial={
-                shouldReduceMotion || isInitialPage ? "visible" : "hidden"
-            }
+            initial={shouldReduceMotion || isInitialPage ? "visible" : "hidden"}
             onAnimationComplete={(definition) => {
                 if (definition === "visible") signalEntranceSettled();
             }}
@@ -320,8 +315,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
     const [scrollPositions] = useState(() => new Map<string, number>());
     const isInitialPage = !hasNavigated && pathname === initialPathname;
     const locationKey = useLocation({
-        select: (location) =>
-            location.state.__TSR_key ?? location.href,
+        select: (location) => location.state.__TSR_key ?? location.href,
     });
     const scrollTarget = scrollPositions.get(locationKey) ?? 0;
     const shouldDeferEntrance = pathname.startsWith("/writing/");

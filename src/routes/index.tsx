@@ -14,7 +14,7 @@ const homeTitle = `${site.name} - Software Developer`;
 const homeUrl = absoluteUrl();
 const homeImage = absoluteUrl("/og.png");
 const homeIntro =
-    "I work across React, Node.js, FastAPI, and PostgreSQL - shipping reliable product features, finding the bugs that matter, and making complex systems easier to operate.";
+    "I build production backend and full-stack systems with React, TypeScript, FastAPI, Node.js, and PostgreSQL - from 130K+ record data tooling to multi-tenant platforms and streaming workflow APIs.";
 
 const skills = [
     {
@@ -123,10 +123,7 @@ function HomePage() {
                 <h1 className="sr-only">
                     Harikesh Mishra — Software Developer in Mumbai
                 </h1>
-                <StaggerReveal.Item
-                    as="p"
-                    className="font-medium text-muted"
-                >
+                <StaggerReveal.Item as="p" className="font-medium text-muted">
                     Software Developer, Mumbai
                 </StaggerReveal.Item>
                 <StaggerReveal.Headline
@@ -139,39 +136,39 @@ function HomePage() {
                     as="p"
                     className="mt-5 flex flex-wrap items-center gap-x-2 font-mono text-sm text-foreground"
                 >
-                        <a
-                            className="underline decoration-accent underline-offset-4 hover:text-accent"
-                            href={`mailto:${site.email}`}
-                        >
-                            Email
-                        </a>
-                        <span aria-hidden="true">·</span>
-                        <a
-                            className="underline decoration-accent underline-offset-4 hover:text-accent"
-                            href={site.socials.github}
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            GitHub
-                        </a>
-                        <span aria-hidden="true">·</span>
-                        <a
-                            className="underline decoration-accent underline-offset-4 hover:text-accent"
-                            href={site.socials.linkedin}
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            LinkedIn
-                        </a>
-                        <span aria-hidden="true">·</span>
-                        <a
-                            className="underline decoration-accent underline-offset-4 hover:text-accent"
-                            href="/Harikesh_Mishra_Resume.pdf"
-                            target="_blank"
-                            rel="noreferrer"
-                        >
-                            Resume
-                        </a>
+                    <a
+                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        href={`mailto:${site.email}`}
+                    >
+                        Email
+                    </a>
+                    <span aria-hidden="true">·</span>
+                    <a
+                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        href={site.socials.github}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        GitHub
+                    </a>
+                    <span aria-hidden="true">·</span>
+                    <a
+                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        href={site.socials.linkedin}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        LinkedIn
+                    </a>
+                    <span aria-hidden="true">·</span>
+                    <a
+                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        href={site.resumePdfPath}
+                        target="_blank"
+                        rel="noreferrer"
+                    >
+                        Resume
+                    </a>
                 </StaggerReveal.Item>
             </StaggerReveal>
             <PageEnter>
