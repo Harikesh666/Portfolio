@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.harikesh.xyz</loc><lastmod>2026-07-22</lastmod></url>
-  <url><loc>https://www.harikesh.xyz/writing</loc><lastmod>2026-07-22</lastmod></url>
+  <url><loc>https://www.harikesh.xyz</loc><lastmod>2026-08-03</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing</loc><lastmod>2026-08-03</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/asynchronous-javascript-event-loop</loc><lastmod>2025-01-07</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/callback-functions-javascript-calls-you-back</loc><lastmod>2025-01-10</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/callback-hell-pyramid-of-doom</loc><lastmod>2025-01-12</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/closures-beyond-the-basics</loc><lastmod>2025-01-03</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/closures-function-backpack</loc><lastmod>2024-11-05</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/how-javascript-engine-runs-code</loc><lastmod>2024-12-27</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/javascript-concurrency-one-thread-many-tasks</loc><lastmod>2025-01-15</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-data-fetching-server-state</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-error-boundaries-resilience</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-event-system-internals</loc><lastmod>2026-05-01</lastmod></url>
@@ -12,4 +19,5 @@
   <url><loc>https://www.harikesh.xyz/writing/react-server-components-internals</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-state-management-architecture</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-suspense-internals</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/settimeout-minimum-not-deadline</loc><lastmod>2025-01-01</lastmod></url>
 </urlset>
