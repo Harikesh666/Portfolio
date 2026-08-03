@@ -364,7 +364,7 @@ createOrder(cart)
     });
 ```
 
-Promises do not remove callbacks—functions passed to `.then` and `.catch` are still callbacks. Promises give those callbacks a standard timing, result, error, and composition model.
+Promises do not remove callbacks. Functions passed to `.then` and `.catch` are still callbacks. Promises give those callbacks a standard timing, result, error, and composition model.
 
 ## Async and await restore the story
 

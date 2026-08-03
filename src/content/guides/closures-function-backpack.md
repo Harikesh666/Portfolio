@@ -17,6 +17,16 @@ That sentence is short, but closures often take time to understand because they 
 2. JavaScript uses lexical scope.
 3. A function can outlive the call that created it.
 
+Scope answers one simple question: where can this name be used? JavaScript uses **lexical scope**, which means it answers that question by looking at where the code was written, not where the function happens to run later.
+
+Before going further, we need one word that appears throughout this topic: **binding**.
+
+> A binding is the connection JavaScript creates between a name and its current value, or its not-yet-initialized state, within a particular scope.
+
+In `let count = 0`, `count` is the name and `0` is the current value. The binding is the scoped connection between them. Think of it as a labeled slot: the declaration creates the slot, the scope decides where its label is visible, and assignment can change what the slot contains.
+
+Behind that mental model, JavaScript keeps a **lexical environment** for each scope. Think of it as the record of labeled slots in that scope, plus a link to the scope outside it.
+
 Here is the mental model that makes those ideas easier to hold together:
 
 > A closure is a function carrying a backpack filled with access to the bindings from the scope where it was created.
@@ -103,7 +113,7 @@ Walk through it step by step.
 
 ### Step 1: Call x
 
-Calling `x()` creates a new execution context. Inside that call, JavaScript creates the binding `a` and the function `y`.
+Calling `x()` creates a new execution context. That phrase sounds heavier than it is. It is the runtime workspace JavaScript needs for this particular call. Inside it, JavaScript creates the binding `a` and the function `y`.
 
 ### Step 2: Create y inside x
 
@@ -121,6 +131,8 @@ const z = x();
 
 ### Step 4: x leaves the call stack
 
+The call stack keeps the active function calls in order. Each call gets an entry of its own, often called a **stack frame**.
+
 The call to `x` is complete, so its execution context leaves the call stack.
 
 At this point, it is reasonable to ask:
@@ -137,7 +149,7 @@ z();
 
 Calling `z` runs the original function `y`. It follows its lexical environment back to `a` and logs `7`.
 
-The call stack frame for `x` is gone. The required lexical environment is not.
+The stack frame for `x` is gone. The required lexical environment is not.
 
 That difference is the power of closures.
 

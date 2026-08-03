@@ -516,7 +516,7 @@ When you pass a callback, ask:
 
 With `map`, the answers are straightforward. With timers, events, network libraries, and older callback-based APIs, the contract becomes more important.
 
-When several asynchronous callbacks depend on one another, indentation grows, error handling spreads, and control becomes difficult to follow. That is where **callback hell** begins—but that is the next lesson, not this one.
+When several asynchronous callbacks depend on one another, indentation grows, error handling spreads, and control becomes difficult to follow. That is where **callback hell** begins, but that is the next lesson, not this one.
 
 ## What to remember
 

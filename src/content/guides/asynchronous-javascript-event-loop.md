@@ -19,6 +19,8 @@ But then comes the obvious question: **what if our program needs to wait for som
 
 What if we want to run code after five seconds, fetch data from a server, or respond when a user clicks a button?
 
+The call stack does not wait for any of them. As the original note puts it, “time, tide, and JavaScript wait for none.”
+
 This is where the JavaScript engine stops being the whole story. We need the runtime around it: browser APIs, task queues, the microtask queue, and the event loop.
 
 Let’s build that picture one part at a time.
@@ -26,6 +28,8 @@ Let’s build that picture one part at a time.
 ## JavaScript runs one job at a time
 
 You will often hear that JavaScript is a synchronous, single-threaded language. That sentence is useful, but it needs some care.
+
+I am using **job** in the ordinary sense here: the piece of JavaScript work that currently has the main thread. Later, we will separate the browser's more precise tasks and microtasks.
 
 On the browser’s main thread, JavaScript code runs **one job at a time**. A function that is already running is not interrupted halfway through so another JavaScript function can take over. Each job runs to completion before the next one begins.
 
@@ -179,6 +183,8 @@ After at least 5000 milliseconds, the browser can queue a task for the timer cal
 
 Notice the wording: **queue a task**. The browser does not force the callback into the middle of whatever JavaScript is already running.
 
+A **task** is one scheduled turn of browser work. Running the initial script, handling a ready timer, and dispatching a click can each begin as a task.
+
 ### Step 6: The callback gets a turn
 
 When the event loop selects the timer task, the engine calls `callback`. A new execution context is created, `"Callback"` is logged, and the function returns.
@@ -270,6 +276,8 @@ This is why a page can look frozen even though the browser has already received 
 ## Tasks and microtasks are not the same
 
 So far, we have talked mostly about tasks. Browsers also have a **microtask queue**.
+
+A **microtask** is follow-up work that gets a chance before the browser moves to the next task. The browser usually processes it after the current task's JavaScript finishes, at what is called a microtask checkpoint.
 
 Common sources of microtasks include:
 

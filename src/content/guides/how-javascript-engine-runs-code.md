@@ -9,7 +9,7 @@ publishedAt: "2024-12-27"
 
 # How the JavaScript Engine Runs Your Code
 
-JavaScript is like **Binod**—it is everywhere.
+JavaScript is like **Binod**. It is everywhere.
 
 It runs inside browsers, on servers through Node.js, in desktop applications, in robots, and potentially even inside a water cooler.
 
@@ -82,7 +82,7 @@ The `fs` API lets JavaScript work with files, but browser JavaScript does not re
 
 Some names, such as `setTimeout` and `console`, exist in both browsers and Node.js. That does not make them core JavaScript features. The environments provide their own implementations.
 
-This separation is what makes JavaScript portable. An environment can embed an engine and expose the capabilities that make sense for that environment—even if the environment is a water cooler.
+This separation is what makes JavaScript portable. An environment can embed an engine and expose the capabilities that make sense for that environment, even if the environment is a water cooler.
 
 ## A short history of JavaScript engines
 
@@ -129,6 +129,8 @@ Execution and runtime feedback
     ↓
 Specialized machine code for useful hot paths
 ```
+
+Those two terms deserve a translation. **Bytecode** is a compact set of engine-specific instructions that an interpreter can execute. **Machine code** goes one level lower: it contains processor-specific instructions that the CPU can execute directly.
 
 The exact pipeline differs between engines. Even inside one engine, not every function takes the same route.
 

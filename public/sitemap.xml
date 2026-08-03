@@ -7,8 +7,17 @@
   <url><loc>https://www.harikesh.xyz/writing/callback-hell-pyramid-of-doom</loc><lastmod>2025-01-12</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/closures-beyond-the-basics</loc><lastmod>2025-01-03</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/closures-function-backpack</loc><lastmod>2024-11-05</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/global-scope-and-this-call-site</loc><lastmod>2025-01-21</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/higher-order-functions-stop-rewriting-the-loop</loc><lastmod>2025-01-24</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/how-javascript-engine-runs-code</loc><lastmod>2024-12-27</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/how-javascript-keeps-track-of-running-code</loc><lastmod>2025-01-30</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/javascript-block-scope-and-shadowing</loc><lastmod>2025-02-05</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/javascript-concurrency-one-thread-many-tasks</loc><lastmod>2025-01-15</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/javascript-functions-values-with-behavior</loc><lastmod>2025-01-18</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/javascript-hoisting-does-not-move-code</loc><lastmod>2025-01-27</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/javascript-scope-how-names-find-values</loc><lastmod>2025-02-11</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/javascript-type-conversion-and-coercion</loc><lastmod>2025-02-17</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/map-filter-reduce-transform-select-combine</loc><lastmod>2025-02-02</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-data-fetching-server-state</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-error-boundaries-resilience</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-event-system-internals</loc><lastmod>2026-05-01</lastmod></url>
@@ -19,5 +28,7 @@
   <url><loc>https://www.harikesh.xyz/writing/react-server-components-internals</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-state-management-architecture</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/react-suspense-internals</loc><lastmod>2026-05-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/settimeout-closures-var-let-loop</loc><lastmod>2025-02-14</lastmod></url>
   <url><loc>https://www.harikesh.xyz/writing/settimeout-minimum-not-deadline</loc><lastmod>2025-01-01</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/writing/var-let-const-and-temporal-dead-zone</loc><lastmod>2025-02-08</lastmod></url>
 </urlset>
