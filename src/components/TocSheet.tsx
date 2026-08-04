@@ -105,9 +105,11 @@ function TocSheetRow({
                 />
             )}
             <a
-                aria-current={isActive ? "true" : undefined}
-                className={`block min-w-0 truncate rounded-md px-4 py-2.5 text-[13px] leading-snug hover:bg-accent-soft hover:text-foreground-strong ${
-                    isActive ? "text-accent" : "text-muted"
+                aria-current={isActive ? "location" : undefined}
+                className={`flex min-h-11 min-w-0 items-center rounded-md px-4 py-2 text-sm leading-snug hover:bg-accent-soft hover:text-foreground-strong ${
+                    isActive
+                        ? "bg-accent-soft font-medium text-accent"
+                        : "text-muted"
                 }`}
                 href={href}
                 onClick={(event) => {
@@ -125,7 +127,7 @@ function TocSheetRow({
                 }}
                 ref={isActive ? activeItemRef : undefined}
             >
-                {title}
+                <span className="line-clamp-2 min-w-0">{title}</span>
             </a>
         </motion.li>
     );
@@ -182,6 +184,7 @@ export function TocSheet({
             ? "Table of contents"
             : (items[activeIndex]?.title ?? "Table of contents");
     const sheetId = `toc-sheet-${slug}`;
+    const sheetTitleId = `${sheetId}-title`;
 
     useLayoutEffect(() => {
         if (isRouteActive) return;
@@ -544,12 +547,18 @@ export function TocSheet({
             <motion.button
                 aria-controls={sheetId}
                 aria-expanded={isOpen}
+                aria-haspopup="dialog"
+                aria-label={
+                    activeIndex === null
+                        ? "Open table of contents"
+                        : `Open table of contents. Current section: ${currentTitle}`
+                }
                 className="fixed left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 overflow-hidden rounded-full border border-divider bg-surface px-4 text-left text-foreground-strong shadow-sm"
                 onClick={openSheet}
                 ref={triggerRef}
                 style={{
                     bottom: "calc(1rem + env(safe-area-inset-bottom))",
-                    width: "min(calc(100% - 2rem), 22rem)",
+                    width: "min(calc(100% - 2rem), 20rem)",
                 }}
                 type="button"
                 variants={
@@ -591,7 +600,7 @@ export function TocSheet({
                 </span>
                 <motion.span
                     aria-hidden="true"
-                    className="absolute inset-x-4 bottom-0 h-px origin-left bg-accent"
+                    className="absolute inset-x-4 bottom-0 h-0.5 origin-left bg-accent"
                     style={{
                         scaleX: shouldReduceMotion
                             ? sectionProgress
@@ -621,7 +630,7 @@ export function TocSheet({
                         />
                         <LayoutGroup id={`toc-sheet-layout-${slug}`}>
                             <motion.div
-                                aria-label="Table of contents"
+                                aria-labelledby={sheetTitleId}
                                 aria-modal="true"
                                 className="absolute inset-x-0 bottom-0 flex max-h-[min(72dvh,560px)] min-w-0 flex-col overflow-hidden rounded-t-2xl border-t border-divider bg-surface shadow-lg"
                                 drag="y"
@@ -645,7 +654,7 @@ export function TocSheet({
                             >
                                 <button
                                     aria-label="Close table of contents"
-                                    className="flex h-10 shrink-0 touch-none items-center justify-center"
+                                    className="flex h-11 shrink-0 touch-none items-center justify-center"
                                     onClick={() => {
                                         if (!hasDraggedRef.current) closeSheet();
                                     }}
@@ -665,7 +674,10 @@ export function TocSheet({
                                         dragControls.start(event)
                                     }
                                 >
-                                    <h2 className="text-sm font-semibold text-foreground-strong">
+                                    <h2
+                                        className="text-sm font-semibold text-foreground-strong"
+                                        id={sheetTitleId}
+                                    >
                                         Table of contents
                                     </h2>
                                     <span className="font-mono text-[11px] text-muted">
