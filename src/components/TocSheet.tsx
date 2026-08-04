@@ -7,7 +7,6 @@ import {
     type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { ListBulletsIcon } from "@phosphor-icons/react";
 import { useLocation } from "@tanstack/react-router";
 import {
     AnimatePresence,
@@ -553,7 +552,7 @@ export function TocSheet({
                         ? "Open table of contents"
                         : `Open table of contents. Current section: ${currentTitle}`
                 }
-                className="fixed left-1/2 z-30 flex min-h-11 -translate-x-1/2 items-center gap-2 overflow-hidden rounded-full border border-divider bg-surface px-4 text-left text-foreground-strong shadow-sm"
+                className="fixed left-1/2 z-30 flex h-13 -translate-x-1/2 items-center gap-3 overflow-hidden rounded-full border border-divider bg-surface px-4 text-left text-foreground-strong shadow-sm"
                 onClick={openSheet}
                 ref={triggerRef}
                 style={{
@@ -565,11 +564,11 @@ export function TocSheet({
                     shouldReduceMotion ? reducedPageBlock : materializeBlock
                 }
             >
-                <ListBulletsIcon
+                <span
                     aria-hidden="true"
-                    className="size-3.5 shrink-0 text-muted"
+                    className="size-2 shrink-0 rounded-full bg-foreground-strong"
                 />
-                <span className="relative min-w-0 flex-1 overflow-hidden text-[12px] leading-none">
+                <span className="relative min-w-0 flex-1 overflow-hidden text-[13px] font-medium leading-none">
                     <AnimatePresence initial={false} mode="popLayout">
                         <motion.span
                             animate={{ opacity: 1, y: 0 }}
@@ -595,18 +594,34 @@ export function TocSheet({
                         </motion.span>
                     </AnimatePresence>
                 </span>
-                <span className="shrink-0 font-mono text-[10px] text-muted">
-                    {items.length}
-                </span>
-                <motion.span
+                <svg
                     aria-hidden="true"
-                    className="absolute inset-x-4 bottom-0 h-0.5 origin-left bg-accent"
-                    style={{
-                        scaleX: shouldReduceMotion
-                            ? sectionProgress
-                            : animatedSectionProgress,
-                    }}
-                />
+                    className="size-9 shrink-0 -rotate-90"
+                    viewBox="0 0 36 36"
+                >
+                    <circle
+                        cx="18"
+                        cy="18"
+                        fill="none"
+                        r="15"
+                        stroke="var(--divider)"
+                        strokeWidth="2.5"
+                    />
+                    <motion.circle
+                        cx="18"
+                        cy="18"
+                        fill="none"
+                        r="15"
+                        stroke="var(--accent)"
+                        strokeLinecap="round"
+                        strokeWidth="2.5"
+                        style={{
+                            pathLength: shouldReduceMotion
+                                ? sectionProgress
+                                : animatedSectionProgress,
+                        }}
+                    />
+                </svg>
             </motion.button>
 
             {isSheetMounted &&
