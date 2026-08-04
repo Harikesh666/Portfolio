@@ -2,6 +2,7 @@
 title: "More on Closures: Scope Chains, Privacy, and Memory"
 description: "A deeper look at returned functions, lexical bindings, shadowing, private state, constructor closures, and garbage collection."
 category: "JavaScript"
+topic: "scope-and-closures"
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-03"
@@ -9,7 +10,7 @@ publishedAt: "2025-01-03"
 
 # More on Closures: Scope Chains, Privacy, and Memory
 
-The [foundational closures article](/writing/closures-function-backpack) used a backpack as its mental model: a function carries access to bindings from the lexical environment where it was created.
+The [foundational closures article](/articles/closures-function-backpack) used a backpack as its mental model: a function carries access to bindings from the lexical environment where it was created.
 
 That model explains the basics. Now we can ask harder questions.
 

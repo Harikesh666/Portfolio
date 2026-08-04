@@ -54,7 +54,7 @@ The portfolio is a minimal, proof-led introduction to a full-stack developer and
 It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes quickly; fellow engineers can settle into substantial articles without visual noise.
 
 **Key Characteristics:**
-- A `42rem` single-column layout across portfolio, writing index, and articles.
+- A `42rem` single-column layout across portfolio, articles index, and article pages.
 - Explicit light and dark themes using the same semantic tokens.
 - Atkinson Hyperlegible Next for all prose and headings, JetBrains Mono for metadata and technical labels.
 - Coral acts as one intentional signal for links, series indices, inline code, focus, and important metrics.
@@ -111,8 +111,14 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 - **Theme Control:** Minimum 44px target; persists explicit `light` or `dark` preference in local storage.
 - **Focus:** 3px coral outline with 3px offset.
 
-### Writing List Item
-- **Structure:** Series index, title, summary, and reading time in a vertically stacked ruled list.
+### Articles Index
+- **Map:** A compact ruled `Browse` navigation follows the introduction and links to every learning path and authored topic with guide counts.
+- **Hierarchy:** Guided series remain the primary collection; standalone guides are divided into durable conceptual topics rather than one oversized language category.
+- **Taxonomy:** Standalone topic IDs and display metadata live in `src/lib/content.ts` and are validated from guide frontmatter. Series posts use their ordered learning-path metadata instead.
+- **Restraint:** The full catalog remains in one narrow document. Anchor links, section headings, and tighter rows provide orientation without cards, filter chips, hidden panels, search, or pagination.
+
+### Article List Item
+- **Structure:** Series index, title, summary, and reading time in a compact vertically stacked ruled list.
 - **Behavior:** Only the title changes to coral on hover; no cards or lift effects.
 
 ### Article Content
@@ -124,7 +130,7 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 - **Code:** Expressive Code frames retain their generated theme and copy behavior; local CSS only styles inline code. Programmatic heading navigation uses a three-frame settle loop with instant correction steps. The article tree deliberately avoids `content-visibility`: the corrected retry achieved exact anchors and a sub-700ms throttled task, but failed the unthrottled slow-frame gate.
 
 ### Motion
-- **Route and entry:** Navigated route wrappers become visible immediately after the outgoing 90ms exit so the page hero is the sole entrance owner. A pre-paint JavaScript marker hides only unprepared stagger roots, preventing SSR content from flashing before hydration while leaving the content visible when JavaScript is unavailable. Each hero waits for loaded fonts and follows document order: optional eyebrow copy enters from 24px below, the headline splits into rendered lines and reveals from `0.4em` below with a 4px one-shot blur on a 500ms gentle spring, then supporting metadata and actions use the same 24px follower entrance. Lines stagger by 150ms, pause for 300ms, and followers stagger by 80ms on a 375ms spring. The choreography preserves each route's existing typography and spacing instead of importing the reference hero's display scale. The home introduction is the visual headline; Resume, Writing, and article titles remain the anchors on their routes. Same-path hash changes never remount the route boundary. The exiting desktop table of contents becomes inert and `display: none` immediately, then disposes after route commit.
+- **Route and entry:** Navigated route wrappers become visible immediately after the outgoing 90ms exit so the page hero is the sole entrance owner. A pre-paint JavaScript marker hides only unprepared stagger roots, preventing SSR content from flashing before hydration while leaving the content visible when JavaScript is unavailable. Each hero waits for loaded fonts and follows document order: optional eyebrow copy enters from 24px below, the headline splits into rendered lines and reveals from `0.4em` below with a 4px one-shot blur on a 500ms gentle spring, then supporting metadata and actions use the same 24px follower entrance. Lines stagger by 150ms, pause for 300ms, and followers stagger by 80ms on a 375ms spring. The choreography preserves each route's existing typography and spacing instead of importing the reference hero's display scale. The home introduction is the visual headline; Resume, Articles, and article titles remain the anchors on their routes. Same-path hash changes never remount the route boundary. The exiting desktop table of contents becomes inert and `display: none` immediately, then disposes after route commit.
 - **Header continuity:** Article navigation transforms one persistent avatar and theme control between fixed identity and breadcrumb geometry over 300ms on the route curve; no layout projection or runtime measurement participates. Non-shared navigation and breadcrumb content crossfade, focus remains on the persistent theme control, and identity-to-identity navigation does not retrigger the header.
 - **Signature interaction:** The responsive table of contents receives the motion budget through desktop shared-element morphs and mobile physical sheet drag. Both views use active-outward staggering and within-section progress; mobile backdrop opacity is coupled directly to sheet position, while velocity-aware stretch remains desktop-only.
 - **Restraint:** Repeated motion is limited to transforms and opacity; scale is reserved for small page-entry blocks, and Y-axis reveals are limited to bounded content while larger trees use opacity only. The editorial hero's 4px blur is an explicit exception authorized for its one-shot mount entrance and never applies to article or route-sized trees. `prefers-reduced-motion: reduce` renders the hero immediately, snaps the header layout, removes entrance transforms, and keeps simple destinations instant.
@@ -135,7 +141,7 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 - **Do** keep every primary surface within the narrow reading column.
 - **Do** use semantic theme tokens and test both explicit `data-theme` values.
 - **Do** preserve accessible focus, reduced-motion, and overflow safeguards.
-- **Do** publish guides through validated frontmatter rather than a hardcoded registry.
+- **Do** publish guides through validated series or topic frontmatter rather than route-level title inference.
 - **Do** let evidence, writing, and code carry the visual weight.
 
 ### Don't:

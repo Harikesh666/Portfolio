@@ -56,7 +56,7 @@ const avatarBreadcrumbScale =
     headerGeometry.breadcrumb.avatarSize / headerGeometry.identity.avatarSize;
 
 function getHeaderPost(pathname: string) {
-    const slug = pathname.match(/^\/writing\/([^/]+)\/?$/)?.[1];
+    const slug = pathname.match(/^\/articles\/([^/]+)\/?$/)?.[1];
 
     return slug ? posts.find((entry) => entry.slug === slug) : undefined;
 }
@@ -230,8 +230,8 @@ function IdentityHeader() {
                 >
                     Home
                 </Link>
-                <Link className={navLinkClassName} to="/writing">
-                    Writing
+                <Link className={navLinkClassName} to="/articles">
+                    Articles
                 </Link>
                 <Link className={navLinkClassName} to="/resume">
                     Resume
@@ -257,9 +257,9 @@ function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
             </span>
             <Link
                 className="shrink-0 font-medium text-foreground-strong hover:text-accent"
-                to="/writing"
+                to="/articles"
             >
-                Writing
+                Articles
             </Link>
             <span aria-hidden="true" className="shrink-0 text-divider">
                 /

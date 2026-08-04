@@ -2,6 +2,7 @@
 title: "Callback Functions: JavaScript Calls You Back"
 description: "What callbacks really are, when they run synchronously or asynchronously, and how they shape timers, events, array methods, and closures."
 category: "JavaScript"
+topic: "functions-and-composition"
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-10"
@@ -285,7 +286,7 @@ The two callbacks in this example follow different timing rules:
 
 Callbacks do not create asynchrony on their own. The timer and the browser’s event-loop machinery create the asynchronous behavior. The callback tells the browser which JavaScript to run when the timer is ready.
 
-For the complete scheduling model, read [JavaScript, the Browser, and the Event Loop](/writing/asynchronous-javascript-event-loop).
+For the complete scheduling model, read [JavaScript, the Browser, and the Event Loop](/articles/asynchronous-javascript-event-loop).
 
 ## Event listeners are long-lived callbacks
 
@@ -358,7 +359,7 @@ After `attachCounter` finishes, the listener still has access to `count`. The ca
 
 The variable is no longer global, but “private and protected” would be too strong. The callback can still change it, and any other function created inside `attachCounter` could share access to it. The closure limits where the binding can be reached; it does not place the value inside a security vault.
 
-For the full mental model, read [Closures in JavaScript: The Function’s Backpack](/writing/closures-function-backpack).
+For the full mental model, read [Closures in JavaScript: The Function’s Backpack](/articles/closures-function-backpack).
 
 ## Removing event listeners correctly
 

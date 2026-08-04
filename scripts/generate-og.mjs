@@ -95,7 +95,7 @@ function card(post) {
                     fontWeight: 500,
                 },
             },
-            "www.harikesh.xyz/writing",
+            "www.harikesh.xyz/articles",
         ),
         createElement(
             "div",
@@ -177,9 +177,9 @@ async function writeSitemap(posts) {
     const today = `${dateParts.find((part) => part.type === "year")?.value}-${dateParts.find((part) => part.type === "month")?.value}-${dateParts.find((part) => part.type === "day")?.value}`;
     const entries = [
         { url: absoluteUrl(), lastmod: today },
-        { url: absoluteUrl("/writing"), lastmod: today },
+        { url: absoluteUrl("/articles"), lastmod: today },
         ...posts.map((post) => ({
-            url: absoluteUrl(`/writing/${post.slug}`),
+            url: absoluteUrl(`/articles/${post.slug}`),
             lastmod: post.publishedAt,
         })),
     ];

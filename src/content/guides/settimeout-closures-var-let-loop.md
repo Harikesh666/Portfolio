@@ -2,6 +2,7 @@
 title: "setTimeout, Closures, and the Famous Loop Problem"
 description: "Why delayed callbacks share one var binding, how let creates a binding per loop iteration, and how helper functions preserve each value."
 category: "JavaScript"
+topic: "async-and-concurrency"
 readTime: "15 min read"
 date: "February 2025"
 publishedAt: "2025-02-14"
@@ -56,7 +57,7 @@ One correction matters from the beginning:
 
 > `setTimeout` does not create the closure. JavaScript creates the callback function, and that function closes over the bindings around it. `setTimeout` merely schedules that callback.
 
-For the complete timer model, read [setTimeout Has Trust Issues](/writing/settimeout-minimum-not-deadline). For the full closure model, read [Closures in JavaScript: The Function's Backpack](/writing/closures-function-backpack).
+For the complete timer model, read [setTimeout Has Trust Issues](/articles/settimeout-minimum-not-deadline). For the full closure model, read [Closures in JavaScript: The Function's Backpack](/articles/closures-function-backpack).
 
 Now we can trace the timer examples.
 

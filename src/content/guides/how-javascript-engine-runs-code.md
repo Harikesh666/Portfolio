@@ -2,6 +2,7 @@
 title: "How the JavaScript Engine Runs Your Code"
 description: "From source text to bytecode and optimized machine code, with the runtime, call stack, heap, and garbage collector explained."
 category: "JavaScript"
+topic: "execution-model"
 readTime: "15 min read"
 date: "December 2024"
 publishedAt: "2024-12-27"

@@ -2,6 +2,7 @@
 title: "Closures in JavaScript: The Function's Backpack"
 description: "How functions remember lexical scope, retain changing bindings, and use that memory for counters, currying, memoization, and async code."
 category: "JavaScript"
+topic: "scope-and-closures"
 readTime: "13 min read"
 date: "November 2024"
 publishedAt: "2024-11-05"

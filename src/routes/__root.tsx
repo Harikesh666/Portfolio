@@ -318,7 +318,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
         select: (location) => location.state.__TSR_key ?? location.href,
     });
     const scrollTarget = scrollPositions.get(locationKey) ?? 0;
-    const shouldDeferEntrance = pathname.startsWith("/writing/");
+    const shouldDeferEntrance = pathname.startsWith("/articles/");
 
     useEffect(() => {
         if (pathname !== initialPathname) setHasNavigated(true);
@@ -390,7 +390,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                     <motion.div variants={routeBlockVariants}>
                         <Footer />
                     </motion.div>
-                    {pathname.startsWith("/writing/") ? (
+                    {pathname.startsWith("/articles/") ? (
                         <Suspense fallback={null}>
                             <LazyFloatingTocHost
                                 settledRouteId={settledRouteId}

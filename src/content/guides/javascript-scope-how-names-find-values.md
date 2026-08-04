@@ -2,6 +2,7 @@
 title: "JavaScript Scope: How Names Find Their Values"
 description: "How global, function, and block scope shape name lookup, lexical environments, scope chains, hoisting, shadowing, and ReferenceError behavior."
 category: "JavaScript"
+topic: "scope-and-closures"
 readTime: "14 min read"
 date: "February 2025"
 publishedAt: "2025-02-11"
@@ -64,7 +65,7 @@ There is another distinction worth keeping:
 
 In a classic browser script, some top-level declarations also become properties of `window`. Top-level `let` and `const` do not. Modules follow different rules again.
 
-That full relationship is covered in [Global Scope and this: Look at the Call Site](/writing/global-scope-and-this-call-site). For this article, keep the simpler rule: global scope is the outermost place where name lookup can arrive in the current program environment.
+That full relationship is covered in [Global Scope and this: Look at the Call Site](/articles/global-scope-and-this-call-site). For this article, keep the simpler rule: global scope is the outermost place where name lookup can arrive in the current program environment.
 
 ## Function scope
 
@@ -132,7 +133,7 @@ console.log(temporary); // ReferenceError
 
 The braces are doing more than making the code look organized. They create a boundary for block-scoped declarations.
 
-For the detailed differences between `var`, `let`, and `const`, read [var, let, and const: Bindings, Scope, and the TDZ](/writing/var-let-const-and-temporal-dead-zone). For the strange cases involving blocks and redeclarations, read [JavaScript Blocks, Scope, and Shadowing](/writing/javascript-block-scope-and-shadowing).
+For the detailed differences between `var`, `let`, and `const`, read [var, let, and const: Bindings, Scope, and the TDZ](/articles/var-let-const-and-temporal-dead-zone). For the strange cases involving blocks and redeclarations, read [JavaScript Blocks, Scope, and Shadowing](/articles/javascript-block-scope-and-shadowing).
 
 ## Scope and lexical environment are related, not identical
 
@@ -183,7 +184,7 @@ function showStatus() {
 
 Calling `showStatus` creates an execution context for the call. Entering the `if` block introduces another lexical environment for `detail`, but it does not call another function.
 
-If you want to follow execution contexts and the call stack step by step, read [How JavaScript Keeps Track of Running Code](/writing/how-javascript-keeps-track-of-running-code).
+If you want to follow execution contexts and the call stack step by step, read [How JavaScript Keeps Track of Running Code](/articles/how-javascript-keeps-track-of-running-code).
 
 ## Lexical scope follows where code was written
 
@@ -383,7 +384,7 @@ Notice that scope lookup still follows the same path. The surprising part is the
 
 Those are three different situations, even though two of them can produce a `ReferenceError`.
 
-For the full declaration-by-declaration walkthrough, read [JavaScript Hoisting Does Not Move Your Code](/writing/javascript-hoisting-does-not-move-code).
+For the full declaration-by-declaration walkthrough, read [JavaScript Hoisting Does Not Move Your Code](/articles/javascript-hoisting-does-not-move-code).
 
 ## Scope does not decide lifetime by itself
 
@@ -415,7 +416,7 @@ The binding's scope has not expanded. Code outside still cannot write `count` di
 
 Scope tells us who can reach the binding. Reachability helps the engine decide how long the required environment data must remain available.
 
-That difference is explored fully in [Closures in JavaScript: The Function's Backpack](/writing/closures-function-backpack).
+That difference is explored fully in [Closures in JavaScript: The Function's Backpack](/articles/closures-function-backpack).
 
 ## A practical way to trace scope
 

@@ -2,6 +2,7 @@
 title: "Map, Filter, and Reduce: Transform, Select, Combine"
 description: "Learn how map, filter, and reduce work through numbers, user records, accumulator traces, and practical combinations."
 category: "JavaScript"
+topic: "functions-and-composition"
 readTime: "15 min read"
 date: "February 2025"
 publishedAt: "2025-02-02"
@@ -687,4 +688,4 @@ Before writing each callback, say its job in one sentence. If you cannot explain
 - [ECMAScript Array.prototype.map](https://tc39.es/ecma262/#sec-array.prototype.map)
 - [ECMAScript Array.prototype.filter](https://tc39.es/ecma262/#sec-array.prototype.filter)
 - [ECMAScript Array.prototype.reduce](https://tc39.es/ecma262/#sec-array.prototype.reduce)
-- [Higher-Order Functions: Stop Rewriting the Loop](/writing/higher-order-functions-stop-rewriting-the-loop)
+- [Higher-Order Functions: Stop Rewriting the Loop](/articles/higher-order-functions-stop-rewriting-the-loop)

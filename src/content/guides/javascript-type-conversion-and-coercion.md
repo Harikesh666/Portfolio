@@ -2,6 +2,7 @@
 title: "JavaScript Type Conversion: Why '6' / '2' Is 3"
 description: "How JavaScript converts values to strings, numbers, and booleans, including coercion, NaN, truthy and falsy values, and the special behavior of plus."
 category: "JavaScript"
+topic: "execution-model"
 readTime: "15 min read"
 date: "February 2025"
 publishedAt: "2025-02-17"

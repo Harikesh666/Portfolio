@@ -8,7 +8,31 @@ export const seriesIndex = {
     },
 } as const;
 
+export const topicIndex = {
+    "execution-model": {
+        title: "Execution model",
+        description:
+            "How JavaScript evaluates code, tracks execution, resolves declarations, and converts values.",
+    },
+    "scope-and-closures": {
+        title: "Scope & closures",
+        description:
+            "Bindings, lexical scope, closure memory, and the rules that decide where values come from.",
+    },
+    "functions-and-composition": {
+        title: "Functions & composition",
+        description:
+            "Callbacks, higher-order functions, and reusable ways to transform and combine behavior.",
+    },
+    "async-and-concurrency": {
+        title: "Async & concurrency",
+        description:
+            "The event loop, scheduling, callbacks, timers, and how one thread coordinates many tasks.",
+    },
+} as const;
+
 export type SeriesId = keyof typeof seriesIndex;
+export type TopicId = keyof typeof topicIndex;
 
 export type PostSummary = {
     slug: string;
@@ -19,6 +43,7 @@ export type PostSummary = {
     date: string;
     publishedAt: string;
     series?: SeriesId;
+    topic?: TopicId;
     order?: number;
 };
 
@@ -51,6 +76,10 @@ function isSeriesId(value: string): value is SeriesId {
     return value in seriesIndex;
 }
 
+function isTopicId(value: string): value is TopicId {
+    return value in topicIndex;
+}
+
 function getSlug(path: string) {
     const filename = path.split("/").at(-1);
     if (!filename?.endsWith(".md")) {
@@ -75,12 +104,34 @@ function toPost(
         throw new Error(`Invalid series in ${filename}`);
     }
 
+    const topicValue = frontmatter.topic;
+    const topic =
+        topicValue === undefined
+            ? undefined
+            : assertString(topicValue, "topic", filename);
+
+    if (topic !== undefined && !isTopicId(topic)) {
+        throw new Error(`Invalid topic in ${filename}`);
+    }
+
+    if (series === undefined && topic === undefined) {
+        throw new Error(`Invalid topic in ${filename}`);
+    }
+
+    if (series !== undefined && topic !== undefined) {
+        throw new Error(`Invalid topic in ${filename}`);
+    }
+
     const order =
         frontmatter.order === undefined
             ? undefined
             : assertOrder(frontmatter.order, filename);
 
     if (series !== undefined && order === undefined) {
+        throw new Error(`Invalid order in ${filename}`);
+    }
+
+    if (series === undefined && order !== undefined) {
         throw new Error(`Invalid order in ${filename}`);
     }
 
@@ -102,6 +153,7 @@ function toPost(
             filename,
         ),
         series,
+        topic,
         order,
     };
 }

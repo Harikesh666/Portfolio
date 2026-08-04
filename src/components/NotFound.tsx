@@ -33,8 +33,8 @@ export function NotFound() {
                     <Link className={linkClassName} to="/">
                         ← Home
                     </Link>
-                    <Link className={linkClassName} to="/writing">
-                        Writing
+                    <Link className={linkClassName} to="/articles">
+                        Articles
                     </Link>
                     <Link className={linkClassName} to="/resume">
                         Resume

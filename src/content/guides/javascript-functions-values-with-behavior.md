@@ -2,6 +2,7 @@
 title: "JavaScript Functions Are Values with Behavior"
 description: "A practical tour of declarations, expressions, names, parameters, returned functions, first-class behavior, and arrow functions."
 category: "JavaScript"
+topic: "functions-and-composition"
 readTime: "15 min read"
 date: "January 2025"
 publishedAt: "2025-01-18"
@@ -418,7 +419,7 @@ console.log(sayHello("Harikesh"));
 console.log(sayNamaste("Binod"));
 ```
 
-The returned functions close over different `greeting` bindings. That leads directly into [Closures in JavaScript: The Function’s Backpack](/writing/closures-function-backpack).
+The returned functions close over different `greeting` bindings. That leads directly into [Closures in JavaScript: The Function’s Backpack](/articles/closures-function-backpack).
 
 ## 8. First-class functions
 

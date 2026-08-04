@@ -2,6 +2,7 @@
 title: "How JavaScript Keeps Track of Running Code"
 description: "Understand execution contexts, the call stack, and how asynchronous code fits into JavaScript's single-threaded execution model."
 category: "JavaScript"
+topic: "execution-model"
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-30"
@@ -80,7 +81,7 @@ This is why a function declaration can usually be called before it appears in th
 
 People often call this behavior **hoisting**, but JavaScript does not physically move your code to the top. It prepares bindings before it begins evaluating the statements.
 
-The full difference is covered in [JavaScript Hoisting Does Not Move Your Code](/writing/javascript-hoisting-does-not-move-code).
+The full difference is covered in [JavaScript Hoisting Does Not Move Your Code](/articles/javascript-hoisting-does-not-move-code).
 
 One small correction to the memory-component model: this is not the same thing as the JavaScript heap. The heap stores objects and other runtime data. The variable environment describes how names such as `score` and `double` are connected to their values.
 
@@ -444,7 +445,7 @@ When `counter()` is called, JavaScript creates a **new** execution context for `
 
 Closures preserve access to bindings. They do not keep completed function calls permanently on the stack.
 
-The complete closure model is explained in [Closures in JavaScript: The Function’s Backpack](/writing/closures-function-backpack).
+The complete closure model is explained in [Closures in JavaScript: The Function’s Backpack](/articles/closures-function-backpack).
 
 ## Recursion keeps adding calls
 
@@ -579,7 +580,7 @@ When `loadUser` reaches a pending `await`, it does not freeze the call stack unt
 
 When the awaited promise settles, the remaining part of the function can continue through the promise-job system.
 
-The event-loop article goes deeper into tasks and microtasks: [JavaScript, the Browser, and the Event Loop](/writing/asynchronous-javascript-event-loop).
+The event-loop article goes deeper into tasks and microtasks: [JavaScript, the Browser, and the Event Loop](/articles/asynchronous-javascript-event-loop).
 
 ## Keep the pieces separate
 
@@ -594,7 +595,7 @@ These terms are related, but they are not different names for the same thing:
 
 If you mix all of these into one idea, asynchronous JavaScript feels like magic. Once you separate them, the behavior becomes much easier to follow.
 
-The engine itself is covered in [How the JavaScript Engine Runs Your Code](/writing/how-javascript-engine-runs-code).
+The engine itself is covered in [How the JavaScript Engine Runs Your Code](/articles/how-javascript-engine-runs-code).
 
 ## What to remember
 

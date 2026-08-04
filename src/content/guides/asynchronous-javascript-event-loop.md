@@ -2,6 +2,7 @@
 title: "JavaScript, the Browser, and the Event Loop"
 description: "How browser APIs, tasks, microtasks, and the event loop let JavaScript handle delayed work without blocking the main thread."
 category: "JavaScript"
+topic: "async-and-concurrency"
 readTime: "15 min read"
 date: "January 2025"
 publishedAt: "2025-01-07"
@@ -78,7 +79,7 @@ That does not mean every browser API is asynchronous. `localStorage`, for exampl
 
 This is also why the same JavaScript language can live in different environments. A browser gives it the DOM and `window`. Node.js gives it file-system, process, and server APIs. The engine understands JavaScript; the host gives JavaScript a world to interact with.
 
-If you want the engine side of this story first, read [How the JavaScript Engine Runs Your Code](/writing/how-javascript-engine-runs-code).
+If you want the engine side of this story first, read [How the JavaScript Engine Runs Your Code](/articles/how-javascript-engine-runs-code).
 
 ## The global object is the front door
 
@@ -189,7 +190,7 @@ When the event loop selects the timer task, the engine calls `callback`. A new e
 
 This is why a timeout delay is a minimum rather than a deadline. The timer can become ready while the main thread is still busy. The callback must wait for its turn.
 
-The complete timing problem deserves its own walkthrough, so I covered it separately in [setTimeout Has Trust Issues](/writing/settimeout-minimum-not-deadline).
+The complete timing problem deserves its own walkthrough, so I covered it separately in [setTimeout Has Trust Issues](/articles/settimeout-minimum-not-deadline).
 
 ## What is the callback queue?
 

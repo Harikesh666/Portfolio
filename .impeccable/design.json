@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-07-24T00:00:00+05:30",
+  "generatedAt": "2026-08-04T00:00:00+05:30",
   "title": "Design System: Harikesh Mishra Portfolio",
   "extensions": {
     "colorMeta": {
@@ -62,23 +62,31 @@
       "kind": "nav",
       "refersTo": "main-navigation",
       "description": "A persistent identity header that morphs into the article breadcrumb through one shared avatar and focus-preserving theme control.",
-      "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Writing</a><a href=\"#\">GitHub</a><button aria-label=\"Toggle theme\">Theme</button></nav>",
+      "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Articles</a><a href=\"#\">GitHub</a><button aria-label=\"Toggle theme\">Theme</button></nav>",
       "css": ".ds-nav { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-divider); padding: 16px 20px; color: var(--color-foreground); font: 400 14px var(--font-sans); } .ds-nav strong { margin-right: auto; color: var(--color-foreground-strong); font-weight: 600; } .ds-nav button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--color-foreground-strong); } .ds-nav :focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
     },
     {
-      "name": "Writing List Item",
+      "name": "Article Browse Index",
+      "kind": "nav",
+      "refersTo": "writing-browse-index",
+      "description": "A compact ruled map linking to the guided learning path and every authored topic with honest guide counts.",
+      "html": "<nav aria-labelledby=\"browse-writing-heading\"><h2 id=\"browse-writing-heading\">Browse</h2><ul><li><a href=\"#learning-path\"><b>Learning path</b><span>10 guides</span></a></li><li><a href=\"#topic\"><b>Topic</b><span>4 guides</span></a></li></ul></nav>",
+      "css": ".writing-browse-index { border-block: 1px solid var(--color-divider); } .writing-browse-index a { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 16px; color: var(--color-foreground-strong); text-decoration: none; } .writing-browse-index li + li { border-top: 1px solid var(--color-divider); } .writing-browse-index span { color: var(--color-muted); font: 400 14px var(--font-mono); }"
+    },
+    {
+      "name": "Article List Item",
       "kind": "custom",
       "refersTo": "writing-list-item",
       "description": "A ruled vertical article link with series number, title, summary, and reading time.",
       "html": "<a class=\"ds-writing-item\" href=\"#\"><span>01</span><b>React Rendering and Reconciliation Internals</b><p>How React turns state into UI.</p><em>45 min read</em></a>",
-      "css": ".ds-writing-item { display: block; border-bottom: 1px solid var(--color-divider); padding: 20px 0; color: var(--color-foreground); text-decoration: none; } .ds-writing-item span { color: var(--color-accent); font: 500 14px var(--font-mono); } .ds-writing-item b { display: block; margin-top: 4px; color: var(--color-foreground-strong); font: 600 17px/1.4 var(--font-sans); } .ds-writing-item p { margin: 4px 0 0; color: var(--color-muted); font: 400 14px/1.6 var(--font-sans); } .ds-writing-item em { display: block; margin-top: 8px; color: var(--color-muted); font: 400 14px var(--font-sans); font-style: normal; } .ds-writing-item:hover b { color: var(--color-accent); }"
+      "css": ".ds-writing-item { display: block; border-bottom: 1px solid var(--color-divider); padding: 16px 0; color: var(--color-foreground); text-decoration: none; } .ds-writing-item span { color: var(--color-accent); font: 500 14px var(--font-mono); } .ds-writing-item b { display: block; margin-top: 4px; color: var(--color-foreground-strong); font: 600 17px/1.4 var(--font-sans); } .ds-writing-item p { margin: 4px 0 0; color: var(--color-muted); font: 400 14px/1.6 var(--font-sans); } .ds-writing-item em { display: block; margin-top: 8px; color: var(--color-muted); font: 400 14px var(--font-sans); font-style: normal; } .ds-writing-item:hover b { color: var(--color-accent); }"
     },
     {
       "name": "Editorial Route Hero",
       "kind": "heading",
       "refersTo": "editorial-stagger",
       "description": "A document-order reveal for optional eyebrow copy, a font-aware line-split headline, supporting copy, metadata, and actions on one delay cursor.",
-      "html": "<div><h1 aria-label=\"Writing\">Writing</h1><p>Supporting copy</p></div>",
+      "html": "<div><h1 aria-label=\"Articles\">Articles</h1><p>Supporting copy</p></div>",
       "css": ".editorial-stagger-line { display: block; } .editorial-stagger-word { display: inline-block; vertical-align: top; }"
     },
     {
@@ -109,13 +117,13 @@
   "narrative": {
     "northStar": "The Quiet Engineering Notebook",
     "overview": "A narrow, theme-aware portfolio and writing surface that emphasizes readable proof and technical depth over editorial display.",
-    "keyCharacteristics": ["Single-column", "Sans and mono", "Explicit light and dark themes", "Code-first reading", "Quiet desktop article navigation"],
+    "keyCharacteristics": ["Single-column", "Sans and mono", "Explicit light and dark themes", "Topic-indexed writing library", "Code-first reading", "Quiet desktop article navigation"],
     "rules": [
       { "name": "The Signal Rule", "body": "Coral is reserved for links, series indices, inline code, focus, and selected evidence.", "section": "colors" },
       { "name": "The Reading Rule", "body": "Hierarchy comes from sequence and spacing, not oversized display typography.", "section": "typography" },
       { "name": "The Flat Rule", "body": "Rules and whitespace organize content; decorative cards and shadows do not.", "section": "elevation" }
     ],
-    "dos": ["Use semantic theme tokens.", "Keep pages inside the reading column.", "Publish through frontmatter and lazy guide imports."],
+    "dos": ["Use semantic theme tokens.", "Keep pages inside the reading column.", "Publish through validated series or topic frontmatter and lazy guide imports."],
     "donts": ["Do not reintroduce serif display typography.", "Do not add a second accent palette.", "Do not override Expressive Code fenced blocks with legacy pre styles."]
   }
 }

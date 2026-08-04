@@ -230,7 +230,7 @@ function HomePage() {
                 <PageEnter.Fade>
                     <section className="mt-14">
                         <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
-                            Writing
+                            Articles
                         </h2>
                         <ol className="mt-4 border-t border-divider">
                             {posts.slice(0, 3).map((post) => (
@@ -241,7 +241,7 @@ function HomePage() {
                                 >
                                     <Link
                                         className="group block py-5"
-                                        to="/writing/$slug"
+                                        to="/articles/$slug"
                                         params={{ slug: post.slug }}
                                     >
                                         <motion.div
@@ -274,9 +274,9 @@ function HomePage() {
                         </ol>
                         <Link
                             className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
-                            to="/writing"
+                            to="/articles"
                         >
-                            View all writing →
+                            View all articles →
                         </Link>
                     </section>
                 </PageEnter.Fade>

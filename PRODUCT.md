@@ -46,6 +46,10 @@ Avoid generic template portfolios, buzzword-heavy copy, and flashy motion showca
 6. Keep the interface quiet: a narrow reading column, direct navigation, and dark mode should remove friction rather than add personality for its own sake.
 7. Spend motion deliberately: first loads and article destinations may materialize as one fast shell-level gesture, simple portfolio destinations should swap without fading through a blank frame, and the article table of contents may retain richer spatial context and reading progress.
 
+## Article Discovery
+
+The articles index behaves as a small technical library rather than a chronological feed. A compact, text-only overview links directly to one guided learning path and four authored JavaScript topics, each with an honest guide count. Every article remains visible in the document for scanning, search, and crawlability; taxonomy and tighter ruled rows provide orientation without search controls, cards, tabs, or pagination.
+
 ## Accessibility & Inclusion
 
 Use strong text contrast, a calm reading hierarchy with semibold headings and subdued metadata, keyboard-accessible interactions, responsive layouts, explicit light and dark themes, and reduced-motion support. Deliver excellent technical SEO through server rendering, semantic content, accurate metadata, canonical URLs, structured data, and crawlable routes. Article navigation must retain heading anchors, readable code blocks, copy controls, and one responsive scrollspy: the desktop floating table of contents at `xl`, and a focus-trapped, safe-area-aware bottom sheet below it. Both views use semantic hash links, create browser-history entries without duplicates, restore the pre-section scroll position, and keep reduced-motion navigation instant.

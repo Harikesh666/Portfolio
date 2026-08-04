@@ -2,6 +2,7 @@
 title: "Higher-Order Functions: Stop Rewriting the Loop"
 description: "How passing and returning functions separates repeated control flow from changing logic, with a circle calculator built step by step."
 category: "JavaScript"
+topic: "functions-and-composition"
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-24"
@@ -109,7 +110,7 @@ execute(greet);
 
 A callback does not have to be asynchronous. Here, `execute` calls `greet` immediately.
 
-For a deeper callback discussion, read [Callback Functions: JavaScript Calls You Back](/writing/callback-functions-javascript-calls-you-back).
+For a deeper callback discussion, read [Callback Functions: JavaScript Calls You Back](/articles/callback-functions-javascript-calls-you-back).
 
 ## The circle problem
 
@@ -304,7 +305,7 @@ The callback receives:
 
 Our 10-line loop teaches the abstraction. It does not reproduce the entire language specification.
 
-For a full walkthrough of those methods, read [Map, Filter, and Reduce: Transform, Select, Combine](/writing/map-filter-reduce-transform-select-combine). Here, the small loop is enough to expose the higher-order abstraction.
+For a full walkthrough of those methods, read [Map, Filter, and Reduce: Transform, Select, Combine](/articles/map-filter-reduce-transform-select-combine). Here, the small loop is enough to expose the higher-order abstraction.
 
 ## Higher-order functions can return functions
 

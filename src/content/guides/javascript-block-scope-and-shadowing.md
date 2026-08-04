@@ -2,6 +2,7 @@
 title: "JavaScript Blocks, Scope, and Shadowing"
 description: "How blocks group statements, how let and const create block scope, how shadowing works, and why some redeclarations are illegal."
 category: "JavaScript"
+topic: "scope-and-closures"
 readTime: "14 min read"
 date: "February 2025"
 publishedAt: "2025-02-05"
@@ -175,7 +176,7 @@ The block has finished, but the function still closes over the `message` binding
 
 Leaving a block ends normal access through that block in the running code. It does not force every captured binding to disappear immediately.
 
-That is the same closure behavior explained in [Closures in JavaScript: The Function’s Backpack](/writing/closures-function-backpack).
+That is the same closure behavior explained in [Closures in JavaScript: The Function’s Backpack](/articles/closures-function-backpack).
 
 ## 3. The Temporal Dead Zone inside a block
 
@@ -223,7 +224,7 @@ The TDZ ends when JavaScript evaluates the declaration:
 
 Notice that `let b;` initializes the binding to `undefined`. The assignment of `10` happens later.
 
-The dedicated article [JavaScript Hoisting Does Not Move Your Code](/writing/javascript-hoisting-does-not-move-code) explains this setup in more detail.
+The dedicated article [JavaScript Hoisting Does Not Move Your Code](/articles/javascript-hoisting-does-not-move-code) explains this setup in more detail.
 
 ## The TDZ can hide an outer variable
 
@@ -697,5 +698,5 @@ Then answer:
 - [ECMAScript block statements](https://tc39.es/ecma262/#sec-block)
 - [ECMAScript let and const declarations](https://tc39.es/ecma262/#sec-let-and-const-declarations)
 - [ECMAScript environment records](https://tc39.es/ecma262/#sec-environment-records)
-- [JavaScript Hoisting Does Not Move Your Code](/writing/javascript-hoisting-does-not-move-code)
-- [Closures in JavaScript: The Function’s Backpack](/writing/closures-function-backpack)
+- [JavaScript Hoisting Does Not Move Your Code](/articles/javascript-hoisting-does-not-move-code)
+- [Closures in JavaScript: The Function’s Backpack](/articles/closures-function-backpack)

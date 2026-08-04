@@ -2,6 +2,7 @@
 title: "JavaScript Concurrency: One Thread, Many Tasks"
 description: "How JavaScript makes progress on timers, network requests, rendering, and user input without confusing concurrency with parallel execution."
 category: "JavaScript"
+topic: "async-and-concurrency"
 readTime: "15 min read"
 date: "January 2025"
 publishedAt: "2025-01-15"
@@ -160,7 +161,7 @@ The diagram is useful, but the browser model is richer:
 
 The event loop does not literally take a callback and push the function object onto the call stack. It selects work to run; the engine then creates the execution contexts produced by that work.
 
-For the detailed browser-sized loop, read [JavaScript, the Browser, and the Event Loop](/writing/asynchronous-javascript-event-loop). Here, the important concurrency rule is simpler:
+For the detailed browser-sized loop, read [JavaScript, the Browser, and the Event Loop](/articles/asynchronous-javascript-event-loop). Here, the important concurrency rule is simpler:
 
 > Ready work waits for a turn. Running work keeps its turn until it completes.
 

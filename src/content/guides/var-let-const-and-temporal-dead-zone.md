@@ -2,6 +2,7 @@
 title: "var, let, and const: Bindings, Scope, and the TDZ"
 description: "Compare var, let, and const through declaration setup, scope, redeclaration, reassignment, global behavior, and the Temporal Dead Zone."
 category: "JavaScript"
+topic: "scope-and-closures"
 readTime: "14 min read"
 date: "February 2025"
 publishedAt: "2025-02-08"
@@ -104,7 +105,7 @@ let   → binding created but uninitialized
 const → binding created but uninitialized
 ```
 
-The article [JavaScript Hoisting Does Not Move Your Code](/writing/javascript-hoisting-does-not-move-code) goes deeper into declaration instantiation. Here, we will focus on how the three keywords differ in practice.
+The article [JavaScript Hoisting Does Not Move Your Code](/articles/javascript-hoisting-does-not-move-code) goes deeper into declaration instantiation. Here, we will focus on how the three keywords differ in practice.
 
 ## The TDZ begins at the start of the scope
 
@@ -193,7 +194,7 @@ The braces contain `y` and `z`. Code outside that block cannot access them.
 
 This applies to standalone blocks, conditional blocks, loop blocks, `catch` blocks, and other lexical scopes.
 
-For a complete walkthrough, read [JavaScript Blocks, Scope, and Shadowing](/writing/javascript-block-scope-and-shadowing).
+For a complete walkthrough, read [JavaScript Blocks, Scope, and Shadowing](/articles/javascript-block-scope-and-shadowing).
 
 ## Top-level browser declarations are different
 
@@ -636,6 +637,6 @@ Then answer:
 
 - [ECMAScript let and const declarations](https://tc39.es/ecma262/#sec-let-and-const-declarations)
 - [ECMAScript var statements](https://tc39.es/ecma262/#sec-variable-statement)
-- [JavaScript Hoisting Does Not Move Your Code](/writing/javascript-hoisting-does-not-move-code)
-- [JavaScript Blocks, Scope, and Shadowing](/writing/javascript-block-scope-and-shadowing)
-- [Global Scope and this: Look at the Call Site](/writing/global-scope-and-this-call-site)
+- [JavaScript Hoisting Does Not Move Your Code](/articles/javascript-hoisting-does-not-move-code)
+- [JavaScript Blocks, Scope, and Shadowing](/articles/javascript-block-scope-and-shadowing)
+- [Global Scope and this: Look at the Call Site](/articles/global-scope-and-this-call-site)

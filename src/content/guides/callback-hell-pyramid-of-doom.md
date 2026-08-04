@@ -2,6 +2,7 @@
 title: "Callback Hell: When JavaScript Starts Leaning Sideways"
 description: "How dependent asynchronous callbacks create the pyramid of doom, scatter errors, surrender control, and how promises and async functions restore structure."
 category: "JavaScript"
+topic: "async-and-concurrency"
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-12"
@@ -63,7 +64,7 @@ const discounted = prices.map((price) => price * 0.9);
 
 The problem begins when several **asynchronous operations depend on the result of the previous operation**, and the API communicates each result by calling another callback.
 
-If callback functions themselves still feel unclear, start with [Callback Functions: JavaScript Calls You Back](/writing/callback-functions-javascript-calls-you-back).
+If callback functions themselves still feel unclear, start with [Callback Functions: JavaScript Calls You Back](/articles/callback-functions-javascript-calls-you-back).
 
 ## One asynchronous callback is manageable
 

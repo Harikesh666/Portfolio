@@ -16,7 +16,7 @@ pnpm build
 pnpm test
 ```
 
-`pnpm build` prerenders the portfolio, writing index, and every crawled article route. `pnpm test` runs the focused content-heading and table-of-contents behavior checks.
+`pnpm build` prerenders the portfolio, articles index, and every crawled article route. `pnpm test` runs the focused content-heading and table-of-contents behavior checks.
 
 ## Site Configuration
 
@@ -24,27 +24,27 @@ Update `src/lib/site.ts` for the site name, contact details, production URL, soc
 
 `public/og.png` is the shared social card. `public/Harikesh_Mishra_Resume.pdf` is the downloadable resume linked from the global header.
 
-## Writing Pipeline
+## Articles Pipeline
 
-Publishing a guide means adding a Markdown file under `src/content/guides/`. Its filename becomes the flat `/writing/<slug>` URL.
+Publishing an article means adding a Markdown file under `src/content/guides/`. Its filename becomes the flat `/articles/<slug>` URL.
 
 ```yaml
 ---
 title: "Post title"
 description: "Short article summary."
-category: "Architecture"
+category: "JavaScript"
+topic: "async-and-concurrency"
 readTime: "10 min read"
 date: "May 2026"
 publishedAt: "2026-05-01"
-series: "react-internals"
-order: 11
 ---
 ```
 
 - `title`, `description`, `category`, `readTime`, `date`, and `publishedAt` are required.
-- `series` and `order` are optional together. Omit both for a standalone post; standalone posts sort by `publishedAt` descending.
-- Series definitions live in `src/lib/content.ts`. Add the series there before assigning its ID in frontmatter.
-- `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk. Writing-list links prefetch article data on hover or touch, then reuse it on a direct click.
+- Standalone posts require a `topic` ID and sort by `publishedAt` descending within that topic. Topic definitions and their display order live in `src/lib/content.ts`.
+- Series posts use `series` and `order` together instead of `topic`. Add a series definition to `src/lib/content.ts` before assigning its ID in frontmatter.
+- The articles index presents a compact anchor overview, followed by learning paths and authored topic sections; it does not infer taxonomy from guide titles.
+- `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk. Article-list links prefetch article data on hover or touch, then reuse it on a direct click.
 
 Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control. At `xl` and above, article H2s populate a fixed, keyboard-accessible floating table of contents whose progress rail morphs into a scrollable label panel. Below `xl`, a persistent section-progress pill opens the same headings in an accessible, draggable bottom sheet. Both views push shareable hash entries, support back/forward section traversal, and restore the pre-section scroll position when returning to the hashless entry.
 
@@ -52,7 +52,7 @@ Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 hea
 
 The visual system lives in `src/styles.css`. It uses semantic CSS variables mapped into Tailwind v4, Atkinson Hyperlegible Next with real 400–700 weights, and explicit `data-theme="light"` and `data-theme="dark"` values set before paint and persisted in local storage. The reading scale distinguishes high-contrast prose, semibold headings, and quieter metadata without relying on synthetic font weights.
 
-The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts. First loads and article destinations use a short transform/opacity entrance timeline, while Home, Resume, and Writing destinations swap without a zero-opacity frame; article navigation morphs the persistent avatar and theme toggle between identity and breadcrumb headers. The mobile sheet traps focus, locks background scrolling, accounts for safe areas, and reduces its motion to a short opacity fade. The article top progress line appears only in browsers with CSS scroll-driven animation support and is omitted when reduced motion is requested.
+The site retains a skip link, visible keyboard focus treatment, reduced-motion handling, `overflow-x: clip` on the body, and responsive single-column reading layouts. First loads and article destinations use a short transform/opacity entrance timeline, while Home, Resume, and Articles destinations swap without a zero-opacity frame; article navigation morphs the persistent avatar and theme toggle between identity and breadcrumb headers. The mobile sheet traps focus, locks background scrolling, accounts for safe areas, and reduces its motion to a short opacity fade. The article top progress line appears only in browsers with CSS scroll-driven animation support and is omitted when reduced motion is requested.
 
 New route navigation starts at the top, while browser back and forward traversal restores the cached scroll position before the entering page becomes visible. Same-route hash traversal bypasses route animation and settles headings to their 2rem scroll margin, instantly when reduced motion is requested.
 
