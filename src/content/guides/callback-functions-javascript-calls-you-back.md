@@ -219,7 +219,7 @@ The receiving function handles the **when** or **where**. The callback provides 
 
 ## Asynchronous callbacks need a host
 
-Now let’s use the original timer example:
+Now apply that distinction to a timer:
 
 ```js
 setTimeout(function timerCallback() {

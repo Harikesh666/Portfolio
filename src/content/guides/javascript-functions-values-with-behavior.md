@@ -100,7 +100,7 @@ const b = function () {
 
 This throws a `ReferenceError` because `b` is in the temporal dead zone until its declaration is evaluated.
 
-The original example used `var`, which behaves differently:
+Compare that with `var`, which behaves differently:
 
 ```js
 b();

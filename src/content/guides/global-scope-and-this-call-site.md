@@ -63,7 +63,7 @@ That does not mean every runtime has the same APIs. `globalThis.document` exists
 
 ## Global scope is not one giant object
 
-The original example used a top-level `var`:
+Start with a top-level `var` in a classic browser script:
 
 ```html
 <script>
@@ -403,7 +403,7 @@ These methods are useful when an API will call our function later but we need th
 
 Arrow functions use **lexical `this`**. They do not receive a new `this` value from the way they are called. Instead, a `this` reference inside an arrow resolves through the surrounding lexical environment.
 
-Return to the original object example:
+Return to the `person` object:
 
 ```js
 const person = {
@@ -533,7 +533,7 @@ Output after clicking:
 true
 ```
 
-The original summary said `this` refers to the element that triggered the event. That can be close, but `event.target` and `event.currentTarget` are different.
+It is common to say that `this` refers to the element that triggered the event. That description can be close, but `event.target` and `event.currentTarget` are different.
 
 Imagine a button containing an icon:
 

@@ -186,7 +186,7 @@ After a task finishes, the browser performs a microtask checkpoint and drains th
 
 ## Putting the pieces together
 
-Consider the original example:
+Put synchronous code, a timer, and a promise together:
 
 ```js
 console.log("Start");

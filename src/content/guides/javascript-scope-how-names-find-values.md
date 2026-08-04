@@ -193,7 +193,7 @@ Now we can state the central rule:
 
 That is **lexical scope**.
 
-Consider the original nested-function example:
+Consider a function nested two levels deep:
 
 ```js
 let globalVar = "I am global";
@@ -260,7 +260,7 @@ When JavaScript needs a name, it follows a simple process:
 3. Continue until the binding is found or there is nowhere left to search.
 4. If the binding is never found, throw a `ReferenceError`.
 
-Here is the second example from the original article:
+Now trace a lookup across three lexical environments:
 
 ```js
 let globalVar = "global";
@@ -361,7 +361,7 @@ That is a mental shortcut, not a literal operation. JavaScript does not rearrang
 
 Before evaluating the statements in a scope, JavaScript creates the bindings required by that scope. Different declaration forms initialize those bindings at different times.
 
-Now the original example becomes easier to explain:
+With that model, the hoisting example becomes easier to explain:
 
 ```js
 console.log(hoistedVar); // undefined
@@ -387,7 +387,7 @@ For the full declaration-by-declaration walkthrough, read [JavaScript Hoisting D
 
 ## Scope does not decide lifetime by itself
 
-The original note connected scope boundaries with the lifetime of variables. That connection needs care.
+Scope and variable lifetime are related, but they are not the same thing.
 
 Scope decides where a binding can be reached from the code. It does not guarantee the exact moment when the required data disappears from memory.
 

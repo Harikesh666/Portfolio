@@ -203,7 +203,7 @@ The last function placed on the stack is the first one that must leave.
 
 ## Example of the call stack in action
 
-Consider the original example:
+Consider two nested function calls:
 
 ```js
 function first() {

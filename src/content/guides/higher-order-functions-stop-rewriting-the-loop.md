@@ -54,7 +54,7 @@ Namaste
 
 `x` is the callback because we pass it to `y`, and `y` calls it.
 
-The original version looked like this:
+A minimal version looks like this:
 
 ```js
 function x() {
@@ -304,7 +304,7 @@ The callback receives:
 
 Our 10-line loop teaches the abstraction. It does not reproduce the entire language specification.
 
-The next source article gives `map`, `filter`, and `reduce` their own full walkthrough, so we will not turn this one into that article early.
+For a full walkthrough of those methods, read [Map, Filter, and Reduce: Transform, Select, Combine](/writing/map-filter-reduce-transform-select-combine). Here, the small loop is enough to expose the higher-order abstraction.
 
 ## Higher-order functions can return functions
 
@@ -404,7 +404,7 @@ behavior in → enhanced behavior out
 
 ## A learning implementation of map
 
-The original note attached `calculate` to `Array.prototype` and called it a polyfill:
+A common learning exercise attaches `calculate` to `Array.prototype` and describes it as a polyfill:
 
 ```js
 Array.prototype.calculate = function (logic) {

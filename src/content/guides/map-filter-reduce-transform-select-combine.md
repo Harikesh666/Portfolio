@@ -21,7 +21,7 @@ That is correct, but it is easy to memorize those lines and still feel confused 
 
 Should this be a `map` or a `filter`? Why does `reduce` need an initial value? Why does one callback return a number while another returns `true`? And why does everybody try to solve every array problem with one enormous `reduce`?
 
-Let’s take the original examples one at a time, understand what each method asks from its callback, and then combine them.
+Let’s examine each method one at a time, understand what it asks from its callback, and then combine them.
 
 ## The map function
 
@@ -150,7 +150,7 @@ const uppercasedUsers = users.map((user) => ({
 
 ## Different ways to write the map callback
 
-The source used three equivalent forms for converting numbers to binary:
+Here are three equivalent ways to convert numbers to binary:
 
 ```js
 const withFunctionExpression = numbers.map(function (value) {
@@ -374,7 +374,7 @@ The method has no first element to use as the accumulator.
 
 ## Finding the maximum value
 
-The original loop started `max` at zero:
+A tempting first attempt starts `max` at zero:
 
 ```js
 function findMax(array) {

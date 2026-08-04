@@ -273,7 +273,7 @@ Shadowing does not overwrite the outer variable by itself. It creates a differen
 
 ## Shadowing with var does not work the same way
 
-Consider the original example:
+Now put `var a` inside a block:
 
 ```js
 var a = 100;
@@ -413,7 +413,7 @@ var value = "outer";
 
 ## A new function boundary can make the declaration legal
 
-The original article also used a function:
+A function boundary changes the result:
 
 ```js
 var a = 20;
@@ -446,7 +446,7 @@ When illegal-shadowing rules feel arbitrary, ask where each declaration is tryin
 
 ## 7. Global, script, function, and block bindings
 
-The original explanation described separate memory spaces for global, script, and block declarations. That is a useful picture if we make it slightly more precise.
+It is useful to picture separate memory spaces for global, script, and block declarations, but that picture needs a little more precision.
 
 In a classic browser script:
 
@@ -481,7 +481,7 @@ The important lesson for shadowing is stable across them: each declaration belon
 
 JavaScript uses **lexical scoping**. The location where code is written determines the chain of outer scopes it can search.
 
-Consider the original nested-block example:
+Consider nested blocks that declare the same name:
 
 ```js
 const a = 20;

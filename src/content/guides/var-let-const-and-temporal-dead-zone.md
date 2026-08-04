@@ -366,7 +366,7 @@ TypeError      → the attempted operation is not allowed
 
 ## 5. Working with the Temporal Dead Zone
 
-The source suggested declaring every `let` and `const` at the beginning of the scope to shrink the TDZ.
+A common suggestion is to declare every `let` and `const` at the beginning of the scope to shrink the TDZ.
 
 That avoids early access, but pushing every declaration to the top can separate a name from the code that gives it meaning.
 
@@ -513,7 +513,7 @@ The point is not “always use `const` because it is faster” or “never use `
 
 Block scope keeps temporary names from leaking farther than needed.
 
-Consider the original example:
+Compare a block-level `var` with a block-level `let`:
 
 ```js
 function compareScope() {

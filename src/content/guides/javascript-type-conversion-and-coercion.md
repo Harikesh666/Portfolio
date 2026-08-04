@@ -65,7 +65,7 @@ Coercion is not automatically bad. JavaScript uses it constantly, including insi
 
 The danger is invisible intent. If a reader cannot tell which conversion will happen, a short expression can become a long debugging session.
 
-We will follow the original article's order:
+We will examine the three main conversion paths:
 
 1. String conversion
 2. Numeric conversion
@@ -81,7 +81,7 @@ The clearest explicit form is:
 String(value);
 ```
 
-Here is the original example:
+Start with a Boolean value:
 
 ```js
 let value = true;
@@ -160,7 +160,7 @@ The explicit form is:
 Number(value);
 ```
 
-The original example begins with a numeric string:
+Start with a numeric string:
 
 ```js
 let str = "123";
@@ -201,7 +201,7 @@ The string conversion rules are easier to remember as a process:
 3. A valid numeric string becomes that number.
 4. A string that cannot be read as one complete number becomes `NaN`.
 
-The original examples show all four ideas:
+These examples show the conversion rules in action:
 
 ```js
 console.log(Number("   123   ")); // 123
@@ -245,7 +245,7 @@ Do not test for `NaN` with equality. Use `Number.isNaN`.
 
 ### Why null becomes 0 but undefined becomes NaN
 
-The original note points out this difference:
+The difference is easy to see:
 
 ```js
 console.log(Number(null));      // 0
@@ -285,7 +285,7 @@ console.log("six" / "two"); // NaN
 
 ## The plus operator is the troublemaker
 
-The original note grouped `+` with the other mathematical operators. This is the one place where the rule needs correction.
+Binary `+` needs its own rule because it does not behave like the other arithmetic operators.
 
 **Binary** means the operator has a value on each side. Binary `+` has two jobs:
 
@@ -356,7 +356,7 @@ The explicit form is:
 Boolean(value);
 ```
 
-The original examples are:
+Try several truthy and falsy values:
 
 ```js
 console.log(Boolean(1));       // true
@@ -444,7 +444,7 @@ Truthiness is a language rule. Meaning belongs to your program.
 
 ## Logical operators test truthiness but return values
 
-The original note lists `&&` and `||` as boolean contexts. They do test operands through boolean conversion, but they do not always return `true` or `false`.
+The `&&` and `||` operators use Boolean conversion to test their operands, but they do not always return `true` or `false`.
 
 ```js
 console.log("hello" && 42); // 42

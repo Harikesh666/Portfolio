@@ -19,8 +19,6 @@ But then comes the obvious question: **what if our program needs to wait for som
 
 What if we want to run code after five seconds, fetch data from a server, or respond when a user clicks a button?
 
-The call stack does not wait for any of them. As the original note puts it, “time, tide, and JavaScript wait for none.”
-
 This is where the JavaScript engine stops being the whole story. We need the runtime around it: browser APIs, task queues, the microtask queue, and the event loop.
 
 Let’s build that picture one part at a time.
@@ -362,7 +360,7 @@ High priority does not mean free. A mountain of tiny microtasks can still bury t
 
 ## setTimeout and fetch: who runs first?
 
-The original version of this lesson used an example like this:
+Consider a timer and a network request in the same script:
 
 ```js
 console.log("Start");

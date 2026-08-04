@@ -58,7 +58,7 @@ One correction matters from the beginning:
 
 For the complete timer model, read [setTimeout Has Trust Issues](/writing/settimeout-minimum-not-deadline). For the full closure model, read [Closures in JavaScript: The Function's Backpack](/writing/closures-function-backpack).
 
-Now we can follow the original examples.
+Now we can trace the timer examples.
 
 ## Example 1: One timer, one var binding
 
@@ -138,7 +138,7 @@ Keep this sentence nearby because it explains the entire loop problem:
 
 ## Example 2: JavaScript does not wait politely
 
-The second original example adds one immediate log:
+The second example adds one immediate log:
 
 ```js
 function x() {
@@ -309,7 +309,7 @@ This is why changing `var` to `let` fixes the loop. It changes the binding struc
 
 ## Example 5: A helper function gives var a fresh binding
 
-What if we must use `var`? The original article solves that with a helper function:
+What if we must use `var`? A helper function can create a fresh binding for each iteration:
 
 ```js
 function x() {
@@ -380,7 +380,7 @@ The syntax is different, but the mechanism is the same. Each function call creat
 
 ## Example 6: The parameter name is not magic
 
-The final original example renames the helper parameter:
+The final example renames the helper parameter:
 
 ```js
 function x() {

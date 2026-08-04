@@ -183,7 +183,7 @@ Do not fight over the word. Remember the observable behavior.
 
 ## The first error stops the script
 
-The original example placed all three accesses together:
+Put all three accesses in one script and another issue appears:
 
 ```js
 console.log(varVariable);
