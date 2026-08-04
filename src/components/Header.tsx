@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import { MoonIcon, SunIcon } from "@phosphor-icons/react";
 import { Link, useLocation } from "@tanstack/react-router";
-import { Moon, Sun } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
     bouncySpring,
@@ -162,9 +162,9 @@ function ThemeToggle({
         >
             {shouldReduceMotion ? (
                 theme === "dark" ? (
-                    <Sun aria-hidden="true" size={18} />
+                    <SunIcon aria-hidden="true" size={18} />
                 ) : (
-                    <Moon aria-hidden="true" size={18} />
+                    <MoonIcon aria-hidden="true" size={18} />
                 )
             ) : (
                 <AnimatePresence
@@ -183,9 +183,9 @@ function ThemeToggle({
                         variants={themeToggleIconVariants}
                     >
                         {theme === "dark" ? (
-                            <Sun aria-hidden="true" size={18} />
+                            <SunIcon aria-hidden="true" size={18} />
                         ) : (
-                            <Moon aria-hidden="true" size={18} />
+                            <MoonIcon aria-hidden="true" size={18} />
                         )}
                     </motion.span>
                 </AnimatePresence>
@@ -198,26 +198,13 @@ function IdentityHeader() {
     return (
         <div className="flex flex-col px-5 pb-2 pt-8">
             <span aria-hidden="true" className="h-11 w-11" />
-            <p className="mt-4 flex flex-wrap items-baseline gap-x-2 leading-9">
+            <p className="mt-4 leading-9">
                 <Link
                     className="text-[1.4rem] font-semibold tracking-[-0.025em] text-foreground-strong"
                     to="/"
                 >
                     {site.name}
                 </Link>
-                {site.handle ? (
-                    <span className="text-[1.05rem] text-muted">
-                        <span className="font-serif italic">aka</span>{" "}
-                        <a
-                            className="hover:text-accent"
-                            href={site.socials.github}
-                            rel="noreferrer"
-                            target="_blank"
-                        >
-                            {site.handle}
-                        </a>
-                    </span>
-                ) : null}
             </p>
             <nav
                 aria-label="Main navigation"

@@ -10,7 +10,7 @@ colors:
   surface-dark: "oklch(0.17 0.007 85)"
   foreground-dark: "oklch(0.84 0.01 85)"
   foreground-strong-dark: "oklch(0.96 0.006 85)"
-  accent: "oklch(0.53 0.16 35)"
+  accent: "oklch(0.51 0.13 32)"
 typography:
   display:
     fontFamily: "Atkinson Hyperlegible Next, ui-sans-serif, system-ui, sans-serif"
@@ -49,7 +49,7 @@ components:
 
 **Creative North Star: "The Quiet Engineering Notebook"**
 
-The portfolio is a minimal, proof-led introduction to a full-stack developer and a home for deep technical writing. The interface behaves like a dependable reading surface: one narrow column, direct navigation, calm spacing, and evidence before ornament.
+The portfolio is a minimal, proof-led introduction to a software developer and a home for deep technical writing. The interface behaves like a dependable reading surface: one narrow column, direct navigation, calm spacing, and evidence before ornament.
 
 It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes quickly; fellow engineers can settle into substantial articles without visual noise.
 
@@ -57,7 +57,8 @@ It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes qui
 - A `42rem` single-column layout across portfolio, articles index, and article pages.
 - Explicit light and dark themes using the same semantic tokens.
 - Atkinson Hyperlegible Next for all prose and headings, JetBrains Mono for metadata and technical labels.
-- Coral acts as one intentional signal for links, series indices, inline code, focus, and important metrics.
+- Phosphor provides the single interface-icon language across navigation, downloads, disclosures, and article controls.
+- Terracotta acts as one intentional signal for links, series indices, inline code, focus, and important metrics.
 
 ## 2. Colors
 
@@ -80,9 +81,9 @@ The palette is warm and low-chroma rather than editorial or decorative. All comp
 - **TOC Track** (`oklch(0.53 0.012 85)`): the floating rail's readable inactive state.
 
 ### Accent
-- **Coral** (`oklch(0.53 0.16 35)` light; `oklch(0.76 0.16 35)` dark): links, series numbers, inline-code surfaces, focus rings, and selected evidence.
+- **Terracotta** (`oklch(0.51 0.13 32)` light; `oklch(0.72 0.13 32)` dark): links, series numbers, inline-code surfaces, focus rings, and selected evidence. Soft surfaces use `oklch(0.94 0.028 32)` light and `oklch(0.31 0.04 32)` dark.
 
-**The Signal Rule.** Coral directs attention; it is never used as ambient decoration or a second palette.
+**The Signal Rule.** Terracotta directs attention; it is never used as ambient decoration or a second palette.
 
 ## 3. Typography
 
@@ -92,7 +93,7 @@ The palette is warm and low-chroma rather than editorial or decorative. All comp
 ### Hierarchy
 - **Page Title:** 1.75rem on mobile and 2rem from `sm`, semibold, 1.15 leading, `-0.025em` tracking.
 - **Section Label:** 12px medium JetBrains Mono, uppercase, `0.1em` tracking, muted.
-- **Article Link:** 17px semibold sans with coral hover.
+- **Article Link:** 17px semibold sans with terracotta hover.
 - **Body:** 17px Atkinson Hyperlegible Next at 1.65 line height.
 - **Guide Prose:** 18px at 1.78 line height for long-form reading.
 
@@ -102,14 +103,14 @@ The palette is warm and low-chroma rather than editorial or decorative. All comp
 
 The system is flat. Borders divide lists and sections; whitespace establishes priority. There are no decorative shadows, card shells, gradients, or glass effects.
 
-Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact coral-tinted surface with no generated backticks.
+Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact terracotta-tinted surface with no generated backticks.
 
 ## 5. Components
 
 ### Navigation
 - **Shape:** A single ruled row with site name, writing link, GitHub, resume, and theme toggle.
 - **Theme Control:** Minimum 44px target; persists explicit `light` or `dark` preference in local storage.
-- **Focus:** 3px coral outline with 3px offset.
+- **Focus:** 3px terracotta outline with 3px offset.
 
 ### Articles Index
 - **Map:** A compact ruled `Browse` navigation follows the introduction and links to every learning path and authored topic with guide counts.
@@ -119,14 +120,14 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 
 ### Article List Item
 - **Structure:** Series index, title, summary, and reading time in a compact vertically stacked ruled list.
-- **Behavior:** Only the title changes to coral on hover; no cards or lift effects.
+- **Behavior:** Only the title changes to terracotta on hover; no cards or lift effects.
 
 ### Article Content
 - **Structure:** Back link, title, muted metadata, prose, then optional previous/next links.
 - **Anchors:** H2–H4 headings have stable IDs and a 2rem scroll margin. Table-of-contents activation pushes a shareable same-route hash entry, repeated activation replaces it, back/forward re-traverses headings, and returning to the hashless entry restores the captured pre-click scroll position.
 - **Desktop Table of Contents:** At `xl` and above, a fixed progress rail summarizes eligible H2s as more readable magnified bars. Hover or keyboard focus morphs each bar into the leading marker of a 240px, scrollable label panel; active and hover indicators move between rows without layout shift, and rows remain semantic anchors. Pointer-activated rows release their transient focus so the panel collapses when the pointer leaves, while keyboard activation preserves focus and the expanded state. The authored in-content table of contents is hidden only at this breakpoint.
 - **Mobile Table of Contents:** Below `xl`, a bottom-centered 44px progress pill names the active H2 and opens a portal-based sheet capped at `min(72dvh, 560px)`. The sheet uses a tokenized surface, divider, safe-area padding, focus trap, background inerting, native list momentum, and drag-to-dismiss only when the list is at its top boundary.
-- **Reading Progress:** A 2px coral top hairline uses CSS scroll-driven animation where supported; it is absent for reduced-motion preferences.
+- **Reading Progress:** A 2px terracotta top hairline uses CSS scroll-driven animation where supported; it is absent for reduced-motion preferences.
 - **Code:** Expressive Code frames retain their generated theme and copy behavior; local CSS only styles inline code. Programmatic heading navigation uses a three-frame settle loop with instant correction steps. The article tree deliberately avoids `content-visibility`: the corrected retry achieved exact anchors and a sub-700ms throttled task, but failed the unthrottled slow-frame gate.
 
 ### Motion

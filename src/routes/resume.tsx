@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Download } from "lucide-react";
+import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
@@ -102,7 +102,7 @@ function ResumePage() {
                                     : snappySpring
                             }
                         >
-                            <Download aria-hidden="true" size={16} />
+                            <DownloadSimpleIcon aria-hidden="true" size={16} />
                             Download PDF
                         </motion.a>
                         <a

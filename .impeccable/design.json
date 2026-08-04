@@ -18,9 +18,9 @@
       },
       "accent": {
         "role": "primary",
-        "displayName": "Coral Signal",
-        "canonical": "oklch(0.53 0.16 35)",
-        "tonalRamp": ["oklch(0.94 0.035 35)", "oklch(0.53 0.16 35)", "oklch(0.76 0.16 35)"]
+        "displayName": "Terracotta Signal",
+        "canonical": "oklch(0.51 0.13 32)",
+        "tonalRamp": ["oklch(0.94 0.028 32)", "oklch(0.51 0.13 32)", "oklch(0.72 0.13 32)"]
       }
     },
     "typographyMeta": {
@@ -32,6 +32,10 @@
         "displayName": "JetBrains Mono",
         "purpose": "Section labels, metadata, series numbers, and code-adjacent UI."
       }
+    },
+    "iconographyMeta": {
+      "family": "Phosphor",
+      "purpose": "One consistent interface-icon language for navigation, downloads, disclosures, and article controls."
     },
     "shadows": [],
     "motion": [
@@ -62,7 +66,7 @@
       "kind": "nav",
       "refersTo": "main-navigation",
       "description": "A persistent identity header that morphs into the article breadcrumb through one shared avatar and focus-preserving theme control.",
-      "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Articles</a><a href=\"#\">GitHub</a><button aria-label=\"Toggle theme\">Theme</button></nav>",
+      "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Home</a><a href=\"#\">Articles</a><a href=\"#\">Resume</a><button aria-label=\"Toggle theme\">Theme</button></nav>",
       "css": ".ds-nav { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-divider); padding: 16px 20px; color: var(--color-foreground); font: 400 14px var(--font-sans); } .ds-nav strong { margin-right: auto; color: var(--color-foreground-strong); font-weight: 600; } .ds-nav button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--color-foreground-strong); } .ds-nav :focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
     },
     {

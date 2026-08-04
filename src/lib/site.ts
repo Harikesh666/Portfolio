@@ -1,6 +1,5 @@
 export const site = {
     name: "Harikesh Mishra",
-    handle: "@Harikesh666",
     avatar: "/apple-touch-icon.png" as string,
     email: "mharikesh11@gmail.com",
     phone: "+91 9082146400",

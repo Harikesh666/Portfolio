@@ -18,13 +18,13 @@ This is Harikesh Mishra's responsive personal portfolio and technical writing si
 
 ## Positioning
 
-A full-stack developer who ships resilient React and backend systems end-to-end, solves production problems fast, and delivers measurable improvements at scale.
+A software developer who ships resilient React and backend systems end-to-end, solves production problems fast, and delivers measurable improvements at scale.
 
 ## Conversion & proof
 
 - Primary CTA: email Harikesh about a role.
 - Secondary CTA: start reading the technical writing.
-- The line a visitor remembers after 10 seconds: a full-stack developer who ships resilient systems and solves production problems fast.
+- The line a visitor remembers after 10 seconds: a software developer who ships resilient systems and solves production problems fast.
 - Belief ladder: Harikesh has real production experience; he works across frontend, backend, and data boundaries; he can diagnose hard problems under constraints; he would be a strong hire for an end-to-end engineering role.
 - Proof on hand: `Harikesh_Mishra_Resume.pdf`, including production work on a 130K+ record dataset, streaming workflow APIs, multi-tenant isolation for five client organizations, eight end-to-end admin pages, automated testing, a 35% SQL performance improvement, and same-day production and security fixes.
 
@@ -52,4 +52,4 @@ The articles index behaves as a small technical library rather than a chronologi
 
 ## Accessibility & Inclusion
 
-Use strong text contrast, a calm reading hierarchy with semibold headings and subdued metadata, keyboard-accessible interactions, responsive layouts, explicit light and dark themes, and reduced-motion support. Deliver excellent technical SEO through server rendering, semantic content, accurate metadata, canonical URLs, structured data, and crawlable routes. Article navigation must retain heading anchors, readable code blocks, copy controls, and one responsive scrollspy: the desktop floating table of contents at `xl`, and a focus-trapped, safe-area-aware bottom sheet below it. Both views use semantic hash links, create browser-history entries without duplicates, restore the pre-section scroll position, and keep reduced-motion navigation instant.
+Use strong text contrast, a calm reading hierarchy with semibold headings and subdued metadata, a restrained terracotta signal over warm neutral surfaces, keyboard-accessible interactions, responsive layouts, explicit light and dark themes, and reduced-motion support. Deliver excellent technical SEO through server rendering, semantic content, accurate metadata, canonical URLs, structured data, and crawlable routes. Article navigation must retain heading anchors, readable code blocks, copy controls, and one responsive scrollspy: the desktop floating table of contents at `xl`, and a focus-trapped, safe-area-aware bottom sheet below it. Both views use semantic hash links, create browser-history entries without duplicates, restore the pre-section scroll position, and keep reduced-motion navigation instant.

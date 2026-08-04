@@ -7,8 +7,8 @@ import {
     type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
+import { ListBulletsIcon } from "@phosphor-icons/react";
 import { useLocation } from "@tanstack/react-router";
-import { TableOfContents } from "lucide-react";
 import {
     AnimatePresence,
     LayoutGroup,
@@ -556,10 +556,9 @@ export function TocSheet({
                     shouldReduceMotion ? reducedPageBlock : materializeBlock
                 }
             >
-                <TableOfContents
+                <ListBulletsIcon
                     aria-hidden="true"
                     className="size-3.5 shrink-0 text-muted"
-                    strokeWidth={1.8}
                 />
                 <span className="relative min-w-0 flex-1 overflow-hidden text-[12px] leading-none">
                     <AnimatePresence initial={false} mode="popLayout">

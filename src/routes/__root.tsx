@@ -78,11 +78,11 @@ export const Route = createRootRoute({
                 name: "viewport",
                 content: "width=device-width, initial-scale=1",
             },
-            { title: `${site.name} - Full-stack developer` },
+            { title: `${site.name} - Software Developer` },
             { name: "description", content: site.description },
             {
                 property: "og:title",
-                content: `${site.name} - Full-stack developer`,
+                content: `${site.name} - Software Developer`,
             },
             { property: "og:description", content: site.description },
             { property: "og:type", content: "website" },
@@ -91,7 +91,7 @@ export const Route = createRootRoute({
             { name: "twitter:card", content: "summary_large_image" },
             {
                 name: "twitter:title",
-                content: `${site.name} - Full-stack developer`,
+                content: `${site.name} - Software Developer`,
             },
             { name: "twitter:description", content: site.description },
             { name: "twitter:image", content: absoluteUrl("/og.png") },
@@ -122,12 +122,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 />
                 <meta
                     name="theme-color"
-                    content="#faf9f5"
+                    content="#fbfaf8"
                     media="(prefers-color-scheme: light)"
                 />
                 <meta
                     name="theme-color"
-                    content="#25231f"
+                    content="#110f0c"
                     media="(prefers-color-scheme: dark)"
                 />
                 <HeadContent />

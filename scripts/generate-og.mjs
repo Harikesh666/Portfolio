@@ -5,7 +5,8 @@ import { Resvg } from "@resvg/resvg-js";
 import { createElement } from "react";
 import satori from "satori";
 
-const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const scriptPath = fileURLToPath(import.meta.url);
+const rootDirectory = path.resolve(path.dirname(scriptPath), "..");
 const contentDirectory = path.join(rootDirectory, "src", "content", "guides");
 const outputDirectory = path.join(rootDirectory, "public", "og");
 const sitemapPath = path.join(rootDirectory, "public", "sitemap.xml");
@@ -14,6 +15,20 @@ const absoluteUrl = (pathname = "") =>
     `${site.url}${pathname}`.replace(/\/+$/, "") || site.url;
 
 const requiredFields = ["title", "description", "readTime", "publishedAt"];
+const sharedCardVariants = [
+    {
+        accent: "#ea8470",
+        background: "#12120f",
+        filename: "og.png",
+        secondary: "#b9b7b1",
+    },
+    {
+        accent: "#a34433",
+        background: "#f9f8f5",
+        filename: "og-light.png",
+        secondary: "#55524d",
+    },
+];
 
 function parseFrontmatter(source, filename) {
     const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
@@ -89,7 +104,7 @@ function card(post) {
             {
                 style: {
                     display: "flex",
-                    color: "#ee7c55",
+                    color: "#ea8470",
                     fontFamily: "JetBrains Mono",
                     fontSize: 26,
                     fontWeight: 500,
@@ -149,12 +164,17 @@ function card(post) {
 
 async function generateCard(post, fonts) {
     const outputPath = path.join(outputDirectory, `${post.slug}.png`);
-    const [markdownStats, outputStats] = await Promise.all([
+    const [markdownStats, outputStats, scriptStats] = await Promise.all([
         stat(post.path),
         stat(outputPath).catch(() => undefined),
+        stat(scriptPath),
     ]);
 
-    if (outputStats && outputStats.mtimeMs >= markdownStats.mtimeMs) {
+    if (
+        outputStats &&
+        outputStats.mtimeMs >= markdownStats.mtimeMs &&
+        outputStats.mtimeMs >= scriptStats.mtimeMs
+    ) {
         return;
     }
 
@@ -164,6 +184,39 @@ async function generateCard(post, fonts) {
         fonts,
     });
     const png = new Resvg(svg).render().asPng();
+    await writeFile(outputPath, png);
+}
+
+async function refreshSharedCard({
+    accent,
+    background,
+    filename,
+    secondary,
+}) {
+    const outputPath = path.join(rootDirectory, "public", filename);
+    const source = await readFile(outputPath);
+    const sourceUrl = `data:image/png;base64,${source.toString("base64")}`;
+    const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+            <image href="${sourceUrl}" width="1200" height="630" />
+            <rect x="72" y="118" width="400" height="50" fill="${background}" />
+            <text x="84" y="155" fill="${accent}" font-family="JetBrains Mono" font-size="28" font-weight="500">harikesh.xyz</text>
+            <rect x="72" y="424" width="670" height="62" fill="${background}" />
+            <text x="84" y="466" fill="${secondary}" font-family="Atkinson Hyperlegible Next" font-size="36" font-weight="400">Software Developer · Mumbai</text>
+        </svg>
+    `;
+    const png = new Resvg(svg, {
+        font: {
+            fontFiles: [
+                path.join(rootDirectory, "assets", "fonts", "Atkinson-Regular.ttf"),
+                path.join(rootDirectory, "assets", "fonts", "JetBrainsMono-Medium.ttf"),
+            ],
+            loadSystemFonts: false,
+        },
+    })
+        .render()
+        .asPng();
+
     await writeFile(outputPath, png);
 }
 
@@ -223,7 +276,11 @@ async function main() {
     ];
 
     await mkdir(outputDirectory, { recursive: true });
-    await Promise.all([writeSitemap(posts), ...posts.map((post) => generateCard(post, satoriFonts))]);
+    await Promise.all([
+        writeSitemap(posts),
+        ...posts.map((post) => generateCard(post, satoriFonts)),
+        ...sharedCardVariants.map(refreshSharedCard),
+    ]);
 }
 
 await main();
