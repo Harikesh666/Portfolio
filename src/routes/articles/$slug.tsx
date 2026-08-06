@@ -109,7 +109,7 @@ function PostPage() {
     const hasDesktopTocRegistration = useHasFloatingTocRegistration();
     const post = Route.useLoaderData();
     const articleRef = useRef<HTMLElement>(null);
-    useArticleScrollReveals(articleRef, shouldReduceMotion);
+    useArticleScrollReveals(articleRef, shouldReduceMotion, post.slug);
     const navigateToTocItem = useTocNavigation(articleRef);
     const { previous, next } = getPostNeighbors(post);
     const seriesPostCount = post.series

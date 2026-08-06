@@ -1,6 +1,6 @@
 import { useLayoutEffect, type RefObject } from "react";
 import { animate } from "motion";
-import { scrollRevealBlock, scrollRevealTree } from "./motion";
+import { articleScrollRevealTween } from "./motion";
 
 const articleRevealSelector = "[data-scroll-reveal]";
 
@@ -10,15 +10,19 @@ function isInInitialViewport(element: HTMLElement) {
     return bottom > 0 && top < window.innerHeight;
 }
 
-function getRevealVariant(element: HTMLElement) {
-    return element.dataset.scrollReveal === "tree"
-        ? scrollRevealTree
-        : scrollRevealBlock;
+function getOutermostRevealTargets(article: HTMLElement) {
+    return Array.from(
+        article.querySelectorAll<HTMLElement>(articleRevealSelector),
+    ).filter(
+        (target) =>
+            !target.parentElement?.closest<HTMLElement>(articleRevealSelector),
+    );
 }
 
 export function useArticleScrollReveals(
     articleRef: RefObject<HTMLElement | null>,
     shouldReduceMotion: boolean | null,
+    revealKey: string,
 ) {
     useLayoutEffect(() => {
         if (shouldReduceMotion) return;
@@ -26,22 +30,21 @@ export function useArticleScrollReveals(
         const article = articleRef.current;
         if (!article || typeof IntersectionObserver === "undefined") return;
 
-        const targets = Array.from(
-            article.querySelectorAll<HTMLElement>(articleRevealSelector),
-        );
+        const targets = getOutermostRevealTargets(article);
         const controls = new Map<HTMLElement, ReturnType<typeof animate>>();
 
         const reveal = (target: HTMLElement) => {
-            const { visible } = getRevealVariant(target);
             controls.get(target)?.stop();
-            controls.set(target, animate(target, visible, visible.transition));
+            controls.set(
+                target,
+                animate(
+                    target,
+                    { opacity: [0, 1] },
+                    articleScrollRevealTween,
+                ),
+            );
             observer.unobserve(target);
         };
-
-        for (const target of targets) {
-            const { hidden } = getRevealVariant(target);
-            controls.set(target, animate(target, hidden, { duration: 0 }));
-        }
 
         const observer = new IntersectionObserver(
             (entries) => {
@@ -63,13 +66,18 @@ export function useArticleScrollReveals(
         );
 
         for (const target of targets) {
+            if (isInInitialViewport(target)) continue;
+
+            target.style.opacity = "0";
             observer.observe(target);
-            if (isInInitialViewport(target)) reveal(target);
         }
 
         return () => {
             observer.disconnect();
-            for (const control of controls.values()) control.stop();
+            for (const [target, control] of controls) {
+                control.stop();
+                target.style.removeProperty("opacity");
+            }
         };
-    }, [articleRef, shouldReduceMotion]);
+    }, [articleRef, revealKey, shouldReduceMotion]);
 }

@@ -46,8 +46,8 @@
       },
       {
         "name": "reading-motion",
-        "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Materializes viewport-sized blocks while oversized route and prose trees fade only; simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
+        "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 200ms article landmark fade; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Materializes viewport-sized blocks while the Articles hero remains its index's sole entrance owner and article rows, prose, and headings stay stationary; occasional outermost article landmarks fade once without transforms, simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
       },
       {
         "name": "editorial-stagger",
@@ -73,7 +73,7 @@
       "name": "Article Browse Index",
       "kind": "nav",
       "refersTo": "writing-browse-index",
-      "description": "A compact ruled map linking to the guided learning path and every authored topic with honest guide counts.",
+      "description": "A compact ruled map linking to the guided learning path and every authored topic with honest guide counts; the map, topic sections, and article rows remain stationary beneath the editorial hero.",
       "html": "<nav aria-labelledby=\"browse-writing-heading\"><h2 id=\"browse-writing-heading\">Browse</h2><ul><li><a href=\"#learning-path\"><b>Learning path</b><span>10 guides</span></a></li><li><a href=\"#topic\"><b>Topic</b><span>4 guides</span></a></li></ul></nav>",
       "css": ".writing-browse-index { border-block: 1px solid var(--color-divider); } .writing-browse-index a { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 16px; color: var(--color-foreground-strong); text-decoration: none; } .writing-browse-index li + li { border-top: 1px solid var(--color-divider); } .writing-browse-index span { color: var(--color-muted); font: 400 14px var(--font-mono); }"
     },
