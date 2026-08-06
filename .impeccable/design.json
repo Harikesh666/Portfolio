@@ -46,8 +46,8 @@
       },
       {
         "name": "reading-motion",
-        "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 200ms article landmark fade; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Materializes viewport-sized blocks while the Articles hero remains its index's sole entrance owner and article rows, prose, and headings stay stationary; occasional outermost article landmarks fade once without transforms, simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
+        "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Materializes viewport-sized blocks while the Articles hero remains its index's sole entrance owner and article rows and complete article bodies stay stationary; simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
       },
       {
         "name": "editorial-stagger",

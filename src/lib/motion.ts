@@ -174,12 +174,6 @@ export const scrollRevealTween = {
     ease: pageEase,
 };
 
-// Fades occasional article landmarks quickly while prose remains stationary.
-export const articleScrollRevealTween = {
-    duration: 0.2,
-    ease: [0.23, 1, 0.32, 1] as const,
-};
-
 // Keeps fallback route lifecycle work aligned with the full page entrance.
 export const routeEntranceFallbackMs = routePageEnterTween.duration * 1_000;
 

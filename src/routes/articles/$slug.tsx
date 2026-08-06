@@ -1,7 +1,6 @@
 import { useRef } from "react";
 import { ArrowUUpLeftIcon } from "@phosphor-icons/react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
-import { motion, useReducedMotion } from "motion/react";
 import { FloatingToc } from "../../components/FloatingToc";
 import { PageEnter } from "../../components/PageEnter";
 import { StaggerReveal } from "../../components/StaggerReveal";
@@ -9,9 +8,7 @@ import { TocSheet } from "../../components/TocSheet";
 import { useHasFloatingTocRegistration } from "../../components/TocRegistry";
 import { getPostNeighbors, posts } from "../../lib/content";
 import { getPost } from "../../lib/content.functions";
-import { snappySpring } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
-import { useArticleScrollReveals } from "../../lib/use-article-scroll-reveals";
 import { desktopQuery } from "../../lib/toc";
 import { useMediaQuery } from "../../lib/use-media-query";
 import { useTocNavigation } from "../../lib/use-toc-navigation";
@@ -104,12 +101,10 @@ function PostPending() {
 }
 
 function PostPage() {
-    const shouldReduceMotion = useReducedMotion();
     const isDesktop = useMediaQuery(desktopQuery);
     const hasDesktopTocRegistration = useHasFloatingTocRegistration();
     const post = Route.useLoaderData();
     const articleRef = useRef<HTMLElement>(null);
-    useArticleScrollReveals(articleRef, shouldReduceMotion, post.slug);
     const navigateToTocItem = useTocNavigation(articleRef);
     const { previous, next } = getPostNeighbors(post);
     const seriesPostCount = post.series
@@ -161,58 +156,22 @@ function PostPage() {
                             aria-label="Series navigation"
                         >
                             {previous && (
-                                <motion.div
-                                    initial="idle"
-                                    animate="idle"
-                                    whileHover={
-                                        shouldReduceMotion ? undefined : "hover"
-                                    }
+                                <Link
+                                    className="block text-[17px] font-semibold leading-snug text-foreground-strong hover:text-accent"
+                                    to="/articles/$slug"
+                                    params={{ slug: previous.slug }}
                                 >
-                                    <Link
-                                        className="block text-[17px] font-semibold leading-snug text-foreground-strong hover:text-accent"
-                                        to="/articles/$slug"
-                                        params={{ slug: previous.slug }}
-                                    >
-                                        <motion.span
-                                            className="inline-block"
-                                            variants={{
-                                                idle: { x: 0 },
-                                                hover: { x: -2 },
-                                            }}
-                                            transition={snappySpring}
-                                        >
-                                            ←
-                                        </motion.span>{" "}
-                                        {previous.title}
-                                    </Link>
-                                </motion.div>
+                                    ← {previous.title}
+                                </Link>
                             )}
                             {next && (
-                                <motion.div
-                                    initial="idle"
-                                    animate="idle"
-                                    whileHover={
-                                        shouldReduceMotion ? undefined : "hover"
-                                    }
+                                <Link
+                                    className="block text-[17px] font-semibold leading-snug text-foreground-strong hover:text-accent"
+                                    to="/articles/$slug"
+                                    params={{ slug: next.slug }}
                                 >
-                                    <Link
-                                        className="block text-[17px] font-semibold leading-snug text-foreground-strong hover:text-accent"
-                                        to="/articles/$slug"
-                                        params={{ slug: next.slug }}
-                                    >
-                                        {next.title}{" "}
-                                        <motion.span
-                                            className="inline-block"
-                                            variants={{
-                                                idle: { x: 0 },
-                                                hover: { x: 2 },
-                                            }}
-                                            transition={snappySpring}
-                                        >
-                                            →
-                                        </motion.span>
-                                    </Link>
-                                </motion.div>
+                                    {next.title} →
+                                </Link>
                             )}
                         </nav>
                     )}
