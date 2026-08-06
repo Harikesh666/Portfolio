@@ -113,9 +113,9 @@
       "name": "Mobile Article Table of Contents",
       "kind": "dialog",
       "refersTo": "toc-sheet",
-      "description": "A below-xl 52px active-section pill capped at 20rem with a leading marker, circular current-section progress ring, and safe-area-aware bottom sheet with 44px targets, two-line section labels, history-backed semantic hash links, coupled backdrop progress, focus containment, native list momentum, and velocity-or-distance dismissal.",
+      "description": "A below-xl 48px active-section pill capped at 19rem with a leading marker, compact 32px circular current-section progress ring, and safe-area-aware bottom sheet with 44px targets, two-line section labels, history-backed semantic hash links, coupled backdrop progress, focus containment, native list momentum, and velocity-or-distance dismissal.",
       "html": "<button aria-expanded=\"false\" aria-controls=\"toc-sheet\" aria-haspopup=\"dialog\"><span aria-hidden=\"true\"></span><span>Section title</span><svg aria-hidden=\"true\"><circle></circle><circle></circle></svg></button><div id=\"toc-sheet\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"toc-sheet-title\"><h2 id=\"toc-sheet-title\">Table of contents</h2><a href=\"#section\" aria-current=\"location\">Section title</a></div>",
-      "css": ".toc-sheet-trigger { position: fixed; width: min(calc(100% - 2rem), 20rem); height: 52px; bottom: calc(1rem + env(safe-area-inset-bottom)); } .toc-sheet-trigger svg { width: 36px; height: 36px; transform: rotate(-90deg); } .toc-sheet { max-height: min(72dvh, 560px); overflow: hidden; border-radius: 16px 16px 0 0; } .toc-sheet-list { overflow-y: auto; overscroll-behavior: contain; } .toc-sheet-list a { min-height: 44px; }"
+      "css": ".toc-sheet-trigger { position: fixed; width: min(calc(100% - 2.5rem), 19rem); height: 48px; bottom: calc(1rem + env(safe-area-inset-bottom)); } .toc-sheet-trigger svg { width: 32px; height: 32px; transform: rotate(-90deg); } .toc-sheet { max-height: min(72dvh, 560px); overflow: hidden; border-radius: 16px 16px 0 0; } .toc-sheet-list { overflow-y: auto; overscroll-behavior: contain; } .toc-sheet-list a { min-height: 44px; }"
     }
   ],
   "narrative": {

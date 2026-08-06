@@ -552,12 +552,12 @@ export function TocSheet({
                         ? "Open table of contents"
                         : `Open table of contents. Current section: ${currentTitle}`
                 }
-                className="fixed left-1/2 z-30 flex h-13 -translate-x-1/2 items-center gap-3 overflow-hidden rounded-full border border-divider bg-surface px-4 text-left text-foreground-strong shadow-sm"
+                className="fixed left-1/2 z-30 flex h-12 -translate-x-1/2 items-center gap-2.5 overflow-hidden rounded-full border border-divider bg-surface px-3.5 text-left text-foreground-strong shadow-sm"
                 onClick={openSheet}
                 ref={triggerRef}
                 style={{
                     bottom: "calc(1rem + env(safe-area-inset-bottom))",
-                    width: "min(calc(100% - 2rem), 20rem)",
+                    width: "min(calc(100% - 2.5rem), 19rem)",
                 }}
                 type="button"
                 variants={
@@ -566,7 +566,7 @@ export function TocSheet({
             >
                 <span
                     aria-hidden="true"
-                    className="size-2 shrink-0 rounded-full bg-foreground-strong"
+                    className="size-1.5 shrink-0 rounded-full bg-foreground-strong"
                 />
                 <span className="relative min-w-0 flex-1 overflow-hidden text-[13px] font-medium leading-none">
                     <AnimatePresence initial={false} mode="popLayout">
@@ -596,25 +596,25 @@ export function TocSheet({
                 </span>
                 <svg
                     aria-hidden="true"
-                    className="size-9 shrink-0 -rotate-90"
-                    viewBox="0 0 36 36"
+                    className="size-8 shrink-0 -rotate-90"
+                    viewBox="0 0 32 32"
                 >
                     <circle
-                        cx="18"
-                        cy="18"
+                        cx="16"
+                        cy="16"
                         fill="none"
-                        r="15"
+                        r="13"
                         stroke="var(--divider)"
-                        strokeWidth="2.5"
+                        strokeWidth="2.25"
                     />
                     <motion.circle
-                        cx="18"
-                        cy="18"
+                        cx="16"
+                        cy="16"
                         fill="none"
-                        r="15"
+                        r="13"
                         stroke="var(--accent)"
                         strokeLinecap="round"
-                        strokeWidth="2.5"
+                        strokeWidth="2.25"
                         style={{
                             pathLength: shouldReduceMotion
                                 ? sectionProgress
