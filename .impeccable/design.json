@@ -51,7 +51,7 @@
       },
       {
         "name": "editorial-stagger",
-        "value": "500ms headline spring; 150ms line stagger; 300ms headline pause; 375ms follower spring; 80ms follower stagger; 0.4em/24px travel; 4px one-shot blur",
+        "value": "320ms headline visual spring with 0.1 bounce and strong ease-out opacity; 60ms line stagger; 180ms headline pause; 240ms follower visual spring with 0.1 bounce and strong ease-out opacity; 50ms follower stagger; 0.4em/14px travel; headline-only 4px one-shot blur",
         "purpose": "Animates the Home, Articles, and article-detail heroes without changing established typography or spacing; reduced motion renders the complete hero immediately."
       }
     ],

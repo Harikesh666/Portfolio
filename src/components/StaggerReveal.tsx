@@ -210,7 +210,6 @@ function StaggerRevealRoot({
                                     editorialFollowerTransformFrom,
                                     editorialFollowerTransformTo,
                                 ],
-                                filter: [editorialBlurFrom, editorialBlurTo],
                             },
                             { ...editorialFollowerTransition, delay },
                         ),

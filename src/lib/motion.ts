@@ -121,12 +121,16 @@ export const tocItemDelayStep = 0.016;
 export const tocItemDelayCap = 0.25;
 export const pageEnterStagger = 0.05;
 
-export const editorialLineStagger = 0.15;
-export const editorialFollowerStagger = 0.08;
-export const editorialHeadlinePause = editorialLineStagger * 2;
+// Preserves reading order while keeping editorial headline lines within one gesture.
+export const editorialLineStagger = 0.06;
+// Carries supporting hero elements forward without stretching the sequence.
+export const editorialFollowerStagger = 0.05;
+// Gives the headline a deliberate handoff before supporting content begins.
+export const editorialHeadlinePause = 0.18;
 export const editorialLineTransformFrom = "translateY(0.4em)";
 export const editorialLineTransformTo = "translateY(0em)";
-export const editorialFollowerTransformFrom = "translateY(24px)";
+// Lifts supporting hero elements without competing with the headline.
+export const editorialFollowerTransformFrom = "translateY(14px)";
 export const editorialFollowerTransformTo = "translateY(0px)";
 export const editorialBlurFrom = "blur(4px)";
 export const editorialBlurTo = "blur(0px)";
@@ -137,28 +141,24 @@ export const articleListFocusTransition = "opacity 140ms ease-out";
 // Drives each masked editorial headline line with the reference's gentle spring.
 export const editorialLineTransition = {
     type: "spring" as const,
-    stiffness: 109.6622711232151,
-    damping: 19.896753472735355,
-    duration: 0.5,
-    ease: [0.22, 1, 0.36, 1] as const,
+    visualDuration: 0.32,
+    bounce: 0.1,
     opacity: {
         type: "tween" as const,
-        duration: 0.5,
-        ease: "easeIn" as const,
+        duration: 0.32,
+        ease: pageEase,
     },
 };
 
-// Gives supporting hero elements the reference's longer, softer UI spring.
+// Moves supporting hero elements with a shorter, quieter spring.
 export const editorialFollowerTransition = {
     type: "spring" as const,
-    stiffness: 194.95514866349353,
-    damping: 26.529006310313807,
-    duration: 0.375,
-    ease: [0.22, 1, 0.36, 1] as const,
+    visualDuration: 0.24,
+    bounce: 0.1,
     opacity: {
         type: "tween" as const,
-        duration: 0.375,
-        ease: "easeIn" as const,
+        duration: 0.24,
+        ease: pageEase,
     },
 };
 
