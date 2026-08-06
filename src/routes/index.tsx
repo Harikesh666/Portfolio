@@ -1,12 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowDownIcon, ArrowUpIcon } from "@phosphor-icons/react";
-import { motion, useReducedMotion } from "motion/react";
 import { useState } from "react";
-import { PageEnter } from "../components/PageEnter";
-import { Reveal } from "../components/Reveal";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { posts } from "../lib/content";
-import { snappySpring } from "../lib/motion";
 import { resumeExperience, type ResumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 
@@ -112,8 +108,6 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-    const shouldReduceMotion = useReducedMotion();
-
     return (
         <main
             id="main-content"
@@ -171,116 +165,94 @@ function HomePage() {
                     </a>
                 </StaggerReveal.Item>
             </StaggerReveal>
-            <PageEnter>
-                <PageEnter.Item>
-                    <section aria-labelledby="skills-heading" className="mt-14">
-                        <h2
-                            className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
-                            id="skills-heading"
+            <section aria-labelledby="skills-heading" className="mt-14">
+                <h2
+                    className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
+                    id="skills-heading"
+                >
+                    Skills
+                </h2>
+                <ul className="mt-4 flex flex-wrap gap-2" role="list">
+                    {skills.map((skill) => (
+                        <li
+                            className="inline-flex items-center gap-2 border border-divider px-3 py-2 font-mono text-[11.6px] text-foreground-strong"
+                            key={skill.name}
                         >
-                            Skills
-                        </h2>
-                        <ul className="mt-4 flex flex-wrap gap-2" role="list">
-                            {skills.map((skill) => (
-                                <li
-                                    className="inline-flex items-center gap-2 border border-divider px-3 py-2 font-mono text-[11.6px] text-foreground-strong"
-                                    key={skill.name}
-                                >
-                                    <span
-                                        aria-hidden="true"
-                                        className="size-3.5 shrink-0"
-                                        style={{
-                                            backgroundColor: skill.color,
-                                            maskImage: `url(${skill.icon})`,
-                                            maskPosition: "center",
-                                            maskRepeat: "no-repeat",
-                                            maskSize: "contain",
-                                            WebkitMaskImage: `url(${skill.icon})`,
-                                            WebkitMaskPosition: "center",
-                                            WebkitMaskRepeat: "no-repeat",
-                                            WebkitMaskSize: "contain",
-                                        }}
-                                    />
-                                    {skill.name}
-                                </li>
-                            ))}
-                        </ul>
-                    </section>
-                </PageEnter.Item>
+                            <span
+                                aria-hidden="true"
+                                className="size-3.5 shrink-0"
+                                style={{
+                                    backgroundColor: skill.color,
+                                    maskImage: `url(${skill.icon})`,
+                                    maskPosition: "center",
+                                    maskRepeat: "no-repeat",
+                                    maskSize: "contain",
+                                    WebkitMaskImage: `url(${skill.icon})`,
+                                    WebkitMaskPosition: "center",
+                                    WebkitMaskRepeat: "no-repeat",
+                                    WebkitMaskSize: "contain",
+                                }}
+                            />
+                            {skill.name}
+                        </li>
+                    ))}
+                </ul>
+            </section>
 
-                <PageEnter.Fade>
-                    <section id="work" className="mt-14">
-                        <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
-                            Work
-                        </h2>
-                        <div className="mt-4 border-t border-divider">
-                            {resumeExperience.map((experience) => (
-                                <Reveal
-                                    as="article"
-                                    className="border-b border-divider py-5"
-                                    key={experience.company}
-                                >
-                                    <WorkExperience experience={experience} />
-                                </Reveal>
-                            ))}
-                        </div>
-                    </section>
-                </PageEnter.Fade>
-
-                <PageEnter.Fade>
-                    <section className="mt-14">
-                        <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
-                            Articles
-                        </h2>
-                        <ol className="mt-4 border-t border-divider">
-                            {posts.slice(0, 3).map((post) => (
-                                <Reveal
-                                    as="li"
-                                    className="border-b border-divider"
-                                    key={post.slug}
-                                >
-                                    <Link
-                                        className="group block py-5"
-                                        to="/articles/$slug"
-                                        params={{ slug: post.slug }}
-                                    >
-                                        <motion.div
-                                            whileHover={
-                                                shouldReduceMotion
-                                                    ? undefined
-                                                    : { x: 2 }
-                                            }
-                                            transition={snappySpring}
-                                        >
-                                            <span className="font-mono text-sm text-accent">
-                                                {String(post.order).padStart(
-                                                    2,
-                                                    "0",
-                                                )}
-                                            </span>
-                                            <span className="mt-1 block text-[17px] font-semibold leading-snug text-foreground-strong group-hover:text-accent">
-                                                {post.title}
-                                            </span>
-                                            <span className="mt-1 block text-sm text-muted">
-                                                {post.description}
-                                            </span>
-                                            <span className="mt-2 block text-sm text-muted">
-                                                {post.readTime}
-                                            </span>
-                                        </motion.div>
-                                    </Link>
-                                </Reveal>
-                            ))}
-                        </ol>
-                        <Link
-                            className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
-                            to="/articles"
+            <section id="work" className="mt-14">
+                <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
+                    Work
+                </h2>
+                <div className="mt-4 border-t border-divider">
+                    {resumeExperience.map((experience) => (
+                        <article
+                            className="border-b border-divider py-5"
+                            key={experience.company}
                         >
-                            View all articles →
-                        </Link>
-                    </section>
-                </PageEnter.Fade>
-            </PageEnter>
+                            <WorkExperience experience={experience} />
+                        </article>
+                    ))}
+                </div>
+            </section>
+
+            <section className="mt-14">
+                <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
+                    Articles
+                </h2>
+                <ol className="mt-4 border-t border-divider">
+                    {posts.slice(0, 3).map((post) => (
+                        <li
+                            className="border-b border-divider"
+                            key={post.slug}
+                        >
+                            <Link
+                                className="group block py-5"
+                                to="/articles/$slug"
+                                params={{ slug: post.slug }}
+                            >
+                                <span className="font-mono text-sm text-accent">
+                                    {String(post.order).padStart(2, "0")}
+                                </span>
+                                <span className="mt-1 block text-[17px] font-semibold leading-snug text-foreground-strong group-hover:text-accent">
+                                    {post.title}
+                                </span>
+                                <span className="mt-1 block text-sm text-muted">
+                                    {post.description}
+                                </span>
+                                <span className="mt-2 block text-sm text-muted">
+                                    {post.readTime}
+                                </span>
+                            </Link>
+                        </li>
+                    ))}
+                </ol>
+                <Link
+                    className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
+                    to="/articles"
+                >
+                    View all articles →
+                </Link>
+            </section>
         </main>
     );
 }
