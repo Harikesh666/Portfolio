@@ -131,6 +131,9 @@ export const editorialFollowerTransformTo = "translateY(0px)";
 export const editorialBlurFrom = "blur(4px)";
 export const editorialBlurTo = "blur(0px)";
 
+// Restores desktop article-list focus over 140ms without spatial motion.
+export const articleListFocusTransition = "opacity 140ms ease-out";
+
 // Drives each masked editorial headline line with the reference's gentle spring.
 export const editorialLineTransition = {
     type: "spring" as const,

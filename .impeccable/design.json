@@ -47,12 +47,12 @@
       {
         "name": "reading-motion",
         "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Materializes viewport-sized blocks while the Home and Articles heroes remain their routes' sole entrance owners and home content, article rows, and complete article bodies stay stationary; simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
+        "purpose": "Materializes viewport-sized blocks while route heroes remain their sole entrance owners and home content and complete article bodies stay stationary; article-list focus is opacity-only, simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
       },
       {
         "name": "editorial-stagger",
         "value": "500ms headline spring; 150ms line stagger; 300ms headline pause; 375ms follower spring; 80ms follower stagger; 0.4em/24px travel; 4px one-shot blur",
-        "purpose": "Makes each route hero its sole entrance owner without changing the route's established typography or spacing; a pre-paint readiness guard prevents hydration flashes, and reduced motion renders the complete hero immediately."
+        "purpose": "Animates the Home, Articles, and article-detail heroes without changing established typography or spacing; reduced motion renders the complete hero immediately."
       }
     ],
     "breakpoints": [
@@ -73,17 +73,17 @@
       "name": "Article Browse Index",
       "kind": "nav",
       "refersTo": "writing-browse-index",
-      "description": "A compact ruled map linking to the guided learning path and every authored topic with honest guide counts; the map, topic sections, and article rows remain stationary beneath the editorial hero.",
+      "description": "A compact ruled map linking to the guided learning path and every authored topic with honest guide counts; the map, topic sections, and article rows remain stationary beneath the editorial Articles hero.",
       "html": "<nav aria-labelledby=\"browse-writing-heading\"><h2 id=\"browse-writing-heading\">Browse</h2><ul><li><a href=\"#learning-path\"><b>Learning path</b><span>10 guides</span></a></li><li><a href=\"#topic\"><b>Topic</b><span>4 guides</span></a></li></ul></nav>",
-      "css": ".writing-browse-index { border-block: 1px solid var(--color-divider); } .writing-browse-index a { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 16px; color: var(--color-foreground-strong); text-decoration: none; } .writing-browse-index li + li { border-top: 1px solid var(--color-divider); } .writing-browse-index span { color: var(--color-muted); font: 400 14px var(--font-mono); }"
+      "css": ".writing-browse-index { border-block: 1px solid var(--color-divider); } .writing-browse-index a { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 16px; color: var(--color-foreground-strong); text-decoration: none; } .writing-browse-index li + li { border-top: 1px solid var(--color-divider); } .writing-browse-index span { color: var(--color-muted); font: 500 13px var(--font-mono); }"
     },
     {
       "name": "Article List Item",
       "kind": "custom",
       "refersTo": "writing-list-item",
-      "description": "A ruled vertical article link with series number, title, summary, and reading time.",
-      "html": "<a class=\"ds-writing-item\" href=\"#\"><span>01</span><b>React Rendering and Reconciliation Internals</b><p>How React turns state into UI.</p><em>45 min read</em></a>",
-      "css": ".ds-writing-item { display: block; border-bottom: 1px solid var(--color-divider); padding: 16px 0; color: var(--color-foreground); text-decoration: none; } .ds-writing-item span { color: var(--color-accent); font: 500 14px var(--font-mono); } .ds-writing-item b { display: block; margin-top: 4px; color: var(--color-foreground-strong); font: 600 17px/1.4 var(--font-sans); } .ds-writing-item p { margin: 4px 0 0; color: var(--color-muted); font: 400 14px/1.6 var(--font-sans); } .ds-writing-item em { display: block; margin-top: 8px; color: var(--color-muted); font: 400 14px var(--font-sans); font-style: normal; } .ds-writing-item:hover b { color: var(--color-accent); }"
+      "description": "A ruled article link with series number, title, summary, and reading time; desktop pointer or keyboard focus dims sibling content without translation.",
+      "html": "<a class=\"ds-writing-item\" href=\"#\"><span class=\"ds-writing-item-content\"><span>01</span><b>React Rendering and Reconciliation Internals</b><p>How React turns state into UI.</p><em>45 min read</em></span></a>",
+      "css": ".ds-writing-item { display: block; border-bottom: 1px solid var(--color-divider); padding: 14px 0; color: var(--color-foreground); text-decoration: none; } .ds-writing-item > .ds-writing-item-content > span { color: var(--color-accent); font: 500 13px var(--font-mono); } .ds-writing-item b { display: block; margin-top: 4px; color: var(--color-foreground-strong); font: 500 16px/1.25 var(--font-sans); } .ds-writing-item p { margin: 4px 0 0; color: var(--color-muted); font: 400 14px/1.43 var(--font-sans); } .ds-writing-item em { display: block; margin-top: 8px; color: var(--color-muted); font: 500 13px/1.54 var(--font-sans); font-style: normal; } .article-list .ds-writing-item-content { transition: opacity 140ms ease-out; } .article-list:is(:hover, :focus-within) .ds-writing-item-content { opacity: .35; } .article-list .ds-writing-item:is(:hover, :focus-visible) .ds-writing-item-content { opacity: 1; } .ds-writing-item:hover b { color: var(--color-accent); }"
     },
     {
       "name": "Editorial Route Hero",

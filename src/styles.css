@@ -146,6 +146,16 @@
         font-weight: 500;
     }
 
+    @media (min-width: 640px) and (hover: hover) and (pointer: fine) {
+        .article-list:is(:hover, :focus-within) .article-list-content {
+            opacity: 0.35;
+        }
+
+        .article-list :is(a:hover, a:focus-visible) .article-list-content {
+            opacity: 1;
+        }
+    }
+
     @media (prefers-reduced-motion: reduce) {
         html {
             scroll-behavior: auto;

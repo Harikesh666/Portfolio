@@ -88,14 +88,14 @@ The palette is warm and low-chroma rather than editorial or decorative. All comp
 ## 3. Typography
 
 **Body and Headings:** Atkinson Hyperlegible Next, ui-sans-serif, system-ui, sans-serif
-**Technical Labels:** JetBrains Mono, ui-monospace, monospace
+**Technical Labels and Code:** JetBrains Mono, ui-monospace, monospace
 
 ### Hierarchy
 - **Page Title:** 1.75rem on mobile and 2rem from `sm`, semibold, 1.15 leading, `-0.025em` tracking.
-- **Section Label:** 12px medium JetBrains Mono, uppercase, `0.1em` tracking, muted.
-- **Article Link:** 17px semibold sans with terracotta hover.
+- **Section Label:** 13px medium JetBrains Mono with compact tracking on article routes.
+- **Article Link:** 16px medium Atkinson Hyperlegible Next with tight leading and terracotta hover.
 - **Body:** 17px Atkinson Hyperlegible Next at 1.65 line height.
-- **Guide Prose:** 18px at 1.78 line height for long-form reading.
+- **Guide Prose:** 18px Atkinson Hyperlegible Next at 1.78 line height.
 
 **The Reading Rule.** No oversized display type or decorative serif hierarchy. Technical ideas earn emphasis through clarity, sequence, and breathing room.
 
@@ -117,11 +117,11 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 - **Hierarchy:** Guided series remain the primary collection; standalone guides are divided into durable conceptual topics rather than one oversized language category.
 - **Taxonomy:** Standalone topic IDs and display metadata live in `src/lib/content.ts` and are validated from guide frontmatter. Series posts use their ordered learning-path metadata instead.
 - **Restraint:** The full catalog remains in one narrow document. Anchor links, section headings, and tighter rows provide orientation without cards, filter chips, hidden panels, search, or pagination.
-- **Motion:** The editorial hero is the index's sole entrance owner. Browse navigation, topic sections, and article rows render immediately and retain stable geometry during scrolling; row hover feedback is color-only.
+- **Motion:** The index hero shares Home's font-aware editorial entrance, revealing the title by rendered line before its description and count. Browse navigation, topic sections, and article rows render immediately and retain stable geometry during scrolling.
 
 ### Article List Item
 - **Structure:** Series index, title, summary, and reading time in a compact vertically stacked ruled list.
-- **Behavior:** Only the title changes to terracotta on hover; no cards or lift effects.
+- **Behavior:** On desktop pointer devices, hovering or keyboard-focusing a row dims sibling content to `0.35` and restores the active row over 140ms. The title also changes to terracotta; no cards, translation, or lift effects.
 
 ### Article Content
 - **Structure:** Back link, title, muted metadata, prose, then optional previous/next links.
@@ -133,10 +133,10 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 - **Reading Stability:** The complete article body renders immediately and remains stationary during scrolling. Prose, headings, code, figures, lists, tables, and blockquotes have no reveal metadata, observers, or entrance animation; previous/next links use color-only hover feedback.
 
 ### Motion
-- **Route and entry:** Navigated route wrappers become visible immediately after the outgoing 90ms exit so the page hero is the sole entrance owner. A pre-paint JavaScript marker hides only unprepared stagger roots, preventing SSR content from flashing before hydration while leaving the content visible when JavaScript is unavailable. Each hero waits for loaded fonts and follows document order: optional eyebrow copy enters from 24px below, the headline splits into rendered lines and reveals from `0.4em` below with a 4px one-shot blur on a 500ms gentle spring, then supporting metadata and actions use the same 24px follower entrance. Lines stagger by 150ms, pause for 300ms, and followers stagger by 80ms on a 375ms spring. The choreography preserves each route's existing typography and spacing instead of importing the reference hero's display scale. The home introduction is the visual headline; Resume, Articles, and article titles remain the anchors on their routes. Same-path hash changes never remount the route boundary. The exiting desktop table of contents becomes inert and `display: none` immediately, then disposes after route commit.
+- **Route and entry:** Navigated route wrappers become visible immediately after the outgoing 90ms exit so the page hero is the sole entrance owner. A pre-paint JavaScript marker hides only unprepared stagger roots, preventing SSR content from flashing before hydration while leaving the content visible when JavaScript is unavailable. Editorial heroes wait for loaded fonts and follow document order: optional eyebrow copy enters from 24px below, the headline splits into rendered lines and reveals from `0.4em` below with a 4px one-shot blur on a 500ms gentle spring, then supporting metadata and actions use the same 24px follower entrance. Lines stagger by 150ms, pause for 300ms, and followers stagger by 80ms on a 375ms spring. Home and Articles both use this choreography while preserving their existing scale and spacing. The home introduction is the visual headline; Resume, Articles, and article titles remain the anchors on their routes. Same-path hash changes never remount the route boundary. The exiting desktop table of contents becomes inert and `display: none` immediately, then disposes after route commit.
 - **Header continuity:** Article navigation transforms one persistent avatar and theme control between fixed identity and breadcrumb geometry over 300ms on the route curve; no layout projection or runtime measurement participates. Non-shared navigation and breadcrumb content crossfade, focus remains on the persistent theme control, and identity-to-identity navigation does not retrigger the header.
 - **Signature interaction:** The responsive table of contents receives the motion budget through desktop shared-element morphs and mobile physical sheet drag. Both views use active-outward staggering and within-section progress; mobile backdrop opacity is coupled directly to sheet position, while velocity-aware stretch remains desktop-only.
-- **Restraint:** Repeated motion is limited to transforms and opacity; scale is reserved for small page-entry blocks, the Home and Articles routes remain stationary below their heroes, and complete article bodies never animate during scroll. Home skills, work history, and article previews render immediately, with color-only preview hover feedback. The editorial hero's 4px blur is an explicit exception authorized for its one-shot mount entrance and never applies to article or route-sized trees. `prefers-reduced-motion: reduce` renders the hero immediately, snaps the header layout, removes entrance transforms, and keeps simple destinations instant.
+- **Restraint:** Repeated motion is limited to transforms and opacity; scale is reserved for small page-entry blocks, the Home and Articles routes remain stationary below their heroes, and complete article bodies never animate during scroll. Home skills, work history, and article previews render immediately. Article-list focus is opacity-only, restores the active row in 140ms, and never translates content. The editorial hero's 4px blur is an explicit exception authorized for its one-shot mount entrance and does not apply to article prose or route-sized trees. `prefers-reduced-motion: reduce` renders heroes immediately, snaps the header layout, removes entrance transforms, and keeps simple destinations instant.
 
 ## 6. Do's and Don'ts
 

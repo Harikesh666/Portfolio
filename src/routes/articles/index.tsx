@@ -6,6 +6,7 @@ import {
     topicIndex,
     type PostSummary,
 } from "../../lib/content";
+import { articleListFocusTransition } from "../../lib/motion";
 import { absoluteUrl, site } from "../../lib/site";
 
 const articlesDescription =
@@ -49,15 +50,18 @@ function ArticlesPage() {
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
             <StaggerReveal as="header">
-                <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-tight text-foreground-strong sm:text-[2rem]">
+                <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground-strong sm:text-[2rem]">
                     Articles
                 </StaggerReveal.Headline>
-                <StaggerReveal.Item as="p" className="mt-3 text-foreground">
+                <StaggerReveal.Item
+                    as="p"
+                    className="mt-3 text-[1.0625rem] leading-7 text-foreground"
+                >
                     {articlesDescription}
                 </StaggerReveal.Item>
                 <StaggerReveal.Item
                     as="p"
-                    className="mt-4 font-mono text-sm text-muted"
+                    className="mt-4 font-mono text-[13px] font-medium tracking-[-0.005em] text-muted"
                 >
                     {posts.length} guides · {topics.length} topics · 1 learning
                     path
@@ -70,15 +74,17 @@ function ArticlesPage() {
                 aria-labelledby="react-internals-heading"
                 className="mt-12"
             >
-                <p className="font-mono text-sm text-accent">Learning path</p>
+                <p className="font-mono text-[13px] font-medium tracking-[-0.005em] text-accent">
+                    Learning path
+                </p>
                 <h2
-                    className="mt-2 scroll-mt-8 text-[1.35rem] font-semibold leading-tight tracking-tight text-foreground-strong"
+                    className="mt-2 scroll-mt-8 text-[1.25rem] font-semibold leading-snug tracking-[-0.018em] text-foreground-strong"
                     id="react-internals-heading"
                 >
                     {series.title}
                 </h2>
                 <p className="mt-2 text-foreground">{series.description}</p>
-                <p className="mt-3 font-mono text-sm text-muted">
+                <p className="mt-3 font-mono text-[13px] font-medium tabular-nums tracking-[-0.005em] text-muted">
                     {seriesPosts.length} guides · about {series.readingTime} ·
                     updated {series.updatedAt}
                 </p>
@@ -92,7 +98,7 @@ function ArticlesPage() {
                     key={topic.id}
                 >
                     <h2
-                        className="scroll-mt-8 text-[1.35rem] font-semibold leading-tight tracking-tight text-foreground-strong"
+                        className="scroll-mt-8 text-[1.25rem] font-semibold leading-snug tracking-[-0.018em] text-foreground-strong"
                         id={`${topic.id}-heading`}
                     >
                         {topic.title}
@@ -100,7 +106,7 @@ function ArticlesPage() {
                     <p className="mt-2 text-foreground">
                         {topic.description}
                     </p>
-                    <p className="mt-3 font-mono text-sm text-muted">
+                    <p className="mt-3 font-mono text-[13px] font-medium tabular-nums tracking-[-0.005em] text-muted">
                         {topic.posts.length} guides · newest first
                     </p>
                     <ArticleList posts={topic.posts} />
@@ -128,7 +134,7 @@ function ArticleBrowse() {
                         <span className="min-w-0 font-semibold leading-snug text-foreground-strong group-hover:text-accent">
                             {series.title}
                         </span>
-                        <span className="shrink-0 font-mono text-sm text-muted">
+                        <span className="shrink-0 font-mono text-[13px] font-medium tabular-nums tracking-[-0.005em] text-muted">
                             Path · {seriesPosts.length}
                         </span>
                     </a>
@@ -145,7 +151,7 @@ function ArticleBrowse() {
                             <span className="min-w-0 font-semibold leading-snug text-foreground-strong group-hover:text-accent">
                                 {topic.title}
                             </span>
-                            <span className="shrink-0 font-mono text-sm text-muted">
+                            <span className="shrink-0 font-mono text-[13px] font-medium tabular-nums tracking-[-0.005em] text-muted">
                                 {topic.posts.length} guides
                             </span>
                         </a>
@@ -166,29 +172,34 @@ function ArticleList(props: ArticleListProps) {
     const postList = props.posts;
 
     return (
-        <ol className="mt-6 border-t border-divider">
+        <ol className="article-list mt-6 border-t border-divider">
             {postList.map((post) => (
                 <li className="border-b border-divider" key={post.slug}>
                     <Link
-                        className="group block py-4"
+                        className="group block py-3.5"
                         to="/articles/$slug"
                         params={{ slug: post.slug }}
                     >
-                        {ordered && (
-                            <span className="mb-1 block font-mono text-sm text-accent">
-                                {String(post.order).padStart(2, "0")}
+                        <span
+                            className="article-list-content block"
+                            style={{ transition: articleListFocusTransition }}
+                        >
+                            {ordered && (
+                                <span className="mb-1 block font-mono text-[13px] font-medium tabular-nums tracking-[-0.005em] text-accent">
+                                    {String(post.order).padStart(2, "0")}
+                                </span>
+                            )}
+                            <span className="block text-[1rem] font-medium leading-5 tracking-[-0.008em] text-foreground-strong group-hover:text-accent">
+                                {post.title}
                             </span>
-                        )}
-                        <span className="block text-[17px] font-semibold leading-snug text-foreground-strong group-hover:text-accent">
-                            {post.title}
-                        </span>
-                        <span className="mt-1 block text-sm text-muted">
-                            {post.description}
-                        </span>
-                        <span className="mt-2 block text-sm text-muted">
-                            {ordered
-                                ? post.readTime
-                                : `${post.date} · ${post.readTime}`}
+                            <span className="mt-1 block text-[14px] leading-5 text-muted">
+                                {post.description}
+                            </span>
+                            <span className="mt-2 block text-[13px] font-medium leading-5 tabular-nums tracking-[-0.005em] text-muted">
+                                {ordered
+                                    ? post.readTime
+                                    : `${post.date} · ${post.readTime}`}
+                            </span>
                         </span>
                     </Link>
                 </li>

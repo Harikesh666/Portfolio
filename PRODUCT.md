@@ -44,11 +44,11 @@ Avoid generic template portfolios, buzzword-heavy copy, and flashy motion showca
 4. Make the best next action obvious: contacting Harikesh and entering the writing should always feel effortless.
 5. Treat discoverability as quality: fast rendering, semantic structure, metadata, and structured data are part of the product.
 6. Keep the interface quiet: a narrow reading column, direct navigation, and dark mode should remove friction rather than add personality for its own sake.
-7. Spend motion deliberately: first loads and article destinations may materialize as one fast shell-level gesture, the Home and Articles heroes are their routes' sole entrance owners, home content, article rows, and complete article bodies stay stationary, simple portfolio destinations should swap without fading through a blank frame, and the article table of contents may retain richer spatial context and reading progress.
+7. Spend motion deliberately: first loads and article destinations may materialize as one fast shell-level gesture, the Home and Articles heroes share the same editorial entrance and remain their routes' sole entrance owners, home content and complete article bodies stay stationary, desktop article rows may use opacity-only sibling focus, simple portfolio destinations should swap without fading through a blank frame, and the article table of contents may retain richer spatial context and reading progress.
 
 ## Article Discovery
 
-The articles index behaves as a small technical library rather than a chronological feed. A compact, text-only overview links directly to one guided learning path and four authored JavaScript topics, each with an honest guide count. Every article remains visible in the document for scanning, search, and crawlability; taxonomy and tighter ruled rows provide orientation without search controls, cards, tabs, or pagination.
+The articles index behaves as a small technical library rather than a chronological feed. A compact, text-only overview links directly to one guided learning path and four authored JavaScript topics, each with an honest guide count. Every article remains visible in the document for scanning, search, and crawlability; taxonomy and tighter ruled rows provide orientation without search controls, cards, tabs, or pagination. On desktop pointer devices, hovering or keyboard-focusing a row dims sibling content to aid scanning without moving the layout.
 
 ## Accessibility & Inclusion
 

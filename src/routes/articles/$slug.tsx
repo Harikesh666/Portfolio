@@ -121,7 +121,7 @@ function PostPage() {
                 <PageEnter key={post.slug}>
                     <header>
                         <Link
-                            className="inline-flex items-center gap-2 font-mono text-sm text-muted hover:text-accent"
+                            className="inline-flex items-center gap-2 font-mono text-[13px] font-medium tracking-[-0.005em] text-muted hover:text-accent"
                             to="/articles"
                         >
                             <ArrowUUpLeftIcon aria-hidden="true" size={18} />
@@ -129,12 +129,12 @@ function PostPage() {
                         </Link>
 
                         <StaggerReveal className="mt-7">
-                            <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-tight text-foreground-strong sm:text-[2rem]">
+                            <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground-strong sm:text-[2rem]">
                                 {post.title}
                             </StaggerReveal.Headline>
                             <StaggerReveal.Item
                                 as="p"
-                                className="mt-3 font-mono text-sm text-muted"
+                                className="mt-3 font-mono text-[13px] font-medium tabular-nums tracking-[-0.005em] text-muted"
                             >
                                 {post.date} · {post.readTime}
                                 {post.series && post.order !== undefined
@@ -157,7 +157,7 @@ function PostPage() {
                         >
                             {previous && (
                                 <Link
-                                    className="block text-[17px] font-semibold leading-snug text-foreground-strong hover:text-accent"
+                                    className="block text-[1rem] font-medium leading-5 tracking-[-0.008em] text-foreground-strong hover:text-accent"
                                     to="/articles/$slug"
                                     params={{ slug: previous.slug }}
                                 >
@@ -166,7 +166,7 @@ function PostPage() {
                             )}
                             {next && (
                                 <Link
-                                    className="block text-[17px] font-semibold leading-snug text-foreground-strong hover:text-accent"
+                                    className="block text-[1rem] font-medium leading-5 tracking-[-0.008em] text-foreground-strong hover:text-accent"
                                     to="/articles/$slug"
                                     params={{ slug: next.slug }}
                                 >
