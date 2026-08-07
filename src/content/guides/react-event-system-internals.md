@@ -40,6 +40,7 @@ Each section opens with a one-line **Prereqs** note: the earlier sections (here 
 Sections that need nothing past basic React and the DOM say so.
 
 ### Two rules that multiply everything
+
 1. **Run the experiments.** Each section ends with a short **"Try it."** Keep a Vite scratch app open and the browser DevTools handy. Several of these are best understood by inspecting the real DOM (and noticing what listeners are and are not there) while events fire.
 2. **Trust the order.** The sections build one picture, in order: why the system exists, what a synthetic event is, how delegation and the root container work, how an event dispatches by walking the fiber tree, how propagation and `stopPropagation` behave, how events set update priority and batch, and where the system meets portals and native listeners. Here is the spine:
 
@@ -69,25 +70,6 @@ Finish pass 1 and you are already ahead.
 
 ---
 
-## Table of Contents
-
-1. [Why React has its own event system](#1-why-react-has-its-own-event-system)
-2. [Synthetic events: the cross-browser wrapper](#2-synthetic-events-the-cross-browser-wrapper)
-3. [Event delegation: there is no listener on your node](#3-event-delegation-there-is-no-listener-on-your-node)
-4. [The root container: where the listeners actually live](#4-the-root-container-where-the-listeners-actually-live)
-5. [The dispatch path: from a native event to your handler](#5-the-dispatch-path-from-a-native-event-to-your-handler)
-6. [Capture and bubble by walking the fiber tree](#6-capture-and-bubble-by-walking-the-fiber-tree)
-7. [stopPropagation and preventDefault in the synthetic world](#7-stoppropagation-and-preventdefault-in-the-synthetic-world)
-8. [Event priority: discrete versus continuous events](#8-event-priority-discrete-versus-continuous-events)
-9. [Events trigger updates: batching and the render connection](#9-events-trigger-updates-batching-and-the-render-connection)
-10. [Portals: events bubble through the React tree](#10-portals-events-bubble-through-the-react-tree)
-11. [React events versus native addEventListener](#11-react-events-versus-native-addeventlistener)
-12. [Event gotchas tied to the mechanism](#12-event-gotchas-tied-to-the-mechanism)
-13. [Debugging the event system](#13-debugging-the-event-system)
-14. [Reading the source](#14-reading-the-source)
-
----
-
 ## 1. Why React has its own event system
 
 Prereqs: basic React (you have written an `onClick`).
@@ -112,7 +94,7 @@ React does not attach your event handlers to your DOM nodes.
 
 Instead it runs its own event system: a single set of listeners at one place (the root of your app) that catches native events and dispatches them to your handlers by consulting React's internal component tree.
 
-React built this for four reasons: to normalize events across browsers, to get the performance of attaching very few real listeners instead of thousands, to assign each event a *priority* that feeds React's scheduler, and to make event propagation follow the React component tree (which matters for things like portals).
+React built this for four reasons: to normalize events across browsers, to get the performance of attaching very few real listeners instead of thousands, to assign each event a _priority_ that feeds React's scheduler, and to make event propagation follow the React component tree (which matters for things like portals).
 
 Your `onClick` is a description of intent that React's event system fulfills, not a direct DOM listener.
 
@@ -126,7 +108,7 @@ The handler is stored in React's internal data structures (on the fiber for that
 
 React stands between the browser's native event model and your components, intercepting events and routing them.
 
-That intercepting layer is the *synthetic event system*, and understanding why React bothered to build it explains everything it does.
+That intercepting layer is the _synthetic event system_, and understanding why React bothered to build it explains everything it does.
 
 There are four reasons, and they have shifted in relative importance over React's life.
 
@@ -144,7 +126,7 @@ Modern browsers are far more consistent now, so this matters less than it used t
 
 If a list has a thousand rows each with an `onClick`, attaching a thousand real DOM listeners would cost memory and setup time.
 
-Instead React attaches a *small* number of listeners (roughly one per event type) at a single root, and when an event fires there, it figures out which component's handler to invoke (Section 3).
+Instead React attaches a _small_ number of listeners (roughly one per event type) at a single root, and when an event fires there, it figures out which component's handler to invoke (Section 3).
 
 A thousand `onClick` props become a handful of real listeners.
 
@@ -156,7 +138,7 @@ This is the reason that is easy to overlook and is arguably the most important t
 
 React is not just routing events.
 
-It is the thing that decides *how urgent* the resulting update is.
+It is the thing that decides _how urgent_ the resulting update is.
 
 When a click handler calls `setState`, React needs to know that a click is a high-priority, the-user-is-waiting interaction, while a `mousemove` is low priority and can be coalesced or deferred.
 
@@ -168,13 +150,13 @@ The event system is the bridge: it is where a user interaction becomes a priorit
 
 #### Consistency with the component tree
 
-Native event propagation follows the *DOM* tree.
+Native event propagation follows the _DOM_ tree.
 
-React event propagation follows React's *component* (fiber) tree (Section 6).
+React event propagation follows React's _component_ (fiber) tree (Section 6).
 
 Usually these match, but they diverge for portals (Section 10), where a component's DOM lives in one place but its position in the React tree is elsewhere.
 
-By running its own propagation over the fiber tree, React makes events follow the structure *you wrote in JSX*, which is the structure you reason about, rather than the structure the DOM happens to have.
+By running its own propagation over the fiber tree, React makes events follow the structure _you wrote in JSX_, which is the structure you reason about, rather than the structure the DOM happens to have.
 
 So the synthetic event system is not React reinventing the wheel for its own sake.
 
@@ -212,7 +194,7 @@ The `e` your handler receives is a `SyntheticEvent`, a wrapper React puts around
 
 It exposes the same interface as a native event (`preventDefault`, `stopPropagation`, `target`, `currentTarget`, and so on) but behaves identically across browsers, and you can reach the raw native event via `e.nativeEvent`.
 
-The one historical wrinkle: React used to *pool* (reuse) these objects for performance and null them out after your handler ran, so accessing `e` asynchronously gave you a blank event unless you called `e.persist()`.
+The one historical wrinkle: React used to _pool_ (reuse) these objects for performance and null them out after your handler ran, so accessing `e` asynchronously gave you a blank event unless you called `e.persist()`.
 
 **Event pooling was removed in React 17**, so today you can hold onto and read a synthetic event asynchronously freely, and `e.persist()` is a no-op kept only for compatibility.
 
@@ -236,11 +218,11 @@ The documented example is `onMouseLeave`: its `e.nativeEvent` is actually a `mou
 
 Similarly, `onChange` is built on the native `input` event, not the native `change` event (Section 12).
 
-So the synthetic event is a *logical* event in React's model, which usually corresponds to a native event but is sometimes assembled from a different one to give more useful semantics.
+So the synthetic event is a _logical_ event in React's model, which usually corresponds to a native event but is sometimes assembled from a different one to give more useful semantics.
 
 Now the pooling history, because it is the source of outdated advice you will still encounter.
 
-In React 16 and earlier, creating a fresh `SyntheticEvent` object for every event was seen as a performance and memory concern (lots of short-lived objects and garbage collection), so React *pooled* them: it kept a pool of synthetic event objects, took one from the pool for each event, populated its properties, passed it to your handler, and then, after your handler returned, *reset all its properties to null* and returned it to the pool for reuse.
+In React 16 and earlier, creating a fresh `SyntheticEvent` object for every event was seen as a performance and memory concern (lots of short-lived objects and garbage collection), so React _pooled_ them: it kept a pool of synthetic event objects, took one from the pool for each event, populated its properties, passed it to your handler, and then, after your handler returned, _reset all its properties to null_ and returned it to the pool for reuse.
 
 The consequence was a notorious gotcha: if you tried to read the event asynchronously (in a `setTimeout`, a promise, or after an `await`), the event had already been nulled out and reused, so you saw a blank event.
 
@@ -250,13 +232,13 @@ The escape hatch was `e.persist()`, which pulled the event out of the pool so it
 
 The React team found that pooling did not actually improve performance in modern browsers (which handle short-lived objects efficiently) and that it confused developers far more than it helped.
 
-So as of React 17 and through the React 19 line, every event gets its own `SyntheticEvent` object that is *not* reused or nulled out, which means you can access the event asynchronously with no special handling:
+So as of React 17 and through the React 19 line, every event gets its own `SyntheticEvent` object that is _not_ reused or nulled out, which means you can access the event asynchronously with no special handling:
 
 ```js
 function handleClick(e) {
-  setTimeout(() => {
-    console.log(e.type);   // works fine in React 17+; would have been null with pooling
-  }, 1000);
+    setTimeout(() => {
+        console.log(e.type); // works fine in React 17+; would have been null with pooling
+    }, 1000);
 }
 ```
 
@@ -298,7 +280,7 @@ Event delegation means attaching one listener high up and using it to handle eve
 
 React does this for your entire app: it attaches a small set of listeners (roughly one per supported event type, for each of the capture and bubble phases) at a single root, and when a native event fires and reaches that root, React works out which of your components' handlers should run by consulting its internal tree.
 
-So no matter how many `onClick` props you write, the number of *real* DOM listeners stays small and constant.
+So no matter how many `onClick` props you write, the number of _real_ DOM listeners stays small and constant.
 
 This is why your nodes have no listeners: the listeners are all at the root.
 
@@ -307,12 +289,12 @@ This is why your nodes have no listeners: the listeners are all at the root.
 Start with the same pattern in plain JavaScript:
 
 ```js
-const list = document.querySelector('[data-list]');
+const list = document.querySelector("[data-list]");
 
-list.addEventListener('click', (event) => {
-  const item = event.target.closest('[data-item]');
-  if (!item || !list.contains(item)) return;
-  console.log(item.dataset.item);
+list.addEventListener("click", (event) => {
+    const item = event.target.closest("[data-item]");
+    if (!item || !list.contains(item)) return;
+    console.log(item.dataset.item);
 });
 ```
 
@@ -342,7 +324,7 @@ The mechanism, in outline (Section 5 has the full path): a native event fires on
 
 React then looks at where the event originated (the native event's `target`), finds the corresponding component in its internal tree, and dispatches the event to the appropriate handlers (Sections 5 and 6).
 
-So the *real* listener count is tiny and fixed, while the number of *logical* handlers (`onClick` props) can be enormous.
+So the _real_ listener count is tiny and fixed, while the number of _logical_ handlers (`onClick` props) can be enormous.
 
 React bridges the gap by doing the "which element was this, and which handlers care" lookup itself, rather than relying on a real listener sitting on each element.
 
@@ -356,7 +338,7 @@ And it is why adding `onClick` to a component is so cheap: you are not creating 
 
 Delegation has been part of React since its first release.
 
-What changed over time is *where* the delegated listeners are attached, which is the subject of the next section and matters more than it sounds.
+What changed over time is _where_ the delegated listeners are attached, which is the subject of the next section and matters more than it sounds.
 
 ### Try it
 
@@ -396,13 +378,13 @@ React 17 moved them down to the root container, and React 18's `createRoot` cont
 
 The move solved real problems: multiple React versions or multiple React roots on one page no longer interfere with each other, and React embedded inside a larger non-React page no longer collides with the host page's `document`-level handlers.
 
-A practical consequence: a native listener on `document` now sits *above* React's listeners, which changes ordering (Section 11).
+A practical consequence: a native listener on `document` now sits _above_ React's listeners, which changes ordering (Section 11).
 
 ### How it actually works
 
 Recall from Section 3 that React attaches a small set of delegated listeners when a root mounts.
 
-The question this section answers is *to which DOM node*, and the answer changed at React 17 in a way that is worth understanding because it explains several otherwise-confusing interactions.
+The question this section answers is _to which DOM node_, and the answer changed at React 17 in a way that is worth understanding because it explains several otherwise-confusing interactions.
 
 #### Before React 17
 
@@ -416,7 +398,7 @@ This worked, but it had problems on pages that were not a single, sole React app
 
 React attaches its delegated listeners to the **root container**, the DOM node you pass to `createRoot(container)`.
 
-So the listeners live on *your app's container element*, not on `document`.
+So the listeners live on _your app's container element_, not on `document`.
 
 Each React root attaches its own set of listeners to its own container.
 
@@ -444,9 +426,9 @@ Scoping React's listeners to its container keeps React's event handling inside R
 
 Listeners scoped to a container are scoped to that root's lifetime and footprint, which is tidier than a global pile on `document`.
 
-The practical consequence you must keep in mind (and which Section 11 develops) is about *ordering relative to native listeners*.
+The practical consequence you must keep in mind (and which Section 11 develops) is about _ordering relative to native listeners_.
 
-Because React's listeners now sit on the root container rather than `document`, a native listener you attach to `document` is now *above* React in the real DOM bubbling order: a bubbling event passes through React's root-container listener *before* it reaches `document`.
+Because React's listeners now sit on the root container rather than `document`, a native listener you attach to `document` is now _above_ React in the real DOM bubbling order: a bubbling event passes through React's root-container listener _before_ it reaches `document`.
 
 Pre-17, with React on `document`, the relationship was different.
 
@@ -454,7 +436,7 @@ So if you have native `document`-level listeners (common with third-party librar
 
 This is the kind of subtle interaction that the root-container change quietly altered, and knowing where React's listeners actually live is what lets you reason about it.
 
-A small completeness note: while the *main* delegated listeners are on the root container, React still attaches a few specific listeners at the `document` level for events that fundamentally operate at the document scope (for example, `selectionchange`, which the browser only fires on `document`).
+A small completeness note: while the _main_ delegated listeners are on the root container, React still attaches a few specific listeners at the `document` level for events that fundamentally operate at the document scope (for example, `selectionchange`, which the browser only fires on `document`).
 
 So "everything is on the root container" is the right model for the overwhelming majority of events, with a small number of inherently-document-level exceptions.
 
@@ -492,7 +474,7 @@ You want the actual step-by-step path from "user clicked" to "my function ran," 
 
 The path is: the native event fires on the target element and bubbles up the real DOM to the root container, where React's single delegated listener for that event type catches it.
 
-React reads the native event's target element, finds the corresponding *fiber* (React's internal object for that element), and walks the fiber tree from that fiber up to the root, collecting every matching handler along the way (the `onClick`s and `onClickCapture`s).
+React reads the native event's target element, finds the corresponding _fiber_ (React's internal object for that element), and walks the fiber tree from that fiber up to the root, collecting every matching handler along the way (the `onClick`s and `onClickCapture`s).
 
 It wraps the native event in a `SyntheticEvent` and calls the collected handlers in the correct order.
 
@@ -500,7 +482,7 @@ So the real listener is at the root, but React reconstructs the full path to you
 
 ### How it actually works
 
-First, the one term from the rendering guide this section needs, defined inline: a *fiber* is React's internal object for one component or DOM element in your tree.
+First, the one term from the rendering guide this section needs, defined inline: a _fiber_ is React's internal object for one component or DOM element in your tree.
 
 Each rendered element has a fiber, the fibers are linked into a tree mirroring your component structure (each fiber points to its parent, child, and siblings), and crucially, each real DOM node React creates has an internal pointer back to its fiber.
 
@@ -508,18 +490,18 @@ That last fact is what makes dispatch possible: given a DOM node, React can find
 
 Now the full path, step by step, for a click on a deeply nested button:
 
-1. **The native event fires and bubbles.** The user clicks the button. The browser creates a native `click` event at the button (the event's `target`) and bubbles it up the *real DOM* tree: button, then its DOM parent, then that parent's parent, and so on, upward.
+1. **The native event fires and bubbles.** The user clicks the button. The browser creates a native `click` event at the button (the event's `target`) and bubbles it up the _real DOM_ tree: button, then its DOM parent, then that parent's parent, and so on, upward.
 2. **It reaches the root container, where React's listener catches it.** Because React's delegated `click` listener is on the root container (Section 4), the bubbling event eventually reaches that listener, which is React's entry point into dispatch. This single listener handles clicks for the whole app (Section 3).
-3. **React finds the fiber for the target.** React's listener reads the native event's `target` (the button DOM node) and looks up that node's internal fiber pointer to get the button's fiber. Now React knows *where in its own tree* the event originated.
-4. **React walks the fiber tree to collect handlers.** Starting from the target fiber, React walks *up the fiber tree* toward the root, and at each fiber it checks whether that component has a handler for this event (an `onClick` for the bubble phase, an `onClickCapture` for the capture phase). It accumulates the handlers it finds along this path, in tree order. This is the heart of dispatch, and Section 6 details the capture-versus-bubble ordering. The key point here is that React reconstructs the propagation path by walking *its own tree*, not by relying on the native event to visit each element.
+3. **React finds the fiber for the target.** React's listener reads the native event's `target` (the button DOM node) and looks up that node's internal fiber pointer to get the button's fiber. Now React knows _where in its own tree_ the event originated.
+4. **React walks the fiber tree to collect handlers.** Starting from the target fiber, React walks _up the fiber tree_ toward the root, and at each fiber it checks whether that component has a handler for this event (an `onClick` for the bubble phase, an `onClickCapture` for the capture phase). It accumulates the handlers it finds along this path, in tree order. This is the heart of dispatch, and Section 6 details the capture-versus-bubble ordering. The key point here is that React reconstructs the propagation path by walking _its own tree_, not by relying on the native event to visit each element.
 5. **React builds a `SyntheticEvent` and calls the handlers.** React wraps the native event in a `SyntheticEvent` (Section 2) and invokes the collected handlers in the correct order (capture handlers first, root-to-target, then bubble handlers, target-to-root, Section 6), passing each the synthetic event. Your `handleClick` is one of these, and now it runs.
 6. **Resulting updates are prioritized and batched.** If your handler calls `setState`, the resulting update is tagged with the event's priority (Section 8) and batched with any other updates from the same event (Section 9), then handed to React's scheduler to render.
 
-The thing to take away is the inversion between where the *listener* is and where the *handlers conceptually are*.
+The thing to take away is the inversion between where the _listener_ is and where the _handlers conceptually are_.
 
 The real DOM listener is a single one at the root.
 
-But React makes it *behave* as if every element along the path had its own listener, by walking the fiber tree from the target up to the root and gathering the handlers itself.
+But React makes it _behave_ as if every element along the path had its own listener, by walking the fiber tree from the target up to the root and gathering the handlers itself.
 
 So `onClick` on a deep button works exactly as if the button had a real click listener, even though it does not, because React reconstructs the path and finds the handler by tree traversal.
 
@@ -527,7 +509,7 @@ Every behavior in the rest of the guide is a consequence of this reconstruction:
 
 `stopPropagation` (Section 7) is React stopping its own walk.
 
-Portal behavior (Section 10) is the walk following the *fiber* tree even when the DOM tree diverges.
+Portal behavior (Section 10) is the walk following the _fiber_ tree even when the DOM tree diverges.
 
 ### Try it
 
@@ -559,7 +541,7 @@ The answer is that React replays propagation over its own tree.
 
 The DOM propagates an event in two phases: capture (from the root down to the target) and bubble (from the target back up to the root).
 
-React reproduces both, but by walking its *fiber* tree rather than relying on the DOM.
+React reproduces both, but by walking its _fiber_ tree rather than relying on the DOM.
 
 When dispatching, React collects the handlers along the path from the target fiber to the root, then fires the capture-phase handlers (`onClickCapture`) in root-to-target order and the bubble-phase handlers (`onClick`) in target-to-root order.
 
@@ -571,17 +553,26 @@ This component makes the two orders visible in the console:
 
 ```jsx
 function PropagationDemo() {
-  const log = (label) => () => console.log(label);
+    const log = (label) => () => console.log(label);
 
-  return (
-    <div onClickCapture={log('outer capture')} onClick={log('outer bubble')}>
-      <section onClickCapture={log('inner capture')} onClick={log('inner bubble')}>
-        <button onClickCapture={log('button capture')} onClick={log('button bubble')}>
-          Click me
-        </button>
-      </section>
-    </div>
-  );
+    return (
+        <div
+            onClickCapture={log("outer capture")}
+            onClick={log("outer bubble")}
+        >
+            <section
+                onClickCapture={log("inner capture")}
+                onClick={log("inner bubble")}
+            >
+                <button
+                    onClickCapture={log("button capture")}
+                    onClick={log("button bubble")}
+                >
+                    Click me
+                </button>
+            </section>
+        </div>
+    );
 }
 ```
 
@@ -589,9 +580,9 @@ Start with the native model, because React mirrors it.
 
 When a native event fires, the browser propagates it in two phases.
 
-First the *capture* phase: the event travels from the top of the DOM (the window/document) down through each ancestor to the target.
+First the _capture_ phase: the event travels from the top of the DOM (the window/document) down through each ancestor to the target.
 
-Then the *bubble* phase: the event travels from the target back up through each ancestor to the top.
+Then the _bubble_ phase: the event travels from the target back up through each ancestor to the top.
 
 Listeners can register for either phase (the third argument to `addEventListener`).
 
@@ -605,32 +596,32 @@ But here is the internals point: React is not attaching real listeners to each o
 
 The real listeners are at the root container (Section 4).
 
-So React cannot rely on the *DOM* visiting each of your elements in capture and bubble order.
+So React cannot rely on the _DOM_ visiting each of your elements in capture and bubble order.
 
-Instead, React *reconstructs* both phases by walking its own fiber tree during dispatch (Section 5, step 4), and then firing the collected handlers in the right order:
+Instead, React _reconstructs_ both phases by walking its own fiber tree during dispatch (Section 5, step 4), and then firing the collected handlers in the right order:
 
 1. React finds the target fiber (from the native event's target DOM node, Section 5).
-2. It walks from the target fiber *up* to the root, building the list of fibers on that path (target, parent, grandparent, up to root). This is the propagation path, taken from the *fiber* tree.
-3. For the **capture** phase, it fires the `onClickCapture` handlers along that path in *root-to-target* order (top down), matching the DOM capture phase.
-4. For the **bubble** phase, it fires the `onClick` handlers along that path in *target-to-root* order (bottom up), matching the DOM bubble phase.
+2. It walks from the target fiber _up_ to the root, building the list of fibers on that path (target, parent, grandparent, up to root). This is the propagation path, taken from the _fiber_ tree.
+3. For the **capture** phase, it fires the `onClickCapture` handlers along that path in _root-to-target_ order (top down), matching the DOM capture phase.
+4. For the **bubble** phase, it fires the `onClick` handlers along that path in _target-to-root_ order (bottom up), matching the DOM bubble phase.
 
 So a click on a nested button fires: the capture handlers from the outermost ancestor down to the button, then the bubble handlers from the button up to the outermost ancestor.
 
 This is exactly the order the DOM would produce, but React produces it by walking its own tree and firing the handlers it collected, not by letting the DOM dispatch to per-element listeners.
 
-(As a registration detail, React 17 also made the capture-phase listeners use the browser's *real* capture phase at the root, so React's internal capture ordering lines up correctly with any native capture listeners, and the changelog notes "Make all Capture events use the browser capture phase.")
+(As a registration detail, React 17 also made the capture-phase listeners use the browser's _real_ capture phase at the root, so React's internal capture ordering lines up correctly with any native capture listeners, and the changelog notes "Make all Capture events use the browser capture phase.")
 
-The consequence that matters most is in step 2: **the path is taken from the fiber tree, not the DOM tree.** React walks parent pointers in *its* tree, which represents the component hierarchy you wrote in JSX.
+The consequence that matters most is in step 2: **the path is taken from the fiber tree, not the DOM tree.** React walks parent pointers in _its_ tree, which represents the component hierarchy you wrote in JSX.
 
 In the common case, the fiber tree and the DOM tree have the same shape, so React's propagation matches the DOM's, and everything is unsurprising.
 
 But they are not the same tree, and the place they diverge is portals (Section 10): a portal renders a component's DOM into a different part of the real DOM, while keeping the component in the React tree where you wrote it.
 
-Because React walks the *fiber* tree to propagate events, an event inside a portal propagates to the portal's *React* ancestors (where you wrote the portal in JSX), not to its DOM ancestors (where the DOM node actually lives).
+Because React walks the _fiber_ tree to propagate events, an event inside a portal propagates to the portal's _React_ ancestors (where you wrote the portal in JSX), not to its DOM ancestors (where the DOM node actually lives).
 
 That behavior, which surprises almost everyone the first time, is nothing more than this section's mechanism applied to a case where the two trees differ: React propagation follows fibers.
 
-In day-to-day code you mostly use the bubble phase (`onClick`, `onChange`), and the capture variants (`onClickCapture`) are for the occasional case where you need to handle an event on the way *down* before descendants see it (for example, an ancestor that wants to intercept clicks before its children's handlers run).
+In day-to-day code you mostly use the bubble phase (`onClick`, `onChange`), and the capture variants (`onClickCapture`) are for the occasional case where you need to handle an event on the way _down_ before descendants see it (for example, an ancestor that wants to intercept clicks before its children's handlers run).
 
 Knowing both phases exist, and that React reproduces them by walking the fiber tree, is what lets you reason about ordering precisely instead of by trial and error.
 
@@ -654,7 +645,7 @@ Outside React: what native `stopPropagation` (stop the event traveling to furthe
 
 You call `e.stopPropagation()` in a handler expecting the event to stop, and within your React components it does.
 
-But mix in a native listener (on `document`, or attached directly to a node) and `stopPropagation` does not stop *that*, or a native listener's `stopPropagation` makes your React handler never fire.
+But mix in a native listener (on `document`, or attached directly to a node) and `stopPropagation` does not stop _that_, or a native listener's `stopPropagation` makes your React handler never fire.
 
 The synthetic and native worlds handle propagation separately, and the seams are where bugs live.
 
@@ -664,13 +655,13 @@ The synthetic and native worlds handle propagation separately, and the seams are
 
 React forwards it to the native event.
 
-`stopPropagation()` on a synthetic event stops *React's* propagation: it halts React's walk of the fiber tree, so handlers on React ancestors do not fire.
+`stopPropagation()` on a synthetic event stops _React's_ propagation: it halts React's walk of the fiber tree, so handlers on React ancestors do not fire.
 
 But it does this within React's own dispatch.
 
-It does not necessarily stop *native* listeners, because by the time React dispatches, the native event has already bubbled to the root container where React caught it.
+It does not necessarily stop _native_ listeners, because by the time React dispatches, the native event has already bubbled to the root container where React caught it.
 
-So `stopPropagation` is reliable *between React handlers* but does not cleanly cross the boundary to native listeners, which is the source of the classic mixing bugs.
+So `stopPropagation` is reliable _between React handlers_ but does not cleanly cross the boundary to native listeners, which is the source of the classic mixing bugs.
 
 ### How it actually works
 
@@ -682,7 +673,7 @@ Calling `e.preventDefault()` cancels that default.
 
 On a synthetic event, React forwards this to the underlying native event (`e.nativeEvent.preventDefault()`), so it behaves exactly like native `preventDefault`.
 
-There is one wrinkle involving passive listeners (Section 12): if the underlying native listener is *passive*, the browser ignores `preventDefault`, which can matter for `wheel`/`touch` events.
+There is one wrinkle involving passive listeners (Section 12): if the underlying native listener is _passive_, the browser ignores `preventDefault`, which can matter for `wheel`/`touch` events.
 
 Otherwise `preventDefault` works as you expect.
 
@@ -694,21 +685,21 @@ Native `stopPropagation` stops the event from continuing to the next element in 
 
 But React is not propagating through the DOM to reach your handlers.
 
-It has already caught the event at the root container and is now firing handlers it collected by walking the *fiber* tree (Section 6).
+It has already caught the event at the root container and is now firing handlers it collected by walking the _fiber_ tree (Section 6).
 
-So when you call `e.stopPropagation()` in a React handler, what it stops is *React's walk*: React stops firing the remaining handlers it collected along the fiber path.
+So when you call `e.stopPropagation()` in a React handler, what it stops is _React's walk_: React stops firing the remaining handlers it collected along the fiber path.
 
 Concretely, if you `stopPropagation` in a child's `onClick`, the `onClick` handlers on its React ancestors do not fire, because React halts its bubble walk.
 
-So *between React handlers*, `stopPropagation` behaves exactly as you would expect: it prevents ancestor React handlers from running.
+So _between React handlers_, `stopPropagation` behaves exactly as you would expect: it prevents ancestor React handlers from running.
 
 The complication is the boundary with native listeners, and it has two directions:
 
 #### React's `stopPropagation` does not stop native listeners above the root
 
-By the time React is firing your handlers, the native event has *already* bubbled up the real DOM to the root container (that is how React caught it, Section 5).
+By the time React is firing your handlers, the native event has _already_ bubbled up the real DOM to the root container (that is how React caught it, Section 5).
 
-So a native listener attached *above* React's root container, most commonly on `document` (which is above the container since React 17, Section 4), has either already fired during the bubble up to the container, or will fire as the event continues bubbling past the container, regardless of your React `stopPropagation`.
+So a native listener attached _above_ React's root container, most commonly on `document` (which is above the container since React 17, Section 4), has either already fired during the bubble up to the container, or will fire as the event continues bubbling past the container, regardless of your React `stopPropagation`.
 
 React stopping its own internal walk does nothing to a native `document` listener, because that listener is part of the native propagation that React does not control from inside its dispatch.
 
@@ -718,11 +709,11 @@ So "I called `stopPropagation` but my outside-click handler on `document` still 
 
 The reverse is sharper.
 
-If you attach a native listener to a child node (via `addEventListener` in a ref, Section 11) and call `stopPropagation` there, you stop the *native* event from bubbling further up the real DOM.
+If you attach a native listener to a child node (via `addEventListener` in a ref, Section 11) and call `stopPropagation` there, you stop the _native_ event from bubbling further up the real DOM.
 
 But React's listener is up at the root container, which the native event must reach for React to dispatch at all.
 
-So a native `stopPropagation` on a child *prevents the event from ever reaching React's root listener*, which means React never dispatches it, which means your React `onClick` handlers (on that element and its ancestors) *never fire*.
+So a native `stopPropagation` on a child _prevents the event from ever reaching React's root listener_, which means React never dispatches it, which means your React `onClick` handlers (on that element and its ancestors) _never fire_.
 
 A native listener can silently swallow React events this way, and it is a genuinely confusing bug if you do not know that React's dispatch depends on the event reaching the root.
 
@@ -732,7 +723,7 @@ Inside a React handler, it stops React's walk (ancestor React handlers do not fi
 
 Inside a native listener, it stops native bubbling, which can starve React's root listener and kill React dispatch.
 
-So `stopPropagation` is clean and predictable *within* React, and requires care *across* the React-native boundary.
+So `stopPropagation` is clean and predictable _within_ React, and requires care _across_ the React-native boundary.
 
 When you find `stopPropagation` "not working," the question is always: which system is the handler in, and which system is the listener you expected to stop in?
 
@@ -740,7 +731,7 @@ They are usually different systems, which is the bug.
 
 ### Try it
 
-> Put an `onClick` with `e.stopPropagation()` on a child inside a parent with its own `onClick`, and confirm the parent's React handler does not fire (React-to-React works). Now add `document.addEventListener('click', ...)` and confirm it *still* fires despite the child's `stopPropagation` (React cannot stop the native document listener). Finally, attach a native listener to the child with `addEventListener` and call `stopPropagation` there, and watch your React `onClick` handlers stop firing entirely, because the event never reaches React's root.
+> Put an `onClick` with `e.stopPropagation()` on a child inside a parent with its own `onClick`, and confirm the parent's React handler does not fire (React-to-React works). Now add `document.addEventListener('click', ...)` and confirm it _still_ fires despite the child's `stopPropagation` (React cannot stop the native document listener). Finally, attach a native listener to the child with `addEventListener` and call `stopPropagation` there, and watch your React `onClick` handlers stop firing entirely, because the event never reaches React's root.
 
 ### You've got this if
 
@@ -760,7 +751,7 @@ Outside React: that some events fire rarely and deliberately (click) while other
 
 A click feels instant, but a component that does heavy work on every `mousemove` can lag without freezing the click.
 
-React seems to treat some events as more urgent than others, and it does: the event system is where each event's *priority* is decided, and that priority flows into React's scheduler.
+React seems to treat some events as more urgent than others, and it does: the event system is where each event's _priority_ is decided, and that priority flows into React's scheduler.
 
 This is one of the most important and least-known parts of the system.
 
@@ -778,7 +769,7 @@ The event system is where update priority originates.
 
 ### How it actually works
 
-The one concept from the rendering guide this section needs, recapped: React assigns every update to a *lane*, where lanes are priority levels.
+The one concept from the rendering guide this section needs, recapped: React assigns every update to a _lane_, where lanes are priority levels.
 
 Higher-priority lanes are processed more urgently.
 
@@ -786,7 +777,7 @@ Lower-priority lanes can be deferred, interrupted, or coalesced under concurrent
 
 The lanes mechanism is how React decides what to render first and what can wait.
 
-The question this section answers is: where does an update's priority *come from*?
+The question this section answers is: where does an update's priority _come from_?
 
 For updates triggered by user interaction, the answer is the event system.
 
@@ -808,7 +799,7 @@ These fire in rapid streams as a side effect of continuous motion: `mousemove`, 
 
 They can fire dozens of times per second, and the user is not waiting for each individual one.
 
-They care about the *overall* responsiveness of the motion.
+They care about the _overall_ responsiveness of the motion.
 
 So React gives these updates a lower priority, which lets it coalesce a burst of them and avoid blocking more urgent work.
 
@@ -826,17 +817,17 @@ A `setState` in an `onMouseMove` produces a lower-priority (continuous) update.
 
 React did not have to be told, it inferred the urgency from the event that triggered the update.
 
-This is the bridge between the event system and the rendering engine: the event system is the *source* of priority for interaction-driven updates, and the lanes and scheduler from the rendering guide are what *act* on that priority.
+This is the bridge between the event system and the rendering engine: the event system is the _source_ of priority for interaction-driven updates, and the lanes and scheduler from the rendering guide are what _act_ on that priority.
 
 This is also the mechanistic underpinning of the concurrency features from the Hooks and rendering guides.
 
-`useTransition` lets you *lower* an update's priority below the discrete level even inside a discrete event handler (marking it a non-urgent transition), precisely because the default for a discrete event is high, and sometimes you want the expensive part of a click's work to be interruptible.
+`useTransition` lets you _lower_ an update's priority below the discrete level even inside a discrete event handler (marking it a non-urgent transition), precisely because the default for a discrete event is high, and sometimes you want the expensive part of a click's work to be interruptible.
 
-So the priority the event assigns is the *default*, and transitions are how you deliberately override it downward.
+So the priority the event assigns is the _default_, and transitions are how you deliberately override it downward.
 
 Understanding that the event system sets a default priority based on event type makes the concurrency features legible: they are adjustments to a priority that the event already established.
 
-So the event system is doing more than routing: it is the entry point where a user interaction becomes a *prioritized* React update, and that priority is what lets React keep clicks instant while letting mouse-move-driven work yield.
+So the event system is doing more than routing: it is the entry point where a user interaction becomes a _prioritized_ React update, and that priority is what lets React keep clicks instant while letting mouse-move-driven work yield.
 
 The next section adds the other half of what the event system does to your updates: batching.
 
@@ -870,7 +861,7 @@ It happens in the event dispatch: the event handler is the boundary React batche
 
 Event handlers are the canonical place `setState` is called, and the event dispatch is where React batches the resulting updates.
 
-When your handler runs, React is inside a batching context: every `setState` you call enqueues an update (the update queue from the Hooks guide) rather than rendering immediately, and when your handler (and the other handlers for that event) finish, React flushes all the enqueued updates as *one* render, at the event's priority (Section 8).
+When your handler runs, React is inside a batching context: every `setState` you call enqueues an update (the update queue from the Hooks guide) rather than rendering immediately, and when your handler (and the other handlers for that event) finish, React flushes all the enqueued updates as _one_ render, at the event's priority (Section 8).
 
 So three `setState` calls in one click produce one render.
 
@@ -882,16 +873,16 @@ Here is the smallest batching experiment:
 
 ```jsx
 function BatchedCounter() {
-  const [count, setCount] = useState(0);
-  console.count('render');
+    const [count, setCount] = useState(0);
+    console.count("render");
 
-  function handleClick() {
-    setCount((value) => value + 1);
-    setCount((value) => value + 1);
-    setCount((value) => value + 1);
-  }
+    function handleClick() {
+        setCount((value) => value + 1);
+        setCount((value) => value + 1);
+        setCount((value) => value + 1);
+    }
 
-  return <button onClick={handleClick}>{count}</button>;
+    return <button onClick={handleClick}>{count}</button>;
 }
 ```
 
@@ -899,19 +890,19 @@ Recall two things from the Hooks guide, recapped here.
 
 First, `setState` does not render immediately.
 
-It *enqueues* an update on the component's update queue and asks React to schedule a render.
+It _enqueues_ an update on the component's update queue and asks React to schedule a render.
 
-Second, React *batches*: multiple updates scheduled together are folded into a single render rather than rendering once per `setState`.
+Second, React _batches_: multiple updates scheduled together are folded into a single render rather than rendering once per `setState`.
 
 This section is about where, in the event flow, that batching boundary sits, because the event handler is the original and clearest example of it.
 
-When React dispatches an event (Section 5) and calls your handler(s), it does so inside a *batching context*.
+When React dispatches an event (Section 5) and calls your handler(s), it does so inside a _batching context_.
 
 The sequence is:
 
 1. React begins dispatching the event and enters a batched context.
-2. It calls the collected handlers (Section 6). Inside them, you call `setState` as many times as you like. Each call enqueues an update on the relevant component's queue and marks that work is pending, but does *not* trigger a render yet, because React is batching.
-3. When all the handlers for this event have finished, React *flushes*: it processes the enqueued updates and performs a single render that reflects all of them, at the priority the event established (Section 8).
+2. It calls the collected handlers (Section 6). Inside them, you call `setState` as many times as you like. Each call enqueues an update on the relevant component's queue and marks that work is pending, but does _not_ trigger a render yet, because React is batching.
+3. When all the handlers for this event have finished, React _flushes_: it processes the enqueued updates and performs a single render that reflects all of them, at the priority the event established (Section 8).
 
 So three `setState` calls in one `onClick` enqueue three updates and then flush together as one render.
 
@@ -921,9 +912,9 @@ The event handler is the batching boundary: everything you do synchronously insi
 
 This connects the entire event system to the rendering engine, completing the picture.
 
-An event arrives, React dispatches it (Sections 5 and 6), your handler runs and calls `setState`, those updates are tagged with the event's priority (Section 8) and *batched* (this section), and then React's scheduler renders once at that priority, running the render and commit phases from the rendering guide.
+An event arrives, React dispatches it (Sections 5 and 6), your handler runs and calls `setState`, those updates are tagged with the event's priority (Section 8) and _batched_ (this section), and then React's scheduler renders once at that priority, running the render and commit phases from the rendering guide.
 
-So the event system is the *front door* to React's update pipeline: it is where a user interaction becomes one or more prioritized, batched updates that flow into the scheduler.
+So the event system is the _front door_ to React's update pipeline: it is where a user interaction becomes one or more prioritized, batched updates that flow into the scheduler.
 
 Without the event system, a `setState` would have no event-derived priority and no natural batching boundary.
 
@@ -931,11 +922,11 @@ With it, every interaction produces a clean, single, appropriately-urgent render
 
 A note on the history, because it explains advice you may have seen.
 
-Before React 18, this automatic batching happened *only* inside React event handlers.
+Before React 18, this automatic batching happened _only_ inside React event handlers.
 
-If you called `setState` multiple times inside a promise callback, a `setTimeout`, or a native event handler, React did *not* batch them, and you got multiple renders.
+If you called `setState` multiple times inside a promise callback, a `setTimeout`, or a native event handler, React did _not_ batch them, and you got multiple renders.
 
-React 18 introduced *automatic batching everywhere*: now updates are batched regardless of where they originate (promises, timeouts, native handlers, as well as React event handlers).
+React 18 introduced _automatic batching everywhere_: now updates are batched regardless of where they originate (promises, timeouts, native handlers, as well as React event handlers).
 
 So the special status of the React event handler as "the place batching happens" is now less special.
 
@@ -967,7 +958,7 @@ Outside React: `createPortal`, and that a portal renders DOM into a different pa
 
 You render a modal with `createPortal` so its DOM lands at the end of `document.body`, escaping a parent's `overflow: hidden`.
 
-Then a click inside the modal triggers an `onClick` on the component that *rendered* the portal, even though, in the real DOM, the modal is nowhere near that component.
+Then a click inside the modal triggers an `onClick` on the component that _rendered_ the portal, even though, in the real DOM, the modal is nowhere near that component.
 
 It looks like the event teleported.
 
@@ -979,29 +970,29 @@ It followed the React tree, exactly as Section 6 said.
 
 A portal renders a component's DOM into a different location in the real DOM, while keeping the component in the React tree where you wrote it.
 
-Because React propagates events by walking the *fiber* tree (Section 6), not the DOM tree, an event inside a portal bubbles to the portal's *React* ancestors (the component that rendered the portal and its parents), not to the portal's *DOM* ancestors (wherever the portal node actually sits).
+Because React propagates events by walking the _fiber_ tree (Section 6), not the DOM tree, an event inside a portal bubbles to the portal's _React_ ancestors (the component that rendered the portal and its parents), not to the portal's _DOM_ ancestors (wherever the portal node actually sits).
 
 This is the cleanest demonstration of fiber-tree dispatch: the DOM and React trees diverge, and events follow React's.
 
 ### How it actually works
 
-A portal (created with `createPortal(children, domNode)`) is React's mechanism for rendering a component's DOM output into a *different* part of the real DOM than where the component sits in the tree.
+A portal (created with `createPortal(children, domNode)`) is React's mechanism for rendering a component's DOM output into a _different_ part of the real DOM than where the component sits in the tree.
 
 The classic use is a modal, tooltip, or dropdown that must visually escape a parent's clipping (`overflow: hidden`) or stacking context: you render it via a portal into `document.body` so its DOM is a top-level element, even though you wrote the modal component deep inside some other component.
 
-The crucial property of a portal is the split it creates: the portal's DOM lives where you sent it (say, the end of `body`), but the portal's *component* stays in the React tree exactly where you wrote it (inside, say, your `Sidebar`).
+The crucial property of a portal is the split it creates: the portal's DOM lives where you sent it (say, the end of `body`), but the portal's _component_ stays in the React tree exactly where you wrote it (inside, say, your `Sidebar`).
 
 The fiber tree and the DOM tree now disagree about where the modal is.
 
-Section 6 established that React propagates events by walking the *fiber* tree.
+Section 6 established that React propagates events by walking the _fiber_ tree.
 
 Apply that to a portal and the behavior follows immediately.
 
 When the user clicks something inside the portaled modal:
 
-1. The native click fires on the modal's DOM node and bubbles up the *real DOM*, which means it bubbles through the modal's DOM ancestors (`body` and up), since that is where the modal's DOM actually lives. It still reaches React's root container listener (Section 5), because the container is an ancestor in the DOM.
-2. React finds the target fiber (the clicked element's fiber) and walks *up the fiber tree* to collect handlers (Section 6). But in the fiber tree, the modal's parent is the component that *rendered the portal* (the `Sidebar`), not `body`. So React's walk goes from the clicked element, up through the modal's React ancestors, *through the component that rendered the portal*, and up to the root.
-3. React fires the collected handlers along *that* path. So an `onClick` on the `Sidebar` (or any React ancestor of the portal) *does* fire, even though the modal's DOM is not inside the `Sidebar`'s DOM at all.
+1. The native click fires on the modal's DOM node and bubbles up the _real DOM_, which means it bubbles through the modal's DOM ancestors (`body` and up), since that is where the modal's DOM actually lives. It still reaches React's root container listener (Section 5), because the container is an ancestor in the DOM.
+2. React finds the target fiber (the clicked element's fiber) and walks _up the fiber tree_ to collect handlers (Section 6). But in the fiber tree, the modal's parent is the component that _rendered the portal_ (the `Sidebar`), not `body`. So React's walk goes from the clicked element, up through the modal's React ancestors, _through the component that rendered the portal_, and up to the root.
+3. React fires the collected handlers along _that_ path. So an `onClick` on the `Sidebar` (or any React ancestor of the portal) _does_ fire, even though the modal's DOM is not inside the `Sidebar`'s DOM at all.
 
 So the event "bubbles" to the portal's React parent, which is exactly what you would expect if you think in terms of the component tree you wrote, and exactly what surprises you if you think in terms of the DOM.
 
@@ -1014,7 +1005,7 @@ This is the single most illustrative consequence of fiber-tree dispatch, and onc
 The practical implications are worth spelling out, because they cut both ways:
 
 - **React handlers on ancestors catch portal events.** If you have an `onClick` on a container that conceptually owns the modal, it will fire for clicks inside the portaled modal, which is often what you want (the modal is logically part of that subtree). Event delegation patterns that rely on a React ancestor handler keep working across the portal.
-- **Native DOM listeners follow the DOM, not React.** A native listener attached to the modal's actual DOM parent (`body`, say) sees the click via *real* DOM bubbling, on the DOM path. And a native listener on the React ancestor's DOM node does *not* see it, because the modal's DOM is not inside that node. So if you mix portals with native listeners (Section 11), the two systems disagree about the path, which is a source of subtle bugs (the classic one: an outside-click handler attached natively to a wrapper does not detect clicks inside a portaled child, because the portal's DOM is outside the wrapper, even though React considers it inside).
+- **Native DOM listeners follow the DOM, not React.** A native listener attached to the modal's actual DOM parent (`body`, say) sees the click via _real_ DOM bubbling, on the DOM path. And a native listener on the React ancestor's DOM node does _not_ see it, because the modal's DOM is not inside that node. So if you mix portals with native listeners (Section 11), the two systems disagree about the path, which is a source of subtle bugs (the classic one: an outside-click handler attached natively to a wrapper does not detect clicks inside a portaled child, because the portal's DOM is outside the wrapper, even though React considers it inside).
 - **`stopPropagation` in the modal stops the React walk to the React ancestors** (Section 7), which can be exactly how you prevent a portal's click from triggering an ancestor handler.
 
 So portals are not a special case in the event system.
@@ -1029,7 +1020,7 @@ Hold "React propagation follows the component tree you wrote" and portal event b
 
 ### Try it
 
-> Render a modal via `createPortal` into `document.body`, with the portal written inside a wrapper component that has an `onClick` logging "wrapper clicked." Click inside the modal and watch "wrapper clicked" fire, even though the modal's DOM is at the end of `body`, far from the wrapper. Then attach a native `addEventListener` to the wrapper's DOM node and confirm it does *not* fire for the modal click (the DOM path does not include the wrapper). The divergence between the two is fiber-tree dispatch made visible.
+> Render a modal via `createPortal` into `document.body`, with the portal written inside a wrapper component that has an `onClick` logging "wrapper clicked." Click inside the modal and watch "wrapper clicked" fire, even though the modal's DOM is at the end of `body`, far from the wrapper. Then attach a native `addEventListener` to the wrapper's DOM node and confirm it does _not_ fire for the modal click (the DOM path does not include the wrapper). The divergence between the two is fiber-tree dispatch made visible.
 
 ### You've got this if
 
@@ -1045,15 +1036,15 @@ Outside React: `addEventListener` in a ref or effect, and the order native liste
 
 ### The itch
 
-You add a native `addEventListener` (in a ref or effect) alongside React's `onClick`, and the firing order is not what you expect: the native listener on a child runs *before* React's handler, or a native listener seems to run "too early." Mixing the two systems has ordering rules that follow directly from where React's listeners live.
+You add a native `addEventListener` (in a ref or effect) alongside React's `onClick`, and the firing order is not what you expect: the native listener on a child runs _before_ React's handler, or a native listener seems to run "too early." Mixing the two systems has ordering rules that follow directly from where React's listeners live.
 
 ### The short version
 
 React's delegated listeners live at the root container (Section 4), while a native listener you attach with `addEventListener` lives on the actual node.
 
-So a native listener on a child node fires when the event passes *that node* during native propagation, which is *before* the event reaches React's root container and React dispatches.
+So a native listener on a child node fires when the event passes _that node_ during native propagation, which is _before_ the event reaches React's root container and React dispatches.
 
-The result inverts the common intuition: a native bubble listener on a child runs *before* React's `onClick`, not after.
+The result inverts the common intuition: a native bubble listener on a child runs _before_ React's `onClick`, not after.
 
 And a native `stopPropagation` on a child can prevent the event from reaching React's root at all, so React never fires (Section 7).
 
@@ -1061,22 +1052,22 @@ When you must use native listeners, reason about ordering from "React is at the 
 
 ### How it actually works
 
-Sometimes you must drop to native listeners: for *passive* event listeners (Section 12, for scroll/touch performance, which React does not expose a simple option for), for listeners on `window` or `document` (global keyboard shortcuts, outside-click detection), for non-React-managed DOM (a third-party widget), or to interoperate with libraries.
+Sometimes you must drop to native listeners: for _passive_ event listeners (Section 12, for scroll/touch performance, which React does not expose a simple option for), for listeners on `window` or `document` (global keyboard shortcuts, outside-click detection), for non-React-managed DOM (a third-party widget), or to interoperate with libraries.
 
 You attach these the normal way, usually in an effect with a ref:
 
 ```js
 useEffect(() => {
-  const node = ref.current;
-  const onNativeClick = (e) => console.log('native listener on the node');
-  node.addEventListener('click', onNativeClick);
-  return () => node.removeEventListener('click', onNativeClick);
+    const node = ref.current;
+    const onNativeClick = (e) => console.log("native listener on the node");
+    node.addEventListener("click", onNativeClick);
+    return () => node.removeEventListener("click", onNativeClick);
 }, []);
 ```
 
 The moment you do this, you have two event systems handling the same click: the native one (your listener, on the actual node) and React's (your `onClick`, dispatched from the root container).
 
-Their *ordering* relative to each other follows entirely from *where each listener sits*, which Sections 4 and 5 already established.
+Their _ordering_ relative to each other follows entirely from _where each listener sits_, which Sections 4 and 5 already established.
 
 The key fact: **React's listener is at the root container.
 
@@ -1085,7 +1076,7 @@ Your native listener is at the node.** Consider a native bubble listener on a ch
 When the user clicks:
 
 1. The native event fires at the target and bubbles up the real DOM.
-2. As it passes through the child node (early in the bubble, near the bottom), the browser runs *your native bubble listener on that node*. This happens while the event is still low in the DOM, far from the root.
+2. As it passes through the child node (early in the bubble, near the bottom), the browser runs _your native bubble listener on that node_. This happens while the event is still low in the DOM, far from the root.
 3. The event continues bubbling up to the root container, where React's delegated listener finally catches it and React dispatches to your `onClick` (Section 5).
 
 So the native listener on the child fires in step 2, and React's handler fires in step 3, which means **the native listener runs before React's `onClick`**, even though both are "on" the same element conceptually.
@@ -1098,13 +1089,13 @@ This also explains the swallowing behavior from Section 7 in ordering terms.
 
 If your native child listener calls `e.stopPropagation()`, it stops the native event from bubbling further up the real DOM.
 
-But React's listener is *up at the root*, which the event must reach for React to dispatch.
+But React's listener is _up at the root_, which the event must reach for React to dispatch.
 
-So the native `stopPropagation` prevents the event from ever reaching React's root listener, and React's `onClick` *never fires*.
+So the native `stopPropagation` prevents the event from ever reaching React's root listener, and React's `onClick` _never fires_.
 
 A native listener can not only run before React's handler but can prevent it entirely, by stopping the bubbling that React depends on.
 
-And the reverse boundary from Section 7: React's `stopPropagation` (inside an `onClick`) stops React's own fiber-walk but does nothing to a native listener on `document`, because `document` is *above* the root container (Section 4) and the event reaches it through native bubbling that React does not control.
+And the reverse boundary from Section 7: React's `stopPropagation` (inside an `onClick`) stops React's own fiber-walk but does nothing to a native listener on `document`, because `document` is _above_ the root container (Section 4) and the event reaches it through native bubbling that React does not control.
 
 So a native `document` listener fires regardless of React's `stopPropagation`.
 
@@ -1114,7 +1105,7 @@ The practical guidance: when you mix native listeners with React handlers, decid
 
 React handlers effectively run "at the root container" in bubble order.
 
-Native listeners run "at their node." If you need a native listener to run *after* React's logic, that is awkward with this geometry and usually a sign to restructure (do the work in the React handler instead).
+Native listeners run "at their node." If you need a native listener to run _after_ React's logic, that is awkward with this geometry and usually a sign to restructure (do the work in the React handler instead).
 
 Prefer React's event system for anything React manages, and reserve native listeners for the cases that genuinely require them (passive listeners, `window`/`document` scope, non-React nodes), accepting that those will interleave with React according to the root-versus-node positions.
 
@@ -1122,7 +1113,7 @@ Reason from geometry, not from order-written, and the surprises disappear.
 
 ### Try it
 
-> On one element, put a React `onClick` and, via a ref and effect, a native `addEventListener('click', ...)`. Click it and observe the native listener logs *before* the React handler (native at the node, React at the root). Then add `e.stopPropagation()` to the native listener and watch the React `onClick` stop firing entirely (the event never reaches React's root). Both results follow from where each listener lives.
+> On one element, put a React `onClick` and, via a ref and effect, a native `addEventListener('click', ...)`. Click it and observe the native listener logs _before_ the React handler (native at the node, React at the root). Then add `e.stopPropagation()` to the native listener and watch the React `onClick` stop firing entirely (the event never reaches React's root). Both results follow from where each listener lives.
 
 ### You've got this if
 
@@ -1138,7 +1129,7 @@ Outside React: native event names (`input` vs `change`, `focus` vs `focusin`, `m
 
 ### The itch
 
-A handful of React event behaviors seem arbitrary until you know the mechanism: `onChange` fires on every keystroke, `onScroll` does not bubble, `onFocus` *does* bubble (unlike native focus), and `preventDefault` sometimes silently fails on wheel or touch.
+A handful of React event behaviors seem arbitrary until you know the mechanism: `onChange` fires on every keystroke, `onScroll` does not bubble, `onFocus` _does_ bubble (unlike native focus), and `preventDefault` sometimes silently fails on wheel or touch.
 
 Each one is a deliberate choice with a mechanical reason.
 
@@ -1148,7 +1139,7 @@ Several React events differ from their naive native counterparts for good reason
 
 `onScroll` does not bubble (matching the browser and avoiding distant-ancestor confusion).
 
-`onFocus`/`onBlur` are built on `focusin`/`focusout` so they *do* bubble (unlike native `focus`/`blur`).
+`onFocus`/`onBlur` are built on `focusin`/`focusout` so they _do_ bubble (unlike native `focus`/`blur`).
 
 `onMouseEnter`/`onMouseLeave` are synthesized to not bubble (over the bubbling `mouseover`/`mouseout`), and `preventDefault` can be ignored for passive listeners (wheel/touch).
 
@@ -1156,15 +1147,15 @@ Each is the event system giving you more useful semantics than the raw native ev
 
 ### How it actually works
 
-Each of these is a case where React's *logical* event (Section 2) deliberately differs from the naive native event, and the difference is a feature once you see why.
+Each of these is a case where React's _logical_ event (Section 2) deliberately differs from the naive native event, and the difference is a feature once you see why.
 
 #### `onChange` is really the `input` event
 
-Native `change` on a text input fires only when the input *loses focus* after its value changed, which is rarely what React developers want.
+Native `change` on a text input fires only when the input _loses focus_ after its value changed, which is rarely what React developers want.
 
 They want to react to every keystroke (for controlled inputs, Hooks and State guides).
 
-So React's `onChange` is built on the native `input` event, which fires on *every* change to the value.
+So React's `onChange` is built on the native `input` event, which fires on _every_ change to the value.
 
 This is why your `onChange` runs on every keystroke, not on blur: React renamed the more-useful `input` behavior to the more-intuitive `onChange` name.
 
@@ -1182,15 +1173,15 @@ Making `onScroll` not bubble matches the browser and removes that confusion.
 
 The practical consequence: put your `onScroll` handler on the element that actually scrolls, not on an ancestor expecting to catch descendants' scrolls, because it will not bubble up to the ancestor.
 
-**`onFocus` and `onBlur` *do* bubble.** Native `focus` and `blur` famously do *not* bubble, which makes it hard to catch focus changes on a container.
+**`onFocus` and `onBlur` _do_ bubble.** Native `focus` and `blur` famously do _not_ bubble, which makes it hard to catch focus changes on a container.
 
-React solves this by building `onFocus`/`onBlur` on the native `focusin`/`focusout` events, which *do* bubble (this was a React 17 change: "Use browser focusin and focusout for onFocus and onBlur").
+React solves this by building `onFocus`/`onBlur` on the native `focusin`/`focusout` events, which _do_ bubble (this was a React 17 change: "Use browser focusin and focusout for onFocus and onBlur").
 
-So in React you *can* put `onFocus`/`onBlur` on a parent and catch focus entering or leaving any descendant, which is the useful behavior and the opposite of naive native `focus`/`blur`.
+So in React you _can_ put `onFocus`/`onBlur` on a parent and catch focus entering or leaving any descendant, which is the useful behavior and the opposite of naive native `focus`/`blur`.
 
 Knowing this is built on `focusin`/`focusout` explains why React's focus events bubble when you might expect them not to.
 
-**`onMouseEnter`/`onMouseLeave` are synthesized and do *not* bubble.** The native bubbling mouse events are `mouseover`/`mouseout`, which bubble and fire repeatedly as the pointer moves over descendants, which is noisy.
+**`onMouseEnter`/`onMouseLeave` are synthesized and do _not_ bubble.** The native bubbling mouse events are `mouseover`/`mouseout`, which bubble and fire repeatedly as the pointer moves over descendants, which is noisy.
 
 The non-bubbling `mouseenter`/`mouseleave` semantics (fire once when entering or leaving an element and its subtree, do not bubble) are what you usually want for hover effects.
 
@@ -1200,17 +1191,17 @@ So React gives you the cleaner enter/leave behavior by building it from the nois
 
 #### `preventDefault` can be ignored for passive listeners
 
-A *passive* event listener promises the browser it will not call `preventDefault`, which lets the browser optimize scrolling performance (it does not have to wait to see whether you will cancel the scroll).
+A _passive_ event listener promises the browser it will not call `preventDefault`, which lets the browser optimize scrolling performance (it does not have to wait to see whether you will cancel the scroll).
 
 For high-frequency events like `wheel` and `touchmove`, listeners are often passive by default in modern browsers for exactly this reason.
 
 The consequence: if the underlying listener is passive, calling `preventDefault` does nothing (the browser ignores it, sometimes with a console warning).
 
-So if you need to *prevent* scrolling or a touch default and find `preventDefault` silently not working, the cause is a passive listener, and the escape hatch is to attach a *native*, explicitly non-passive listener yourself (`addEventListener('wheel', handler, { passive: false })`, Section 11), because that is where you control the passive option.
+So if you need to _prevent_ scrolling or a touch default and find `preventDefault` silently not working, the cause is a passive listener, and the escape hatch is to attach a _native_, explicitly non-passive listener yourself (`addEventListener('wheel', handler, { passive: false })`, Section 11), because that is where you control the passive option.
 
 The thread through all of these is that React's event system is not a thin pass-through of native events.
 
-It is a layer that chooses the *most useful logical semantics* for each event, sometimes by renaming a more-useful native event (`input` to `onChange`), sometimes by switching to a bubbling variant (`focusin` for `onFocus`), sometimes by suppressing emulated bubbling (`onScroll`), sometimes by synthesizing cleaner semantics (`onMouseEnter`).
+It is a layer that chooses the _most useful logical semantics_ for each event, sometimes by renaming a more-useful native event (`input` to `onChange`), sometimes by switching to a bubbling variant (`focusin` for `onFocus`), sometimes by suppressing emulated bubbling (`onScroll`), sometimes by synthesizing cleaner semantics (`onMouseEnter`).
 
 Each "gotcha" is really React deciding the native default was not the most useful behavior.
 
@@ -1218,7 +1209,7 @@ Knowing which native event underlies each React event (via `e.nativeEvent`, Sect
 
 ### Try it
 
-> Add an `onChange` to a text input and confirm it fires on every keystroke (it is `input`, not native `change`). Put `onFocus` on a parent `div` and confirm it fires when a child input is focused (it bubbles, via `focusin`). Put `onScroll` on a parent of a scrollable child and confirm it does *not* fire when the child scrolls (no bubbling). Each confirms the underlying-native-event mechanism.
+> Add an `onChange` to a text input and confirm it fires on every keystroke (it is `input`, not native `change`). Put `onFocus` on a parent `div` and confirm it fires when a child input is focused (it bubbles, via `focusin`). Put `onScroll` on a parent of a scrollable child and confirm it does _not_ fire when the child scrolls (no bubbling). Each confirms the underlying-native-event mechanism.
 
 ### You've got this if
 
@@ -1240,7 +1231,7 @@ You want to map each symptom to the mechanism and the fix, instead of trying thi
 
 Most event bugs are one of a small set, and each maps to a section.
 
-The procedure: identify whether the problem is about *which handler fires* (delegation, fiber-tree propagation, portals), *ordering* (React at the root versus native at the node), *propagation control* (the two `stopPropagation` worlds), or *event semantics* (the gotchas).
+The procedure: identify whether the problem is about _which handler fires_ (delegation, fiber-tree propagation, portals), _ordering_ (React at the root versus native at the node), _propagation control_ (the two `stopPropagation` worlds), or _event semantics_ (the gotchas).
 
 Inspect the real DOM to see where listeners actually are, and remember that React propagation follows the fiber tree, not the DOM.
 
@@ -1258,7 +1249,7 @@ Or the event name/semantics are not what you think (you expected native `change`
 
 #### Handlers fire in an unexpected order, especially mixed with native listeners
 
-This is the root-versus-node geometry (Section 11): a native listener on a node fires during native bubbling at that node, *before* the event reaches React's root container where React dispatches.
+This is the root-versus-node geometry (Section 11): a native listener on a node fires during native bubbling at that node, _before_ the event reaches React's root container where React dispatches.
 
 So native-on-child runs before React's `onClick`.
 
@@ -1308,15 +1299,15 @@ If you see it, something is still on `document` or you are on an old version.
 
 To debug any of these, two habits help.
 
-First, *inspect the real DOM* to see where listeners actually are (your nodes have none, and the root container has React's, you can see your own native ones), which grounds you in the geometry.
+First, _inspect the real DOM_ to see where listeners actually are (your nodes have none, and the root container has React's, you can see your own native ones), which grounds you in the geometry.
 
-Second, *think in two trees*: the DOM tree (where native propagation and native listeners live) and the fiber tree (where React propagation lives), and ask which tree the behavior you are seeing follows.
+Second, _think in two trees_: the DOM tree (where native propagation and native listeners live) and the fiber tree (where React propagation lives), and ask which tree the behavior you are seeing follows.
 
 Almost every confusing event behavior is the two trees, or the two propagation systems, diverging, and naming which one you are in resolves it.
 
 #### The closing synthesis
 
-React's event system is a layer between the browser's native events and your components, and almost everything it does follows from two facts: it *delegates* (a small set of real listeners at the root container, not one per node, since React 17), and it *dispatches by walking the fiber tree* (reconstructing capture and bubble propagation over the component hierarchy you wrote, rather than relying on the DOM).
+React's event system is a layer between the browser's native events and your components, and almost everything it does follows from two facts: it _delegates_ (a small set of real listeners at the root container, not one per node, since React 17), and it _dispatches by walking the fiber tree_ (reconstructing capture and bubble propagation over the component hierarchy you wrote, rather than relying on the DOM).
 
 From the first fact come delegation's efficiency, the root-container location and its isolation benefits, and the ordering geometry when you mix in native listeners (React at the root, native at the node).
 
@@ -1324,13 +1315,13 @@ From the second come capture-and-bubble ordering, the behavior of `stopPropagati
 
 On top of those, the synthetic event gives you a consistent cross-browser object (no longer pooled, so freely usable asynchronously) with sometimes-more-useful semantics than the raw native event (`onChange` as `input`, `onFocus` as `focusin`, non-bubbling `onScroll` and `onMouseEnter`).
 
-And the system is not just routing: it is where each interaction is assigned a *priority* (discrete versus continuous) that feeds React's lanes, and where the resulting `setState` updates are *batched* into a single prioritized render.
+And the system is not just routing: it is where each interaction is assigned a _priority_ (discrete versus continuous) that feeds React's lanes, and where the resulting `setState` updates are _batched_ into a single prioritized render.
 
 So the event system is the front door to React's update pipeline, turning a user gesture into a consistent, prioritized, batched update that flows into the renderer, and every event surprise you will hit is one of these mechanisms (delegation location, fiber-tree propagation, the two `stopPropagation` worlds, or chosen semantics) showing through.
 
 ### Try it
 
-> Take a real event bug (or reproduce one above), and before changing anything, classify it: is it about *which* handler fires (propagation/portals), *ordering* (root versus node), *propagation control* (which `stopPropagation` world), or *semantics* (a gotcha)? Then inspect the DOM to confirm where the listeners are, and apply the matching fix. Doing this on two or three bugs makes the classification reflexive.
+> Take a real event bug (or reproduce one above), and before changing anything, classify it: is it about _which_ handler fires (propagation/portals), _ordering_ (root versus node), _propagation control_ (which `stopPropagation` world), or _semantics_ (a gotcha)? Then inspect the DOM to confirm where the listeners are, and apply the matching fix. Doing this on two or three bugs makes the classification reflexive.
 
 ### You've got this if
 
@@ -1388,7 +1379,7 @@ The `__reactFiber$` key is the pointer you can inspect in DevTools.
 
 The `SyntheticEvent` construction (the synthetic event factory) is where the wrapper from Section 2 is built around the native event, with the normalized interface and the `nativeEvent` reference.
 
-Pair this with the React 17 blog post on the delegation change for the *why* behind the root-container move (Section 4), and the SyntheticEvent reference for the per-event details (Section 12).
+Pair this with the React 17 blog post on the delegation change for the _why_ behind the root-container move (Section 4), and the SyntheticEvent reference for the per-event details (Section 12).
 
 ### Try it
 

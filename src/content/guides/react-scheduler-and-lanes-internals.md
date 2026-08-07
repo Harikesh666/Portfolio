@@ -68,25 +68,6 @@ Finish pass 1 and you are already ahead.
 
 ---
 
-## Table of Contents
-
-1. [Why React needs both a scheduler and lanes](#1-why-react-needs-both-a-scheduler-and-lanes)
-2. [The problem: blocking renders and cooperative scheduling](#2-the-problem-blocking-renders-and-cooperative-scheduling)
-3. [The scheduler: a priority queue with time slicing](#3-the-scheduler-a-priority-queue-with-time-slicing)
-4. [The MessageChannel work loop and shouldYield](#4-the-messagechannel-work-loop-and-shouldyield)
-5. [Lanes: the bitmask model](#5-lanes-the-bitmask-model)
-6. [The lane layout: from Sync to Idle](#6-the-lane-layout-from-sync-to-idle)
-7. [Assigning a lane: from event priority to a bit](#7-assigning-a-lane-from-event-priority-to-a-bit)
-8. [Choosing what to render next: getNextLanes](#8-choosing-what-to-render-next-getnextlanes)
-9. [Expiration: preventing starvation](#9-expiration-preventing-starvation)
-10. [Entanglement: lanes that must render together](#10-entanglement-lanes-that-must-render-together)
-11. [How lanes drive batching and the concurrent features](#11-how-lanes-drive-batching-and-the-concurrent-features)
-12. [Two priority systems: scheduler priorities versus lanes](#12-two-priority-systems-scheduler-priorities-versus-lanes)
-13. [Debugging and observing scheduling](#13-debugging-and-observing-scheduling)
-14. [Reading the source](#14-reading-the-source)
-
----
-
 ## 1. Why React needs both a scheduler and lanes
 
 Prereqs: from the rendering guide, the work loop (React processes the tree in units of work) and concurrent rendering, recapped here.
@@ -97,7 +78,7 @@ Outside React: nothing yet.
 
 You know React 18 and later can render "concurrently," keeping the UI responsive during heavy updates.
 
-But "concurrent" is doing a lot of work in that sentence, and underneath it are two distinct mechanisms with confusing names: the *scheduler* and *lanes*.
+But "concurrent" is doing a lot of work in that sentence, and underneath it are two distinct mechanisms with confusing names: the _scheduler_ and _lanes_.
 
 They sound like the same thing (both about priority and timing), and it is hard to keep straight which does what.
 
@@ -107,11 +88,11 @@ Separating them is the first step to understanding any of it.
 
 Responsive rendering requires answering two different questions, and React has a separate mechanism for each.
 
-*When* should React do a chunk of work, and when should it pause to let the browser paint and handle input?
+_When_ should React do a chunk of work, and when should it pause to let the browser paint and handle input?
 
 That is the **scheduler**: it slices work into chunks and yields to the browser between them.
 
-*Which* pending work should React do first, and which can wait?
+_Which_ pending work should React do first, and which can wait?
 
 That is **lanes**: a priority system that tags every update with an urgency.
 
@@ -119,9 +100,9 @@ The scheduler answers "when," lanes answer "which," and concurrent rendering is 
 
 ### How it actually works
 
-Recall from the rendering guide that React processes a render as a *work loop*: it walks the fiber tree (React's internal tree of component instances) doing a small unit of work at each fiber, building up the new tree.
+Recall from the rendering guide that React processes a render as a _work loop_: it walks the fiber tree (React's internal tree of component instances) doing a small unit of work at each fiber, building up the new tree.
 
-The crucial property of concurrent rendering is that this loop is *interruptible*: React can do some units of work, pause, let the browser do other things, and resume later, rather than processing the whole tree in one uninterruptible burst.
+The crucial property of concurrent rendering is that this loop is _interruptible_: React can do some units of work, pause, let the browser do other things, and resume later, rather than processing the whole tree in one uninterruptible burst.
 
 Making that work well requires solving two problems that are genuinely separate, and conflating them is what makes this topic confusing.
 
@@ -129,29 +110,29 @@ Making that work well requires solving two problems that are genuinely separate,
 
 If React does too much work at once, it blocks the browser's main thread, and the user sees jank (input does not respond, animations stutter, paint is delayed).
 
-So React must do a little work, then *yield* to the browser so it can paint and handle input, then resume.
+So React must do a little work, then _yield_ to the browser so it can paint and handle input, then resume.
 
 This requires a mechanism that can schedule a chunk of work to run, measure how long it has been running, decide when to stop and yield, and arrange to be called again to continue.
 
 That mechanism is the **scheduler** (Sections 3 and 4).
 
-Its job is purely about *time*: slicing work into chunks that fit in the browser's frame budget and cooperating with the browser's event loop.
+Its job is purely about _time_: slicing work into chunks that fit in the browser's frame budget and cooperating with the browser's event loop.
 
-The scheduler does not know or care *what* the work is, and it just runs callbacks, times them, and yields.
+The scheduler does not know or care _what_ the work is, and it just runs callbacks, times them, and yields.
 
 #### Problem two: which work to do first
 
 At any moment, there may be several pending updates of different urgency: a click the user is waiting on, a low-priority transition rendering a big list, a Suspense retry, a background idle update.
 
-React must do the urgent ones first and let the less urgent ones wait, and it must be able to *interrupt* a low-priority render in progress when a high-priority update arrives.
+React must do the urgent ones first and let the less urgent ones wait, and it must be able to _interrupt_ a low-priority render in progress when a high-priority update arrives.
 
-This requires a way to *label* each update with a priority and to compare and combine those labels efficiently.
+This requires a way to _label_ each update with a priority and to compare and combine those labels efficiently.
 
 That mechanism is **lanes** (Sections 5 and 6).
 
-Its job is purely about *priority*: tagging updates, choosing the highest-priority pending set to render, and tracking which updates are pending where in the tree.
+Its job is purely about _priority_: tagging updates, choosing the highest-priority pending set to render, and tracking which updates are pending where in the tree.
 
-Lanes do not know or care about *timing*, and they just rank work.
+Lanes do not know or care about _timing_, and they just rank work.
 
 #### The two mechanisms together
 
@@ -165,7 +146,7 @@ It renders in the work loop, and between units of work it asks the scheduler "sh
 
 If a higher-priority update arrives while a lower-priority render is in progress, lanes notice the higher priority and React can throw away the in-progress low-priority render and start the high-priority one.
 
-So lanes decide *what* to render and *whether to interrupt*, while the scheduler decides *when to pause and resume*.
+So lanes decide _what_ to render and _whether to interrupt_, while the scheduler decides _when to pause and resume_.
 
 Neither alone is enough: lanes without the scheduler could prioritize but would still block the main thread doing a big render, and the scheduler without lanes could yield but would have no basis for doing urgent work first or interrupting.
 
@@ -179,7 +160,7 @@ When something is confusing, ask "is this about timing/yielding (scheduler) or a
 
 ### Try it
 
-> This one is conceptual: take a feature where you used `useTransition` and write down which of its behaviors are about *when* (the render happening in interruptible chunks, the UI staying responsive) versus *which* (the transition update being lower priority than the click that triggered it, so the click wins). Sorting those two apart for a real case is the mental split this whole guide rests on.
+> This one is conceptual: take a feature where you used `useTransition` and write down which of its behaviors are about _when_ (the render happening in interruptible chunks, the UI staying responsive) versus _which_ (the transition update being lower priority than the click that triggered it, so the click wins). Sorting those two apart for a real case is the mental split this whole guide rests on.
 
 ### You've got this if
 
@@ -207,9 +188,9 @@ The browser has a single main thread that does everything: running your JavaScri
 
 If React renders synchronously and the render takes longer than a frame (roughly 16ms for 60fps), it monopolizes the main thread for that whole time, during which the browser cannot paint or respond to input, so the page janks or freezes.
 
-Cooperative scheduling is the fix: instead of rendering in one uninterruptible burst, React does a small slice of work, *yields* the main thread back to the browser so it can paint and handle input, then resumes the render.
+Cooperative scheduling is the fix: instead of rendering in one uninterruptible burst, React does a small slice of work, _yields_ the main thread back to the browser so it can paint and handle input, then resumes the render.
 
-This is what makes a render *interruptible*, and it is the entire reason the scheduler exists.
+This is what makes a render _interruptible_, and it is the entire reason the scheduler exists.
 
 ### How it actually works
 
@@ -219,7 +200,7 @@ In a single frame (the browser aims for about 60 frames per second, so roughly 1
 
 If any one task hogs the thread for longer than the frame budget, everything else waits: a 50-millisecond render means about three frames where nothing paints and no input is handled, which the user perceives as a freeze or jank.
 
-Before concurrent rendering, React rendered *synchronously*: when an update happened, React walked the entire affected tree, computed the changes, and committed them, all in one uninterruptible run.
+Before concurrent rendering, React rendered _synchronously_: when an update happened, React walked the entire affected tree, computed the changes, and committed them, all in one uninterruptible run.
 
 For small updates this is fine (it finishes within a frame).
 
@@ -227,24 +208,24 @@ For large updates (a big list, a deep tree, expensive components) it exceeds the
 
 The stack-based reconciler simply could not stop in the middle.
 
-This is the jank that debouncing and memoization were partial workarounds for: they reduced *how often* or *how much* React rendered, but they could not make a necessary large render non-blocking.
+This is the jank that debouncing and memoization were partial workarounds for: they reduced _how often_ or _how much_ React rendered, but they could not make a necessary large render non-blocking.
 
 Cooperative scheduling solves this by changing rendering from "run to completion" to "run in interruptible slices." The model, borrowed conceptually from cooperative multitasking, is:
 
 1. Do a small amount of work (some units of work in the fiber work loop).
 2. Check whether you have used up your time slice (Section 4, roughly 5 milliseconds).
-3. If you have, *yield*: stop, hand the main thread back to the browser so it can paint, handle input, and run other tasks, and arrange to be called again to continue.
+3. If you have, _yield_: stop, hand the main thread back to the browser so it can paint, handle input, and run other tasks, and arrange to be called again to continue.
 4. When called again, resume where you left off and repeat.
 
-This requires the work to be *resumable* (you can stop after any unit and pick up later), which is exactly what the fiber architecture provides (the rendering guide): the work-in-progress tree is built incrementally, and React tracks where it is, so it can pause and resume.
+This requires the work to be _resumable_ (you can stop after any unit and pick up later), which is exactly what the fiber architecture provides (the rendering guide): the work-in-progress tree is built incrementally, and React tracks where it is, so it can pause and resume.
 
 And it requires a mechanism to schedule the chunks, time them, and arrange resumption, which is the scheduler.
 
 The word "cooperative" is important and worth dwelling on.
 
-React cannot *force* the browser to give it time, and the browser cannot *force* React to stop.
+React cannot _force_ the browser to give it time, and the browser cannot _force_ React to stop.
 
-Instead React *voluntarily* yields when its time slice is up, cooperating with the browser's event loop.
+Instead React _voluntarily_ yields when its time slice is up, cooperating with the browser's event loop.
 
 This is unlike preemptive multitasking (where an OS can forcibly interrupt a thread).
 
@@ -256,7 +237,7 @@ The payoff, once this works, is that a large render no longer freezes the page.
 
 React renders the big list in 5-millisecond slices, yielding between them, so the browser paints and handles input in the gaps, and the user keeps typing and clicking smoothly while the render proceeds in the background.
 
-And because the render is now interruptible, React can also *abandon* an in-progress low-priority render when something more urgent arrives (Section 1), which is the other half of concurrency that synchronous rendering could never do.
+And because the render is now interruptible, React can also _abandon_ an in-progress low-priority render when something more urgent arrives (Section 1), which is the other half of concurrency that synchronous rendering could never do.
 
 ### Try it
 
@@ -288,7 +269,7 @@ React's scheduler lives in a separate package (`scheduler`) and is a small, gene
 
 It maintains a priority queue of callbacks (tasks), each with one of five priority levels (Immediate, UserBlocking, Normal, Low, Idle), and it runs them highest-priority first, yielding to the browser between chunks of work.
 
-Each priority level has a *timeout*, and the scheduler orders tasks by their resulting expiration time in a min-heap, so the most urgent (soonest-expiring) task runs first.
+Each priority level has a _timeout_, and the scheduler orders tasks by their resulting expiration time in a min-heap, so the most urgent (soonest-expiring) task runs first.
 
 It is deliberately generic: it knows nothing about React, lanes, or fibers, and it just runs prioritized callbacks cooperatively.
 
@@ -298,11 +279,11 @@ The scheduler is genuinely a separate package, `scheduler`, that React depends o
 
 This separation is intentional: the scheduler is a general-purpose cooperative scheduling primitive that is not React-specific, and keeping it separate keeps its concerns (timing, yielding, task ordering) cleanly apart from React's concerns (fibers, lanes, reconciliation).
 
-It is also why there are *two* priority systems in play (the scheduler's own levels and React's lanes), which Section 12 reconciles.
+It is also why there are _two_ priority systems in play (the scheduler's own levels and React's lanes), which Section 12 reconciles.
 
 The scheduler has its own priorities precisely because it is designed to be usable independent of React's lane model.
 
-The scheduler's core is a priority queue of *tasks*, where a task is a callback plus a priority.
+The scheduler's core is a priority queue of _tasks_, where a task is a callback plus a priority.
 
 You hand the scheduler a callback and a priority via `scheduleCallback` (internally `unstable_scheduleCallback`), and the scheduler arranges to run it cooperatively.
 
@@ -314,13 +295,13 @@ There are five priority levels, in order of urgency:
 - **LowPriority**: work that can wait a while (a timeout around 10 seconds).
 - **IdlePriority**: work that need never happen urgently (no timeout, runs only when there is nothing else to do).
 
-The way priority becomes ordering is through *timeouts*.
+The way priority becomes ordering is through _timeouts_.
 
-When you schedule a task, the scheduler computes an *expiration time* for it: `expirationTime = currentTime + timeout`, where the timeout comes from the priority level.
+When you schedule a task, the scheduler computes an _expiration time_ for it: `expirationTime = currentTime + timeout`, where the timeout comes from the priority level.
 
 So an ImmediatePriority task expires immediately (it is already past due), a UserBlockingPriority task expires in 250ms, a NormalPriority task in 5 seconds, and so on.
 
-The scheduler keeps tasks in a *min-heap* (the `SchedulerMinHeap`, Section 14) ordered by expiration time, so the task with the *soonest* expiration time is always at the top and runs first.
+The scheduler keeps tasks in a _min-heap_ (the `SchedulerMinHeap`, Section 14) ordered by expiration time, so the task with the _soonest_ expiration time is always at the top and runs first.
 
 This is elegant: priority and starvation prevention are unified into one number (the expiration time).
 
@@ -330,7 +311,7 @@ The min-heap gives O(log n) insertion and O(1) access to the most urgent task, w
 
 The scheduler's run loop, in outline (Section 4 details the yielding): it takes the most urgent task from the heap, runs its callback, and keeps running tasks until either the heap is empty or its time slice is exhausted, at which point it yields to the browser and arranges to resume.
 
-A subtlety that matters for React's interruptible rendering: a task callback can return *another function*, which the scheduler interprets as "this task is not finished. Here is its continuation." So when React's render work loop yields partway through (because the time slice ran out, Section 4), it returns a continuation, and the scheduler reschedules it to resume after yielding.
+A subtlety that matters for React's interruptible rendering: a task callback can return _another function_, which the scheduler interprets as "this task is not finished. Here is its continuation." So when React's render work loop yields partway through (because the time slice ran out, Section 4), it returns a continuation, and the scheduler reschedules it to resume after yielding.
 
 This return-a-continuation mechanism is how a long React render is spread across many scheduler slices: each slice runs until `shouldYield` says stop, returns a continuation, yields, and is resumed.
 
@@ -358,7 +339,7 @@ Outside React: the browser event loop (macrotasks versus microtasks), that `setT
 
 ### The itch
 
-"React yields to the browser" sounds simple, but *how*?
+"React yields to the browser" sounds simple, but _how_?
 
 It cannot just `setTimeout`, and it cannot use a microtask, and `requestIdleCallback` turns out to be unreliable.
 
@@ -370,9 +351,9 @@ Knowing this makes the Performance panel traces (work chopped into ~5ms slices) 
 
 To yield and resume, the scheduler needs to run a chunk of work, hand control back to the browser so it can paint and handle input, and then get called again to continue, all as fast as possible.
 
-It does this with a `MessageChannel`: after a chunk, it posts a message to itself, which the browser delivers as a *macrotask* after it has had a chance to paint and process input, and that message handler runs the next chunk.
+It does this with a `MessageChannel`: after a chunk, it posts a message to itself, which the browser delivers as a _macrotask_ after it has had a chance to paint and process input, and that message handler runs the next chunk.
 
-It uses `MessageChannel` rather than `setTimeout` (which is clamped to a 4ms minimum) or a microtask (which runs *before* paint, defeating the yield) or `requestIdleCallback` (too infrequent and unreliable).
+It uses `MessageChannel` rather than `setTimeout` (which is clamped to a 4ms minimum) or a microtask (which runs _before_ paint, defeating the yield) or `requestIdleCallback` (too infrequent and unreliable).
 
 The time slice is about 5 milliseconds: `shouldYield` returns true once a chunk has run that long, prompting a yield.
 
@@ -385,9 +366,9 @@ const channel = new MessageChannel();
 let chunksLeft = 3;
 
 channel.port1.onmessage = () => {
-  console.log('run one chunk');
-  chunksLeft -= 1;
-  if (chunksLeft > 0) channel.port2.postMessage(null);
+    console.log("run one chunk");
+    chunksLeft -= 1;
+    if (chunksLeft > 0) channel.port2.postMessage(null);
 };
 
 channel.port2.postMessage(null);
@@ -397,8 +378,8 @@ This section is the mechanical heart of the "when," and it is a nice piece of en
 
 The scheduler needs a way to say "I have done a chunk of work. Browser, please take over and paint and handle input, then call me back to continue." The naive options all fail for specific reasons:
 
-- **`setTimeout(fn, 0)`** seems like "run after yielding," but browsers *clamp* nested `setTimeout` calls to a minimum of about 4 milliseconds. So yielding via `setTimeout(fn, 0)` would impose a roughly 4ms delay on every single slice, which across a long render adds up to a large, pointless slowdown. Too slow.
-- **A microtask** (a promise callback) runs *before* the browser gets to paint (microtasks drain at the end of the current task, before rendering). So yielding via a microtask would hand control back to React before the browser painted, completely defeating the purpose of yielding (which is to let the browser paint and handle input). Wrong timing.
+- **`setTimeout(fn, 0)`** seems like "run after yielding," but browsers _clamp_ nested `setTimeout` calls to a minimum of about 4 milliseconds. So yielding via `setTimeout(fn, 0)` would impose a roughly 4ms delay on every single slice, which across a long render adds up to a large, pointless slowdown. Too slow.
+- **A microtask** (a promise callback) runs _before_ the browser gets to paint (microtasks drain at the end of the current task, before rendering). So yielding via a microtask would hand control back to React before the browser painted, completely defeating the purpose of yielding (which is to let the browser paint and handle input). Wrong timing.
 - **`requestIdleCallback`** fires only when the browser judges itself idle, which is unpredictable and can be infrequent (it may not fire for long stretches under load). React tried this in early versions and found it too unreliable for driving rendering: work could be starved waiting for idle time that never came. Too unreliable.
 - **`requestAnimationFrame`** is tied to the paint cadence (about 16ms) and is for work that should happen right before a paint, not for "yield as soon as the browser has had a turn." Wrong granularity for time slicing.
 
@@ -406,9 +387,9 @@ The mechanism React settled on is **`MessageChannel`**.
 
 A `MessageChannel` gives you two ports.
 
-Posting a message on one port causes a `message` event to fire on the other port, and the browser delivers that `message` event as a *macrotask*.
+Posting a message on one port causes a `message` event to fire on the other port, and the browser delivers that `message` event as a _macrotask_.
 
-Crucially, a macrotask runs *after* the browser has had the opportunity to paint and handle input (unlike a microtask), and it is delivered *promptly* (unlike `setTimeout`'s 4ms clamp, a `MessageChannel` message is delivered as soon as the browser is ready, with no artificial delay).
+Crucially, a macrotask runs _after_ the browser has had the opportunity to paint and handle input (unlike a microtask), and it is delivered _promptly_ (unlike `setTimeout`'s 4ms clamp, a `MessageChannel` message is delivered as soon as the browser is ready, with no artificial delay).
 
 So the scheduler sets up a `MessageChannel` once, and its loop (`performWorkUntilDeadline` in the source, Section 14) works like this:
 
@@ -445,7 +426,7 @@ The "when" of Section 1 is, concretely, this 5ms-slice MessageChannel loop.
 
 ### Try it
 
-> Build a component that renders a few thousand moderately expensive items, update it inside a `startTransition`, and record the Performance panel. Look for the render work split into slices of roughly 5ms with gaps in between, rather than one long block. Then look at the same update *without* `startTransition` (synchronous) and see one long task instead. The presence or absence of the 5ms slicing is the scheduler's yield loop, visible.
+> Build a component that renders a few thousand moderately expensive items, update it inside a `startTransition`, and record the Performance panel. Look for the render work split into slices of roughly 5ms with gaps in between, rather than one long block. Then look at the same update _without_ `startTransition` (synchronous) and see one long task instead. The presence or absence of the 5ms slicing is the scheduler's yield loop, visible.
 
 ### You've got this if
 
@@ -461,7 +442,7 @@ Outside React: bitwise operations on integers (AND `&`, OR `|`, XOR `^`), and th
 
 ### The itch
 
-You have read that React uses "lanes" for priority and that a lane is "a bit in a bitmask." That sounds like trivia until you ask *why* bits, and the answer turns out to explain a lot: React needs to represent and manipulate *sets* of priorities cheaply, and bitmasks make set operations single CPU instructions.
+You have read that React uses "lanes" for priority and that a lane is "a bit in a bitmask." That sounds like trivia until you ask _why_ bits, and the answer turns out to explain a lot: React needs to represent and manipulate _sets_ of priorities cheaply, and bitmasks make set operations single CPU instructions.
 
 This is the model that replaced the older expiration-time number.
 
@@ -471,9 +452,9 @@ A lane is a single bit in a 31-bit bitmask (stored in a 32-bit integer, 31 usabl
 
 Each bit position is a distinct priority or category of work.
 
-A *set* of lanes is just an integer with those bits set, called `Lanes`.
+A _set_ of lanes is just an integer with those bits set, called `Lanes`.
 
-React uses bits because it constantly needs to operate on *sets* of priorities (which lanes are pending on this fiber, is this update's lane part of the batch being rendered, what is the highest-priority pending lane), and bitwise operations do those set operations (union, intersection, membership, subset) in single, O(1) instructions.
+React uses bits because it constantly needs to operate on _sets_ of priorities (which lanes are pending on this fiber, is this update's lane part of the batch being rendered, what is the highest-priority pending lane), and bitwise operations do those set operations (union, intersection, membership, subset) in single, O(1) instructions.
 
 This replaced the older model where each update had a single expiration-time number, which could not represent multiple distinct priorities at once.
 
@@ -491,19 +472,19 @@ console.log(pendingLanes & -pendingLanes);
 console.log(pendingLanes & ~syncLane);
 ```
 
-Start with what a lane *is*, precisely.
+Start with what a lane _is_, precisely.
 
-React reserves a 32-bit integer to represent priority, and treats each *bit position* in that integer as a distinct "lane." A single lane is an integer with exactly one bit set, like `0b0000000000000000000000000000001` (the lowest bit) or `0b1000000000000000000000000000000` (a high bit).
+React reserves a 32-bit integer to represent priority, and treats each _bit position_ in that integer as a distinct "lane." A single lane is an integer with exactly one bit set, like `0b0000000000000000000000000000001` (the lowest bit) or `0b1000000000000000000000000000000` (a high bit).
 
-A *set* of lanes (called `Lanes`, plural, in the source) is an integer with possibly several bits set, representing several priorities at once.
+A _set_ of lanes (called `Lanes`, plural, in the source) is an integer with possibly several bits set, representing several priorities at once.
 
-There are **31** usable lanes, not 32: although the integer is 32 bits, JavaScript's bitwise operators treat numbers as *signed* 32-bit integers, so the top (32nd) bit is the sign bit and using it would make the value negative and break the comparisons, so React uses 31 bits.
+There are **31** usable lanes, not 32: although the integer is 32 bits, JavaScript's bitwise operators treat numbers as _signed_ 32-bit integers, so the top (32nd) bit is the sign bit and using it would make the value negative and break the comparisons, so React uses 31 bits.
 
 The React 18 working group put it directly: there are 31 levels of granularity because that is how many fit in a single bitmask.
 
 Now the crucial question: why bits, rather than (say) a simple priority number from 1 to 31?
 
-Because React's scheduling logic is constantly doing *set operations on priorities*, and bitmasks make those operations single instructions:
+Because React's scheduling logic is constantly doing _set operations on priorities_, and bitmasks make those operations single instructions:
 
 - **Membership / is-this-lane-in-this-set:** is this update's lane part of the batch currently being rendered? That is a bitwise AND: `(updateLane & renderLanes) !== 0`. One instruction, regardless of how many lanes are involved.
 - **Union / add a lane to a set:** mark a lane as pending alongside others. Bitwise OR: `pendingLanes | newLane`. One instruction.
@@ -511,29 +492,29 @@ Because React's scheduling logic is constantly doing *set operations on prioriti
 - **Subset / does this set contain any of these lanes:** again a bitwise AND and a zero check.
 - **Highest-priority lane in a set:** isolate the lowest set bit with the bit trick `lanes & -lanes` (two's complement makes this isolate the rightmost 1 bit), which gives the highest-priority lane in O(1).
 
-This matters because of *where* React does these operations: constantly, all over the reconciler, on the hot path of every render.
+This matters because of _where_ React does these operations: constantly, all over the reconciler, on the hot path of every render.
 
 Every fiber carries a `lanes` field (the updates scheduled directly on it) and a `childLanes` (often called `subtreeLanes`) field (the union of all lanes pending anywhere in its subtree).
 
-During the work loop, when React reaches a fiber, it can check `(fiber.childLanes & renderLanes) !== 0` to decide in one instruction whether there is any work *in this subtree* matching the lanes being rendered, and if not, *skip the entire subtree* (a bailout, from the rendering guide).
+During the work loop, when React reaches a fiber, it can check `(fiber.childLanes & renderLanes) !== 0` to decide in one instruction whether there is any work _in this subtree_ matching the lanes being rendered, and if not, _skip the entire subtree_ (a bailout, from the rendering guide).
 
 That subtree-skipping check happens at every fiber, so it must be a single cheap operation, and a bitwise AND is exactly that.
 
-A priority *number* could not do this: you cannot represent "this subtree has pending work at priorities 3 and 7 and 12" in a single number you can AND against, but you can in a bitmask.
+A priority _number_ could not do this: you cannot represent "this subtree has pending work at priorities 3 and 7 and 12" in a single number you can AND against, but you can in a bitmask.
 
-The need to represent and test *sets* of pending priorities, cheaply, at every node, is the whole reason for bits.
+The need to represent and test _sets_ of pending priorities, cheaply, at every node, is the whole reason for bits.
 
-This bitmask model *replaced* an older approach.
+This bitmask model _replaced_ an older approach.
 
 Before lanes (in React 16's experimental concurrent work), each update had a single `expirationTime` number, and priority was "the longer an update has waited, the higher its priority," compared by number.
 
-That model worked for a single linear notion of priority but could not express *multiple distinct, simultaneous* priorities or the kind of set operations above.
+That model worked for a single linear notion of priority but could not express _multiple distinct, simultaneous_ priorities or the kind of set operations above.
 
-The classic problem it could not handle well was different *kinds* of work needing to be in separate "streams" that do not block each other (an urgent update and an in-progress transition and a Suspense retry all pending at once, each needing independent tracking).
+The classic problem it could not handle well was different _kinds_ of work needing to be in separate "streams" that do not block each other (an urgent update and an in-progress transition and a Suspense retry all pending at once, each needing independent tracking).
 
 Lanes replaced the single expiration number with a bitmask precisely to represent many independent priorities at once and operate on them as sets, which is what concurrent rendering, transitions, and Suspense all need.
 
-(Lanes did not throw away expiration entirely, and they kept an expiration mechanism for starvation prevention, Section 9, but the *representation* changed from a number to a bitmask.)
+(Lanes did not throw away expiration entirely, and they kept an expiration mechanism for starvation prevention, Section 9, but the _representation_ changed from a number to a bitmask.)
 
 So the one-sentence model: a lane is a bit, a set of lanes is an integer, and React uses bits because scheduling is fundamentally about cheap set operations on priorities, performed constantly and at every fiber.
 
@@ -563,26 +544,26 @@ You know lanes are bits, but which bit is which?
 
 When does React use `SyncLane` versus a transition lane versus `IdleLane`?
 
-The layout is not arbitrary: the bit positions are ordered by priority, and knowing the main lanes (and that there is a *range* of transition lanes) makes the rest of the system concrete.
+The layout is not arbitrary: the bit positions are ordered by priority, and knowing the main lanes (and that there is a _range_ of transition lanes) makes the rest of the system concrete.
 
 ### The short version
 
 The lanes are laid out from highest priority (lowest bits) to lowest priority (highest bits).
 
-The main ones, in order: `SyncLane` (the lowest bit, most urgent, for discrete events and synchronous work), `InputContinuousLane` (continuous events like mousemove), `DefaultLane` (ordinary updates), a *range* of `TransitionLanes` (many bits, for `useTransition` work, spread across several lanes so distinct transitions can be tracked separately), `RetryLanes` (Suspense retries), `IdleLane`, and `OffscreenLane` (the highest bit, for hidden/Activity content).
+The main ones, in order: `SyncLane` (the lowest bit, most urgent, for discrete events and synchronous work), `InputContinuousLane` (continuous events like mousemove), `DefaultLane` (ordinary updates), a _range_ of `TransitionLanes` (many bits, for `useTransition` work, spread across several lanes so distinct transitions can be tracked separately), `RetryLanes` (Suspense retries), `IdleLane`, and `OffscreenLane` (the highest bit, for hidden/Activity content).
 
 Lower bit position means higher priority, which is why `SyncLane` is bit 1 and idle work is near the top.
 
 ### How it actually works
 
-The lane constants are defined in `ReactFiberLane.js` (Section 14) as specific bit patterns, and their *order* encodes priority: the convention is that **lower bit positions are higher priority**.
+The lane constants are defined in `ReactFiberLane.js` (Section 14) as specific bit patterns, and their _order_ encodes priority: the convention is that **lower bit positions are higher priority**.
 
 So the lanes, roughly from most to least urgent:
 
 - **`SyncLane`** (`0b0000000000000000000000000000001`, the lowest bit): the highest priority, for synchronous and discrete-event work. This is the lane a click or keypress's update gets (Section 7), the work that must feel instant. Work in `SyncLane` is effectively rendered synchronously (it does not get time-sliced and yielded the way lower-priority work does, because there is no benefit to deferring the most urgent work).
 - **`InputContinuousLane`** (a slightly higher bit): for continuous events like `mousemove`, `scroll`, and `drag` (the continuous-priority events from the Event System guide). Urgent, but below discrete clicks.
 - **`DefaultLane`**: for ordinary updates that did not come from a specific event priority or a transition (for example, an update from a `setTimeout` or a network response, in the default context).
-- **`TransitionLanes`** (a *range* of consecutive bits, not a single lane): for updates marked as transitions via `useTransition` or `startTransition`. There are *several* transition lanes rather than one, so React can assign different transitions to different lanes and track them separately (so two unrelated transitions do not have to render in the same batch). React cycles through the available transition lanes as transitions are scheduled. These are low priority and interruptible, which is the whole point of a transition.
+- **`TransitionLanes`** (a _range_ of consecutive bits, not a single lane): for updates marked as transitions via `useTransition` or `startTransition`. There are _several_ transition lanes rather than one, so React can assign different transitions to different lanes and track them separately (so two unrelated transitions do not have to render in the same batch). React cycles through the available transition lanes as transitions are scheduled. These are low priority and interruptible, which is the whole point of a transition.
 - **`RetryLanes`** (another range): for Suspense retries, when a suspended boundary is retrying after its data resolves.
 - **`IdleLane`**: very low priority work that should happen only when there is nothing more important to do.
 - **`OffscreenLane`** (the highest usable bit): the lowest priority, used for offscreen and `<Activity>` (hidden) content that React can pre-render or keep rendering in the background without affecting visible work.
@@ -590,13 +571,13 @@ So the lanes, roughly from most to least urgent:
 
 A couple of structural points that make this concrete.
 
-First, the reason some categories (transitions, retries) are *ranges* of lanes rather than single lanes is to allow *independent tracking* of multiple things of the same kind.
+First, the reason some categories (transitions, retries) are _ranges_ of lanes rather than single lanes is to allow _independent tracking_ of multiple things of the same kind.
 
 If there were one transition lane, all transitions would always render in the same batch and could not be distinguished.
 
 With a range, React can put distinct transitions in distinct lanes and handle them separately, which matters for correctness and for not letting one slow transition block an unrelated one.
 
-Second, the highest-priority lane in a set is the *lowest set bit*, which is why React isolates it with `lanes & -lanes` (Section 5): given a set of pending lanes, the most urgent one is the rightmost 1, and that bit trick extracts it in one operation.
+Second, the highest-priority lane in a set is the _lowest set bit_, which is why React isolates it with `lanes & -lanes` (Section 5): given a set of pending lanes, the most urgent one is the rightmost 1, and that bit trick extracts it in one operation.
 
 So the layout (low bits = high priority) and the bit trick (lowest set bit = highest priority) are designed together.
 
@@ -604,7 +585,7 @@ This layout is the bridge to the Event System guide.
 
 There, events were classified as discrete, continuous, or default, with priorities feeding "the lanes." Now you can see the actual targets: a discrete event's update gets `SyncLane` (or a discrete priority that maps to it), a continuous event's update gets `InputContinuousLane`, and a default-context update gets `DefaultLane`.
 
-The event priority from that guide is, concretely, *which of these lanes* the resulting update is assigned (Section 7).
+The event priority from that guide is, concretely, _which of these lanes_ the resulting update is assigned (Section 7).
 
 And the user-facing concurrency hooks target specific lanes: `useTransition` puts its update in a `TransitionLane`, which is why transition work is low-priority and interruptible (Section 11).
 
@@ -616,7 +597,7 @@ You will never type these constants in application code, but knowing the layout 
 
 ### You've got this if
 
-You can name the main lanes in priority order and explain why transitions and retries occupy a *range* of lanes rather than a single one.
+You can name the main lanes in priority order and explain why transitions and retries occupy a _range_ of lanes rather than a single one.
 
 ---
 
@@ -638,7 +619,7 @@ It happens at the moment of the update, based on the current context, and it is 
 
 ### The short version
 
-When an update is created (a `setState` or `dispatch`), React assigns it a lane based on the *current execution context*, in a function called `requestUpdateLane`.
+When an update is created (a `setState` or `dispatch`), React assigns it a lane based on the _current execution context_, in a function called `requestUpdateLane`.
 
 If React is inside a transition (`startTransition`), the update gets a transition lane.
 
@@ -646,7 +627,7 @@ Otherwise, if there is a current event priority (set by the event system when it
 
 Otherwise it gets `DefaultLane`.
 
-So the lane is determined by *what is happening when the update is scheduled*, which is how a click's update becomes urgent and a transition's update becomes low priority.
+So the lane is determined by _what is happening when the update is scheduled_, which is how a click's update becomes urgent and a transition's update becomes low priority.
 
 ### How it actually works
 
@@ -654,25 +635,25 @@ Recall from the Hooks guide that `setState` does not render immediately.
 
 It enqueues an update on the fiber's update queue and asks React to schedule work.
 
-Part of "enqueuing the update" is deciding *which lane* the update belongs to, and that decision is made by `requestUpdateLane` (in the reconciler), called at the moment the update is created.
+Part of "enqueuing the update" is deciding _which lane_ the update belongs to, and that decision is made by `requestUpdateLane` (in the reconciler), called at the moment the update is created.
 
 Its logic is a priority-ordered series of checks against the current execution context:
 
 1. **Are we inside a transition?** If the update is being scheduled inside a `startTransition` callback (or from a `useTransition`), React assigns it one of the **transition lanes** (Section 6). React tracks a "current transition" and picks a transition lane for it (cycling through the range so distinct transitions can get distinct lanes). This is how `startTransition` makes its updates low-priority and interruptible: the lane it assigns is a low-priority transition lane, and everything downstream (Sections 8 through 11) treats that lane as deferrable.
 
-2. **Is there a current event priority?** If not in a transition, React checks the *current event priority*, a value the event system sets while it is dispatching an event (the Event System guide, Section 8, where discrete events get the highest priority and continuous events a lower one). React reads that priority and assigns the matching lane: a discrete event priority maps to `SyncLane` (urgent), a continuous event priority maps to `InputContinuousLane`, and so on. This is the concrete mechanism behind the Event System guide's claim that "a `setState` in an `onClick` is high priority": the event system, while dispatching the click, set the current event priority to discrete, and `requestUpdateLane`, running inside your handler when you call `setState`, reads that and assigns `SyncLane`. The event guide set the priority. This guide is where that priority becomes a lane.
+2. **Is there a current event priority?** If not in a transition, React checks the _current event priority_, a value the event system sets while it is dispatching an event (the Event System guide, Section 8, where discrete events get the highest priority and continuous events a lower one). React reads that priority and assigns the matching lane: a discrete event priority maps to `SyncLane` (urgent), a continuous event priority maps to `InputContinuousLane`, and so on. This is the concrete mechanism behind the Event System guide's claim that "a `setState` in an `onClick` is high priority": the event system, while dispatching the click, set the current event priority to discrete, and `requestUpdateLane`, running inside your handler when you call `setState`, reads that and assigns `SyncLane`. The event guide set the priority. This guide is where that priority becomes a lane.
 
 3. **Otherwise, `DefaultLane`.** If there is no transition and no specific event priority (for example, an update scheduled from a `setTimeout`, a promise resolution, or other code not running inside a React-dispatched event), the update gets `DefaultLane`, ordinary priority.
 
-So the lane is a function of *context at update time*: transition context wins (low priority, deferrable), then event context (urgent or continuous depending on the event), then default.
+So the lane is a function of _context at update time_: transition context wins (low priority, deferrable), then event context (urgent or continuous depending on the event), then default.
 
 The update carries this lane with it into the update queue, and from there the lane drives everything: which batch the update renders in (Sections 8 and 11), whether it can be interrupted, and whether it gets time-sliced or rendered synchronously (Section 6, `SyncLane` work is effectively synchronous).
 
 This is also the precise mechanism behind the concurrency hooks from the Hooks guide.
 
-`useTransition`'s `startTransition` works by setting the transition context so that updates scheduled inside it hit check 1 and get a transition lane, which is *lower* priority than the discrete lane the surrounding click would otherwise give them.
+`useTransition`'s `startTransition` works by setting the transition context so that updates scheduled inside it hit check 1 and get a transition lane, which is _lower_ priority than the discrete lane the surrounding click would otherwise give them.
 
-That is why, in the typeahead example from the Hooks and Performance guides, the input update (urgent, `SyncLane` from the click/keypress) and the results update (wrapped in `startTransition`, so a transition lane) get *different* lanes, and React can render the urgent input update first and interrupt or defer the results update.
+That is why, in the typeahead example from the Hooks and Performance guides, the input update (urgent, `SyncLane` from the click/keypress) and the results update (wrapped in `startTransition`, so a transition lane) get _different_ lanes, and React can render the urgent input update first and interrupt or defer the results update.
 
 The "mark this update as non-urgent" of `useTransition` is, mechanically, "assign this update a transition lane instead of the event's lane," and `requestUpdateLane` is where that assignment happens.
 
@@ -702,7 +683,7 @@ Outside React: nothing new.
 
 At a given moment, a root may have several pending lanes (an urgent update, a transition, a retry).
 
-React has to pick which set to render *now*.
+React has to pick which set to render _now_.
 
 How does it choose, and why does it sometimes render an urgent update and leave a transition for later (or interrupt the transition)?
 
@@ -710,11 +691,11 @@ That choice is `getNextLanes`.
 
 ### The short version
 
-A root tracks all its *pending* lanes (every lane with scheduled-but-not-yet-rendered work) in a bitmask.
+A root tracks all its _pending_ lanes (every lane with scheduled-but-not-yet-rendered work) in a bitmask.
 
 Before each render, React calls `getNextLanes` to choose which lanes to render in this pass: in general, the highest-priority pending lanes (the lowest set bits), with adjustments for expiration (Section 9) and entanglement (Section 10).
 
-React then renders *that* set of lanes (`renderLanes`), and any update whose lane is in the set is included.
+React then renders _that_ set of lanes (`renderLanes`), and any update whose lane is in the set is included.
 
 The rest wait.
 
@@ -724,9 +705,9 @@ If a higher-priority update arrives mid-render, `getNextLanes` on the next sched
 
 A React root carries a `pendingLanes` bitmask: the union of every lane that has scheduled work not yet rendered (Section 5's union operation keeps this updated as updates are enqueued).
 
-When React is ready to render (the scheduler runs the root's work, Section 12), it must decide *which* lanes to render in this pass, because it does not necessarily render all pending lanes at once.
+When React is ready to render (the scheduler runs the root's work, Section 12), it must decide _which_ lanes to render in this pass, because it does not necessarily render all pending lanes at once.
 
-It renders a *batch*, chosen by priority.
+It renders a _batch_, chosen by priority.
 
 That decision is `getNextLanes(root, wipLanes)`.
 
@@ -746,7 +727,7 @@ It makes two important adjustments, which are the subjects of the next two secti
 
 #### Expiration (Section 9)
 
-A lane that has been pending too long is *expired* and treated as urgent regardless of its nominal priority, so low-priority work cannot be starved forever.
+A lane that has been pending too long is _expired_ and treated as urgent regardless of its nominal priority, so low-priority work cannot be starved forever.
 
 `getNextLanes` (with help from `markStarvedLanesAsExpired`) forces expired lanes into the batch.
 
@@ -754,7 +735,7 @@ So the choice is "highest priority, but include anything that has waited too lon
 
 #### Entanglement (Section 10)
 
-Some lanes must be rendered *together* for consistency.
+Some lanes must be rendered _together_ for consistency.
 
 If `getNextLanes` selects a lane that is entangled with others, it pulls the entangled lanes into the batch too.
 
@@ -764,11 +745,11 @@ The result of `getNextLanes` is the `renderLanes` bitmask: the exact set of lane
 
 During the render (the work loop), this is what the per-fiber checks compare against: at each fiber, `(fiber.childLanes & renderLanes) !== 0` decides whether there is matching work in the subtree (Section 5), and an update is included in this render if and only if its lane is in `renderLanes`.
 
-Updates whose lanes are *not* in `renderLanes` are simply not processed this pass.
+Updates whose lanes are _not_ in `renderLanes` are simply not processed this pass.
 
 They remain in `pendingLanes` and will be picked up in a future pass when `getNextLanes` selects them.
 
-This is also the mechanism behind *interruption*, the defining feature of concurrent rendering.
+This is also the mechanism behind _interruption_, the defining feature of concurrent rendering.
 
 Suppose React is partway through rendering a transition (a low-priority `renderLanes`) when a click schedules a `SyncLane` update.
 
@@ -776,13 +757,13 @@ The click's update is added to `pendingLanes`.
 
 The next time React goes to schedule or continue work, `getNextLanes` is consulted and now sees `SyncLane` pending, which is higher priority than the in-progress transition lanes.
 
-React can therefore *abandon* the in-progress transition render (throw away the partial work-in-progress tree) and start a new render at `SyncLane`, handling the urgent click first.
+React can therefore _abandon_ the in-progress transition render (throw away the partial work-in-progress tree) and start a new render at `SyncLane`, handling the urgent click first.
 
 The transition's lanes remain pending and get picked up again afterward.
 
 So "a higher-priority update interrupts a lower-priority render" is, concretely, `getNextLanes` selecting the higher-priority lanes on the next scheduling decision and React restarting the render at those lanes.
 
-The interruptibility from Section 2 (the work loop yielding via `shouldYield`) is what gives React the *opportunity* to re-check, and `getNextLanes` is what *decides* to switch to the more urgent work.
+The interruptibility from Section 2 (the work loop yielding via `shouldYield`) is what gives React the _opportunity_ to re-check, and `getNextLanes` is what _decides_ to switch to the more urgent work.
 
 So `getNextLanes` is the "which work first" decision made concrete: highest-priority pending lanes, plus expired ones, plus entangled ones, producing the `renderLanes` for this pass, and re-evaluated at each scheduling decision so that urgent work can preempt less urgent work in progress.
 
@@ -804,17 +785,17 @@ Outside React: starvation (low-priority work never running because high-priority
 
 ### The itch
 
-"Highest priority first" has an obvious danger: if urgent updates keep arriving, low-priority work (a transition, an idle update) could be deferred *forever* and never render.
+"Highest priority first" has an obvious danger: if urgent updates keep arriving, low-priority work (a transition, an idle update) could be deferred _forever_ and never render.
 
 React must prevent that, and it does, with expiration times that eventually force stale low-priority work to run.
 
 ### The short version
 
-Pure "highest priority first" risks *starvation*: a steady stream of high-priority updates could keep a low-priority lane waiting indefinitely.
+Pure "highest priority first" risks _starvation_: a steady stream of high-priority updates could keep a low-priority lane waiting indefinitely.
 
-React prevents this by giving each pending lane an *expiration time*.
+React prevents this by giving each pending lane an _expiration time_.
 
-As real time passes, if a lane has been pending past its expiration, React marks it *expired*, and an expired lane is treated as urgent (synchronous) and forced into the next render batch regardless of its nominal priority.
+As real time passes, if a lane has been pending past its expiration, React marks it _expired_, and an expired lane is treated as urgent (synchronous) and forced into the next render batch regardless of its nominal priority.
 
 So low-priority work is deferred, but only up to a deadline, after which it is forced through.
 
@@ -824,25 +805,25 @@ This is the same starvation-prevention idea as the scheduler's timeouts (Section
 
 The danger is inherent in priority scheduling.
 
-If React always renders the highest-priority pending lanes (Section 8), and high-priority updates keep arriving (a user typing continuously, frequent events), then a low-priority lane (a transition rendering a big list, an idle background update) might *never* be the highest priority, so it would be deferred again and again, forever.
+If React always renders the highest-priority pending lanes (Section 8), and high-priority updates keep arriving (a user typing continuously, frequent events), then a low-priority lane (a transition rendering a big list, an idle background update) might _never_ be the highest priority, so it would be deferred again and again, forever.
 
 The user would see the urgent work happen but the low-priority work never complete.
 
-That is *starvation*, and any priority scheduler must guard against it.
+That is _starvation_, and any priority scheduler must guard against it.
 
-React's guard is *expiration*.
+React's guard is _expiration_.
 
-Each lane, when it first becomes pending, is assigned an *expiration time*: a point in real time by which it must be rendered.
+Each lane, when it first becomes pending, is assigned an _expiration time_: a point in real time by which it must be rendered.
 
 The expiration time is derived from the lane's priority (higher-priority lanes have sooner expiration times, lower-priority lanes have later ones, idle lanes effectively never expire).
 
 React tracks these per-lane expiration times on the root (in an array indexed by lane).
 
-Then, on each scheduling pass, before choosing the next lanes (Section 8), React runs `markStarvedLanesAsExpired(root, currentTime)`: it walks the pending lanes, and for any lane whose expiration time has passed (it has been waiting too long), it marks that lane as *expired* by adding it to the root's `expiredLanes` set.
+Then, on each scheduling pass, before choosing the next lanes (Section 8), React runs `markStarvedLanesAsExpired(root, currentTime)`: it walks the pending lanes, and for any lane whose expiration time has passed (it has been waiting too long), it marks that lane as _expired_ by adding it to the root's `expiredLanes` set.
 
-An *expired* lane changes how it is treated.
+An _expired_ lane changes how it is treated.
 
-When `getNextLanes` (Section 8) chooses the render batch, expired lanes are forced in regardless of their nominal priority, and an expired lane is rendered *synchronously* (not time-sliced and interruptible like normal low-priority work).
+When `getNextLanes` (Section 8) chooses the render batch, expired lanes are forced in regardless of their nominal priority, and an expired lane is rendered _synchronously_ (not time-sliced and interruptible like normal low-priority work).
 
 In effect, "you have waited too long" promotes a lane to urgent: React stops deferring it and pushes it through to completion in the next render, even if higher-priority work also exists.
 
@@ -856,23 +837,23 @@ There, each scheduler task got an expiration time from its priority, and the min
 
 Here, each lane gets an expiration time, and as time passes, a long-pending lane is marked expired and forced through.
 
-Both are the same idea: priority determines *initial* urgency, but elapsed time provides a *deadline* that prevents indefinite deferral.
+Both are the same idea: priority determines _initial_ urgency, but elapsed time provides a _deadline_ that prevents indefinite deferral.
 
 React uses this idea in both its scheduling layers because both layers face the same starvation risk.
 
 It is worth connecting this to the history from Section 5.
 
-The *original* concurrent model (pre-lanes) used expiration time as the *entire* priority mechanism: an update's priority *was* its expiration time, and "the longer you have waited, the higher your priority" was the whole model.
+The _original_ concurrent model (pre-lanes) used expiration time as the _entire_ priority mechanism: an update's priority _was_ its expiration time, and "the longer you have waited, the higher your priority" was the whole model.
 
-Lanes replaced that single-number model with a bitmask (for the set-operation reasons in Section 5), but they did *not* discard expiration.
+Lanes replaced that single-number model with a bitmask (for the set-operation reasons in Section 5), but they did _not_ discard expiration.
 
-They kept it as the *starvation-prevention* layer on top of the bitmask priorities.
+They kept it as the _starvation-prevention_ layer on top of the bitmask priorities.
 
 So expiration went from being the primary priority mechanism to being the safety net that ensures the bitmask-priority scheduling cannot starve anything.
 
-The bitmask decides the *normal* order.
+The bitmask decides the _normal_ order.
 
-Expiration guarantees a *deadline* on that order.
+Expiration guarantees a _deadline_ on that order.
 
 The practical upshot you might observe: a low-priority transition that is being continually deferred because of constant urgent activity will, after its expiration window (related to its priority), suddenly render synchronously even if that causes a brief jank, because React has decided that finishing the stale work is now more important than continuing to defer it.
 
@@ -902,7 +883,7 @@ Outside React: nothing new.
 
 Lanes let React render different updates in different batches, which is usually good.
 
-But sometimes splitting updates across batches would produce an *inconsistent* UI: two updates that logically belong together get separated, and the user sees a torn or half-applied state.
+But sometimes splitting updates across batches would produce an _inconsistent_ UI: two updates that logically belong together get separated, and the user sees a torn or half-applied state.
 
 React prevents this with entanglement, which forces certain lanes to render together.
 
@@ -910,9 +891,9 @@ React prevents this with entanglement, which forces certain lanes to render toge
 
 Normally, updates in different lanes can render in separate batches (Section 8).
 
-But some updates *must not* be separated, because rendering them apart would show an inconsistent intermediate state.
+But some updates _must not_ be separated, because rendering them apart would show an inconsistent intermediate state.
 
-*Entanglement* is React marking a set of lanes as "these must render together": once any entangled lane is included in a render batch, all the lanes entangled with it are pulled into the same batch (`getNextLanes` enforces this, Section 8).
+_Entanglement_ is React marking a set of lanes as "these must render together": once any entangled lane is included in a render batch, all the lanes entangled with it are pulled into the same batch (`getNextLanes` enforces this, Section 8).
 
 React entangles lanes in specific situations, notably across transitions that share state and certain Suspense and `useDeferredValue` cases, to guarantee consistency.
 
@@ -920,15 +901,15 @@ It is the counterweight to lanes' ability to split work: split for responsivenes
 
 ### How it actually works
 
-Lanes give React the power to render updates *separately*: an update in `DefaultLane` and an update in a transition lane can render in different passes, which is what lets urgent work jump ahead and transitions be deferred (Section 8).
+Lanes give React the power to render updates _separately_: an update in `DefaultLane` and an update in a transition lane can render in different passes, which is what lets urgent work jump ahead and transitions be deferred (Section 8).
 
-But this power is dangerous in one specific way: if two updates that logically must be applied *together* end up in different lanes and render in different batches, the user can see an inconsistent intermediate state, where one update has been applied and the related one has not.
+But this power is dangerous in one specific way: if two updates that logically must be applied _together_ end up in different lanes and render in different batches, the user can see an inconsistent intermediate state, where one update has been applied and the related one has not.
 
-The concept from the rendering guide that captures the failure is *tearing*, recapped in one line: tearing is when a single visible UI reflects two different versions of state at once, because different parts were rendered against different values.
+The concept from the rendering guide that captures the failure is _tearing_, recapped in one line: tearing is when a single visible UI reflects two different versions of state at once, because different parts were rendered against different values.
 
 Splitting related updates across batches is a way to produce a tear-like inconsistency.
 
-*Entanglement* is React's mechanism to prevent that.
+_Entanglement_ is React's mechanism to prevent that.
 
 To entangle two lanes is to declare "if either of these lanes is rendered, the other must be rendered in the same batch." React maintains an `entangledLanes` set (and per-lane entanglement information) on the root, and when `getNextLanes` (Section 8) selects a lane that is entangled with others, it includes all the entangled lanes in the `renderLanes` for that pass.
 
@@ -941,7 +922,7 @@ React entangles lanes in several specific situations where splitting would break
 - **Suspense retries.** When a Suspense boundary retries (its data resolved and it re-renders), the retry lanes may be entangled with related work so the revealed content is consistent.
 - **Refresh transitions and other cases** where the framework needs a set of updates to be treated atomically.
 
-The general principle is the trade-off between *responsiveness* and *consistency*.
+The general principle is the trade-off between _responsiveness_ and _consistency_.
 
 Lanes default to allowing splitting, because splitting is what enables responsiveness (urgent work first, low-priority work deferred and interruptible).
 
@@ -949,7 +930,7 @@ But unrestricted splitting could break consistency, so entanglement is the targe
 
 So the system is "split by default for responsiveness, entangle where splitting would break correctness."
 
-This is the most internals-y of the lane mechanisms and the one you are least likely to interact with directly, but it completes the picture of why lanes are a *set* model (Section 5) rather than a single priority: React needs not only to track multiple independent priorities but also to express *relationships* between them ("these must go together"), and the bitmask plus an entanglement set is what represents both the independence (separate bits) and the required-togetherness (entanglement) of pending work.
+This is the most internals-y of the lane mechanisms and the one you are least likely to interact with directly, but it completes the picture of why lanes are a _set_ model (Section 5) rather than a single priority: React needs not only to track multiple independent priorities but also to express _relationships_ between them ("these must go together"), and the bitmask plus an entanglement set is what represents both the independence (separate bits) and the required-togetherness (entanglement) of pending work.
 
 Without entanglement, lanes would be purely about priority.
 
@@ -975,19 +956,19 @@ From the rendering guide: Suspense, recapped here.
 
 You use `useTransition`, `useDeferredValue`, automatic batching, and Suspense as features.
 
-This section closes the loop by showing they are all *the same lane machinery* viewed from the application side, so the user-facing behaviors stop being separate magic and become consequences of lanes.
+This section closes the loop by showing they are all _the same lane machinery_ viewed from the application side, so the user-facing behaviors stop being separate magic and become consequences of lanes.
 
 ### The short version
 
 The concurrent features you use are lanes in disguise.
 
-*Batching* is "updates in the same lane render in the same pass," so multiple `setState` calls that get the same lane fold into one render.
+_Batching_ is "updates in the same lane render in the same pass," so multiple `setState` calls that get the same lane fold into one render.
 
-*Transitions* (`useTransition`, `startTransition`) assign a low-priority transition lane, which is why they are deferrable and interruptible.
+_Transitions_ (`useTransition`, `startTransition`) assign a low-priority transition lane, which is why they are deferrable and interruptible.
 
-*`useDeferredValue`* uses a lower-priority lane to render the deferred value, so the urgent value updates first.
+_`useDeferredValue`_ uses a lower-priority lane to render the deferred value, so the urgent value updates first.
 
-*Suspense retries* use retry lanes.
+_Suspense retries_ use retry lanes.
 
 So the application-level concurrency API is a set of friendly handles on the lane system from this guide.
 
@@ -999,7 +980,7 @@ Each of the concurrent features maps directly onto the lane mechanics from the p
 
 From the Hooks and Event System guides, multiple `setState` calls in the same context batch into one render.
 
-In lane terms: those updates are all assigned the *same* lane (Section 7, because they share the same context, the same event priority or transition), so they all land in the same `pendingLanes` bit, and when `getNextLanes` selects that lane (Section 8), *all* of them are processed in that one render pass.
+In lane terms: those updates are all assigned the _same_ lane (Section 7, because they share the same context, the same event priority or transition), so they all land in the same `pendingLanes` bit, and when `getNextLanes` selects that lane (Section 8), _all_ of them are processed in that one render pass.
 
 "Updates in the same lane render together" (the working-group statement from Section 5: same lane means always in the same batch) is precisely what batching is.
 
@@ -1011,7 +992,7 @@ It is what naturally happens when updates share a lane.
 
 #### Transitions are a low-priority lane
 
-`useTransition` and `startTransition` work by assigning their updates a *transition lane* (Section 7, check 1 in `requestUpdateLane`).
+`useTransition` and `startTransition` work by assigning their updates a _transition lane_ (Section 7, check 1 in `requestUpdateLane`).
 
 Everything that makes a transition feel like a transition follows from that lane being low priority: because it is lower priority than the discrete lane of the click or keypress that triggered the surrounding interaction, `getNextLanes` (Section 8) renders the urgent work first and defers the transition.
 
@@ -1021,7 +1002,7 @@ So "mark this update as non-urgent and keep the UI responsive" is, end to end, "
 
 #### `useDeferredValue` renders the deferred value at a lower priority
 
-When you derive a deferred value, React renders the update that produces the new deferred value at a *lower priority* lane than the urgent update that changed the source value.
+When you derive a deferred value, React renders the update that produces the new deferred value at a _lower priority_ lane than the urgent update that changed the source value.
 
 So the urgent value (the input you are typing) updates immediately at its high-priority lane, while the expensive work driven by the deferred value renders at a lower-priority lane that can be deferred and interrupted.
 
@@ -1029,13 +1010,13 @@ It is the same lane mechanism as transitions, expressed as "let this value lag" 
 
 #### Suspense retries use retry lanes
 
-When a component suspends (the rendering guide: it throws a promise because its data is not ready) and later its data resolves, React schedules a *retry* to re-render that boundary, and that retry is assigned a *retry lane* (Section 6).
+When a component suspends (the rendering guide: it throws a promise because its data is not ready) and later its data resolves, React schedules a _retry_ to re-render that boundary, and that retry is assigned a _retry lane_ (Section 6).
 
 The retry lane's priority and its entanglement (Section 10) with related work govern when and how the revealed content renders, keeping it consistent.
 
 So Suspense's "show the fallback, then reveal the content when ready" has a lane-level implementation: suspend, schedule a retry lane when the promise resolves, render that lane.
 
-The unifying picture is that the application-facing concurrency API is a small set of *handles* on the lane system.
+The unifying picture is that the application-facing concurrency API is a small set of _handles_ on the lane system.
 
 You do not assign lanes directly.
 
@@ -1043,7 +1024,7 @@ You call `startTransition` (which assigns a transition lane), or `useDeferredVal
 
 React translates each into a lane, and then the machinery from Sections 8 through 10 (choose the highest-priority pending lanes, force expired ones, render entangled ones together, time-slice and yield via the scheduler) does the rest uniformly.
 
-This is why the concurrent features compose so well: they are not separate systems, they are different ways of putting work into the *same* lane-based scheduler, which handles all of them by the same rules.
+This is why the concurrent features compose so well: they are not separate systems, they are different ways of putting work into the _same_ lane-based scheduler, which handles all of them by the same rules.
 
 Understanding lanes is understanding all of the concurrent features at once, because they are all lanes.
 
@@ -1075,11 +1056,11 @@ The reason is that they live in different layers, and there is a deliberate mapp
 
 React has two priority systems because it has two layers with different jobs.
 
-The **scheduler** (a generic package, Section 3) has its own five priority levels, because it is designed to schedule *any* work, not just React's.
+The **scheduler** (a generic package, Section 3) has its own five priority levels, because it is designed to schedule _any_ work, not just React's.
 
 The **reconciler** has lanes (Section 6), a React-specific, finer-grained priority model tuned for rendering.
 
-They meet at the boundary where React asks the scheduler to run a render: React takes the lanes it is about to render, derives an *event priority* from them, maps that to one of the scheduler's five priority levels, and schedules the render task at that level.
+They meet at the boundary where React asks the scheduler to run a render: React takes the lanes it is about to render, derives an _event priority_ from them, maps that to one of the scheduler's five priority levels, and schedules the render task at that level.
 
 So lanes are the detailed, internal priority.
 
@@ -1087,9 +1068,9 @@ The five scheduler levels are the coarse priority React hands to the generic sch
 
 ### How it actually works
 
-The two systems exist because of the architectural separation from Section 3: the `scheduler` package is a *general-purpose* cooperative task runner, deliberately independent of React, with its own notion of priority (the five levels: Immediate, UserBlocking, Normal, Low, Idle).
+The two systems exist because of the architectural separation from Section 3: the `scheduler` package is a _general-purpose_ cooperative task runner, deliberately independent of React, with its own notion of priority (the five levels: Immediate, UserBlocking, Normal, Low, Idle).
 
-The *reconciler* has lanes, a much finer-grained (31-way) and React-specific priority model designed around rendering, transitions, retries, and the set operations from Section 5.
+The _reconciler_ has lanes, a much finer-grained (31-way) and React-specific priority model designed around rendering, transitions, retries, and the set operations from Section 5.
 
 Neither could simply use the other's model: the scheduler should not know about React's lanes (it would no longer be general), and the reconciler needs far more granularity and structure than five levels provide.
 
@@ -1099,23 +1080,23 @@ The boundary is `ensureRootIsScheduled` (and the functions around it): the point
 
 The translation goes:
 
-1. **Lanes to event priority.** React takes the lanes it is about to render (`getNextLanes`, Section 8) and reduces them to a coarser *event priority* via `lanesToEventPriority`. The event priorities are a small set (`DiscreteEventPriority`, `ContinuousEventPriority`, `DefaultEventPriority`, `IdleEventPriority`) that you have effectively already met: they are the same priority tiers the Event System guide assigned to events (Section 8 of that guide), and they sit *between* the fine-grained lanes and the scheduler's levels. So `lanesToEventPriority` collapses "which specific lanes" into "how urgent, in broad terms."
-2. **Event priority to scheduler priority.** React then maps that event priority to one of the scheduler's five levels: discrete-urgent work maps to `ImmediateSchedulerPriority` (synchronous, the most urgent), continuous to `UserBlockingPriority`, default to `NormalPriority`, idle to `IdlePriority`. 
+1. **Lanes to event priority.** React takes the lanes it is about to render (`getNextLanes`, Section 8) and reduces them to a coarser _event priority_ via `lanesToEventPriority`. The event priorities are a small set (`DiscreteEventPriority`, `ContinuousEventPriority`, `DefaultEventPriority`, `IdleEventPriority`) that you have effectively already met: they are the same priority tiers the Event System guide assigned to events (Section 8 of that guide), and they sit _between_ the fine-grained lanes and the scheduler's levels. So `lanesToEventPriority` collapses "which specific lanes" into "how urgent, in broad terms."
+2. **Event priority to scheduler priority.** React then maps that event priority to one of the scheduler's five levels: discrete-urgent work maps to `ImmediateSchedulerPriority` (synchronous, the most urgent), continuous to `UserBlockingPriority`, default to `NormalPriority`, idle to `IdlePriority`.
 3. **Schedule the render at that level.** React calls the scheduler's `scheduleCallback` with that priority and a callback that performs the render work on the root (`performConcurrentWorkOnRoot`). The scheduler now runs that callback cooperatively at the given priority (Sections 3 and 4): ordering it among other tasks by its timeout-derived expiration, time-slicing it, yielding via `MessageChannel`, and resuming via the continuation it returns when it yields mid-render.
 
-So the flow across both systems, end to end, is: an update gets a *lane* based on context (Section 7).
+So the flow across both systems, end to end, is: an update gets a _lane_ based on context (Section 7).
 
 The lanes accumulate in `pendingLanes`.
 
 React selects the render batch with `getNextLanes` (Section 8).
 
-At the boundary it translates those lanes down to an *event priority* and then to a *scheduler priority* and schedules the render task with the scheduler.
+At the boundary it translates those lanes down to an _event priority_ and then to a _scheduler priority_ and schedules the render task with the scheduler.
 
 The scheduler runs that task cooperatively (Sections 3 and 4), and during the render the work loop checks the lanes (`renderLanes`) at each fiber to decide what to process and calls `shouldYield` to decide when to pause.
 
-Lanes govern *what* gets rendered and *whether to interrupt*.
+Lanes govern _what_ gets rendered and _whether to interrupt_.
 
-The scheduler governs *when* the rendering runs and *when it yields*, and the translation at `ensureRootIsScheduled` is where the fine-grained lane model becomes the coarse scheduler-priority the generic scheduler understands.
+The scheduler governs _when_ the rendering runs and _when it yields_, and the translation at `ensureRootIsScheduled` is where the fine-grained lane model becomes the coarse scheduler-priority the generic scheduler understands.
 
 This also resolves the confusion about there being "two priority systems." They are not redundant.
 
@@ -1125,7 +1106,7 @@ Lanes (31-way, React-specific) are how React reasons internally about rendering 
 
 The scheduler's five levels are the simple interface the generic scheduler exposes for "how urgently should I run this callback." React needs the detail of lanes for its own logic and the simplicity of scheduler levels to talk to a general-purpose scheduler, so it keeps both and maps between them.
 
-When you see the scheduler's `UserBlockingPriority` and the reconciler's `InputContinuousLane` and wonder if they are the same thing, the answer is: they are the same *idea* (continuous-input urgency) expressed in the two layers' vocabularies, connected by `lanesToEventPriority` and the event-priority-to-scheduler-priority mapping.
+When you see the scheduler's `UserBlockingPriority` and the reconciler's `InputContinuousLane` and wonder if they are the same thing, the answer is: they are the same _idea_ (continuous-input urgency) expressed in the two layers' vocabularies, connected by `lanesToEventPriority` and the event-priority-to-scheduler-priority mapping.
 
 ### Try it
 
@@ -1205,7 +1186,7 @@ Two related updates show an inconsistent intermediate frame: a consistency issue
 
 If you are seeing it, the updates may not be entangled as you assume, or the inconsistency is in your own logic rather than React's scheduling.
 
-Updates that you expected to batch into one render produce several: they got *different* lanes (different contexts, Section 7), so they did not share a batch.
+Updates that you expected to batch into one render produce several: they got _different_ lanes (different contexts, Section 7), so they did not share a batch.
 
 Same lane batches.
 
@@ -1215,15 +1196,15 @@ Different lanes may not.
 
 React's responsiveness rests on two cooperating mechanisms with cleanly separated jobs.
 
-The *scheduler*, a generic package, answers *when*: it runs work as prioritized tasks in a min-heap ordered by timeout-derived expiration, and it makes long work non-blocking by slicing it into roughly 5-millisecond pieces and yielding the main thread between them via a `MessageChannel` macrotask (chosen over `setTimeout`'s 4ms clamp, a paint-preceding microtask, and unreliable `requestIdleCallback`), checking `shouldYield` between units of work.
+The _scheduler_, a generic package, answers _when_: it runs work as prioritized tasks in a min-heap ordered by timeout-derived expiration, and it makes long work non-blocking by slicing it into roughly 5-millisecond pieces and yielding the main thread between them via a `MessageChannel` macrotask (chosen over `setTimeout`'s 4ms clamp, a paint-preceding microtask, and unreliable `requestIdleCallback`), checking `shouldYield` between units of work.
 
-*Lanes* answer *which*: each update is assigned a single bit in a 31-lane bitmask based on its context (a transition lane inside `startTransition`, the event's lane inside an event, `DefaultLane` otherwise), bits are used because scheduling is constantly doing cheap set operations on priorities at every fiber (is this update in the render batch, does this subtree have matching work), React renders the highest-priority pending lanes chosen by `getNextLanes`, and a higher-priority update arriving lets React interrupt and restart at the more urgent lanes.
+_Lanes_ answer _which_: each update is assigned a single bit in a 31-lane bitmask based on its context (a transition lane inside `startTransition`, the event's lane inside an event, `DefaultLane` otherwise), bits are used because scheduling is constantly doing cheap set operations on priorities at every fiber (is this update in the render batch, does this subtree have matching work), React renders the highest-priority pending lanes chosen by `getNextLanes`, and a higher-priority update arriving lets React interrupt and restart at the more urgent lanes.
 
 Two safety mechanisms refine pure priority ordering: expiration gives every lane a deadline so low-priority work cannot be starved forever (a stale lane is forced through synchronously), and entanglement forces related lanes to render together so splitting never produces an inconsistent intermediate UI.
 
 The application-facing concurrent features (automatic batching, `useTransition`, `useDeferredValue`, Suspense retries) are all handles on this one lane system, and the two priority models (the scheduler's five levels and the reconciler's lanes) meet at `ensureRootIsScheduled`, where React translates the fine-grained lanes into a coarse scheduler priority to hand the render to the generic scheduler.
 
-So every scheduling behavior you observe (a transition staying responsive, a click preempting a render, work sliced into 5ms pieces, a stale update eventually forced through) is one of these mechanisms, and the question to ask of any scheduling symptom is whether it is about *when* (the scheduler and yielding) or *which* (lanes and priority).
+So every scheduling behavior you observe (a transition staying responsive, a click preempting a render, work sliced into 5ms pieces, a stale update eventually forced through) is one of these mechanisms, and the question to ask of any scheduling symptom is whether it is about _when_ (the scheduler and yielding) or _which_ (lanes and priority).
 
 ### Try it
 
@@ -1231,7 +1212,7 @@ So every scheduling behavior you observe (a transition staying responsive, a cli
 
 ### You've got this if
 
-You can take "this interaction janks" and decide, from a Performance trace, whether it is a *when* problem (synchronous, not yielding, should be a transition) or a *which/what* problem (a single render too expensive to fix by slicing).
+You can take "this interaction janks" and decide, from a Performance trace, whether it is a _when_ problem (synchronous, not yielding, should be a transition) or a _which/what_ problem (a single render too expensive to fix by slicing).
 
 ---
 
@@ -1307,7 +1288,7 @@ These are the closest thing to a primary explanation of the concurrent model fro
 
 The discussion on concurrent scheduling specifics (which states "we have 31 levels of granularity ... each bit in a bitmask is called a Lane") is the source for Sections 5 and 6, and others cover transitions, Suspense, and tearing.
 
-Start here for the *why* behind lanes.
+Start here for the _why_ behind lanes.
 
 ### The React source, the primary primary source (pass 3)
 
@@ -1319,7 +1300,7 @@ Everything in this guide is a reading of these files.
 
 ### acdlite's (Andrew Clark's) original lanes pull request and design notes
 
-(linked from the React repository and referenced in community write-ups) document the *transition from the expiration-time model to lanes* and the reasoning for the bitmask, which is the history in Sections 5 and 9.
+(linked from the React repository and referenced in community write-ups) document the _transition from the expiration-time model to lanes_ and the reasoning for the bitmask, which is the history in Sections 5 and 9.
 
 It is from the React 18 development period and remains the design of record.
 
@@ -1339,7 +1320,7 @@ Understanding why a macrotask runs after paint and a microtask does not is the k
 
 A good way to use all of these: read the relevant deep section here first so you have the model and the vocabulary, then read the source or the working-group discussion, then come back.
 
-This guide gives you the two-mechanism split (scheduler for *when*, lanes for *which*) and traces every behavior to one side or the other.
+This guide gives you the two-mechanism split (scheduler for _when_, lanes for _which_) and traces every behavior to one side or the other.
 
 The primary sources give the exact constants, the design history, and the platform details.
 

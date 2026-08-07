@@ -66,6 +66,7 @@ That is for the day you want to see the machinery with your own eyes.
 There is no rush.
 
 ### Two rules that multiply everything
+
 1. **Run the experiments.** Each section ends with a short **"Try it."** A bug you have personally caused and watched happen is a bug you will never ship. Reading about it is worth maybe a tenth as much. Keep a throwaway React project open (a Vite scratch app, or any sandbox) and actually reproduce each one. It takes two minutes and it is the difference between knowing this and forgetting it.
 2. **Trust the order.** The sections build on each other. If something feels arbitrary, the reason is almost always in an earlier section, so go back rather than push forward. Here is the build order, so you can see why:
 
@@ -102,30 +103,6 @@ Everything after that is gravy you collect over time.
 
 ---
 
-## Table of Contents
-
-1. [What rendering actually is](#1-what-rendering-actually-is)
-2. [Elements, components, instances](#2-elements-components-instances)
-3. [The "Virtual DOM," demystified](#3-the-virtual-dom-demystified)
-4. [How React talks to the screen (the reconciler/renderer split)](#4-how-react-talks-to-the-screen-the-reconcilerrenderer-split)
-5. [The diff: React's two big assumptions](#5-the-diff-reacts-two-big-assumptions)
-6. [Keys and lists (where most bugs live)](#6-keys-and-lists-where-most-bugs-live)
-7. [Fiber: the object that makes pausing possible](#7-fiber-the-object-that-makes-pausing-possible)
-8. [Two trees at once (double buffering)](#8-two-trees-at-once-double-buffering)
-9. [Render phase vs. commit phase](#9-render-phase-vs-commit-phase)
-10. [The work loop](#10-the-work-loop)
-11. [Not freezing the page (concurrent rendering)](#11-not-freezing-the-page-concurrent-rendering)
-12. [Lanes (how React ranks urgency)](#12-lanes-how-react-ranks-urgency)
-13. [How hooks actually store your state](#13-how-hooks-actually-store-your-state)
-14. [State updates and a bug called tearing](#14-state-updates-and-a-bug-called-tearing)
-15. [Suspense, mechanically](#15-suspense-mechanically)
-16. [Why StrictMode runs things twice](#16-why-strictmode-runs-things-twice)
-17. [The 2026 layer: Compiler, Activity, View Transitions](#17-the-2026-layer-compiler-activity-view-transitions)
-18. [Debugging with this knowledge](#18-debugging-with-this-knowledge)
-19. [Reading the source (pass 3)](#19-reading-the-source-pass-3)
-
----
-
 ## 1. What rendering actually is
 
 Prereqs: basic React (you have written a component).
@@ -158,7 +135,7 @@ The "fast" claim is a bit of a myth, and the honest version of it is in the deep
 
 Imagine the dumbest possible way to keep a screen in sync with your data: every time anything changes, delete the entire UI and rebuild it from scratch.
 
-This is a disaster, and understanding exactly *why* it is a disaster tells you what React is really for.
+This is a disaster, and understanding exactly _why_ it is a disaster tells you what React is really for.
 
 Four separate things go wrong:
 
@@ -167,7 +144,7 @@ Four separate things go wrong:
 3. **Animations live on specific nodes.** Recreate the node and the CSS transition restarts or disappears.
 4. **It does not scale.** The cost would grow with the size of the whole app on every change, instead of with the size of the change.
 
-So the real problem is not "draw the UI." It is: *given an old description and a new one, find the smallest set of real DOM changes that turns old into new, and apply them correctly and fast.* That is reconciliation, and it is genuinely hard.
+So the real problem is not "draw the UI." It is: _given an old description and a new one, find the smallest set of real DOM changes that turns old into new, and apply them correctly and fast._ That is reconciliation, and it is genuinely hard.
 
 Comparing two arbitrary trees to find the minimum set of edits is a known computer-science problem (tree edit distance), and the optimal solutions run in about O(n^3) time.
 
@@ -179,7 +156,7 @@ React's masterstroke is to **refuse to solve the hard version.** Instead it make
 
 That trade, "good and linear" over "perfect and cubic," is the most important decision in the entire system, and the `key` prop you have used a hundred times is a direct consequence of it.
 
-About "fast": diffing two JavaScript trees and then updating the DOM is *not* magically faster than a careful hand-written DOM update.
+About "fast": diffing two JavaScript trees and then updating the DOM is _not_ magically faster than a careful hand-written DOM update.
 
 For one tiny change, hand-written wins.
 
@@ -244,7 +221,7 @@ When you write `<button className="primary">Save</button>`, a compile-time trans
 Things worth actually knowing about this object:
 
 - **It is immutable and cheap.** Every render makes brand-new element objects. This is what makes it safe for React to hold last render's elements and compare against them.
-- **`$$typeof` is a real Symbol on purpose.** A Symbol cannot survive `JSON.parse`, so if some user input got serialized into something that merely *looks* like an element, React can check `$$typeof`, see it is fake, and refuse to render it. That closes off a class of injection attacks.
+- **`$$typeof` is a real Symbol on purpose.** A Symbol cannot survive `JSON.parse`, so if some user input got serialized into something that merely _looks_ like an element, React can check `$$typeof`, see it is fake, and refuse to render it. That closes off a class of injection attacks.
 - **`type` tells you the kind.** A string like `'div'` means a **host element** (the renderer knows how to make a real node for it). A function or class means a **composite element** (React has to call it to find out what it produces).
 - **The JSX transform since React 17** emits calls to `jsx()` from `react/jsx-runtime`, which is why you no longer need `React` in scope just to write JSX.
 - **`ref` is a normal prop in React 19.** You no longer need `forwardRef` to pass a ref through a function component for new code.
@@ -321,7 +298,7 @@ Honest one-liner: the Virtual DOM is a programming model where you pretend to re
 
 ### Try it
 
-> Nothing to run here. Just notice that you have never written code that reads the DOM to decide what to re-render. You describe the end state. React figures out the diff. That asymmetry *is* the Virtual DOM idea.
+> Nothing to run here. Just notice that you have never written code that reads the DOM to decide what to re-render. You describe the end state. React figures out the diff. That asymmetry _is_ the Virtual DOM idea.
 
 ### You've got this if
 
@@ -337,7 +314,7 @@ Outside React: the idea that one piece of logic can target different outputs thr
 
 ### The itch
 
-Why do `useState`, `useEffect`, and Suspense work *identically* in React for the web and React Native, two completely different output targets?
+Why do `useState`, `useEffect`, and Suspense work _identically_ in React for the web and React Native, two completely different output targets?
 
 ### The short version
 
@@ -402,7 +379,7 @@ When React compares old and new at the same spot, it uses two rules.
 
 (both `'div'`, or both the same component), reuse the existing thing and just update props.
 
-**If the type is different**, throw the whole old subtree away and build the new one from scratch, *losing all its state.* **Rule 2: within a list, a `key` tells React which item is which** across renders.
+**If the type is different**, throw the whole old subtree away and build the new one from scratch, _losing all its state._ **Rule 2: within a list, a `key` tells React which item is which** across renders.
 
 These two rules are the whole diff, and they are why the bugs above happen.
 
@@ -432,8 +409,10 @@ The bug this explains, which bites everyone at least once, is **defining a compo
 // New function object = different `type` = full remount every render.
 // The input loses focus and its text on every single keystroke.
 function Parent() {
-  function Row() { return <input />; }
-  return <Row />;
+    function Row() {
+        return <input />;
+    }
+    return <Row />;
 }
 ```
 
@@ -449,7 +428,7 @@ The full payoff is the next section.
 
 ### Try it
 
-> In a scratch project, write a parent component that defines a small child component *inside* its own body and renders it, with an `<input>` in the child whose value is parent state. Type into it and watch the cursor get kicked out on every keystroke. Now move the child definition out to module scope and watch the focus stay put. Same input, one structural difference.
+> In a scratch project, write a parent component that defines a small child component _inside_ its own body and renders it, with an `<input>` in the child whose value is parent state. Type into it and watch the cursor get kicked out on every keystroke. Now move the child definition out to module scope and watch the focus stay put. Same input, one structural difference.
 
 ### You've got this if
 
@@ -477,7 +456,7 @@ The `key` is how it knows.
 
 If you use the **array index** as the key, you are telling React "position 0 is always the same item," which is a lie the moment you reorder or insert.
 
-So any state attached to the item (a checkbox, typed text, focus) stays glued to the *position* instead of following the *item*.
+So any state attached to the item (a checkbox, typed text, focus) stays glued to the _position_ instead of following the _item_.
 
 Fix: use a stable id from your data, never the index, for any list that can change order.
 
@@ -497,11 +476,11 @@ The moment keys stop matching by position, React takes the remaining old fibers 
 
 Then it walks the remaining new elements: for each, it looks up its key in the map.
 
-A hit means "reuse this existing fiber" (and if it moved, mark it so the DOM node gets *moved*, not recreated).
+A hit means "reuse this existing fiber" (and if it moved, mark it so the DOM node gets _moved_, not recreated).
 
 A miss means "create a new one." Anything left in the map at the end is deleted.
 
-With good keys, a reorder becomes cheap node *moves*, and component state and DOM state travel along with each item.
+With good keys, a reorder becomes cheap node _moves_, and component state and DOM state travel along with each item.
 
 #### Why index-as-key is a trap
 
@@ -509,7 +488,7 @@ Using the index says "slot 0 is always the same logical item." True only if the 
 
 Otherwise:
 
-- React reuses the fiber at index 0 to render whatever data is now at index 0, a *different* item, just updating props.
+- React reuses the fiber at index 0 to render whatever data is now at index 0, a _different_ item, just updating props.
 - Anything bound to the instance rather than the data (uncontrolled input text, checkbox state, focus, an in-flight CSS transition) sticks to the slot and jumps to the wrong row after a reorder.
 - It is both a correctness bug (state on the wrong row) and a performance bug (needless updates).
 
@@ -681,7 +660,7 @@ Reusing the two trees back and forth (instead of allocating a new tree each rend
 
 ### Try it
 
-> Conceptual one: next time you read "render can be interrupted," remind yourself *which* tree is being built. The reason interruption is safe is that the answer is always "the disposable one."
+> Conceptual one: next time you read "render can be interrupted," remind yourself _which_ tree is being built. The reason interruption is safe is that the answer is always "the disposable one."
 
 ### You've got this if
 
@@ -740,10 +719,10 @@ After commit and paint, React flushes **passive effects** (`useEffect` setup, pl
 
 The practical timing table:
 
-| Hook | Cleanup runs | Setup runs | Blocks paint? |
-|---|---|---|---|
-| `useLayoutEffect` | mutation sub-phase (before paint) | layout sub-phase (before paint) | Yes |
-| `useEffect` | after paint, before next setup | after paint | No |
+| Hook              | Cleanup runs                      | Setup runs                      | Blocks paint? |
+| ----------------- | --------------------------------- | ------------------------------- | ------------- |
+| `useLayoutEffect` | mutation sub-phase (before paint) | layout sub-phase (before paint) | Yes           |
+| `useEffect`       | after paint, before next setup    | after paint                     | No            |
 
 Rule of thumb: need to measure or adjust the DOM before the user sees it (positioning a tooltip)?
 
@@ -779,7 +758,7 @@ Outside React: a loop that processes one unit of work at a time and can check a 
 
 ### The itch
 
-What is React literally *doing* during the render phase, step by step?
+What is React literally _doing_ during the render phase, step by step?
 
 "It renders" is not an answer you can debug with.
 
@@ -787,9 +766,9 @@ What is React literally *doing* during the render phase, step by step?
 
 React processes fibers one at a time in a loop.
 
-On the way *down* the tree it runs `beginWork` (which calls your component and figures out its children, or **skips the whole subtree** if nothing changed, a "bailout").
+On the way _down_ the tree it runs `beginWork` (which calls your component and figures out its children, or **skips the whole subtree** if nothing changed, a "bailout").
 
-On the way back *up* it runs `completeWork` (which builds the actual DOM nodes off-screen).
+On the way back _up_ it runs `completeWork` (which builds the actual DOM nodes off-screen).
 
 Between each step it checks "should I pause and let the browser breathe?" That pause-check is what makes rendering interruptible.
 
@@ -799,9 +778,9 @@ Roughly:
 
 ```js
 function workLoopConcurrent() {
-  while (workInProgress !== null && !shouldYield()) {
-    performUnitOfWork(workInProgress);
-  }
+    while (workInProgress !== null && !shouldYield()) {
+        performUnitOfWork(workInProgress);
+    }
 }
 ```
 
@@ -876,6 +855,7 @@ If an urgent update (typing) arrives during a slow render, React can abandon the
 You opt into this with `startTransition`, `useTransition`, and `useDeferredValue`, which mark some updates as "not urgent."
 
 ### How it actually works
+
 Concurrent React (via `createRoot`, the default in modern apps) interleaves rendering with the browser's other work.
 
 It is **not** multi-threaded and does **not** render in the background.
@@ -941,17 +921,19 @@ Lanes (React 18+) replaced an older single-number priority model that could not 
 
 #### The representation
 
-One lane is one bit in a **31-bit** integer (31, not 32, because JS bitwise ops use 32-bit *signed* integers and the sign bit is reserved).
+One lane is one bit in a **31-bit** integer (31, not 32, because JS bitwise ops use 32-bit _signed_ integers and the sign bit is reserved).
 
-A *set* of lanes is an integer with several bits on.
+A _set_ of lanes is an integer with several bits on.
 
 This lets React do priority math with raw bitwise ops:
 
 ```js
-(fiber.lanes & renderLanes) !== NoLanes        // any work on this fiber at these priorities?
-(fiber.childLanes & renderLanes) !== NoLanes   // any work below me? (the bailout check)
-const merged = laneSetA | laneSetB;            // combine two sets
-const stillPending = pending & ~finished;      // remove the ones we just did
+((fiber.lanes & renderLanes) !==
+    NoLanes // any work on this fiber at these priorities?
+    (fiber.childLanes & renderLanes)) !==
+    NoLanes; // any work below me? (the bailout check)
+const merged = laneSetA | laneSetB; // combine two sets
+const stillPending = pending & ~finished; // remove the ones we just did
 ```
 
 These are single-cycle operations, which is why the per-fiber `childLanes` bailout (Section 10) is affordable on every fiber of every render.
@@ -1012,7 +994,7 @@ Outside React: a linked list, and closures (a function holding on to the variabl
 
 ### The itch
 
-"Don't call hooks in conditions or loops." Everyone repeats it, but *why*?
+"Don't call hooks in conditions or loops." Everyone repeats it, but _why_?
 
 Once you see the storage, the rule stops being a rule you memorize and becomes the only thing that could possibly work.
 
@@ -1050,7 +1032,7 @@ fiber.memoizedState
 
 React does **not** identify hooks by name or variable.
 
-It walks this list with a cursor and binds the *Nth hook call* to the *Nth node*.
+It walks this list with a cursor and binds the _Nth hook call_ to the _Nth node_.
 
 So:
 
@@ -1101,7 +1083,7 @@ It **queues** an update to be applied at the next render.
 
 That is why functional updates (`c => c + 1`) stack correctly while value updates (`count + 1`) all read the same stale value and collapse to one.
 
-**Tearing** is a concurrency hazard: because a render can pause partway, an *external* store (Redux, a global variable) can change mid-render, so different components in one render read different values and the UI shows inconsistent data.
+**Tearing** is a concurrency hazard: because a render can pause partway, an _external_ store (Redux, a global variable) can change mid-render, so different components in one render read different values and the UI shows inconsistent data.
 
 `useSyncExternalStore` is the fix.
 
@@ -1111,7 +1093,7 @@ That is why functional updates (`c => c + 1`) stack correctly while value update
 
 `setState` (or `dispatch`) creates an **update object** and appends it to the hook's queue (a small circular linked list), marks lanes on the fiber, bubbles `childLanes` to the root, and asks the scheduler to render.
 
-The new value is computed *later*, when React drains the queue during the next render.
+The new value is computed _later_, when React drains the queue during the next render.
 
 (Internally `useState` is `useReducer` with a built-in reducer, which is why they behave alike.)
 
@@ -1257,7 +1239,7 @@ Clean under StrictMode means safe under concurrency.
 
 ### Try it
 
-> You already ran this in Section 9's "Try it." Now make it a teaching moment: add a `setInterval` in a `useEffect` *without* a cleanup, and watch StrictMode reveal two intervals running. Add the cleanup and watch it drop back to one.
+> You already ran this in Section 9's "Try it." Now make it a teaching moment: add a `setInterval` in a `useEffect` _without_ a cleanup, and watch StrictMode reveal two intervals running. Add the cleanup and watch it drop back to one.
 
 ### You've got this if
 
@@ -1281,7 +1263,7 @@ And what are these new `<Activity>` and View Transition things?
 
 ### The short version
 
-The **React Compiler** (stable since October 2025) reads your code at build time and inserts memoization automatically, so you mostly stop writing `useMemo`/`useCallback`/`React.memo` by hand, *if* your code follows the rules.
+The **React Compiler** (stable since October 2025) reads your code at build time and inserts memoization automatically, so you mostly stop writing `useMemo`/`useCallback`/`React.memo` by hand, _if_ your code follows the rules.
 
 #### `<Activity>`
 
@@ -1303,7 +1285,7 @@ It runs in production at Meta and ships enabled-by-default in newer framework te
 
 It does not change the reconciler.
 
-It changes how *often* components re-render by memoizing precisely based on a compiler-derived understanding of your data dependencies, often more thoroughly than humans manage.
+It changes how _often_ components re-render by memoizing precisely based on a compiler-derived understanding of your data dependencies, often more thoroughly than humans manage.
 
 Implications:
 
@@ -1318,8 +1300,8 @@ For existing apps: enable behind a flag, pin the exact compiler version, lean on
 Keeps part of the UI mounted but inactive instead of unmounting it:
 
 ```jsx
-<Activity mode={tab === 'profile' ? 'visible' : 'hidden'}>
-  <ProfilePanel />
+<Activity mode={tab === "profile" ? "visible" : "hidden"}>
+    <ProfilePanel />
 </Activity>
 ```
 
@@ -1363,7 +1345,7 @@ Outside React: the React DevTools and the browser Performance panel.
 
 ### The itch
 
-Something re-renders too much, or feels janky, and you want a *procedure* instead of randomly adding `useMemo` everywhere.
+Something re-renders too much, or feels janky, and you want a _procedure_ instead of randomly adding `useMemo` everywhere.
 
 ### The short version
 
@@ -1438,7 +1420,7 @@ On top sit the Compiler (auto-memoization), Activity (state-preserving hidden UI
 
 ### You've got this if
 
-You reach for the Profiler and the four questions *before* you reach for `useMemo`.
+You reach for the Profiler and the four questions _before_ you reach for `useMemo`.
 
 ---
 
@@ -1520,7 +1502,7 @@ When you want to go past this guide, these are the canonical sources, each with 
 
 Available at https://github.com/acdlite/react-fiber-architecture .
 
-This is the best explanation of *why* Fiber exists and *what a fiber is*, written by someone on the React team who actually built it.
+This is the best explanation of _why_ Fiber exists and _what a fiber is_, written by someone on the React team who actually built it.
 
 It maps onto Sections 5 through 8 of this guide, especially the central insight that a fiber is a reified stack frame.
 

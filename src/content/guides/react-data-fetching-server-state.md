@@ -13,7 +13,7 @@ series: "react-internals"
 
 > **What this guide builds on.** This is the Track B guide that leans on the most prior material, because it sits at the meeting point of several mechanisms. From the **State Management guide** it assumes the central distinction of Section 14: server state is a cache of remote data, not client state, and conflating the two is the root mistake this guide exists to fix. From the **Hooks and Effects guide** it uses the snapshot model, the stale-closure and fetch-race material (Sections 3 and 9), referential stability (Section 8), `useSyncExternalStore` (Section 15), and `use()` (Section 15). From the **rendering and reconciliation guide** it uses Suspense, concurrent rendering, and tearing. You can read this guide right after the State guide. Wherever it reaches for an engine concept, it defines that concept in one line at first use. The per-section **Prereqs** lines name exactly what each section needs, drawn from three wells: earlier sections here, the other guides, and outside knowledge (HTTP caching, promises, the browser focus and online events).
 
-> **A note on libraries.** Server state has a *model* that is universal: every serious server-state library (TanStack Query, formerly React Query, SWR, RTK Query) implements the same core ideas (a keyed cache, stale-while-revalidate, deduplication, background synchronization, invalidation). This guide teaches that model as the thing to understand, and uses **TanStack Query v5** as the concrete reference implementation for APIs, because it is the one you have worked with. SWR and RTK Query are siblings built on the same model. The concepts transfer.
+> **A note on libraries.** Server state has a _model_ that is universal: every serious server-state library (TanStack Query, formerly React Query, SWR, RTK Query) implements the same core ideas (a keyed cache, stale-while-revalidate, deduplication, background synchronization, invalidation). This guide teaches that model as the thing to understand, and uses **TanStack Query v5** as the concrete reference implementation for APIs, because it is the one you have worked with. SWR and RTK Query are siblings built on the same model. The concepts transfer.
 
 ## Read this first
 
@@ -42,6 +42,7 @@ Each section opens with a one-line **Prereqs** note: the earlier sections (here 
 Sections that need nothing past basic React say so.
 
 ### Two rules that multiply everything
+
 1. **Run the experiments.** Each section ends with a short **"Try it."** Install TanStack Query in a Vite scratch app, open the Devtools panel, and watch the cache entries change state as you interact. The caching behavior has to be seen in the Devtools to become real.
 2. **Trust the order.** The sections build one model, in order: server state is a cache, the manual approach reinvents that cache badly, the cache is addressed by keys, it has a status model and a freshness policy (`staleTime`) and a retention policy (`gcTime`), it deduplicates and shares, it refetches in the background, you gate it with `enabled`, you write to it with mutations and keep it honest with invalidation and optimistic updates, you page and prefetch, you integrate it with Suspense, and underneath it is an external store. Here is the spine:
 
@@ -70,27 +71,6 @@ Finish pass 1 and you are already ahead.
 
 ---
 
-## Table of Contents
-
-1. [Server state is a cache, not state](#1-server-state-is-a-cache-not-state)
-2. [Why useEffect and useState is the wrong tool for fetching](#2-why-useeffect-and-usestate-is-the-wrong-tool-for-fetching)
-3. [Query keys: the cache is a key-value store](#3-query-keys-the-cache-is-a-key-value-store)
-4. [The status model: two axes, not one boolean](#4-the-status-model-two-axes-not-one-boolean)
-5. [Stale-while-revalidate, and what staleTime really controls](#5-stale-while-revalidate-and-what-staletime-really-controls)
-6. [Garbage collection: gcTime and how the cache is pruned](#6-garbage-collection-gctime-and-how-the-cache-is-pruned)
-7. [Deduplication and sharing: one request, many consumers](#7-deduplication-and-sharing-one-request-many-consumers)
-8. [Background refetching: how the cache stays fresh](#8-background-refetching-how-the-cache-stays-fresh)
-9. [The enabled flag and dependent queries](#9-the-enabled-flag-and-dependent-queries)
-10. [Mutations and cache invalidation](#10-mutations-and-cache-invalidation)
-11. [Optimistic updates](#11-optimistic-updates)
-12. [Pagination, infinite queries, and prefetching](#12-pagination-infinite-queries-and-prefetching)
-13. [Suspense for data, and React 19's use()](#13-suspense-for-data-and-react-19s-use)
-14. [How the cache connects to the rendering engine and RSC](#14-how-the-cache-connects-to-the-rendering-engine-and-rsc)
-15. [Pitfalls and anti-patterns](#15-pitfalls-and-anti-patterns)
-16. [Debugging data fetching](#16-debugging-data-fetching)
-
----
-
 ## 1. Server state is a cache, not state
 
 Prereqs: from the State guide, Section 14 (server state versus client state).
@@ -109,7 +89,7 @@ The reframe that fixes all of it is to stop calling it state and start calling i
 
 The data you fetch from a server is not your application's state.
 
-It is a *cache*, a local copy of data whose real home is the server.
+It is a _cache_, a local copy of data whose real home is the server.
 
 That single fact determines everything a server-state tool does.
 
@@ -129,7 +109,7 @@ Your browser's HTTP cache is a copy of files that live on a server.
 
 A CPU cache is a copy of data that lives in main memory.
 
-The defining tension of any cache is the same: the copy is fast to read but can drift out of agreement with the source, so a cache has to have a *policy* for when to trust the copy and when to go back to the source.
+The defining tension of any cache is the same: the copy is fast to read but can drift out of agreement with the source, so a cache has to have a _policy_ for when to trust the copy and when to go back to the source.
 
 Hold that thought, because "when do I trust the cached copy versus refetch" is exactly the question `staleTime` answers (Section 5), and it is the question the manual `useState` approach has no answer to at all.
 
@@ -187,7 +167,7 @@ This section is the full reason why, in terms of mechanism.
 
 Fetching with `useEffect` and `useState` is not wrong because effects cannot fetch.
 
-It is wrong because it stores the result in *component-local state with no shared cache*.
+It is wrong because it stores the result in _component-local state with no shared cache_.
 
 That single limitation forces you to hand-build everything a cache provides: loading and error status, race-condition handling, deduplication, caching across mounts, and background refetching, and to rebuild it per component, badly.
 
@@ -201,24 +181,36 @@ Start with the canonical manual fetch and count what it makes you do:
 
 ```js
 function User({ id }) {
-  const [data, setData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+    const [data, setData] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-  useEffect(() => {
-    let ignore = false;            // race guard (Hooks guide, Section 9)
-    setIsLoading(true);
-    setError(null);
-    fetchUser(id)
-      .then(d => { if (!ignore) { setData(d); setIsLoading(false); } })
-      .catch(e => { if (!ignore) { setError(e); setIsLoading(false); } });
-    return () => { ignore = true; }; // cleanup cancels the stale response
-  }, [id]);
-  // ...
+    useEffect(() => {
+        let ignore = false; // race guard (Hooks guide, Section 9)
+        setIsLoading(true);
+        setError(null);
+        fetchUser(id)
+            .then((d) => {
+                if (!ignore) {
+                    setData(d);
+                    setIsLoading(false);
+                }
+            })
+            .catch((e) => {
+                if (!ignore) {
+                    setError(e);
+                    setIsLoading(false);
+                }
+            });
+        return () => {
+            ignore = true;
+        }; // cleanup cancels the stale response
+    }, [id]);
+    // ...
 }
 ```
 
-This is *correct* manual code, and it is already carrying a lot: three pieces of state in the boolean-soup shape the State guide warned about (Section 5), and the `ignore` flag from the Hooks guide's fetch-race section (Section 9) to stop an older request from overwriting a newer one when `id` changes quickly.
+This is _correct_ manual code, and it is already carrying a lot: three pieces of state in the boolean-soup shape the State guide warned about (Section 5), and the `ignore` flag from the Hooks guide's fetch-race section (Section 9) to stop an older request from overwriting a newer one when `id` changes quickly.
 
 And it is still missing almost everything a real app needs.
 
@@ -226,7 +218,7 @@ Walk the gaps, because each gap is a thing the library provides:
 
 #### No cache across mounts
 
-The data lives in *this component's* state.
+The data lives in _this component's_ state.
 
 Unmount and remount the component (navigate away and back) and the state is gone, so it refetches from scratch and shows a spinner again, every time.
 
@@ -260,7 +252,7 @@ Every one of these gaps is something you would solve per fetch, copy-pasting the
 
 That repetition is the real tell: when you find yourself writing the same infrastructure around every fetch, you are hand-rolling a cache, and a cache is exactly what you should reach for instead of rebuilding.
 
-This is why "you might not need an effect" (Hooks guide, Section 6) applies with full force to data fetching: an effect synchronizes with an external system, and the network is an external system, so an effect *can* fetch, but synchronizing your UI with a remote source is a caching problem, and effects give you no cache.
+This is why "you might not need an effect" (Hooks guide, Section 6) applies with full force to data fetching: an effect synchronizes with an external system, and the network is an external system, so an effect _can_ fetch, but synchronizing your UI with a remote source is a caching problem, and effects give you no cache.
 
 The library does not abolish the effect.
 
@@ -290,7 +282,7 @@ Outside React: a key-value store or hash map (keys map to values).
 
 Query keys feel like a naming convention you copy from examples: `['user', id]`, `['todos']`.
 
-Then you hit a bug where changing a filter does not refetch, or two different requests stomp on each other's data, and you realize you do not actually understand what the key *is*.
+Then you hit a bug where changing a filter does not refetch, or two different requests stomp on each other's data, and you realize you do not actually understand what the key _is_.
 
 It is the most important concept in the whole library, and it is simpler than it looks.
 
@@ -298,7 +290,7 @@ It is the most important concept in the whole library, and it is simpler than it
 
 The cache is a key-value store: a map from a serialized query key to a cache entry (the data, its status, and timestamps).
 
-The query key is the *address* of a piece of data in that map.
+The query key is the _address_ of a piece of data in that map.
 
 Same key means same cache entry, which is what gives you sharing, deduplication, and instant cache hits.
 
@@ -312,9 +304,9 @@ Picture the cache literally as a `Map`.
 
 The values are cache entries, each holding the fetched `data`, the current status, timestamps (when it was last updated, whether it is stale), and the list of components currently observing it.
 
-The keys are your query keys, hashed into a stable string so that the *contents* of the key, not its identity, determine the address.
+The keys are your query keys, hashed into a stable string so that the _contents_ of the key, not its identity, determine the address.
 
-TanStack Query hashes query keys deterministically (it sorts object keys, so `['x', { a: 1, b: 2 }]` and `['x', { b: 2, a: 1 }]` hash the same), which means you address a cache entry by *value*: two `useQuery` calls anywhere in the app with the key `['user', 5]` resolve to the exact same entry.
+TanStack Query hashes query keys deterministically (it sorts object keys, so `['x', { a: 1, b: 2 }]` and `['x', { b: 2, a: 1 }]` hash the same), which means you address a cache entry by _value_: two `useQuery` calls anywhere in the app with the key `['user', 5]` resolve to the exact same entry.
 
 This is the mechanism behind nearly everything:
 
@@ -330,7 +322,7 @@ If your fetch function reads `id`, `filter`, and `page`, then all three belong i
 
 The reason is mechanical and identical to the Hooks guide's dependency-array argument (Section 7): the key is how the cache distinguishes one request from another.
 
-If `filter` affects the fetched data but is not in the key, then `filter: 'active'` and `filter: 'archived'` hash to the *same address*, so the cache hands back whichever was fetched first, regardless of the current filter.
+If `filter` affects the fetched data but is not in the key, then `filter: 'active'` and `filter: 'archived'` hash to the _same address_, so the cache hands back whichever was fetched first, regardless of the current filter.
 
 You get a stale, wrong cache hit, and changing the filter does not refetch, because from the cache's point of view nothing about the address changed.
 
@@ -338,10 +330,13 @@ Omitting an input from the key is exactly as broken as omitting a dependency fro
 
 ```js
 // WRONG: filter affects the data but is not in the key → cache collisions, stale hits
-useQuery({ queryKey: ['todos'], queryFn: () => fetchTodos(filter) });
+useQuery({ queryKey: ["todos"], queryFn: () => fetchTodos(filter) });
 
 // RIGHT: every input the fetch depends on is in the key
-useQuery({ queryKey: ['todos', { filter }], queryFn: () => fetchTodos(filter) });
+useQuery({
+    queryKey: ["todos", { filter }],
+    queryFn: () => fetchTodos(filter),
+});
 ```
 
 The other thing keys give you is **hierarchy**, which matters for invalidation (Section 10).
@@ -362,7 +357,7 @@ Get them wrong and you get collisions, stale hits, and refetches that do not fir
 
 ### Try it
 
-> Build a query with key `['todos']` whose `queryFn` reads a `filter` variable not in the key. Switch the filter and watch the data *not* change (stale collision). Add `{ filter }` to the key and watch switching the filter address a new entry and fetch correctly. Then open the Devtools and watch the two filter values appear as two separate cache entries: the key-value store, made visible.
+> Build a query with key `['todos']` whose `queryFn` reads a `filter` variable not in the key. Switch the filter and watch the data _not_ change (stale collision). Add `{ filter }` to the key and watch switching the filter address a new entry and fetch correctly. Then open the Devtools and watch the two filter values appear as two separate cache entries: the key-value store, made visible.
 
 ### You've got this if
 
@@ -411,12 +406,14 @@ A single boolean cannot represent "present and fetching" distinctly from "empty 
 So the model splits into two axes:
 
 **The `status` axis: do I have data?**
+
 - `pending`: there is no data yet. (In v5 this was renamed from `loading`, and the status value is now `pending`.)
 - `success`: there is data.
 - `error`: the fetch failed and there is no data to show (or the last attempt errored).
 
 **The `fetchStatus` axis: is a request in flight right now?**
-- `fetching`: the `queryFn` is currently running (a first load *or* a background refetch).
+
+- `fetching`: the `queryFn` is currently running (a first load _or_ a background refetch).
 - `paused`: the query wanted to fetch but cannot (for example, offline).
 - `idle`: nothing is running right now.
 
@@ -427,12 +424,12 @@ Splitting the axes makes every real combination representable and every illegal 
 The boolean flags you actually use in components are derived from these two axes, and knowing the derivation tells you which to reach for:
 
 - `isPending` is `status === 'pending'`: there is no data yet. (Renamed from the old `isLoading` in v5.)
-- `isFetching` is `fetchStatus === 'fetching'`: a request is running, *including background refetches*. Reach for this to show a subtle "updating" indicator that should appear during background revalidation.
+- `isFetching` is `fetchStatus === 'fetching'`: a request is running, _including background refetches_. Reach for this to show a subtle "updating" indicator that should appear during background revalidation.
 - `isError` is `status === 'error'`. `isSuccess` is `status === 'success'`.
-- `isLoading` in v5 is the *combination* `isPending && isFetching`: there is no data yet *and* a request is actively running. This is the flag you want for a full-screen spinner, because it is true only on the genuine first load (no cached data to show), not during background refetches (when you have data and should keep showing it). This redefinition is the single most useful thing to internalize from the v5 changes: `isLoading` now means "first load, nothing to show, show a spinner," while `isFetching` means "something is fetching, maybe in the background."
+- `isLoading` in v5 is the _combination_ `isPending && isFetching`: there is no data yet _and_ a request is actively running. This is the flag you want for a full-screen spinner, because it is true only on the genuine first load (no cached data to show), not during background refetches (when you have data and should keep showing it). This redefinition is the single most useful thing to internalize from the v5 changes: `isLoading` now means "first load, nothing to show, show a spinner," while `isFetching` means "something is fetching, maybe in the background."
 - `isRefetching` is roughly `isFetching && !isPending`: fetching while you already have data, the background-refresh case.
 
-The practical rule: use `isLoading` (or `isPending` when there is genuinely no cached data path) to decide whether to render a spinner *instead of* content, and use `isFetching` to decide whether to render a small *secondary* indicator *alongside* content.
+The practical rule: use `isLoading` (or `isPending` when there is genuinely no cached data path) to decide whether to render a spinner _instead of_ content, and use `isFetching` to decide whether to render a small _secondary_ indicator _alongside_ content.
 
 Reaching for `isFetching` where you meant `isLoading` is what makes a spinner flash on every background refetch.
 
@@ -466,7 +463,7 @@ This is the single most important setting in the library, and once it clicks, th
 
 ### The short version
 
-The core behavior is stale-while-revalidate: when a component asks for data, the cache serves whatever it has *immediately* (no spinner if there is a cached copy), and then, *if that copy is stale*, kicks off a background refetch to bring it up to date, swapping in the fresh data when it arrives.
+The core behavior is stale-while-revalidate: when a component asks for data, the cache serves whatever it has _immediately_ (no spinner if there is a cached copy), and then, _if that copy is stale_, kicks off a background refetch to bring it up to date, swapping in the fresh data when it arrives.
 
 `staleTime` is the knob that decides how long a freshly-fetched copy is considered "fresh" (and therefore served without any refetch) before it becomes "stale" (and therefore revalidated on the next trigger).
 
@@ -476,7 +473,7 @@ Raising `staleTime` is how you say "trust this cached copy for a while."
 
 ### How it actually works
 
-Stale-while-revalidate is borrowed from HTTP caching, and the name is the algorithm: *serve the stale copy, and revalidate it.* When a component mounts and asks for `['user', 5]`, the cache does two things in order.
+Stale-while-revalidate is borrowed from HTTP caching, and the name is the algorithm: _serve the stale copy, and revalidate it._ When a component mounts and asks for `['user', 5]`, the cache does two things in order.
 
 First, it returns whatever is in the entry right now, instantly.
 
@@ -495,20 +492,20 @@ That "instant, then fresh" feel is the defining experience of a good server-stat
 - A query's data is **fresh** for `staleTime` milliseconds after it was fetched. While fresh, the data is served from cache and **no refetch happens**, even on triggers like remount or refocus. Fresh data is trusted as-is.
 - After `staleTime` elapses, the data is **stale**. Stale data is still served from cache instantly (you never see a spinner just because data went stale), but now the triggers in Section 8 (mount, refocus, reconnect) will cause a background revalidation.
 
-So `staleTime` answers "how long do I trust a cached copy without checking the server?" The default is `0`, which means *every* copy is considered stale the instant it arrives.
+So `staleTime` answers "how long do I trust a cached copy without checking the server?" The default is `0`, which means _every_ copy is considered stale the instant it arrives.
 
-That sounds aggressive, and it is the source of the "it refetches constantly" surprise, but note carefully what it does and does not mean: `staleTime: 0` does **not** mean "no caching" and it does **not** mean "fetch on every render." It means "on the next *trigger* (a new component mounting with this key, a window refocus, a reconnect), revalidate in the background." Between triggers, the cached data is served and shared normally.
+That sounds aggressive, and it is the source of the "it refetches constantly" surprise, but note carefully what it does and does not mean: `staleTime: 0` does **not** mean "no caching" and it does **not** mean "fetch on every render." It means "on the next _trigger_ (a new component mounting with this key, a window refocus, a reconnect), revalidate in the background." Between triggers, the cached data is served and shared normally.
 
 The deduplication (Section 7) still collapses simultaneous requests into one.
 
 People conflate `staleTime: 0` with "no cache," but the cache is fully active.
 
-It just never *trusts* a copy long enough to skip a revalidation on a trigger.
+It just never _trusts_ a copy long enough to skip a revalidation on a trigger.
 
 Tuning `staleTime` is therefore a statement about how volatile your data is:
 
-- Data that changes rarely or that you do not mind being slightly behind (a list of countries, a user's profile, configuration) wants a *high* `staleTime` (minutes, or even `Infinity` for truly static data), so it is served from cache without refetching and your app feels instant and quiet.
-- Data that changes often and must be current (a live dashboard, a feed, anything collaborative) wants a *low* `staleTime` (the default 0, or a few seconds), so triggers keep it fresh.
+- Data that changes rarely or that you do not mind being slightly behind (a list of countries, a user's profile, configuration) wants a _high_ `staleTime` (minutes, or even `Infinity` for truly static data), so it is served from cache without refetching and your app feels instant and quiet.
+- Data that changes often and must be current (a live dashboard, a feed, anything collaborative) wants a _low_ `staleTime` (the default 0, or a few seconds), so triggers keep it fresh.
 
 This is the knob you should set deliberately per query (or as a sensible default on the `QueryClient`), because the default of 0 is conservative and optimized for correctness over network volume.
 
@@ -516,9 +513,9 @@ Many "my app refetches too much" complaints are really "I left `staleTime` at 0 
 
 Keep `staleTime` strictly separate from `gcTime` (Section 6) in your head, because confusing them is the most common conceptual error here.
 
-`staleTime` is about *freshness* (do I revalidate this data that someone is using).
+`staleTime` is about _freshness_ (do I revalidate this data that someone is using).
 
-`gcTime` is about *retention* (how long do I keep data that *nobody* is using).
+`gcTime` is about _retention_ (how long do I keep data that _nobody_ is using).
 
 They operate on different phases of an entry's life and answer different questions.
 
@@ -542,13 +539,13 @@ Outside React: garbage collection (reclaiming memory that is no longer in use) a
 
 You see `gcTime` (and remember `cacheTime` from older code) and assume it is the "how long is data cached" setting, so you set it expecting to control freshness.
 
-It does nothing you expect, because it governs a completely different phase of a cache entry's life: what happens after *nobody is using the data anymore*.
+It does nothing you expect, because it governs a completely different phase of a cache entry's life: what happens after _nobody is using the data anymore_.
 
 ### The short version
 
-`gcTime` controls how long an *inactive* cache entry (one that no mounted component is currently observing) is kept in memory before it is garbage collected and removed.
+`gcTime` controls how long an _inactive_ cache entry (one that no mounted component is currently observing) is kept in memory before it is garbage collected and removed.
 
-It is a *retention* policy, not a freshness policy.
+It is a _retention_ policy, not a freshness policy.
 
 The default is 5 minutes.
 
@@ -558,7 +555,7 @@ It was renamed from `cacheTime` in v5 precisely because "cache time" misled peop
 
 ### How it actually works
 
-Every cache entry tracks its *observers*: the mounted components currently using that query key (this is the subscription mechanism of Section 7 and Section 14).
+Every cache entry tracks its _observers_: the mounted components currently using that query key (this is the subscription mechanism of Section 7 and Section 14).
 
 The count of observers is what decides whether an entry is "active" or "inactive":
 
@@ -579,8 +576,8 @@ Now the crucial distinction, because confusing these two is the most common conc
 
 `staleTime` and `gcTime` operate on different phases and answer different questions:
 
-- **`staleTime`** governs an entry **while it is in use**: how long its data is trusted as fresh before triggers revalidate it. It is about *freshness*. (Section 5.)
-- **`gcTime`** governs an entry **after it falls out of use**: how long the unused data is retained before being deleted. It is about *retention*.
+- **`staleTime`** governs an entry **while it is in use**: how long its data is trusted as fresh before triggers revalidate it. It is about _freshness_. (Section 5.)
+- **`gcTime`** governs an entry **after it falls out of use**: how long the unused data is retained before being deleted. It is about _retention_.
 
 A query can be stale but still cached (in use, past its `staleTime`, serving stale data while revalidating), and a query can be fresh but garbage-collected (if it went unused long enough, even fresh-when-last-fetched data is eventually pruned once inactive).
 
@@ -638,7 +635,7 @@ When a component calls `useQuery({ queryKey: ['user', 5], ...
 
 })`, it does not own any data.
 
-It *subscribes* to the cache entry at address `['user', 5]` (this is the external-store subscription from the State guide, Section 12, realized through `useSyncExternalStore`, which Section 14 unpacks).
+It _subscribes_ to the cache entry at address `['user', 5]` (this is the external-store subscription from the State guide, Section 12, realized through `useSyncExternalStore`, which Section 14 unpacks).
 
 Several consequences follow:
 
@@ -656,7 +653,7 @@ This is the cleanest possible answer to "two distant components need the same se
 
 When those three components mount at the same time and the entry is empty (or stale and due for revalidation), you do not get three network calls.
 
-The cache sees that a fetch for `['user', 5]` is already in flight and has the other consumers *await the same promise* rather than starting their own.
+The cache sees that a fetch for `['user', 5]` is already in flight and has the other consumers _await the same promise_ rather than starting their own.
 
 This in-flight deduplication is why a freshly-loaded screen with a dozen widgets all reading the same query fires one request, not a dozen.
 
@@ -666,7 +663,7 @@ It is the same idea as multiple callers awaiting one shared promise, lifted to t
 
 The dedup interacts with `staleTime` (Section 5) exactly as you would hope: if the data is fresh, new subscribers get the cached copy with no request at all.
 
-If it is stale, the *first* subscriber to trigger a revalidation starts one request and any others that arrive while it is in flight join that same request.
+If it is stale, the _first_ subscriber to trigger a revalidation starts one request and any others that arrive while it is in flight join that same request.
 
 So you never get redundant simultaneous fetches for one key, regardless of how many components ask or how they are arranged in the tree.
 
@@ -708,7 +705,7 @@ It feels like magic, or, if you did not expect it, like the app is "refetching f
 
 Stale data (Section 5) is automatically revalidated in the background on a set of triggers: a component mounting with that key, the window regaining focus, the network reconnecting, and optionally a polling interval.
 
-Fresh data (within `staleTime`) is *not* refetched on these triggers.
+Fresh data (within `staleTime`) is _not_ refetched on these triggers.
 
 So the freshness policy (`staleTime`) and the triggers together define how current your cache stays.
 
@@ -722,7 +719,7 @@ The cache does not poll the server constantly.
 
 That would be wasteful.
 
-Instead it revalidates *stale* entries (Section 5) at moments when fresh data is likely to matter, which it learns about from a small set of triggers.
+Instead it revalidates _stale_ entries (Section 5) at moments when fresh data is likely to matter, which it learns about from a small set of triggers.
 
 The key interaction to hold onto is that **every trigger is gated by `staleTime`**: a trigger only causes a refetch if the data is currently stale.
 
@@ -731,7 +728,7 @@ Fresh data is left alone no matter how many triggers fire.
 The triggers are:
 
 - **Mount (`refetchOnMount`, default true).** When a component mounts and subscribes to a key whose data is stale, it revalidates. This is why navigating to a screen shows cached data instantly (Section 5) and then quietly updates it if stale. Fresh data on mount does not refetch.
-- **Window focus (`refetchOnWindowFocus`, default true).** When the browser window or tab regains focus, the cache revalidates all *stale active* queries. This is the "magic" one: you tab to your email, come back, and your data is current because refocusing triggered a background revalidation of the stale entries. The cache listens to the browser's focus event globally (on the `QueryClient`) and fans the revalidation out to the stale queries that currently have observers.
+- **Window focus (`refetchOnWindowFocus`, default true).** When the browser window or tab regains focus, the cache revalidates all _stale active_ queries. This is the "magic" one: you tab to your email, come back, and your data is current because refocusing triggered a background revalidation of the stale entries. The cache listens to the browser's focus event globally (on the `QueryClient`) and fans the revalidation out to the stale queries that currently have observers.
 - **Reconnect (`refetchOnReconnect`, default true).** When the network comes back online (the browser's online event), stale queries revalidate, because data fetched before going offline is likely out of date.
 - **Interval (`refetchInterval`, off by default).** Setting an interval turns a query into a poller: it revalidates every N milliseconds while mounted, which is how you build live-updating data (a dashboard, a status page) without sockets. There is a companion `refetchIntervalInBackground` for whether polling continues while the tab is unfocused.
 
@@ -743,7 +740,7 @@ Disabling `refetchOnWindowFocus` globally is a common over-correction: it does s
 
 Reach for disabling a trigger only when the trigger itself is wrong for a specific query (for example, a one-time fetch that should never refetch on focus), and reach for `staleTime` for "this refetches too often."
 
-There are also the *manual* and *write-driven* refetch paths, which complete the picture: you can call the `refetch` function a query returns to force a revalidation (for a "refresh" button), and, most importantly, mutations invalidate queries to trigger refetches after a write (Section 10).
+There are also the _manual_ and _write-driven_ refetch paths, which complete the picture: you can call the `refetch` function a query returns to force a revalidation (for a "refresh" button), and, most importantly, mutations invalidate queries to trigger refetches after a write (Section 10).
 
 Those are deliberate refetches you cause.
 
@@ -787,7 +784,7 @@ When `enabled` is false, the query does not fetch and sits in a waiting state.
 
 When it flips to true, it runs.
 
-This is the declarative way to do conditional and dependent fetching, and it exists precisely because you *cannot* call `useQuery` conditionally (the rules of hooks forbid it).
+This is the declarative way to do conditional and dependent fetching, and it exists precisely because you _cannot_ call `useQuery` conditionally (the rules of hooks forbid it).
 
 The classic use is the dependent query: `enabled: !!userId` so the posts query waits until the user query has produced an id.
 
@@ -799,7 +796,7 @@ So you can never write `if (userId) { useQuery(...) }`.
 
 That desyncs the hook list.
 
-This is exactly why `enabled` exists: it lets you *always call* `useQuery` (satisfying the rules of hooks) while *conditionally allowing the fetch* (achieving the gating you wanted).
+This is exactly why `enabled` exists: it lets you _always call_ `useQuery` (satisfying the rules of hooks) while _conditionally allowing the fetch_ (achieving the gating you wanted).
 
 The condition moves from "whether to call the hook" to "an option passed to the hook," which is the declarative pattern React pushes you toward throughout (it is the same shape as a dependency array gating an effect rather than an `if` around the effect).
 
@@ -807,7 +804,7 @@ Mechanically, when `enabled: false`, the query will not run its `queryFn`: its `
 
 When `enabled` becomes `true`, the query behaves normally (fetches if stale or empty, serves cache if fresh).
 
-So `enabled` is a gate on the *trigger* logic from Section 8: a disabled query ignores all triggers and never fetches until enabled.
+So `enabled` is a gate on the _trigger_ logic from Section 8: a disabled query ignores all triggers and never fetches until enabled.
 
 The canonical uses:
 
@@ -816,12 +813,15 @@ The canonical uses:
 When one query needs a value produced by another, gate the second on the presence of that value:
 
 ```js
-const { data: user } = useQuery({ queryKey: ['user', email], queryFn: () => fetchUser(email) });
+const { data: user } = useQuery({
+    queryKey: ["user", email],
+    queryFn: () => fetchUser(email),
+});
 const userId = user?.id;
 const { data: posts } = useQuery({
-  queryKey: ['posts', userId],
-  queryFn: () => fetchPosts(userId),
-  enabled: !!userId, // do not run until we actually have an id
+    queryKey: ["posts", userId],
+    queryFn: () => fetchPosts(userId),
+    enabled: !!userId, // do not run until we actually have an id
 });
 ```
 
@@ -843,9 +843,9 @@ There is one sharp edge worth stating plainly, because it connects to Section 4 
 
 A disabled query with no cached data is in `status: 'pending'`, so `isPending` is `true` while it is disabled.
 
-If you wire a spinner to `isPending`, a query that is *intentionally* waiting (for an id, for a search term) will show a spinner forever, even though nothing is loading.
+If you wire a spinner to `isPending`, a query that is _intentionally_ waiting (for an id, for a search term) will show a spinner forever, even though nothing is loading.
 
-The fix is the Section 4 distinction: bind your spinner to `isLoading` (which is `isPending && isFetching`), so it is only true when the query is both empty *and* actively fetching, not merely disabled.
+The fix is the Section 4 distinction: bind your spinner to `isLoading` (which is `isPending && isFetching`), so it is only true when the query is both empty _and_ actively fetching, not merely disabled.
 
 A disabled query has `isFetching` false, so `isLoading` is false, so no spinner.
 
@@ -881,7 +881,7 @@ Outside React: HTTP write methods (POST, PUT, DELETE) versus reads (GET).
 
 ### The itch
 
-You can read data fine, but when the user *changes* something (creates a todo, edits a profile), the screen keeps showing the old data until a refresh.
+You can read data fine, but when the user _changes_ something (creates a todo, edits a profile), the screen keeps showing the old data until a refresh.
 
 You are not sure how a write is supposed to tell all the cached reads that they are now out of date.
 
@@ -895,7 +895,7 @@ You run it with `useMutation`, which gives you a `mutate` function and its own s
 
 Mutations do not cache.
 
-Their job is to perform the write and then *make the cache honest again*, because after a successful write, your cached read queries are stale (the server changed).
+Their job is to perform the write and then _make the cache honest again_, because after a successful write, your cached read queries are stale (the server changed).
 
 You reconcile in one of two ways: **invalidate** the affected queries (mark them stale so they refetch from the server, the safe default), or **write the result directly into the cache** with `setQueryData` (when you already know the new value).
 
@@ -914,11 +914,11 @@ It is not cached and not keyed, and it has its own lifecycle:
 ```js
 const queryClient = useQueryClient();
 const mutation = useMutation({
-  mutationFn: (newTodo) => createTodo(newTodo),
-  onSuccess: () => {
-    // the server changed, so the cached todos list is now stale: tell it to refetch
-    queryClient.invalidateQueries({ queryKey: ['todos'] });
-  },
+    mutationFn: (newTodo) => createTodo(newTodo),
+    onSuccess: () => {
+        // the server changed, so the cached todos list is now stale: tell it to refetch
+        queryClient.invalidateQueries({ queryKey: ["todos"] });
+    },
 });
 // mutation.mutate({ title: 'Buy milk' });  mutation.isPending, mutation.isError, etc.
 ```
@@ -929,7 +929,7 @@ The flags exist for the same reason queries have them: a write is asynchronous a
 
 But the architecturally important part is not the write itself.
 
-It is what happens *after* the write, because a successful write invalidates assumptions baked into your cached reads.
+It is what happens _after_ the write, because a successful write invalidates assumptions baked into your cached reads.
 
 This is the State guide's single-source-of-truth principle (Sections 4 and 5) operating across the network.
 
@@ -975,7 +975,7 @@ That stale-after-write bug is almost always a missing or mis-keyed invalidation,
 
 ### Try it
 
-> Build a todos list with `useQuery(['todos'])` and a create form with `useMutation`. First write the mutation with *no* `onSuccess`, submit, and watch the new todo *not* appear until you manually refresh (the stale-after-write bug). Add `invalidateQueries({ queryKey: ['todos'] })` in `onSuccess` and watch the list refetch and update automatically. Then try `setQueryData` instead and watch it update with no network call.
+> Build a todos list with `useQuery(['todos'])` and a create form with `useMutation`. First write the mutation with _no_ `onSuccess`, submit, and watch the new todo _not_ appear until you manually refresh (the stale-after-write bug). Add `invalidateQueries({ queryKey: ['todos'] })` in `onSuccess` and watch the list refetch and update automatically. Then try `setQueryData` instead and watch it update with no network call.
 
 ### You've got this if
 
@@ -1003,7 +1003,7 @@ That is an optimistic update, and doing it correctly (especially the rollback) h
 
 ### The short version
 
-An optimistic update applies the expected result to the cache *before* the server confirms, so the UI feels instant, and rolls back if the mutation fails.
+An optimistic update applies the expected result to the cache _before_ the server confirms, so the UI feels instant, and rolls back if the mutation fails.
 
 The recipe has four parts using the mutation callbacks: in `onMutate`, cancel any in-flight refetches and snapshot the current cache, then optimistically write the expected value.
 
@@ -1017,7 +1017,7 @@ The thing to get right is the rollback, because an optimistic update that cannot
 
 ### How it actually works
 
-Optimistic updates trade safety for responsiveness: you *assume* the write will succeed and update the UI immediately, accepting that you must undo the change if the assumption turns out wrong.
+Optimistic updates trade safety for responsiveness: you _assume_ the write will succeed and update the UI immediately, accepting that you must undo the change if the assumption turns out wrong.
 
 The cache is the right place to do this, because every component reading the affected query will reflect the optimistic value automatically (Section 7).
 
@@ -1025,31 +1025,31 @@ The classic recipe, using the mutation lifecycle from Section 10, is:
 
 ```js
 useMutation({
-  mutationFn: toggleTodo,
-  onMutate: async (newTodo) => {
-    // 1. Cancel outgoing refetches so they cannot overwrite our optimistic value
-    await queryClient.cancelQueries({ queryKey: ['todos'] });
-    // 2. Snapshot the current cache, so we can roll back on error
-    const previous = queryClient.getQueryData(['todos']);
-    // 3. Optimistically write the expected new value
-    queryClient.setQueryData(['todos'], (old) => applyToggle(old, newTodo));
-    // 4. Pass the snapshot to the other callbacks via the context return value
-    return { previous };
-  },
-  onError: (err, newTodo, context) => {
-    // Roll back to the snapshot we took in onMutate
-    queryClient.setQueryData(['todos'], context.previous);
-  },
-  onSettled: () => {
-    // Whether it succeeded or failed, reconcile with the server's actual state
-    queryClient.invalidateQueries({ queryKey: ['todos'] });
-  },
+    mutationFn: toggleTodo,
+    onMutate: async (newTodo) => {
+        // 1. Cancel outgoing refetches so they cannot overwrite our optimistic value
+        await queryClient.cancelQueries({ queryKey: ["todos"] });
+        // 2. Snapshot the current cache, so we can roll back on error
+        const previous = queryClient.getQueryData(["todos"]);
+        // 3. Optimistically write the expected new value
+        queryClient.setQueryData(["todos"], (old) => applyToggle(old, newTodo));
+        // 4. Pass the snapshot to the other callbacks via the context return value
+        return { previous };
+    },
+    onError: (err, newTodo, context) => {
+        // Roll back to the snapshot we took in onMutate
+        queryClient.setQueryData(["todos"], context.previous);
+    },
+    onSettled: () => {
+        // Whether it succeeded or failed, reconcile with the server's actual state
+        queryClient.invalidateQueries({ queryKey: ["todos"] });
+    },
 });
 ```
 
 Walk the four steps and why each exists:
 
-1. **Cancel outgoing refetches** (`cancelQueries`). If a background refetch for `['todos']` is in flight, it could resolve *after* you write your optimistic value and overwrite it with stale server data. Cancelling prevents that race. This is the same class of problem as the fetch-race in the Hooks guide (Section 9): two async results competing, and you make the right one win.
+1. **Cancel outgoing refetches** (`cancelQueries`). If a background refetch for `['todos']` is in flight, it could resolve _after_ you write your optimistic value and overwrite it with stale server data. Cancelling prevents that race. This is the same class of problem as the fetch-race in the Hooks guide (Section 9): two async results competing, and you make the right one win.
 2. **Snapshot the previous data** (`getQueryData`). This is your rollback point. You stash it and return it from `onMutate`. TanStack Query passes that return value as the `context` argument to `onError` and `onSettled`, which is how the snapshot reaches the rollback step.
 3. **Optimistically update** (`setQueryData`). You write the value you expect the server to produce, so the UI updates instantly. Every consumer of `['todos']` re-renders with the optimistic value.
 4. **Roll back on error, reconcile on settle.** If the mutation fails, `onError` restores the snapshot, so the UI returns to the truth. Regardless of outcome, `onSettled` invalidates the query so the cache is reconciled with the server's actual state (in case your optimistic guess differed from what the server did).
@@ -1082,7 +1082,7 @@ Knowing both exist lets you pick the right layer: `useOptimistic` for a form Act
 
 ### Try it
 
-> Build a toggle backed by a mutation and add the four-step optimistic recipe. Toggle it and watch the UI flip instantly, before the network call finishes (throttle your network in DevTools to make the gap visible). Then make the `mutationFn` reject and watch the UI roll back to the previous state via `onError`. Removing the `onError` rollback and watching the failed change *stick* is the fastest way to feel why the snapshot matters.
+> Build a toggle backed by a mutation and add the four-step optimistic recipe. Toggle it and watch the UI flip instantly, before the network call finishes (throttle your network in DevTools to make the gap visible). Then make the `mutationFn` reject and watch the UI roll back to the previous state via `onError`. Removing the `onError` rollback and watching the failed change _stick_ is the fastest way to feel why the snapshot matters.
 
 ### You've got this if
 
@@ -1131,16 +1131,16 @@ The list flickers on every page change.
 The fix is `placeholderData: keepPreviousData` (in v5, the old `keepPreviousData` option was merged into `placeholderData`, and you pass the imported `keepPreviousData` function):
 
 ```js
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 const { data, isPlaceholderData } = useQuery({
-  queryKey: ['todos', { page }],
-  queryFn: () => fetchTodos(page),
-  placeholderData: keepPreviousData, // while page 2 loads, keep showing page 1's data
+    queryKey: ["todos", { page }],
+    queryFn: () => fetchTodos(page),
+    placeholderData: keepPreviousData, // while page 2 loads, keep showing page 1's data
 });
 ```
 
-Now when `page` changes, while the new page's entry is still loading, the query returns the *previous* page's data as a placeholder (with `isPlaceholderData: true`, so you can dim the list or disable the "next" button until the real data arrives), instead of blanking to a spinner.
+Now when `page` changes, while the new page's entry is still loading, the query returns the _previous_ page's data as a placeholder (with `isPlaceholderData: true`, so you can dim the list or disable the "next" button until the real data arrives), instead of blanking to a spinner.
 
 The list stays populated and smoothly swaps to the new page.
 
@@ -1148,11 +1148,11 @@ This is a referential-stability-adjacent idea (Hooks guide, Section 8): you are 
 
 The data still ends up correctly keyed per page in the cache.
 
-`keepPreviousData` only affects what is shown *during* the transition.
+`keepPreviousData` only affects what is shown _during_ the transition.
 
 #### Infinite queries
 
-Infinite scroll and "load more" are a different shape: you are not jumping between pages, you are *accumulating* them into one growing list.
+Infinite scroll and "load more" are a different shape: you are not jumping between pages, you are _accumulating_ them into one growing list.
 
 `useInfiniteQuery` is built for this.
 
@@ -1166,11 +1166,11 @@ So the component renders `data.pages.flat()` (all items so far) and calls `fetch
 
 The cache holds the whole accumulated list as one entry, which means it is shared and cached like any other query, and v5 can cap how many pages are retained (`maxPages`) and prefetch several pages at once.
 
-The key insight is that infinite data is *one* cache entry containing many pages, not many entries, which is why scrolling back up does not refetch.
+The key insight is that infinite data is _one_ cache entry containing many pages, not many entries, which is why scrolling back up does not refetch.
 
 #### Prefetching
 
-The cache lets you fetch data *before* a component that needs it mounts, so the data is already present when it does.
+The cache lets you fetch data _before_ a component that needs it mounts, so the data is already present when it does.
 
 `queryClient.prefetchQuery({ queryKey, queryFn })` runs a fetch and stores the result in the cache without subscribing any component to it.
 
@@ -1224,9 +1224,9 @@ You want to know how it works and what it costs.
 
 ### The short version
 
-Suspense lets a component *suspend* (tell React "I am not ready") while its data loads, so React shows the nearest `<Suspense>` fallback instead, and shows an error boundary if it fails.
+Suspense lets a component _suspend_ (tell React "I am not ready") while its data loads, so React shows the nearest `<Suspense>` fallback instead, and shows an error boundary if it fails.
 
-With TanStack Query you opt in via `useSuspenseQuery`, which suspends instead of returning a `pending` status, so inside the component the data is *guaranteed defined*, no loading branch needed.
+With TanStack Query you opt in via `useSuspenseQuery`, which suspends instead of returning a `pending` status, so inside the component the data is _guaranteed defined_, no loading branch needed.
 
 React 19's `use()` is the lower-level primitive that suspends on a promise.
 
@@ -1240,29 +1240,32 @@ Suspense (rendering guide) is a mechanism where a component can signal "the data
 
 Errors are handled by a nearby error boundary.
 
-The effect is that loading and error handling become *structural* (expressed by where you place `<Suspense>` and error boundaries in the tree) rather than *per-component* (expressed by `isLoading`/`isError` branches inside each component).
+The effect is that loading and error handling become _structural_ (expressed by where you place `<Suspense>` and error boundaries in the tree) rather than _per-component_ (expressed by `isLoading`/`isError` branches inside each component).
 
 `useSuspenseQuery` is the Suspense-flavored version of `useQuery` (stable in v5, and the older `suspense: true` option on `useQuery` was removed in favor of these dedicated hooks):
 
 ```js
 function Profile({ id }) {
-  // No isLoading, no isError branch: if this line runs, data is defined.
-  const { data } = useSuspenseQuery({ queryKey: ['user', id], queryFn: () => fetchUser(id) });
-  return <h1>{data.name}</h1>;
+    // No isLoading, no isError branch: if this line runs, data is defined.
+    const { data } = useSuspenseQuery({
+        queryKey: ["user", id],
+        queryFn: () => fetchUser(id),
+    });
+    return <h1>{data.name}</h1>;
 }
 
 function Page({ id }) {
-  return (
-    <ErrorBoundary fallback={<Error />}>
-      <Suspense fallback={<Spinner />}>
-        <Profile id={id} />
-      </Suspense>
-    </ErrorBoundary>
-  );
+    return (
+        <ErrorBoundary fallback={<Error />}>
+            <Suspense fallback={<Spinner />}>
+                <Profile id={id} />
+            </Suspense>
+        </ErrorBoundary>
+    );
 }
 ```
 
-Instead of returning a `pending` status, `useSuspenseQuery` *suspends* the component while the data loads, so the `<Suspense>` shows `<Spinner />`.
+Instead of returning a `pending` status, `useSuspenseQuery` _suspends_ the component while the data loads, so the `<Suspense>` shows `<Spinner />`.
 
 If the fetch errors, it throws to the `<ErrorBoundary>`, which shows `<Error />`.
 
@@ -1294,7 +1297,7 @@ For cached server data with all the synchronization behavior, `useSuspenseQuery`
 
 The costs and cautions, because Suspense is not free of trade-offs:
 
-- **Boundary placement matters.** The fallback you see is the *nearest* `<Suspense>` ancestor's. Place it too high and a small loading piece blanks a large region. Place it per-section and each region loads independently. You now design loading states by tree structure, which is more powerful but requires thought.
+- **Boundary placement matters.** The fallback you see is the _nearest_ `<Suspense>` ancestor's. Place it too high and a small loading piece blanks a large region. Place it per-section and each region loads independently. You now design loading states by tree structure, which is more powerful but requires thought.
 - **Request waterfalls.** If you nest suspending components so that a child only starts fetching after its parent resolves, you serialize requests that could have run in parallel, producing a slow waterfall. The fix is to start fetches as early as possible (prefetch, or hoist the queries) so they run concurrently. This is a real and common Suspense pitfall (Section 15).
 - **You lose the in-component background indicators.** With `useSuspenseQuery`, the component does not see `isFetching` for a background refetch the same way. Background revalidation still happens, but the "show a subtle refreshing indicator" pattern from Section 4 is handled differently. Suspense is cleanest for the initial-load story. You still reach for the non-Suspense `useQuery` and its status flags when you want fine-grained in-component control over background states.
 
@@ -1330,9 +1333,9 @@ You want to see how it actually plugs into React, why v5 specifically requires R
 
 ### The short version
 
-A server-state cache is an *external store* (State guide, Section 12) specialized for remote data: it lives outside React's tree, and components subscribe to cache entries through `useSyncExternalStore`, which is why TanStack Query v5 requires React 18 and is safe under concurrent rendering (it avoids tearing).
+A server-state cache is an _external store_ (State guide, Section 12) specialized for remote data: it lives outside React's tree, and components subscribe to cache entries through `useSyncExternalStore`, which is why TanStack Query v5 requires React 18 and is safe under concurrent rendering (it avoids tearing).
 
-The `select` option is a *selector* in the external-store sense: it lets a component re-render only when its chosen slice of the data changes.
+The `select` option is a _selector_ in the external-store sense: it lets a component re-render only when its chosen slice of the data changes.
 
 And in a Server Components world, server components can fetch directly on the server, while the client cache is hydrated from server-fetched data so the client starts warm.
 
@@ -1340,7 +1343,7 @@ This section ties the whole series together: the cache is the external-store pat
 
 ### How it actually works
 
-The State guide (Section 12) described the external-store model: state lives outside React's component tree, components subscribe to the slice they need via a selector, the store notifies only the subscribers whose slice changed, and React binds to it safely through `useSyncExternalStore` to avoid *tearing* (the concurrency bug, defined in one line: under concurrent rendering React can pause mid-render, and if external state changes during the pause, components rendered before and after the pause would see different values, so one screen shows two versions of the same data).
+The State guide (Section 12) described the external-store model: state lives outside React's component tree, components subscribe to the slice they need via a selector, the store notifies only the subscribers whose slice changed, and React binds to it safely through `useSyncExternalStore` to avoid _tearing_ (the concurrency bug, defined in one line: under concurrent rendering React can pause mid-render, and if external state changes during the pause, components rendered before and after the pause would see different values, so one screen shows two versions of the same data).
 
 A server-state cache is exactly this pattern, specialized for remote data:
 
@@ -1366,11 +1369,11 @@ It is built on the primitive designed for exactly that.
 
 #### `select` is a selector
 
-The `select` option transforms a query's data and, crucially, lets a component subscribe to a *derived slice*: if you `select` only one field of a large response, the component re-renders only when that field changes, not when unrelated parts of the data change.
+The `select` option transforms a query's data and, crucially, lets a component subscribe to a _derived slice_: if you `select` only one field of a large response, the component re-renders only when that field changes, not when unrelated parts of the data change.
 
 This is the selector-based subscription from the State guide (Section 12), the very thing Context could not do (the selectivity gap, Section 11 of that guide).
 
-So a server-state cache closes the selectivity gap for remote data the same way an external store closes it for client state, because it *is* an external store with selectors.
+So a server-state cache closes the selectivity gap for remote data the same way an external store closes it for client state, because it _is_ an external store with selectors.
 
 The connection is not an analogy.
 
@@ -1386,7 +1389,7 @@ The data is fetched and rendered on the server and sent as HTML and the RSC payl
 
 But the moment you want client interactivity over that data (refetching, mutations, optimistic updates, background synchronization), you want it in the client cache.
 
-The pattern is to fetch (or prefetch) on the server, *dehydrate* the cache (serialize its entries), send that to the client, and *hydrate* it (deserialize into the client `QueryClient`) so the client cache starts warm with the server-fetched data and no initial client fetch is needed.
+The pattern is to fetch (or prefetch) on the server, _dehydrate_ the cache (serialize its entries), send that to the client, and _hydrate_ it (deserialize into the client `QueryClient`) so the client cache starts warm with the server-fetched data and no initial client fetch is needed.
 
 v5 also has experimental streaming integration for Next.js where a single `useSuspenseQuery` initiates fetching on the server during SSR and streams the result to the client, where it lands in the cache automatically.
 
@@ -1408,7 +1411,7 @@ Seeing it as "the external-store pattern for server state" is what makes every b
 
 ### Try it
 
-> Add `@tanstack/react-query-devtools` and watch a cache entry's observer count rise and fall as components mount and unmount: that is the external-store subscription. Add a `select` that picks one field and update an unrelated field of the response (via `setQueryData`): watch the selecting component *not* re-render, the selector-based subscription closing the selectivity gap. If you have a Next.js app, prefetch on the server and hydrate, and watch the client render with data and no initial client fetch.
+> Add `@tanstack/react-query-devtools` and watch a cache entry's observer count rise and fall as components mount and unmount: that is the external-store subscription. Add a `select` that picks one field and update an unrelated field of the response (via `setQueryData`): watch the selecting component _not_ re-render, the selector-based subscription closing the selectivity gap. If you have a Next.js app, prefetch on the server and hydrate, and watch the client render with data and no initial client fetch.
 
 ### You've got this if
 
@@ -1458,11 +1461,11 @@ If you find a server response living in Redux, that is the smell.
 
 A specific and common version of the above: you `useQuery` to get data, then `useEffect(() => setLocalData(data), [data])` to mirror it into `useState` so you can edit it or "have it locally." This is the derived-state anti-pattern (State guide, Section 4) plus the unnecessary-effect anti-pattern (Hooks guide, Section 6): you have created a second source of truth that desyncs from the cache, and an effect whose only job is to copy.
 
-The fix depends on intent: to *transform* the data, use the `select` option (Section 14).
+The fix depends on intent: to _transform_ the data, use the `select` option (Section 14).
 
-To *edit* it in a form, initialize form state from the data once and let the form own the draft, or use the cache as the source and mutate.
+To _edit_ it in a form, initialize form state from the data once and let the form own the draft, or use the cache as the source and mutate.
 
-To *read* it, just use `data` directly.
+To _read_ it, just use `data` directly.
 
 The cache is already the store.
 
@@ -1490,7 +1493,7 @@ Using `isFetching` where you meant `isLoading` makes the spinner flash on every 
 
 Using `isPending` for a disabled query (Section 9) makes a permanent spinner.
 
-The fix is the two-axis status model (Section 4): `isLoading` (no data *and* fetching) for full-screen spinners, `isFetching` for subtle background indicators.
+The fix is the two-axis status model (Section 4): `isLoading` (no data _and_ fetching) for full-screen spinners, `isFetching` for subtle background indicators.
 
 #### Over-using or mis-deriving `enabled`
 
@@ -1692,7 +1695,7 @@ SWR, at https://swr.vercel.app , and RTK Query (part of Redux Toolkit), at https
 
 Both implement the keyed-cache, stale-while-revalidate, deduplication model from this guide with different APIs and trade-offs.
 
-Reading SWR's "Getting Started" through this guide's lens is a good way to confirm that the *model* (Sections 1, 3, 5, 7) is the durable knowledge and the specific API is the replaceable part.
+Reading SWR's "Getting Started" through this guide's lens is a good way to confirm that the _model_ (Sections 1, 3, 5, 7) is the durable knowledge and the specific API is the replaceable part.
 
 ### If you want to see the mechanism in the source (pass 3)
 
