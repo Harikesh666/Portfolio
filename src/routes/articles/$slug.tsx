@@ -152,12 +152,12 @@ function PostPage() {
 
                     {(previous || next) && (
                         <nav
-                            className="mt-14 space-y-4 border-t border-divider pt-5"
-                            aria-label="Series navigation"
+                            className="mt-14 grid grid-cols-1 gap-4 border-t border-divider pt-5 sm:grid-cols-2"
+                            aria-label="Article navigation"
                         >
                             {previous && (
                                 <Link
-                                    className="block text-[1rem] font-medium leading-5 tracking-[-0.008em] text-foreground-strong hover:text-accent"
+                                    className="block min-w-0 text-[1rem] font-medium leading-5 tracking-[-0.008em] text-foreground-strong hover:text-accent"
                                     to="/articles/$slug"
                                     params={{ slug: previous.slug }}
                                 >
@@ -166,7 +166,7 @@ function PostPage() {
                             )}
                             {next && (
                                 <Link
-                                    className="block text-[1rem] font-medium leading-5 tracking-[-0.008em] text-foreground-strong hover:text-accent"
+                                    className="block min-w-0 text-[1rem] font-medium leading-5 tracking-[-0.008em] text-foreground-strong hover:text-accent sm:col-start-2 sm:text-right"
                                     to="/articles/$slug"
                                     params={{ slug: next.slug }}
                                 >

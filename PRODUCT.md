@@ -48,7 +48,7 @@ Avoid generic template portfolios, buzzword-heavy copy, and flashy motion showca
 
 ## Article Discovery
 
-The articles index behaves as a small technical library rather than a chronological feed. A compact, text-only overview links directly to one guided learning path and four authored JavaScript topics, each with an honest guide count. Every article remains visible in the document for scanning, search, and crawlability; taxonomy and tighter ruled rows provide orientation without search controls, cards, tabs, or pagination. On desktop pointer devices, hovering or keyboard-focusing a row dims sibling content to aid scanning without moving the layout.
+The articles index behaves as a small technical library rather than a chronological feed. A compact, text-only overview links directly to one guided learning path and four authored JavaScript topics, each with an honest guide count. Every article remains visible in the document for scanning, search, and crawlability; taxonomy and tighter ruled rows provide orientation without search controls, cards, tabs, or pagination. Article detail pages continue through their current series or JavaScript topic with previous/next links that follow the same index order. On desktop pointer devices, hovering or keyboard-focusing a row dims sibling content to aid scanning without moving the layout.
 
 ## Accessibility & Inclusion
 

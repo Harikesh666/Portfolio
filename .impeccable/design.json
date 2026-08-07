@@ -86,6 +86,14 @@
       "css": ".ds-writing-item { display: block; border-bottom: 1px solid var(--color-divider); padding: 14px 0; color: var(--color-foreground); text-decoration: none; } .ds-writing-item > .ds-writing-item-content > span { color: var(--color-accent); font: 500 13px var(--font-mono); } .ds-writing-item b { display: block; margin-top: 4px; color: var(--color-foreground-strong); font: 500 16px/1.25 var(--font-sans); } .ds-writing-item p { margin: 4px 0 0; color: var(--color-muted); font: 400 14px/1.43 var(--font-sans); } .ds-writing-item em { display: block; margin-top: 8px; color: var(--color-muted); font: 500 13px/1.54 var(--font-sans); font-style: normal; } .article-list .ds-writing-item-content { transition: opacity 140ms ease-out; } .article-list:is(:hover, :focus-within) .ds-writing-item-content { opacity: .35; } .article-list .ds-writing-item:is(:hover, :focus-visible) .ds-writing-item-content { opacity: 1; } .ds-writing-item:hover b { color: var(--color-accent); }"
     },
     {
+      "name": "Article Pager",
+      "kind": "nav",
+      "refersTo": "article-navigation",
+      "description": "Collection-aware previous and next links for ordered series and authored JavaScript topics; links stack on narrow screens and occupy left and right columns from the small breakpoint upward.",
+      "html": "<nav class=\"ds-article-pager\" aria-label=\"Article navigation\"><a href=\"#\">← Previous article</a><a href=\"#\">Next article →</a></nav>",
+      "css": ".ds-article-pager { display: grid; grid-template-columns: 1fr; gap: 16px; border-top: 1px solid var(--color-divider); padding-top: 20px; } @media (min-width: 640px) { .ds-article-pager { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ds-article-pager a:last-child { grid-column-start: 2; text-align: right; } }"
+    },
+    {
       "name": "Editorial Route Hero",
       "kind": "heading",
       "refersTo": "editorial-stagger",

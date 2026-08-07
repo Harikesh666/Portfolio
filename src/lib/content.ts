@@ -1,3 +1,5 @@
+import { findPostNeighbors } from "./post-neighbors";
+
 export const seriesIndex = {
     "react-internals": {
         title: "React, from the inside out",
@@ -183,17 +185,7 @@ export const featuredPosts = posts
     .slice(0, 2);
 
 export function getPostNeighbors(post: PostSummary) {
-    if (!post.series || post.order === undefined) {
-        return { previous: undefined, next: undefined };
-    }
-
-    const seriesPosts = posts.filter((item) => item.series === post.series);
-    const index = seriesPosts.findIndex((item) => item.slug === post.slug);
-
-    return {
-        previous: index > 0 ? seriesPosts[index - 1] : undefined,
-        next: index >= 0 ? seriesPosts[index + 1] : undefined,
-    };
+    return findPostNeighbors(posts, post);
 }
 
 export function getPostRecord(slug: string) {
