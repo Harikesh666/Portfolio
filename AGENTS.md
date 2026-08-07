@@ -165,3 +165,69 @@ You have terminal + filesystem but **no browser or DevTools**. Self-verify only 
 - One branch per phase; commit per sub-milestone with conventional messages matching the repo's style (`ui:`, `router:`, `perf:` …).
 - `pnpm build`, `pnpm test`, `git diff --check` before declaring any phase complete.
 - End every phase report with: numbers table (where applicable), list of human-verification items, and any constraint you were forced to bend — bending one without flagging it is worse than failing the phase.
+
+## Guide prose style (binding on every file in `src/content/guides/`)
+
+The JavaScript guides define the house style. It is Orwell's six rules plus ASD-STE100 Simplified Technical English, with one exemption: **precise technical vocabulary is never simplified away.** `fiber`, `lane`, `microtask`, and `reconciliation` stay. Prefer the short common word everywhere else.
+
+### Preserve the reader's mental model
+
+- **Existing guide prose is immutable during this restructuring.** Preserve every sentence's wording and order. You may promote structural labels to headings and split paragraphs at existing sentence boundaries for formatting, but do not rephrase, shorten, simplify, or substitute prose.
+- **Avoid semicolons in guide prose.** Prefer an ordinary conjunction when the thought should stay together, or a period when two thoughts genuinely need separation. Do not use punctuation patterns that make the prose feel machine-generated.
+- **Understanding is the primary goal.** Assume the reader is a complete beginner to the topic. Never trade motivation, context, causal explanation, or a useful analogy for brevity, metrics, or technical density.
+- **Define before relying.** Introduce every mechanism in plain language before using its name as shorthand. Explain what problem it solves, how it works, and why the reader should care.
+- **Structure is additive, not a compression target.** Headings, tables, and shorter sentences must preserve the original motivation, causal chain, examples, caveats, and reassuring reader guidance.
+- **A "Short version" is a self-contained teaching map, not a definition.** It must explain the problem, the mechanism, why the mechanism works, and the consequence the reader should remember. Most need 70–140 words.
+- **Keep concrete anchors inside the "Short version."** Preserve conditions, numbers, examples, contrasts, and causal phrases that make the summary understandable, such as "roughly 16ms at 60fps." Do not move essential context into the deep section.
+- **Keep qualifiers attached to the claim they explain.** Moving a number, condition, contrast, or reason into a nearby sentence can still weaken understanding. Preserve its original logical attachment whenever the sentence remains clear.
+- **Do not reduce explanatory coverage.** Measure explanatory sentence count before and after each guide. The result must not decrease, and prose word count must not fall by more than 5% without explicit approval.
+- **Do not split prose mechanically.** Rewrite each long sentence as complete thoughts. Preserve the connective reasoning carried by words such as "because," "therefore," "but," and "which is why."
+- **Code density must come from teaching examples.** Do not split one example into artificial fences or add fragments that depend on undeclared context merely to satisfy the metric.
+- **The original guide is the teaching source of truth.** Preserve its wording and sequence unless a change clearly improves beginner understanding. Do not rewrite strong prose merely to make it shorter or more uniform.
+- **"How it actually works" remains a guided narrative.** Code supports the explanation; it does not replace or repeatedly interrupt it. Never treat the guide-level code-density target as a per-section quota.
+- **Add subheadings only at genuine conceptual turns.** Do not fragment one causal explanation into many tiny reference-style entries.
+
+### Hard limits
+
+| Rule | Limit | Why |
+|---|---|---|
+| Sentence length | ≤ 25 words; ≤ 20 in a procedure | STE. A sentence with four clauses is four sentences. |
+| Paragraph length | ≤ 6 sentences and ≤ 60 words | STE. One topic per paragraph. |
+| Heading depth | `###` inside any `##` longer than ~400 words | A section with no internal landmark cannot be navigated or resumed. |
+| Code density | ≥ 8 fenced blocks per 1,000 words of prose | The JS guides run 16.5. Internals prose earns some slack, not an exemption. |
+| Voice | Active. Name the actor: "React reads the slot", not "the slot is read". | Orwell. |
+| Emphasis | Bold and italics mark terms on first use only | Emphasis is not a substitute for a heading. If a paragraph needs four bolds to be scannable, it needs to be three paragraphs. |
+| Run-in labels | **None.** A bold label with body text on the same line is a heading that lost an argument | The JS guides use headings in this position and have 0.3 run-ins per 1k words. Pre-fix, the React guides had 5.8. |
+
+### Structural requirements
+
+- **The section scaffold is headings, not bold labels.** Every part gets its own `###` and its content starts on the line below:
+
+  ```markdown
+  ## 5. Lanes: the bitmask model
+
+  *Prereqs: …*
+
+  ### The itch
+
+  You have read that a lane is "a bit in a bitmask." …
+
+  ### The short version
+
+  A lane is one bit in a 31-bit mask. …
+
+  ### How it actually works
+
+  #### A lane is one bit, while Lanes is a set
+  ```
+
+  Never `**The itch.** You have read that…`. The reader's eye has nowhere to land, the part gets no anchor, and the heading styles in `styles.css` never fire. Repeated scaffold headings are fine — `headingIds` in `src/lib/satteri-plugins.ts` suffixes duplicate slugs (`the-itch`, `the-itch-2`).
+- **Every section that enumerates gets a table.** Priority levels, lane assignments, hook comparisons, timing orders — if it has more than two parallel items with more than one attribute each, it is a table, not a bulleted list and never a prose run.
+- **No closing-synthesis paragraph.** Recaps are numbered lists, one claim per line. A 300-word single paragraph is not a summary; it is the thing a summary replaces.
+- **Show before you tell.** Any mechanism a reader could run gets a runnable block first, prose second. Where the real implementation is too large, write a simplified teaching version and label it as one — `mapValues` in `map-filter-reduce-transform-select-combine.md` is the pattern.
+- **"Try it" exercises reference code that exists in the guide.** "Build the fetch above" is only legal if there is an above.
+- Keep the section scaffold: Prereqs → The itch → The short version → How it actually works → Try it → You've got this if. It works; the failures are inside the fourth part.
+
+### Verification before declaring a content phase complete
+
+Run `pnpm check:prose` (`scripts/check-prose.mjs`). It reports words, longest paragraph, sentences over 25 words, code blocks per 1k words, and `##` sections missing `###`. Fix what it flags or state why the exemption holds.

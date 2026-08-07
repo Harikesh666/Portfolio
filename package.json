@@ -12,7 +12,8 @@
         "prebuild": "node scripts/generate-og.mjs",
         "build": "vite build",
         "preview": "vite preview",
-        "test": "vitest run --passWithNoTests"
+        "test": "vitest run --passWithNoTests",
+        "check:prose": "node scripts/check-prose.mjs"
     },
     "dependencies": {
         "@phosphor-icons/react": "^2.1.10",

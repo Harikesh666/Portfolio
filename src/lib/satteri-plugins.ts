@@ -12,7 +12,16 @@ export const headingIds = defineHastPlugin({
     element: {
         filter: ["h2", "h3", "h4"],
         visit(node, ctx) {
-            ctx.setProperty(node, "id", slugifyHeading(ctx.textContent(node)));
+            const base = slugifyHeading(ctx.textContent(node));
+            const seen = seenSlugs.get(ctx) ?? new Map<string, number>();
+            seenSlugs.set(ctx, seen);
+
+            const count = (seen.get(base) ?? 0) + 1;
+            seen.set(base, count);
+
+            ctx.setProperty(node, "id", count === 1 ? base : `${base}-${count}`);
         },
     },
 });
+
+const seenSlugs = new WeakMap<object, Map<string, number>>();
