@@ -225,7 +225,7 @@ function RoutePage({
         hasPlacedScroll.current = true;
         if (isInitialPage) return;
 
-        window.scrollTo({ left: 0, top: scrollTarget });
+        window.scrollTo({ left: 0, top: scrollTarget, behavior: "instant"});
         performance.mark("portfolio-route-enter-commit");
         if (!shouldDeferEntrance) {
             performance.mark("portfolio-route-enter-start");
