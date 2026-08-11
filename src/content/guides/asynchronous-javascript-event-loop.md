@@ -161,6 +161,8 @@ This is the first important separation:
 
 > Starting an asynchronous operation and running its callback are two different events.
 
+![The initial script registers a timer with the browser, while the call stack completes the synchronous Start and End logs.](/diagrams/event-loop-timer-registered.png)
+
 ### Step 4: End is logged
 
 ```js
@@ -183,6 +185,8 @@ After at least 5000 milliseconds, the browser can queue a task for the timer cal
 Notice the wording: **queue a task**. The browser does not force the callback into the middle of whatever JavaScript is already running.
 
 A **task** is one scheduled turn of browser work. Running the initial script, handling a ready timer, and dispatching a click can each begin as a task.
+
+![Once the timer becomes eligible, its callback waits in the task queue until the event loop can give the empty call stack another task.](/diagrams/event-loop-timer-ready.png)
 
 ### Step 6: The callback gets a turn
 
@@ -260,6 +264,8 @@ End
 
 Registering the listener is synchronous. `addEventListener` stores the relationship between the event type and the callback, then returns. It does not block the script and wait for a human finger.
 
+![The browser registers a click callback through DOM APIs while the initial script finishes and logs Start and End.](/diagrams/event-loop-click-registered.png)
+
 Later, when the user clicks the button, the browser dispatches a click event. The registered callback runs as part of the task that handles that event:
 
 ```text
@@ -267,6 +273,8 @@ Start
 End
 Button clicked
 ```
+
+![A click makes the registered callback ready; it waits for the event loop to move it from the task queue to the call stack.](/diagrams/event-loop-click-dispatched.png)
 
 If the main thread is stuck inside a long-running function when the user clicks, the click does not interrupt that function. Its handling must wait.
 

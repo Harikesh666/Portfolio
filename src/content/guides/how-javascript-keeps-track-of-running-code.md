@@ -46,6 +46,8 @@ These two components answer two different questions:
 - What values and functions are available to this code?
 - Which part of the code is JavaScript executing now?
 
+![An execution context split into a memory component for variables and functions, and a code component that evaluates statements one at a time.](/diagrams/execution-context.png)
+
 Let’s look at them separately.
 
 ### 1. Variable environment: the memory component
