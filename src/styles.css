@@ -146,6 +146,126 @@
         font-weight: 500;
     }
 
+    .diagram-trigger {
+        display: block;
+        width: 100%;
+        border: 0;
+        background: transparent;
+        padding: 0;
+        cursor: zoom-in;
+        text-align: left;
+    }
+
+    .diagram-trigger > img {
+        display: block;
+        width: 100%;
+        margin: 0;
+        border-radius: 0.25rem;
+    }
+
+    .diagram-trigger__action {
+        display: inline-block;
+        margin-top: 0.5rem;
+        color: var(--muted);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1.4;
+    }
+
+    .diagram-dialog[open] {
+        position: fixed;
+        inset: 0;
+        width: 100dvw;
+        max-width: none;
+        height: 100dvh;
+        max-height: none;
+        margin: 0;
+        display: grid;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        color: var(--foreground);
+        padding: 1rem;
+        place-items: center;
+        overflow: hidden;
+    }
+
+    .diagram-dialog::backdrop {
+        background: transparent;
+    }
+
+    .diagram-dialog__backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgb(0 0 0 / 78%);
+    }
+
+    .diagram-dialog__sheet {
+        position: relative;
+        z-index: 1;
+        width: min(calc(100vw - 2rem), 80rem);
+        max-height: calc(100dvh - 2rem);
+        overflow: auto;
+    }
+
+    .diagram-dialog__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .diagram-dialog__title {
+        margin: 0;
+        color: var(--code-foreground);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .diagram-dialog__close {
+        min-height: 2.75rem;
+        border: 0;
+        border-bottom: 1px solid color-mix(in oklab, var(--code-foreground) 36%, transparent);
+        border-radius: 0;
+        background: transparent;
+        padding: 0.35rem 0;
+        color: var(--code-foreground);
+        font-family: var(--font-mono);
+        font-size: 0.75rem;
+        font-weight: 500;
+        line-height: 1;
+    }
+
+    .diagram-dialog__figure {
+        margin: 0;
+    }
+
+    .diagram-dialog__canvas {
+        border: 1px solid color-mix(in oklab, var(--code-foreground) 24%, transparent);
+        background: white;
+    }
+
+    .diagram-dialog__image {
+        display: block;
+        width: auto;
+        max-width: 100%;
+        max-height: calc(100vh - 7rem);
+        margin: 0 auto;
+        object-fit: contain;
+    }
+
+    .diagram-dialog__description {
+        margin-top: 0.75rem;
+        color: color-mix(in oklab, var(--code-foreground) 72%, transparent);
+        font-size: 0.875rem;
+        line-height: 1.55;
+    }
+
     @media (min-width: 640px) and (hover: hover) and (pointer: fine) {
         .article-list:is(:hover, :focus-within) .article-list-content {
             opacity: 0.35;
@@ -154,6 +274,11 @@
         .article-list :is(a:hover, a:focus-visible) .article-list-content {
             opacity: 1;
         }
+
+        .diagram-trigger:hover .diagram-trigger__action {
+            color: var(--accent);
+        }
+
     }
 
     @media (prefers-reduced-motion: reduce) {

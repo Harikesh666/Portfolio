@@ -111,6 +111,65 @@ export const sheetNavigationFadeTween = {
     ease: pageEase,
 };
 
+// Fades in the diagram scrim before the study sheet reaches its final position.
+export const diagramDialogBackdropOpenTween = {
+    duration: 0.16,
+    ease: pageEase,
+};
+
+// Removes the diagram scrim quickly once the reader has dismissed the sheet.
+export const diagramDialogBackdropCloseTween = {
+    duration: 0.12,
+    ease: "easeIn" as const,
+};
+
+// Lets the viewport-bounded diagram study sheet settle after its fast visual handoff.
+export const diagramDialogSheetOpenTransition = {
+    transform: {
+        type: "spring" as const,
+        visualDuration: 0.24,
+        bounce: 0.06,
+        delay: 0.04,
+    },
+    opacity: {
+        type: "tween" as const,
+        duration: 0.16,
+        ease: pageEase,
+        delay: 0.04,
+    },
+};
+
+// Returns the study sheet to reading faster than it entered and without bounce.
+export const diagramDialogSheetCloseTransition = {
+    transform: {
+        type: "spring" as const,
+        visualDuration: 0.16,
+        bounce: 0,
+    },
+    opacity: {
+        type: "tween" as const,
+        duration: 0.12,
+        ease: "easeIn" as const,
+    },
+};
+
+// Honors keyboard activation and reduced-motion preferences without a delayed state change.
+export const diagramDialogInstantTween = {
+    duration: 0,
+};
+
+// Separates the ambient scrim from the centered paper-sheet movement.
+export const diagramDialogBackdropVariants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1 },
+};
+
+// Keeps the paper study sheet visible before it lifts a short, physical distance.
+export const diagramDialogSheetVariants = {
+    hidden: { opacity: 0, transform: "translateY(10px) scale(0.985)" },
+    visible: { opacity: 1, transform: "translateY(0px) scale(1)" },
+};
+
 // Reveals mobile TOC rows with a quiet active-outward cascade.
 export const sheetRowTween = {
     duration: 0.18,

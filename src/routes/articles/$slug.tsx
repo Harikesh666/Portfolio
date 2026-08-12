@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { ArrowUUpLeftIcon } from "@phosphor-icons/react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { DiagramViewer } from "../../components/DiagramViewer";
 import { FloatingToc } from "../../components/FloatingToc";
 import { PageEnter } from "../../components/PageEnter";
 import { StaggerReveal } from "../../components/StaggerReveal";
@@ -149,6 +150,7 @@ function PostPage() {
                         dangerouslySetInnerHTML={{ __html: post.html }}
                         ref={articleRef}
                     />
+                    <DiagramViewer containerRef={articleRef} key={post.slug} />
 
                     {(previous || next) && (
                         <nav

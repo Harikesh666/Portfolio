@@ -110,6 +110,14 @@
       "css": ".expressive-code { margin-block: 2rem; } .guide-content :not(pre) > code { border-radius: 4px; background: var(--color-accent-soft); color: var(--color-foreground-strong); font-family: var(--font-mono); }"
     },
     {
+      "name": "Expanded Diagram",
+      "kind": "dialog",
+      "refersTo": "diagram-viewer",
+      "description": "A full-canvas native diagram viewer that preserves article rhythm and frames the original white teaching sketch against an independently fading dark scrim. Pointer activation fades the scrim over 160ms, then after a 40ms handoff brings the sheet from 10px below at 0.985 scale through a 240ms transform spring with a fast opacity handoff. Keyboard and reduced-motion activation remain instant; it also has background scroll lock, Escape, backdrop dismissal, and focus return.",
+      "html": "<button class=\"diagram-trigger\" aria-haspopup=\"dialog\" aria-label=\"Expand diagram\"><img alt=\"Diagram description\"><span>Open full diagram →</span></button><dialog aria-labelledby=\"diagram-dialog-title\"><p id=\"diagram-dialog-title\">Diagram</p><button>Close</button><figure><div class=\"diagram-dialog__canvas\"><img alt=\"Diagram description\"></div><figcaption>Diagram description</figcaption></figure></dialog>",
+      "css": ".diagram-trigger { display: block; width: 100%; border: 0; background: transparent; cursor: zoom-in; text-align: left; } .diagram-trigger__action { display: inline-block; margin-top: 8px; color: var(--color-muted); font: 500 12px/1.4 var(--font-mono); } .diagram-dialog { width: min(calc(100vw - 2rem), 80rem); max-height: calc(100vh - 2rem); border: 0; background: transparent; } .diagram-dialog__canvas { border: 1px solid color-mix(in oklab, var(--color-surface) 24%, transparent); background: white; } .diagram-dialog__image { display: block; max-width: 100%; max-height: calc(100vh - 7rem); margin: 0 auto; object-fit: contain; }"
+    },
+    {
       "name": "Floating Article Table of Contents",
       "kind": "nav",
       "refersTo": "floating-toc",
