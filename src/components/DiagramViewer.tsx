@@ -69,7 +69,7 @@ export function DiagramViewer({ containerRef }: DiagramViewerProps) {
         const enhancedDiagrams: Array<{
             image: HTMLImageElement;
             trigger: HTMLButtonElement;
-            onClick: () => void;
+            onClick: (event: MouseEvent) => void;
         }> = [];
 
         for (const image of container.querySelectorAll<HTMLImageElement>(
