@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://www.harikesh.xyz</loc><lastmod>2026-08-16</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/about</loc><lastmod>2026-08-16</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles</loc><lastmod>2026-08-16</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/asynchronous-javascript-event-loop</loc><lastmod>2025-01-07</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/callback-functions-javascript-calls-you-back</loc><lastmod>2025-01-10</lastmod></url>

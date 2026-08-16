@@ -217,6 +217,9 @@ function IdentityHeader() {
                 >
                     Home
                 </Link>
+                <Link className={navLinkClassName} to="/about">
+                    About
+                </Link>
                 <Link className={navLinkClassName} to="/articles">
                     Articles
                 </Link>

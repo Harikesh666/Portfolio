@@ -6,6 +6,7 @@ import { authoredPosts } from "../lib/content";
 import { workDisclosureTransition } from "../lib/motion";
 import { resumeExperience, type ResumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
+import { stackGroups } from "../lib/stack";
 
 const homeTitle = `${site.name} - Software Developer`;
 const homeUrl = absoluteUrl();
@@ -131,32 +132,17 @@ function HomePage() {
                 <div className="mt-4 space-y-4 text-foreground">
                     <p>
                         Mostly I like shipping software and learning things I
-                        don't know yet. A course or a tutorial can teach you,
-                        but curiosity takes you further, into the parts nobody
-                        wrote down.
-                    </p>
-                    <p>
-                        That is most of why the writing on this site exists. I
-                        work something out, then I write it down properly, and
-                        the writing is usually where I find out how much I had
-                        wrong.
-                    </p>
-                    <p>
-                        I don't know everything, and I have stopped pretending
-                        otherwise. Software engineering has a way of correcting
-                        you quickly, and of keeping you humble. I have come to
-                        think that is the best thing about it.
-                    </p>
-                    <p>
-                        I'm fascinated by the work of Matteo Collina, DHH, and
-                        Mitchell Hashimoto. A line of Hashimoto's I keep
-                        coming back to: the pursuit
-                        of excellence does not need justification. I am not
-                        close to their level and I know it, but having people
-                        to look up to, and something to dream about, does not
-                        seem like a bad thing in a mundane world.
+                        don't know yet. I learned backend on demand, with
+                        deadlines and no roadmap, and I write here to find out
+                        how much I had wrong.
                     </p>
                 </div>
+                <Link
+                    className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
+                    to="/about"
+                >
+                    More about me →
+                </Link>
             </section>
 
             <section id="work" className="mt-14">
@@ -173,6 +159,58 @@ function HomePage() {
                         </article>
                     ))}
                 </div>
+            </section>
+
+            <section aria-labelledby="stack-heading" className="mt-14">
+                <h2
+                    className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
+                    id="stack-heading"
+                >
+                    Stack
+                </h2>
+                <div className="stack-groups mt-5 space-y-6">
+                    {stackGroups.map((group) => (
+                        <div key={group.label}>
+                            <p className="flex items-center gap-3">
+                                <span className="shrink-0 font-mono text-[11px] font-medium uppercase tracking-widest text-muted">
+                                    {group.label}
+                                </span>
+                                <span aria-hidden="true" className="stack-rule" />
+                            </p>
+                            <ul className="mt-3 flex flex-wrap gap-2" role="list">
+                                {group.items.map((item) => (
+                                    <li
+                                        className="stack-item"
+                                        key={item.name}
+                                        style={
+                                            {
+                                                "--stack-color": item.color,
+                                            } as React.CSSProperties
+                                        }
+                                    >
+                                        {item.icon && (
+                                            <span
+                                                aria-hidden="true"
+                                                className="stack-item__icon"
+                                                style={{
+                                                    maskImage: `url(${item.icon})`,
+                                                    WebkitMaskImage: `url(${item.icon})`,
+                                                }}
+                                            />
+                                        )}
+                                        {item.name}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
+                </div>
+                <Link
+                    className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
+                    to="/resume"
+                >
+                    Full stack and what I built with it →
+                </Link>
             </section>
 
             <section className="mt-14">

@@ -266,9 +266,67 @@
         line-height: 1.55;
     }
 
+    .stack-rule {
+        height: 1px;
+        flex: 1;
+        background: linear-gradient(
+            to right,
+            var(--divider),
+            color-mix(in oklab, var(--divider) 25%, transparent)
+        );
+    }
+
+    .stack-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid var(--divider);
+        padding: 0.45rem 0.7rem;
+        color: var(--foreground-strong);
+        font-family: var(--font-mono);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        line-height: 1;
+        transition:
+            border-color 180ms ease,
+            opacity 180ms ease,
+            transform 180ms ease;
+    }
+
+    .stack-item__icon {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+        background-color: var(--stack-color, currentColor);
+        -webkit-mask-position: center;
+        -webkit-mask-repeat: no-repeat;
+        -webkit-mask-size: contain;
+        mask-position: center;
+        mask-repeat: no-repeat;
+        mask-size: contain;
+        transition: transform 180ms ease;
+    }
+
     @media (min-width: 640px) and (hover: hover) and (pointer: fine) {
         .article-list:is(:hover, :focus-within) .article-list-content {
             opacity: 0.35;
+        }
+
+        .stack-groups:has(.stack-item:hover) .stack-item:not(:hover) {
+            opacity: 0.4;
+        }
+
+        .stack-item:hover {
+            border-color: color-mix(
+                in oklab,
+                var(--stack-color, var(--accent)) 60%,
+                var(--divider)
+            );
+            transform: translateY(-1px);
+        }
+
+        .stack-item:hover .stack-item__icon {
+            transform: scale(1.14);
         }
 
         .article-list :is(a:hover, a:focus-visible) .article-list-content {
