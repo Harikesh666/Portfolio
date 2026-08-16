@@ -238,14 +238,14 @@ function ResumePage() {
                                 <span className="font-semibold text-foreground-strong">
                                     M.Sc. Information Technology
                                 </span>{" "}
-                                · Sathaye College · 2022–2024
+                                · Sathaye College · 2022 to 2024
                             </p>
                             <p>
                                 <span className="font-semibold text-foreground-strong">
                                     B.Sc. Information Technology
                                 </span>{" "}
                                 · Raheja College of Arts and Commerce ·
-                                2019–2022
+                                2019 to 2022
                             </p>
                         </div>
                     </ResumeSection>

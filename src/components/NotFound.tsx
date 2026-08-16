@@ -26,8 +26,8 @@ export function NotFound() {
             <div>
                 <p className="mt-5 text-foreground">
                     The link may be broken, or the page may have been moved.
-                    If you typed the address, double-check the spelling —
-                    otherwise, these should get you back on track.
+                    If you typed the address, double-check the spelling.
+                    Otherwise, these should get you back on track.
                 </p>
                 <p className="mt-7 flex flex-wrap items-center gap-x-4 font-mono text-sm text-foreground">
                     <Link className={linkClassName} to="/">

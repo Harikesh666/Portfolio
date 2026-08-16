@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Harikesh Mishra</title>
+    <link>https://www.harikesh.xyz/articles</link>
+    <description>Long-form guides on how JavaScript and React actually work, by Harikesh Mishra.</description>
+    <language>en</language>
+    <atom:link href="https://www.harikesh.xyz/feed.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>React Data Fetching and Server State</title>
+      <link>https://www.harikesh.xyz/articles/react-data-fetching-server-state</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-data-fetching-server-state</guid>
+      <description>A guide to remote data as a cache: query keys, stale data, mutations, optimistic updates, and Suspense.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>React Error Boundaries and Resilience</title>
+      <link>https://www.harikesh.xyz/articles/react-error-boundaries-resilience</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-error-boundaries-resilience</guid>
+      <description>What React catches, how it recovers, and how error boundaries contain failures in real applications.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>React&apos;s Event System</title>
+      <link>https://www.harikesh.xyz/articles/react-event-system-internals</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-event-system-internals</guid>
+      <description>How synthetic events, delegation, propagation, portals, and event priority work in modern React.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>React Hooks and Effects</title>
+      <link>https://www.harikesh.xyz/articles/react-hooks-and-effects-internals</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-hooks-and-effects-internals</guid>
+      <description>A practical mental model for hooks, renders, effects, closures, and React&apos;s update queues.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>React Performance Architecture</title>
+      <link>https://www.harikesh.xyz/articles/react-performance-architecture</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-performance-architecture</guid>
+      <description>A measured approach to rendering cost, memoization, concurrency, virtualization, and bundle size.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>React Rendering and Reconciliation Internals</title>
+      <link>https://www.harikesh.xyz/articles/react-rendering-reconciliation-internals</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-rendering-reconciliation-internals</guid>
+      <description>A guided deep dive into how React turns state into UI, compares trees, and keeps updates responsive.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>React&apos;s Scheduler and Lanes</title>
+      <link>https://www.harikesh.xyz/articles/react-scheduler-and-lanes-internals</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-scheduler-and-lanes-internals</guid>
+      <description>A guided tour of cooperative scheduling, update priority, lanes, and React&apos;s concurrent work loop.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>React Server Components and the Server/Client Boundary</title>
+      <link>https://www.harikesh.xyz/articles/react-server-components-internals</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-server-components-internals</guid>
+      <description>A clear model of Server Components, Client Components, serialization, streaming, and framework boundaries.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>React State Management Architecture</title>
+      <link>https://www.harikesh.xyz/articles/react-state-management-architecture</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-state-management-architecture</guid>
+      <description>How to choose where state lives, avoid contradictions, and scale shared state without unnecessary complexity.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>React Suspense Internals</title>
+      <link>https://www.harikesh.xyz/articles/react-suspense-internals</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-suspense-internals</guid>
+      <description>How promises suspend rendering, boundaries reveal content, retries work, and transitions prevent jarring fallbacks.</description>
+      <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>JavaScript Type Conversion: Why &apos;6&apos; / &apos;2&apos; Is 3</title>
+      <link>https://www.harikesh.xyz/articles/javascript-type-conversion-and-coercion</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/javascript-type-conversion-and-coercion</guid>
+      <description>How JavaScript converts values to strings, numbers, and booleans, including coercion, NaN, truthy and falsy values, and the special behavior of plus.</description>
+      <pubDate>Mon, 17 Feb 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>setTimeout, Closures, and the Famous Loop Problem</title>
+      <link>https://www.harikesh.xyz/articles/settimeout-closures-var-let-loop</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/settimeout-closures-var-let-loop</guid>
+      <description>Why delayed callbacks share one var binding, how let creates a binding per loop iteration, and how helper functions preserve each value.</description>
+      <pubDate>Fri, 14 Feb 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>JavaScript Scope: How Names Find Their Values</title>
+      <link>https://www.harikesh.xyz/articles/javascript-scope-how-names-find-values</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/javascript-scope-how-names-find-values</guid>
+      <description>How global, function, and block scope shape name lookup, lexical environments, scope chains, hoisting, shadowing, and ReferenceError behavior.</description>
+      <pubDate>Tue, 11 Feb 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>var, let, and const: Bindings, Scope, and the TDZ</title>
+      <link>https://www.harikesh.xyz/articles/var-let-const-and-temporal-dead-zone</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/var-let-const-and-temporal-dead-zone</guid>
+      <description>Compare var, let, and const through declaration setup, scope, redeclaration, reassignment, global behavior, and the Temporal Dead Zone.</description>
+      <pubDate>Sat, 08 Feb 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>JavaScript Blocks, Scope, and Shadowing</title>
+      <link>https://www.harikesh.xyz/articles/javascript-block-scope-and-shadowing</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/javascript-block-scope-and-shadowing</guid>
+      <description>How blocks group statements, how let and const create block scope, how shadowing works, and why some redeclarations are illegal.</description>
+      <pubDate>Wed, 05 Feb 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Map, Filter, and Reduce: Transform, Select, Combine</title>
+      <link>https://www.harikesh.xyz/articles/map-filter-reduce-transform-select-combine</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/map-filter-reduce-transform-select-combine</guid>
+      <description>Learn how map, filter, and reduce work through numbers, user records, accumulator traces, and practical combinations.</description>
+      <pubDate>Sun, 02 Feb 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>How JavaScript Keeps Track of Running Code</title>
+      <link>https://www.harikesh.xyz/articles/how-javascript-keeps-track-of-running-code</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/how-javascript-keeps-track-of-running-code</guid>
+      <description>Understand execution contexts, the call stack, and how asynchronous code fits into JavaScript&apos;s single-threaded execution model.</description>
+      <pubDate>Thu, 30 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>JavaScript Hoisting Does Not Move Your Code</title>
+      <link>https://www.harikesh.xyz/articles/javascript-hoisting-does-not-move-code</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/javascript-hoisting-does-not-move-code</guid>
+      <description>What actually happens to var, let, const, function, class, and function-expression bindings before JavaScript evaluates a scope.</description>
+      <pubDate>Mon, 27 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Higher-Order Functions: Stop Rewriting the Loop</title>
+      <link>https://www.harikesh.xyz/articles/higher-order-functions-stop-rewriting-the-loop</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/higher-order-functions-stop-rewriting-the-loop</guid>
+      <description>How passing and returning functions separates repeated control flow from changing logic, with a circle calculator built step by step.</description>
+      <pubDate>Fri, 24 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Global Scope and this: Look at the Call Site</title>
+      <link>https://www.harikesh.xyz/articles/global-scope-and-this-call-site</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/global-scope-and-this-call-site</guid>
+      <description>How global bindings, classic scripts, modules, strict mode, methods, arrows, constructors, and event listeners determine the value of this.</description>
+      <pubDate>Tue, 21 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>JavaScript Functions Are Values with Behavior</title>
+      <link>https://www.harikesh.xyz/articles/javascript-functions-values-with-behavior</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/javascript-functions-values-with-behavior</guid>
+      <description>A practical tour of declarations, expressions, names, parameters, returned functions, first-class behavior, and arrow functions.</description>
+      <pubDate>Sat, 18 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>JavaScript Concurrency: One Thread, Many Tasks</title>
+      <link>https://www.harikesh.xyz/articles/javascript-concurrency-one-thread-many-tasks</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/javascript-concurrency-one-thread-many-tasks</guid>
+      <description>How JavaScript makes progress on timers, network requests, rendering, and user input without confusing concurrency with parallel execution.</description>
+      <pubDate>Wed, 15 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Callback Hell: When JavaScript Starts Leaning Sideways</title>
+      <link>https://www.harikesh.xyz/articles/callback-hell-pyramid-of-doom</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/callback-hell-pyramid-of-doom</guid>
+      <description>How dependent asynchronous callbacks create the pyramid of doom, scatter errors, surrender control, and how promises and async functions restore structure.</description>
+      <pubDate>Sun, 12 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Callback Functions: JavaScript Calls You Back</title>
+      <link>https://www.harikesh.xyz/articles/callback-functions-javascript-calls-you-back</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/callback-functions-javascript-calls-you-back</guid>
+      <description>What callbacks really are, when they run synchronously or asynchronously, and how they shape timers, events, array methods, and closures.</description>
+      <pubDate>Fri, 10 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>JavaScript, the Browser, and the Event Loop</title>
+      <link>https://www.harikesh.xyz/articles/asynchronous-javascript-event-loop</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/asynchronous-javascript-event-loop</guid>
+      <description>How browser APIs, tasks, microtasks, and the event loop let JavaScript handle delayed work without blocking the main thread.</description>
+      <pubDate>Tue, 07 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>More on Closures: Scope Chains, Privacy, and Memory</title>
+      <link>https://www.harikesh.xyz/articles/closures-beyond-the-basics</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/closures-beyond-the-basics</guid>
+      <description>A deeper look at returned functions, lexical bindings, shadowing, private state, constructor closures, and garbage collection.</description>
+      <pubDate>Fri, 03 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>setTimeout Has Trust Issues</title>
+      <link>https://www.harikesh.xyz/articles/settimeout-minimum-not-deadline</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/settimeout-minimum-not-deadline</guid>
+      <description>Why a timer delay is a minimum, not an exact execution time, explained through the call stack and event loop.</description>
+      <pubDate>Wed, 01 Jan 2025 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>How the JavaScript Engine Runs Your Code</title>
+      <link>https://www.harikesh.xyz/articles/how-javascript-engine-runs-code</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/how-javascript-engine-runs-code</guid>
+      <description>From source text to bytecode and optimized machine code, with the runtime, call stack, heap, and garbage collector explained.</description>
+      <pubDate>Fri, 27 Dec 2024 03:30:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Closures in JavaScript: The Function&apos;s Backpack</title>
+      <link>https://www.harikesh.xyz/articles/closures-function-backpack</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/closures-function-backpack</guid>
+      <description>How functions remember lexical scope, retain changing bindings, and use that memory for counters, currying, memoization, and async code.</description>
+      <pubDate>Tue, 05 Nov 2024 03:30:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

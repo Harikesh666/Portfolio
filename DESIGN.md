@@ -112,6 +112,13 @@ Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fe
 - **Theme Control:** Minimum 44px target; persists explicit `light` or `dark` preference in local storage.
 - **Focus:** 3px terracotta outline with 3px offset.
 
+### Home
+
+- **Hero:** A mono eyebrow (`Software Developer, Mumbai`), a screen-reader-only `h1`, one short positioning line, then the contact row. The name is not repeated here: `IdentityHeader` already renders it at `1.4rem` semibold directly above the main column, so a visible page title would print it twice. The positioning line states what Harikesh builds and does not carry metrics, which live on the work rows.
+- **About:** Follows the hero, before Work, because it explains why the guides exist and should be read before them. Four short paragraphs in Harikesh's own voice, closing on the Hashimoto line.
+- **Work:** Each collapsed row shows role and company, dates, one concrete outcome, and the role's stack as quiet mono text. Detail stays behind the existing disclosure. There is no standalone skills list; technologies are always attached to the work that shipped them.
+- **Articles:** Shows `authoredPosts` only, newest first. The `react-internals` series is excluded because it is not Harikesh's writing and must never stand in for it on the home page.
+
 ### Articles Index
 - **Map:** A compact ruled `Browse` navigation follows the introduction and links to every learning path and authored topic with guide counts.
 - **Hierarchy:** Guided series remain the primary collection; standalone guides are divided into durable conceptual topics rather than one oversized language category.

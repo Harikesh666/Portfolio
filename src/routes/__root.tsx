@@ -104,6 +104,12 @@ export const Route = createRootRoute({
                 crossOrigin: "anonymous",
             },
             { rel: "stylesheet", href: appCss },
+            {
+                rel: "alternate",
+                type: "application/rss+xml",
+                title: `${site.name} articles`,
+                href: absoluteUrl("/feed.xml"),
+            },
         ],
     }),
     shellComponent: RootDocument,

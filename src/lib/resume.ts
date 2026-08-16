@@ -12,6 +12,10 @@ export type ResumeExperience = {
     company: string;
     role: string;
     dates: string;
+    /** Shown on the collapsed home row so the work carries proof before expansion. */
+    outcome?: string;
+    /** Technologies shipped in this role, shown as text tags on the collapsed row. */
+    stack?: readonly string[];
     projects?: readonly ResumeProject[];
     highlights?: readonly ResumeHighlight[];
 };
@@ -20,7 +24,20 @@ export const resumeExperience: readonly ResumeExperience[] = [
     {
         company: "EduvanceAI",
         role: "Junior Software Developer",
-        dates: "Aug 2025 – Present",
+        dates: "Aug 2025 to Present",
+        outcome:
+            "Server-side pagination over a 130K+ record dataset, database isolation for 5 client organizations, and a streaming workflow API.",
+        stack: [
+            "TypeScript",
+            "React",
+            "TanStack Router / Query",
+            "Bun",
+            "Express",
+            "Python",
+            "PostgreSQL",
+            "AWS",
+            "Docker",
+        ],
         projects: [
             {
                 name: "Workflow Console · Agentic operations workflow platform",
@@ -107,7 +124,9 @@ export const resumeExperience: readonly ResumeExperience[] = [
     {
         company: "Rabs Net Solutions Pvt Ltd",
         role: "Web Developer Intern",
-        dates: "Apr 2025 – Aug 2025",
+        dates: "Apr 2025 to Aug 2025",
+        outcome: "REST APIs and bug fixes on a production CRM.",
+        stack: ["Node.js", "Express", "JavaScript"],
         highlights: [
             {
                 content:

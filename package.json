@@ -13,7 +13,8 @@
         "build": "vite build",
         "preview": "vite preview",
         "test": "vitest run --passWithNoTests",
-        "check:prose": "node scripts/check-prose.mjs"
+        "check:prose": "node scripts/check-prose.mjs",
+        "check:dashes": "node scripts/check-dashes.mjs"
     },
     "dependencies": {
         "@phosphor-icons/react": "^2.1.10",

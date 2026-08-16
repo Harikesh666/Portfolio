@@ -10,6 +10,7 @@ const rootDirectory = path.resolve(path.dirname(scriptPath), "..");
 const contentDirectory = path.join(rootDirectory, "src", "content", "guides");
 const outputDirectory = path.join(rootDirectory, "public", "og");
 const sitemapPath = path.join(rootDirectory, "public", "sitemap.xml");
+const feedPath = path.join(rootDirectory, "public", "feed.xml");
 const site = { url: "https://www.harikesh.xyz" };
 const absoluteUrl = (pathname = "") =>
     `${site.url}${pathname}`.replace(/\/+$/, "") || site.url;
@@ -220,6 +221,50 @@ async function refreshSharedCard({
     await writeFile(outputPath, png);
 }
 
+function toRfc822(publishedAt, filename) {
+    const date = new Date(`${publishedAt}T09:00:00+05:30`);
+    if (Number.isNaN(date.getTime())) {
+        throw new Error(`Invalid publishedAt in ${filename}: ${publishedAt}`);
+    }
+
+    return date.toUTCString();
+}
+
+async function writeFeed(posts) {
+    const items = [...posts]
+        .sort((first, second) => second.publishedAt.localeCompare(first.publishedAt))
+        .map((post) => {
+            const url = absoluteUrl(`/articles/${post.slug}`);
+
+            return [
+                "    <item>",
+                `      <title>${escapeXml(post.title)}</title>`,
+                `      <link>${escapeXml(url)}</link>`,
+                `      <guid isPermaLink="true">${escapeXml(url)}</guid>`,
+                `      <description>${escapeXml(post.description)}</description>`,
+                `      <pubDate>${toRfc822(post.publishedAt, post.slug)}</pubDate>`,
+                "    </item>",
+            ].join("\n");
+        });
+
+    const feed = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">',
+        "  <channel>",
+        `    <title>${escapeXml("Harikesh Mishra")}</title>`,
+        `    <link>${escapeXml(absoluteUrl("/articles"))}</link>`,
+        `    <description>${escapeXml("Long-form guides on how JavaScript and React actually work, by Harikesh Mishra.")}</description>`,
+        "    <language>en</language>",
+        `    <atom:link href="${escapeXml(absoluteUrl("/feed.xml"))}" rel="self" type="application/rss+xml" />`,
+        ...items,
+        "  </channel>",
+        "</rss>",
+        "",
+    ].join("\n");
+
+    await writeFile(feedPath, feed);
+}
+
 async function writeSitemap(posts) {
     const dateParts = new Intl.DateTimeFormat("en-US", {
         timeZone: "Asia/Calcutta",
@@ -278,6 +323,7 @@ async function main() {
     await mkdir(outputDirectory, { recursive: true });
     await Promise.all([
         writeSitemap(posts),
+        writeFeed(posts),
         ...posts.map((post) => generateCard(post, satoriFonts)),
         ...sharedCardVariants.map(refreshSharedCard),
     ]);
