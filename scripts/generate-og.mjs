@@ -19,15 +19,15 @@ const requiredFields = ["title", "description", "readTime", "publishedAt"];
 const sharedCardVariants = [
     {
         accent: "#ea8470",
-        background: "#12120f",
+        background: "#121212",
         filename: "og.png",
-        secondary: "#b9b7b1",
+        secondary: "#b8b8b8",
     },
     {
         accent: "#a34433",
-        background: "#f9f8f5",
+        background: "#fafafa",
         filename: "og-light.png",
-        secondary: "#55524d",
+        secondary: "#525252",
     },
 ];
 
@@ -97,7 +97,7 @@ function card(post) {
                 width: "100%",
                 height: "100%",
                 padding: 84,
-                backgroundColor: "#12120f",
+                backgroundColor: "#121212",
             },
         },
         createElement(
@@ -121,7 +121,7 @@ function card(post) {
                     maxHeight: titleFontSize * 1.15 * 3,
                     marginTop: 36,
                     overflow: "hidden",
-                    color: "#edece7",
+                    color: "#ececec",
                     fontFamily: "Atkinson",
                     fontSize: titleFontSize,
                     fontWeight: 700,
@@ -138,7 +138,7 @@ function card(post) {
                     maxHeight: 68,
                     marginTop: 24,
                     overflow: "hidden",
-                    color: "#9b9890",
+                    color: "#999999",
                     fontFamily: "Atkinson",
                     fontSize: 28,
                     lineHeight: 1.2,
@@ -152,7 +152,7 @@ function card(post) {
                 style: {
                     display: "flex",
                     marginTop: "auto",
-                    color: "#9b9890",
+                    color: "#999999",
                     fontFamily: "JetBrains Mono",
                     fontSize: 24,
                     fontWeight: 500,

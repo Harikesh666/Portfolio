@@ -2,14 +2,14 @@
 name: Harikesh Mishra Portfolio
 description: A quiet, single-column engineer portfolio and technical writing system.
 colors:
-  surface-light: "oklch(0.985 0.003 95)"
-  foreground-light: "oklch(0.33 0.016 85)"
-  foreground-strong-light: "oklch(0.19 0.018 85)"
-  muted-light: "oklch(0.47 0.012 85)"
-  divider-light: "oklch(0.87 0.008 85)"
-  surface-dark: "oklch(0.17 0.007 85)"
-  foreground-dark: "oklch(0.84 0.01 85)"
-  foreground-strong-dark: "oklch(0.96 0.006 85)"
+  surface-light: "oklch(0.985 0 0)"
+  foreground-light: "oklch(0.33 0 0)"
+  foreground-strong-light: "oklch(0.19 0 0)"
+  muted-light: "oklch(0.47 0 0)"
+  divider-light: "oklch(0.87 0 0)"
+  surface-dark: "oklch(0.17 0 0)"
+  foreground-dark: "oklch(0.84 0 0)"
+  foreground-strong-dark: "oklch(0.96 0 0)"
   accent: "oklch(0.51 0.13 32)"
 typography:
   display:
@@ -62,23 +62,25 @@ It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes qui
 
 ## 2. Colors
 
-The palette is warm and low-chroma rather than editorial or decorative. All components consume semantic variables so light and dark modes switch together.
+The neutrals are true greyscale at chroma `0`, so terracotta is the only hue in the interface. All components consume semantic variables so light and dark modes switch together.
 
 ### Light Theme
-- **Surface** (`oklch(0.985 0.003 95)`): reading background.
-- **Foreground** (`oklch(0.33 0.016 85)`): body text.
-- **Strong Foreground** (`oklch(0.19 0.018 85)`): headings and key navigation.
-- **Muted** (`oklch(0.47 0.012 85)`): metadata and secondary context.
-- **Divider** (`oklch(0.87 0.008 85)`): list and layout rules.
-- **TOC Track** (`oklch(0.62 0.012 85)`): the floating rail's readable inactive state.
+- **Surface** (`oklch(0.985 0 0)`): reading background.
+- **Foreground** (`oklch(0.33 0 0)`): body text.
+- **Strong Foreground** (`oklch(0.19 0 0)`): headings and key navigation.
+- **Muted** (`oklch(0.47 0 0)`): metadata and secondary context.
+- **Divider** (`oklch(0.87 0 0)`): list and layout rules.
+- **TOC Track** (`oklch(0.62 0 0)`): the floating rail's readable inactive state.
 
 ### Dark Theme
-- **Surface** (`oklch(0.17 0.007 85)`): warm near-black reading background.
-- **Foreground** (`oklch(0.84 0.01 85)`): body text.
-- **Strong Foreground** (`oklch(0.96 0.006 85)`): headings and key navigation.
-- **Muted** (`oklch(0.68 0.012 85)`): metadata and secondary context.
-- **Divider** (`oklch(0.33 0.008 85)`): quiet structural separation.
-- **TOC Track** (`oklch(0.53 0.012 85)`): the floating rail's readable inactive state.
+- **Surface** (`oklch(0.17 0 0)`): near-black reading background.
+- **Foreground** (`oklch(0.84 0 0)`): body text.
+- **Strong Foreground** (`oklch(0.96 0 0)`): headings and key navigation.
+- **Muted** (`oklch(0.68 0 0)`): metadata and secondary context.
+- **Divider** (`oklch(0.33 0 0)`): quiet structural separation.
+- **TOC Track** (`oklch(0.53 0 0)`): the floating rail's readable inactive state.
+
+**The Neutral Rule.** Neutrals stay at chroma `0`. Lightness values are unchanged from the previous warm palette, so contrast ratios are preserved exactly; only hue was removed.
 
 ### Accent
 - **Terracotta** (`oklch(0.51 0.13 32)` light; `oklch(0.72 0.13 32)` dark): links, series numbers, inline-code surfaces, focus rings, and selected evidence. Soft surfaces use `oklch(0.94 0.028 32)` light and `oklch(0.31 0.04 32)` dark.
@@ -103,7 +105,7 @@ The palette is warm and low-chroma rather than editorial or decorative. All comp
 
 The system is flat. Borders divide lists and sections; whitespace establishes priority. There are no decorative shadows, card shells, gradients, or glass effects.
 
-Code is rendered by Expressive Code with GitHub light and dark syntax themes. Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact terracotta-tinted surface with no generated backticks.
+Code is rendered by Expressive Code with the Pierre light and dark syntax themes (`@pierre/theme`, wired in `vite.config.ts`). Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact terracotta-tinted surface with no generated backticks.
 
 ## 5. Components
 
