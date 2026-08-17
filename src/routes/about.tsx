@@ -51,11 +51,16 @@ function AboutPage() {
                         as="p"
                         className="mt-3 text-[1.0625rem] leading-7 text-foreground"
                     >
-                        I'm a software engineer in Mumbai. I excel at backend
-                        work the most, and I ship full stack applications when
-                        that is what the work needs. Most of the things I know
-                        to do in software began with someone asking me to do
-                        them before i felt ready.
+                        <p>
+                            I'm a software engineer in Mumbai. I excel at
+                            backend work the most, and I ship full stack
+                            applications when that is what the work needs.
+                        </p>
+                        <p className="mt-4">
+                            Most of the things I know to do in software began
+                            with someone asking me to do them before i felt
+                            ready.
+                        </p>
                     </StaggerReveal.Item>
                 </StaggerReveal>
 
@@ -135,8 +140,11 @@ function AboutPage() {
                         <p>
                             I'm fascinated by the work of Matteo Collina, DHH
                             and Mitchell Hashimoto to name a few. A line of
-                            Hashimoto's I keep coming back to is that "The
-                            pursuit of excellence does not need justification."
+                            Hashimoto's I keep coming back to is that{" "}
+                            <i>
+                                "The pursuit of excellence does not need
+                                justification."
+                            </i>
                         </p>
                         <p>
                             I am nowhere close to their level, and I know that.
