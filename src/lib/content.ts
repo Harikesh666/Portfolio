@@ -181,8 +181,8 @@ const postRecords = Object.entries(meta)
 export const posts = postRecords.map(({ path: _, ...post }) => post);
 
 /**
- * Guides Harikesh wrote himself, newest first. The `react-internals` series is
- * excluded because it is not his writing, so it must never stand in for his own
+ * Guides I wrote myself, newest first. The `react-internals` series is
+ * excluded because it is not my writing, so it must never stand in for my own
  * work on the home page.
  */
 export const authoredPosts = posts

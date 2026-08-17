@@ -51,9 +51,11 @@ function AboutPage() {
                         as="p"
                         className="mt-3 text-[1.0625rem] leading-7 text-foreground"
                     >
-                        I'm a software engineer in Mumbai. I like backend work
-                        most, and I ship full stack applications when that is
-                        what the work needs.
+                        I'm a software engineer in Mumbai. I excel at backend
+                        work the most, and I ship full stack applications when
+                        that is what the work needs. Most of the things I know
+                        to do in software began with someone asking me to do
+                        them before i felt ready.
                     </StaggerReveal.Item>
                 </StaggerReveal>
 
@@ -62,29 +64,41 @@ function AboutPage() {
                         <p>
                             I started out wanting to do frontend, React mostly.
                             During my internship I kept getting handed backend
-                            work in Node, and I took it because the experience
-                            was falling into my lap. It was overwhelming. I did
-                            not have solid footing in frontend yet, let alone
-                            backend. I got through it anyway.
+                            work in Node. I took it because the experience was
+                            there, and because saying no to an opportunity
+                            simply because I was unprepared seemed worse than
+                            being unprepared.
                         </p>
                         <p>
-                            That set the pattern for how I learn: on demand,
-                            with a deadline, and no roadmap. My first full time
-                            job started the same way. I was told to work on
-                            Python right as I had decided Node might be the
-                            right fit for me. It came with cloud work too, which
-                            I had not expected and was glad to get. After a
-                            couple of months of Python, my managers were kind
-                            enough to let me choose the stack for POCs I owned
-                            end to end, so I came back to Node on my own terms,
-                            and it stuck.
+                            It was overwhelming. I did not have solid footing in
+                            frontend yet, let alone backend. There was rarely a
+                            point where I felt ready before the work arrived. I
+                            learned to start anyway.
                         </p>
                         <p>
-                            My colleagues were already building on generative AI
-                            and RAG while I worked the backend layer underneath
-                            it. I had touched the AI layer a few times by then.
-                            It made me curious enough to stop touching it and
-                            actually go learn it properly.
+                            My first full-time job followed the same pattern.
+                            Just as I had begun to think Node might be the right
+                            fit for me, I was told I'd be working in Python
+                            instead. Cloud work came with it, unexpectedly and I
+                            was glad for that.
+                        </p>
+                        <p>
+                            After a couple of months, my managers gave me the
+                            freedom to choose the stack for POCs I owned end to
+                            end. I came back to Node, this time because I wanted
+                            to rather than because it had been handed to me. It
+                            stuck.
+                        </p>
+                        <p>
+                            By then, colleagues around me were building with
+                            generative AI and RAG while I worked on the backend
+                            underneath it. I had touched the AI layer a few
+                            times, just enough to know I didn't understand it
+                            properly.
+                        </p>
+                        <p>
+                            Eventually, touching it stopped being enough. I
+                            wanted to know what was actually happening.
                         </p>
                     </AboutSection>
                 </Reveal>
@@ -92,32 +106,45 @@ function AboutPage() {
                 <Reveal>
                     <AboutSection title="How I think about the work">
                         <p>
-                            Mostly I like shipping software and learning things
-                            I don't know yet. A course or a tutorial can teach
-                            you the shape of something, but curiosity is what
-                            takes you past it.
+                            I like shipping software, but I think I like the
+                            part before competence even more: when something is
+                            unfamiliar, slightly uncomfortable and still has to
+                            be figured out.
                         </p>
                         <p>
-                            That is most of why the writing on this site exists.
-                            I work something out, then I write it down properly,
-                            and the writing is usually where I find out how much
-                            I had wrong.
+                            Course and tutorials can teach you the shape of
+                            something. Curiosity is what takes you past it.
                         </p>
                         <p>
-                            I don't know everything, and I have stopped
-                            pretending otherwise. Software engineering corrects
-                            you quickly and it keeps you humble. I have come to
-                            think that is the best thing about it.
+                            That is mostly why the writing on this site exists.
+                            I work something out, then I try to write it down
+                            properly. The writing is usually where I discover
+                            how much of it I had only half understood.
                         </p>
                         <p>
-                            I'm fascinated by the work of Matteo Collina, DHH,
-                            and Mitchell Hashimoto. A line of Hashimoto's I keep
-                            coming back to: the pursuit of excellence does not
-                            need justification. I am not close to their level
-                            and I know it, but having people to look up to, and
-                            something to dream about, does not seem like a bad
-                            thing in a mundane world.
+                            I don't know everything and I've stopped pretending
+                            otherwise. Software engineering corrects you too
+                            quickly for that. You build somehting, reality
+                            answers and sometimes the answer is that you were
+                            wrong.
                         </p>
+                        <p>
+                            I've come to think that is one of the best things
+                            about the work.
+                        </p>
+                        <p>
+                            I'm fascinated by the work of Matteo Collina, DHH
+                            and Mitchell Hashimoto to name a few. A line of
+                            Hashimoto's I keep coming back to is that "The
+                            pursuit of excellence does not need justification."
+                        </p>
+                        <p>
+                            I am nowhere close to their level, and I know that.
+                            But I like having people to look up to. I like the
+                            idea that there is always a better version of the
+                            work, and perhaps of yourself, somewhere ahead.
+                        </p>
+                        <p>There are worse things to spent a life chasing.</p>
                     </AboutSection>
                 </Reveal>
 

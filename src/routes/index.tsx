@@ -12,7 +12,7 @@ const homeTitle = `${site.name} - Software Developer`;
 const homeUrl = absoluteUrl();
 const homeImage = absoluteUrl("/og.png");
 const homeIntro =
-    "I'm a software engineer. I like backend work most, and I ship full stack applications when that is what the work needs.";
+    "I'm a software engineer. I excel at backend work the most, and I ship full stack applications when that is what the work needs.";
 
 export const Route = createFileRoute("/")({
     head: () => ({
