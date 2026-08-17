@@ -7,7 +7,7 @@ import { stackGroups } from "../lib/stack";
 
 const aboutTitle = `About - ${site.name}`;
 const aboutDescription =
-    "Harikesh Mishra is a software engineer in Mumbai who leans backend and ships full stack applications. How he learned the work, what he uses, and why he writes.";
+    "Harikesh Mishra is a software engineer in Mumbai who leans backend and ships full-stack applications. How he learned the work, what he uses, and why he writes.";
 const aboutUrl = absoluteUrl("/about");
 const aboutImage = absoluteUrl("/og.png");
 
@@ -52,13 +52,13 @@ function AboutPage() {
                         className="mt-3 text-[1.0625rem] leading-7 text-foreground"
                     >
                         <p>
-                            I'm a software engineer in Mumbai. I excel at
-                            backend work the most, and I ship full stack
+                            I'm a software engineer in Mumbai. I excel most at
+                            backend work, and I ship full-stack
                             applications when that is what the work needs.
                         </p>
                         <p className="mt-4">
                             Most of the things I know to do in software began
-                            with someone asking me to do them before i felt
+                            with someone asking me to do them before I felt
                             ready.
                         </p>
                     </StaggerReveal.Item>
@@ -84,7 +84,7 @@ function AboutPage() {
                             My first full-time job followed the same pattern.
                             Just as I had begun to think Node might be the right
                             fit for me, I was told I'd be working in Python
-                            instead. Cloud work came with it, unexpectedly and I
+                            instead. Cloud work came with it, unexpectedly, and I
                             was glad for that.
                         </p>
                         <p>
@@ -117,7 +117,7 @@ function AboutPage() {
                             be figured out.
                         </p>
                         <p>
-                            Course and tutorials can teach you the shape of
+                            Courses and tutorials can teach you the shape of
                             something. Curiosity is what takes you past it.
                         </p>
                         <p>
@@ -129,8 +129,8 @@ function AboutPage() {
                         <p>
                             I don't know everything and I've stopped pretending
                             otherwise. Software engineering corrects you too
-                            quickly for that. You build somehting, reality
-                            answers and sometimes the answer is that you were
+                            quickly for that. You build something, reality
+                            answers, and sometimes the answer is that you were
                             wrong.
                         </p>
                         <p>
@@ -138,8 +138,8 @@ function AboutPage() {
                             about the work.
                         </p>
                         <p>
-                            I'm fascinated by the work of Matteo Collina, DHH
-                            and Mitchell Hashimoto to name a few. A line of
+                            I'm fascinated by the work of Matteo Collina, DHH,
+                            and Mitchell Hashimoto, to name a few. A line of
                             Hashimoto's I keep coming back to is that{" "}
                             <i>
                                 "The pursuit of excellence does not need
@@ -152,7 +152,7 @@ function AboutPage() {
                             idea that there is always a better version of the
                             work, and perhaps of yourself, somewhere ahead.
                         </p>
-                        <p>There are worse things to spent a life chasing.</p>
+                        <p>There are worse things to spend a life chasing.</p>
                     </AboutSection>
                 </Reveal>
 
