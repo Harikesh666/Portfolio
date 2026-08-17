@@ -119,15 +119,14 @@ function ResumePage() {
                 <Reveal>
                     <ResumeSection title="Summary">
                         <p className="text-foreground">
-                            Software developer with over one year of combined
-                            professional experience delivering production
-                            backend and full-stack applications using FastAPI,
-                            Node.js, TypeScript, React, and PostgreSQL. Built
-                            data tooling for 130K+ records, multi-tenant systems
-                            across five client organizations, and streaming
-                            workflow APIs, with experience in production
-                            debugging, performance optimization, automated
-                            testing, and AWS/GCP deployment.
+                            Software developer with one year at EduvanceAI
+                            delivering production backend and full-stack
+                            applications using FastAPI, Node.js, TypeScript,
+                            React, and PostgreSQL. Built data tooling for 130K+
+                            records, multi-tenant systems across five client
+                            organizations, and streaming agentic workflow
+                            APIs, with strong production debugging and
+                            deployment experience.
                         </p>
                     </ResumeSection>
                 </Reveal>

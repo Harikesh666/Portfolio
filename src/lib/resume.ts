@@ -44,11 +44,11 @@ export const resumeExperience: readonly ResumeExperience[] = [
                 highlights: [
                     {
                         content:
-                            "Designed a job-based API in Bun, TypeScript, and Express for three multi-step workflows, using Server-Sent Events for live updates, Zod-validated contracts, and retained job state to support reconnection after dropped streams",
+                            "Designed a job-based API in Bun, TypeScript, and Express for six agentic workflows, using Server-Sent Events for live updates, Zod-validated contracts, and retained job state to support reconnection after dropped streams",
                     },
                     {
                         content:
-                            "Automated the procurement pipeline from requirement matching and vendor selection through purchase-order generation, producing PDFs in memory, dispatching them over SMTP, and mapping deliveries to GRN follow-up records",
+                            "Extended the platform with HR interview scheduling, leave-policy validation, and annual-report proofreading, restricting OpenAI to narrow interpretive steps such as resume scoring and prose review while validating a 27K-row leave dataset and report figures in deterministic TypeScript",
                         resumeOnly: true,
                     },
                     {
@@ -97,10 +97,6 @@ export const resumeExperience: readonly ResumeExperience[] = [
                     },
                     {
                         content:
-                            "Diagnosed a tenant-routing defect that sent new chatbots to the default database and restored the affected organization's data access the same day",
-                    },
-                    {
-                        content:
                             "Identified and patched a security vulnerability that exposed deletion authorization codes in API responses, releasing the fix within hours",
                     },
                     {
@@ -130,7 +126,7 @@ export const resumeExperience: readonly ResumeExperience[] = [
         highlights: [
             {
                 content:
-                    "Built REST APIs with Node.js/Express for a production CRM and resolved client-reported bugs across active deployments",
+                    "Developed REST APIs with Node.js and Express for a production CRM and resolved client-reported defects across active deployments",
             },
         ],
     },
