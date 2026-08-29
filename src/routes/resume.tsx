@@ -154,10 +154,6 @@ function ResumePage() {
                                 label="Cloud & DevOps"
                                 value="AWS (Lambda, ECR, EC2, S3, Amplify, CloudTrail), GCP Cloud Run, Docker, Vercel, CI/CD"
                             />
-                            <SkillRow
-                                label="Testing & Practices"
-                                value="Vitest, React Testing Library, Mock Service Worker, structured logging, production debugging"
-                            />
                         </dl>
                     </ResumeSection>
                 </Reveal>
