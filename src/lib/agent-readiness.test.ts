@@ -59,7 +59,7 @@ describe("agent-readable content", () => {
             name: "Harikesh Mishra",
             description: expect.any(String),
             url: "https://www.harikesh.xyz",
-            jobTitle: "Software Developer",
+            jobTitle: "Software Engineer",
             address: {
                 "@type": "PostalAddress",
                 addressLocality: "Mumbai",

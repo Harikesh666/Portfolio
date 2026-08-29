@@ -9,11 +9,11 @@ import { resumeExperience, type ResumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 import { stackGroups } from "../lib/stack";
 
-const homeTitle = `${site.name} - Software Developer`;
+const homeTitle = `${site.name} - Software Engineer`;
 const homeUrl = absoluteUrl();
 const homeImage = absoluteUrl("/og.png");
 const homeIntro =
-    "I'm a software engineer. I excel at backend work the most, and I ship full stack applications when that is what the work needs.";
+    "I'm a software engineer. I specialize in backend work, and I ship full-stack applications when that's what the work needs.";
 
 export const Route = createFileRoute("/")({
     head: () => ({
@@ -52,7 +52,7 @@ function HomePage() {
                     as="p"
                     className="font-mono text-[13px] font-medium tracking-[-0.005em] text-muted"
                 >
-                    Software Developer, Mumbai
+                    Software Engineer, Mumbai
                 </StaggerReveal.Item>
                 <StaggerReveal.Headline
                     as="h1"
@@ -152,9 +152,15 @@ function HomePage() {
                                 <span className="shrink-0 font-mono text-[11px] font-medium uppercase tracking-widest text-muted">
                                     {group.label}
                                 </span>
-                                <span aria-hidden="true" className="stack-rule" />
+                                <span
+                                    aria-hidden="true"
+                                    className="stack-rule"
+                                />
                             </p>
-                            <ul className="mt-3 flex flex-wrap gap-2" role="list">
+                            <ul
+                                className="mt-3 flex flex-wrap gap-2"
+                                role="list"
+                            >
                                 {group.items.map((item) => (
                                     <li
                                         className="stack-item"
@@ -196,10 +202,7 @@ function HomePage() {
                 </h2>
                 <ol className="mt-4 border-t border-divider">
                     {authoredPosts.slice(0, 3).map((post) => (
-                        <li
-                            className="border-b border-divider"
-                            key={post.slug}
-                        >
+                        <li className="border-b border-divider" key={post.slug}>
                             <Link
                                 className="group block py-5"
                                 to="/articles/$slug"
@@ -228,7 +231,6 @@ function HomePage() {
                     View all articles →
                 </Link>
             </section>
-
         </main>
     );
 }

@@ -100,7 +100,7 @@ export function mergeVary(headers: Headers, value: string) {
     headers.set("Vary", [...values].join(", "));
 }
 
-export const homeMarkdown = `# ${site.name} — Software Developer in Mumbai
+export const homeMarkdown = `# ${site.name} — Software Engineer in Mumbai
 
 ${site.description}
 
@@ -150,7 +150,7 @@ export const homeStructuredData = {
             description: site.description,
             url: absoluteUrl(),
             image: absoluteUrl(site.avatar),
-            jobTitle: "Software Developer",
+            jobTitle: "Software Engineer",
             email: `mailto:${site.email}`,
             address: {
                 "@type": "PostalAddress",

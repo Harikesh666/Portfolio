@@ -1,5 +1,5 @@
 export const contactText = [
-    "I am Harikesh Mishra, a software developer based in Mumbai, Maharashtra, India. I work mainly on backend systems and full-stack applications, with practical experience across Node.js, TypeScript, Python, React, PostgreSQL, cloud infrastructure, and production debugging.",
+    "I am Harikesh Mishra, a software engineer based in Mumbai, Maharashtra, India. I work mainly on backend systems and full-stack applications, with practical experience across Node.js, TypeScript, Python, React, PostgreSQL, cloud infrastructure, and production debugging.",
     "Email is the best way to contact me about software engineering roles, freelance projects, technical collaboration, or questions about an article on this site. Please include enough context for me to understand the work: the problem you are solving, the expected scope, any important technical constraints, and the timeline if one already exists.",
     "You can also call the phone number listed here for a direct conversation. I may not answer while I am working, so email is more reliable for a first message. I do not operate a recruiting agency, sell mailing lists, accept paid article placement, or provide emergency production support through this website.",
     "For background before you get in touch, the resume documents my employment and project experience. The About page explains how I approach unfamiliar work, and the article library shows how I reason about JavaScript, React, and software systems in detail.",
@@ -13,4 +13,3 @@ export const privacyText = [
     "Articles may link to third-party websites such as GitHub, LinkedIn, and official technical documentation. Those sites may collect information under their own policies after you follow a link. This policy covers harikesh.xyz, not services operated by other organizations.",
     "If the site's data practices change materially, this page will be updated before or when the change takes effect. You can ask a privacy question or request deletion of information you previously sent directly by using the contact details on the Contact page.",
 ] as const;
-

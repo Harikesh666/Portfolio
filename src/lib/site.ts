@@ -6,7 +6,7 @@ export const site = {
     resumePdfPath: "/Harikesh_Mishra_Resume.pdf",
     url: "https://www.harikesh.xyz",
     description:
-        "Harikesh Mishra is a software developer who builds resilient React and backend systems, solves production problems, and writes about how modern software works.",
+        "Harikesh Mishra is a software engineer who builds resilient React and backend systems, solves production problems, and writes about how modern software works.",
     socials: {
         github: "https://github.com/Harikesh666/",
         linkedin: "https://www.linkedin.com/in/harikesh-mishra/",

@@ -78,11 +78,11 @@ export const Route = createRootRoute({
                 name: "viewport",
                 content: "width=device-width, initial-scale=1",
             },
-            { title: `${site.name} - Software Developer` },
+            { title: `${site.name} - Software Engineer` },
             { name: "description", content: site.description },
             {
                 property: "og:title",
-                content: `${site.name} - Software Developer`,
+                content: `${site.name} - Software Engineer`,
             },
             { property: "og:description", content: site.description },
             { property: "og:type", content: "website" },
@@ -91,7 +91,7 @@ export const Route = createRootRoute({
             { name: "twitter:card", content: "summary_large_image" },
             {
                 name: "twitter:title",
-                content: `${site.name} - Software Developer`,
+                content: `${site.name} - Software Engineer`,
             },
             { name: "twitter:description", content: site.description },
             { name: "twitter:image", content: absoluteUrl("/og.png") },

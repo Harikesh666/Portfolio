@@ -49,7 +49,7 @@ components:
 
 **Creative North Star: "The Quiet Engineering Notebook"**
 
-The portfolio is a minimal, proof-led introduction to a software developer and a home for deep technical writing. The interface behaves like a dependable reading surface: one narrow column, direct navigation, calm spacing, and evidence before ornament.
+The portfolio is a minimal, proof-led introduction to a software engineer and a home for deep technical writing. The interface behaves like a dependable reading surface: one narrow column, direct navigation, calm spacing, and evidence before ornament.
 
 It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes quickly; fellow engineers can settle into substantial articles without visual noise.
 
@@ -116,7 +116,7 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 
 ### Home
 
-- **Hero:** A mono eyebrow (`Software Developer, Mumbai`), one positioning line rendered as the semantic `h1`, then the contact row. `IdentityHeader` already renders the name directly above the main column, so the heading describes the work instead of repeating it. Metrics remain on the work rows.
+- **Hero:** A mono eyebrow (`Software Engineer, Mumbai`), one positioning line rendered as the semantic `h1`, then the contact row. `IdentityHeader` already renders the name directly above the main column, so the heading describes the work instead of repeating it. Metrics remain on the work rows.
 - **Trust Pages:** About, Contact, and Privacy use the same narrow document shell, restrained page-title scale, section labels, plain links, and prose rhythm as Resume. They add no cards, forms, or decorative treatment; credibility comes from specific, consistent information.
 - **About:** Follows the hero, before Work, because it explains why the guides exist and should be read before them. Four short paragraphs in Harikesh's own voice, closing on the Hashimoto line.
 - **Work:** Each collapsed row shows role and company, dates, one concrete outcome, and the role's stack as quiet mono text. Detail stays behind the existing disclosure. There is no standalone skills list; technologies are always attached to the work that shipped them.

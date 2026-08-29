@@ -203,7 +203,7 @@ async function refreshSharedCard({
             <rect x="72" y="118" width="400" height="50" fill="${background}" />
             <text x="84" y="155" fill="${accent}" font-family="JetBrains Mono" font-size="28" font-weight="500">harikesh.xyz</text>
             <rect x="72" y="424" width="670" height="62" fill="${background}" />
-            <text x="84" y="466" fill="${secondary}" font-family="Atkinson Hyperlegible Next" font-size="36" font-weight="400">Software Developer · Mumbai</text>
+            <text x="84" y="466" fill="${secondary}" font-family="Atkinson Hyperlegible Next" font-size="36" font-weight="400">Software Engineer · Mumbai</text>
         </svg>
     `;
     const png = new Resvg(svg, {

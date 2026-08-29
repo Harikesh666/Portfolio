@@ -1,6 +1,6 @@
 # Harikesh Mishra
 
-> Software developer in Mumbai focused on backend systems, resilient React applications, production problem-solving, and practical technical writing.
+> Software engineer in Mumbai focused on backend systems, resilient React applications, production problem-solving, and practical technical writing.
 
 Canonical site: https://www.harikesh.xyz
 

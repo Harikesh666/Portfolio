@@ -10,7 +10,7 @@ import { absoluteUrl, site } from "../lib/site";
 
 const resumeTitle = `Resume - ${site.name}`;
 const resumeDescription =
-    "Harikesh Mishra is a software developer building production backend and full-stack applications with FastAPI, Node.js, TypeScript, React, and PostgreSQL.";
+    "Harikesh Mishra is a software engineer building production backend and full-stack applications with FastAPI, Node.js, TypeScript, React, and PostgreSQL.";
 const resumeUrl = absoluteUrl("/resume");
 const resumeImage = absoluteUrl("/og.png");
 
@@ -119,7 +119,7 @@ function ResumePage() {
                 <Reveal>
                     <ResumeSection title="Summary">
                         <p className="text-foreground">
-                            Software developer with one year at EduvanceAI
+                            Software engineer with one year at EduvanceAI
                             delivering production backend and full-stack
                             applications using FastAPI, Node.js, TypeScript,
                             React, and PostgreSQL. Built data tooling for 130K+
