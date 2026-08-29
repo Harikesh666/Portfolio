@@ -22,6 +22,8 @@ pnpm test
 
 Update `src/lib/site.ts` for the site name, contact details, production URL, social links, and resume PDF path. It supplies the shared metadata, canonical URLs, JSON-LD, sitemap, and robots values.
 
+The homepage also serves Markdown when a client prefers `Accept: text/markdown`, with q-value-aware negotiation and `Vary: Accept`. `public/llms.txt` tells agents when to use the portfolio and where to find articles, resume evidence, the sitemap, and contact details. Unknown paths retain a real 404 status and expose the same recovery links in HTML or negotiated Markdown.
+
 `public/og.png` and `public/og-light.png` are the shared social cards. `scripts/generate-og.mjs` keeps their identity copy and terracotta accents synchronized during builds while generating article cards and the sitemap. `public/Harikesh_Mishra_Resume.pdf` is the downloadable resume linked from the global header.
 
 ## Articles Pipeline

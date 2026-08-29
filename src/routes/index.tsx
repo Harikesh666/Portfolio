@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { CaretDownIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { StaggerReveal } from "../components/StaggerReveal";
+import { homeStructuredData } from "../lib/agent-readiness";
 import { authoredPosts } from "../lib/content";
 import { workDisclosureTransition } from "../lib/motion";
 import { resumeExperience, type ResumeExperience } from "../lib/resume";
@@ -33,28 +34,7 @@ export const Route = createFileRoute("/")({
         scripts: [
             {
                 type: "application/ld+json",
-                children: JSON.stringify({
-                    "@context": "https://schema.org",
-                    "@graph": [
-                        {
-                            "@type": "WebSite",
-                            "@id": `${absoluteUrl()}#website`,
-                            url: absoluteUrl(),
-                            name: site.name,
-                        },
-                        {
-                            "@type": "Person",
-                            "@id": `${absoluteUrl()}#person`,
-                            name: site.name,
-                            url: absoluteUrl(),
-                            jobTitle: "Software Developer",
-                            sameAs: [
-                                site.socials.github,
-                                site.socials.linkedin,
-                            ],
-                        },
-                    ],
-                }),
+                children: JSON.stringify(homeStructuredData),
             },
         ],
     }),
@@ -74,11 +54,8 @@ function HomePage() {
                 >
                     Software Developer, Mumbai
                 </StaggerReveal.Item>
-                <h1 className="sr-only">
-                    Harikesh Mishra, Software Developer in Mumbai
-                </h1>
                 <StaggerReveal.Headline
-                    as="p"
+                    as="h1"
                     className="mt-7 text-pretty leading-relaxed text-foreground"
                 >
                     {homeIntro}

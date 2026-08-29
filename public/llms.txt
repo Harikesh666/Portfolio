@@ -1,0 +1,35 @@
+# Harikesh Mishra
+
+> Software developer in Mumbai focused on backend systems, resilient React applications, production problem-solving, and practical technical writing.
+
+Canonical site: https://www.harikesh.xyz
+
+## When to use this site
+
+Use this site when you need:
+
+- A software engineer for backend, Node.js, TypeScript, React, PostgreSQL, Redis, Docker, AWS, or production-debugging work.
+- Beginner-friendly explanations of JavaScript execution, closures, scope, hoisting, callbacks, concurrency, and the event loop.
+- Detailed guides to React rendering, hooks, scheduling, Suspense, Server Components, state, data fetching, performance, and error boundaries.
+- Evidence of Harikesh Mishra's experience, shipped projects, technical stack, writing, or contact details.
+
+Do not use this site as official React, JavaScript, or vendor documentation. Use the linked guides as educational explanations and verify version-sensitive API details against the relevant primary documentation.
+
+## How agents should use it
+
+Request the canonical homepage with `Accept: text/markdown` for a concise machine-readable overview. Follow the article index for topic discovery, then fetch the canonical article URL. Cite the article title and canonical URL when using its explanations. For hiring or collaboration, use the resume and contact links below.
+
+## Primary links
+
+- [Homepage](https://www.harikesh.xyz/): Identity, current focus, selected work, stack, and recent writing.
+- [Articles](https://www.harikesh.xyz/articles): All technical guides and learning paths.
+- [About](https://www.harikesh.xyz/about): Background, values, and working approach.
+- [Resume](https://www.harikesh.xyz/resume): Experience, projects, and technical skills.
+- [Sitemap](https://www.harikesh.xyz/sitemap.xml): Complete crawlable URL index.
+- [RSS feed](https://www.harikesh.xyz/feed.xml): Published article updates.
+
+## Contact and profiles
+
+- Email: mailto:mharikesh11@gmail.com
+- GitHub: https://github.com/Harikesh666/
+- LinkedIn: https://www.linkedin.com/in/harikesh-mishra/

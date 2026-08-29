@@ -16,7 +16,7 @@ export function NotFound() {
             <PageEnter.Item>
             <header>
                 <p className="font-mono text-sm text-muted">404</p>
-                <h1 className="mt-3 text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.025em] text-foreground-strong sm:text-[2rem]">
+                <h1 className="mt-3 text-[1.75rem] font-semibold leading-[1.15] tracking-tight text-foreground-strong sm:text-[2rem]">
                     This page doesn't exist
                 </h1>
             </header>
@@ -39,6 +39,12 @@ export function NotFound() {
                     <Link className={linkClassName} to="/resume">
                         Resume
                     </Link>
+                    <a className={linkClassName} href="/sitemap.xml">
+                        Sitemap
+                    </a>
+                    <a className={linkClassName} href="/llms.txt">
+                        Agent guide
+                    </a>
                 </p>
             </div>
             </PageEnter.Item>
