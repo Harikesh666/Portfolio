@@ -24,6 +24,8 @@ Request the canonical homepage with `Accept: text/markdown` for a concise machin
 - [Homepage](https://www.harikesh.xyz/): Identity, current focus, selected work, stack, and recent writing.
 - [Articles](https://www.harikesh.xyz/articles): All technical guides and learning paths.
 - [About](https://www.harikesh.xyz/about): Background, values, and working approach.
+- [Contact](https://www.harikesh.xyz/contact): Direct professional contact details and inquiry guidance.
+- [Privacy](https://www.harikesh.xyz/privacy): Data handling, local theme storage, hosting logs, and external-service disclosures.
 - [Resume](https://www.harikesh.xyz/resume): Experience, projects, and technical skills.
 - [Sitemap](https://www.harikesh.xyz/sitemap.xml): Complete crawlable URL index.
 - [RSS feed](https://www.harikesh.xyz/feed.xml): Published article updates.

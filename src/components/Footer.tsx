@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { site } from "../lib/site";
 
 export default function Footer() {
@@ -13,9 +14,17 @@ export default function Footer() {
                         Send an email.
                     </a>
                 </p>
-                <p className="text-xs text-muted">
-                    © {new Date().getFullYear()} {site.name}. Built for the web.
-                </p>
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted sm:justify-end">
+                    <Link className="hover:text-accent" to="/contact">
+                        Contact
+                    </Link>
+                    <Link className="hover:text-accent" to="/privacy">
+                        Privacy
+                    </Link>
+                    <span>
+                        © {new Date().getFullYear()} {site.name}
+                    </span>
+                </div>
             </div>
         </footer>
     );

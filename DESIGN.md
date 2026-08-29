@@ -116,7 +116,8 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 
 ### Home
 
-- **Hero:** A mono eyebrow (`Software Developer, Mumbai`), a screen-reader-only `h1`, one short positioning line, then the contact row. The name is not repeated here: `IdentityHeader` already renders it at `1.4rem` semibold directly above the main column, so a visible page title would print it twice. The positioning line states what Harikesh builds and does not carry metrics, which live on the work rows.
+- **Hero:** A mono eyebrow (`Software Developer, Mumbai`), one positioning line rendered as the semantic `h1`, then the contact row. `IdentityHeader` already renders the name directly above the main column, so the heading describes the work instead of repeating it. Metrics remain on the work rows.
+- **Trust Pages:** About, Contact, and Privacy use the same narrow document shell, restrained page-title scale, section labels, plain links, and prose rhythm as Resume. They add no cards, forms, or decorative treatment; credibility comes from specific, consistent information.
 - **About:** Follows the hero, before Work, because it explains why the guides exist and should be read before them. Four short paragraphs in Harikesh's own voice, closing on the Hashimoto line.
 - **Work:** Each collapsed row shows role and company, dates, one concrete outcome, and the role's stack as quiet mono text. Detail stays behind the existing disclosure. There is no standalone skills list; technologies are always attached to the work that shipped them.
 - **Articles:** Shows `authoredPosts` only, newest first. The `react-internals` series is excluded because it is not Harikesh's writing and must never stand in for it on the home page.

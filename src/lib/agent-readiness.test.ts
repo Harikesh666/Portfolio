@@ -7,6 +7,7 @@ import {
     negotiateRepresentation,
     notFoundMarkdown,
 } from "./agent-readiness";
+import { contactText, privacyText } from "./trust-pages";
 
 describe("agent content negotiation", () => {
     test.each([
@@ -59,6 +60,16 @@ describe("agent-readable content", () => {
             description: expect.any(String),
             url: "https://www.harikesh.xyz",
             jobTitle: "Software Developer",
+            address: {
+                "@type": "PostalAddress",
+                addressLocality: "Mumbai",
+                addressCountry: "IN",
+            },
+            contactPoint: {
+                "@type": "ContactPoint",
+                email: "mharikesh11@gmail.com",
+                url: "https://www.harikesh.xyz/contact",
+            },
         });
     });
 
@@ -68,5 +79,17 @@ describe("agent-readable content", () => {
         expect(instructions).toContain("## How agents should use it");
         expect(instructions).toContain("Accept: text/markdown");
         expect(instructions).toContain("/sitemap.xml");
+        expect(instructions).toContain("/contact");
+        expect(instructions).toContain("/privacy");
+    });
+
+    test("publishes substantial contact and privacy disclosures", async () => {
+        expect(contactText.join(" ").length).toBeGreaterThan(500);
+        expect(privacyText.join(" ").length).toBeGreaterThan(500);
+
+        const sitemap = await readFile("public/sitemap.xml", "utf8");
+        expect(sitemap).toContain("https://www.harikesh.xyz/about");
+        expect(sitemap).toContain("https://www.harikesh.xyz/contact");
+        expect(sitemap).toContain("https://www.harikesh.xyz/privacy");
     });
 });

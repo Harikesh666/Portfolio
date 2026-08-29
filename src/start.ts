@@ -12,6 +12,8 @@ const pagePaths = new Set([
     "/about",
     "/articles",
     "/articles/",
+    "/contact",
+    "/privacy",
     "/resume",
     "/writing",
     "/writing/",
@@ -57,6 +59,7 @@ const agentContentMiddleware = createMiddleware().server(
 
         const headers = new Headers(response.headers);
         mergeVary(headers, "Accept");
+        mergeVary(headers, "Accept-Encoding");
 
         return new Response(request.method === "HEAD" ? null : response.body, {
             headers,
@@ -70,7 +73,7 @@ function markdownResponse(request: Request, body: string, status: number) {
     return new Response(request.method === "HEAD" ? null : body, {
         headers: {
             "Content-Type": "text/markdown; charset=utf-8",
-            Vary: "Accept",
+            Vary: "Accept, Accept-Encoding",
         },
         status,
     });
@@ -78,7 +81,7 @@ function markdownResponse(request: Request, body: string, status: number) {
 
 function notAcceptableResponse() {
     return new Response(null, {
-        headers: { Vary: "Accept" },
+        headers: { Vary: "Accept, Accept-Encoding" },
         status: 406,
     });
 }

@@ -152,6 +152,19 @@ export const homeStructuredData = {
             image: absoluteUrl(site.avatar),
             jobTitle: "Software Developer",
             email: `mailto:${site.email}`,
+            address: {
+                "@type": "PostalAddress",
+                addressLocality: "Mumbai",
+                addressRegion: "Maharashtra",
+                addressCountry: "IN",
+            },
+            contactPoint: {
+                "@type": "ContactPoint",
+                contactType: "professional inquiries",
+                email: site.email,
+                telephone: site.phone,
+                url: absoluteUrl("/contact"),
+            },
             knowsAbout: [
                 "Backend engineering",
                 "React",

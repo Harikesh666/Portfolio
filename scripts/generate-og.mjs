@@ -275,7 +275,11 @@ async function writeSitemap(posts) {
     const today = `${dateParts.find((part) => part.type === "year")?.value}-${dateParts.find((part) => part.type === "month")?.value}-${dateParts.find((part) => part.type === "day")?.value}`;
     const entries = [
         { url: absoluteUrl(), lastmod: today },
+        { url: absoluteUrl("/about"), lastmod: today },
         { url: absoluteUrl("/articles"), lastmod: today },
+        { url: absoluteUrl("/contact"), lastmod: today },
+        { url: absoluteUrl("/privacy"), lastmod: today },
+        { url: absoluteUrl("/resume"), lastmod: today },
         ...posts.map((post) => ({
             url: absoluteUrl(`/articles/${post.slug}`),
             lastmod: post.publishedAt,
