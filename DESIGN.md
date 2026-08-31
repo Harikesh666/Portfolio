@@ -111,6 +111,7 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 
 ### Navigation
 - **Shape:** A single ruled row with site name, writing link, GitHub, resume, and theme toggle.
+- **Resume Asset:** Resume links use a content-hashed public URL while downloads preserve the clean `Harikesh_Mishra_Resume.pdf` filename.
 - **Theme Control:** Minimum 44px target; persists explicit `light` or `dark` preference in local storage.
 - **Focus:** 3px terracotta outline with 3px offset.
 

@@ -3,7 +3,8 @@ export const site = {
     avatar: "/apple-touch-icon.png" as string,
     email: "mharikesh11@gmail.com",
     phone: "+91 9082146400",
-    resumePdfPath: "/Harikesh_Mishra_Resume.pdf",
+    resumePdfPath: "/Harikesh_Mishra_Resume_55904f69.pdf",
+    resumePdfDownloadName: "Harikesh_Mishra_Resume.pdf",
     url: "https://www.harikesh.xyz",
     description:
         "Harikesh Mishra is a software engineer who builds resilient React and backend systems, solves production problems, and writes about how modern software works.",

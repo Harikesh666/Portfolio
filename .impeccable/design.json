@@ -143,7 +143,7 @@
       { "name": "The Reading Rule", "body": "Hierarchy comes from sequence and spacing, not oversized display typography.", "section": "typography" },
       { "name": "The Flat Rule", "body": "Rules and whitespace organize content; decorative cards and shadows do not.", "section": "elevation" }
     ],
-    "dos": ["Use semantic theme tokens.", "Keep pages inside the reading column.", "Publish through validated series or topic frontmatter and lazy guide imports."],
+    "dos": ["Use semantic theme tokens.", "Keep pages inside the reading column.", "Publish through validated series or topic frontmatter and lazy guide imports.", "Use content-hashed resume PDF URLs while preserving a clean download name."],
     "donts": ["Do not reintroduce serif display typography.", "Do not add a second accent palette.", "Do not override Expressive Code fenced blocks with legacy pre styles."]
   }
 }

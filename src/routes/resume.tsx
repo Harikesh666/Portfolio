@@ -89,7 +89,7 @@ function ResumePage() {
                         <motion.a
                             className="inline-flex items-center gap-2 border border-divider px-3 py-2 font-mono text-sm text-foreground-strong hover:border-accent hover:text-accent"
                             href={site.resumePdfPath}
-                            download={site.resumePdfPath.slice(1)}
+                            download={site.resumePdfDownloadName}
                             whileHover={
                                 shouldReduceMotion ? undefined : { y: -1 }
                             }

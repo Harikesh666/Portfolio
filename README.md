@@ -26,7 +26,7 @@ The homepage also serves Markdown when a client prefers `Accept: text/markdown`,
 
 Trust pages live at `/about`, `/contact`, and `/privacy`. Keep their identity, contact, and data-handling claims accurate when the site's ownership, forms, analytics, storage, or hosting behavior changes. The sitemap generator includes these pages alongside `/resume` and the article catalog.
 
-`public/og.png` and `public/og-light.png` are the shared social cards. `scripts/generate-og.mjs` keeps their identity copy and terracotta accents synchronized during builds while generating article cards and the sitemap. `public/Harikesh_Mishra_Resume.pdf` is the downloadable resume linked from the global header.
+`public/og.png` and `public/og-light.png` are the shared social cards. `scripts/generate-og.mjs` keeps their identity copy and terracotta accents synchronized during builds while generating article cards and the sitemap. The resume PDF uses `public/Harikesh_Mishra_Resume_<hash>.pdf`, where `<hash>` is the first eight lowercase characters of its SHA-256 digest. When the PDF changes, rename it with the new hash and update `site.resumePdfPath`; `src/lib/site.test.ts` rejects stale filenames while `site.resumePdfDownloadName` keeps the downloaded file name clean.
 
 ## Articles Pipeline
 
