@@ -631,9 +631,7 @@ This sharing-and-deduplication is automatic, and it is the thing component-local
 
 This is the direct payoff of the cache being a single keyed store (Section 3) with observer tracking (Section 6).
 
-When a component calls `useQuery({ queryKey: ['user', 5], ...
-
-})`, it does not own any data.
+When a component calls `useQuery({ queryKey: ['user', 5], ... })`, it does not own any data.
 
 It _subscribes_ to the cache entry at address `['user', 5]` (this is the external-store subscription from the State guide, Section 12, realized through `useSyncExternalStore`, which Section 14 unpacks).
 

@@ -58,7 +58,7 @@ It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes qui
 - Explicit light and dark themes using the same semantic tokens.
 - Atkinson Hyperlegible Next for all prose and headings, JetBrains Mono for metadata and technical labels.
 - Phosphor provides the single interface-icon language across navigation, downloads, disclosures, and article controls.
-- Terracotta acts as one intentional signal for links, series indices, inline code, focus, and important metrics.
+- Terracotta acts as one intentional signal for links, list markers, series indices, inline code, focus, and important metrics.
 
 ## 2. Colors
 
@@ -83,7 +83,7 @@ The neutrals are true greyscale at chroma `0`, so terracotta is the only hue in 
 **The Neutral Rule.** Neutrals stay at chroma `0`. Lightness values are unchanged from the previous warm palette, so contrast ratios are preserved exactly; only hue was removed.
 
 ### Accent
-- **Terracotta** (`oklch(0.51 0.13 32)` light; `oklch(0.72 0.13 32)` dark): links, series numbers, inline-code surfaces, focus rings, and selected evidence. Soft surfaces use `oklch(0.94 0.028 32)` light and `oklch(0.31 0.04 32)` dark.
+- **Terracotta** (`oklch(0.51 0.13 32)` light; `oklch(0.72 0.13 32)` dark): links, list markers, series numbers, inline-code surfaces, focus rings, and selected evidence. Soft surfaces use `oklch(0.94 0.028 32)` light and `oklch(0.31 0.04 32)` dark. Inline code blends that soft surface with the reading surface so repeated literals stay quieter than links and headings.
 
 **The Signal Rule.** Terracotta directs attention; it is never used as ambient decoration or a second palette.
 
@@ -98,6 +98,8 @@ The neutrals are true greyscale at chroma `0`, so terracotta is the only hue in 
 - **Article Link:** 16px medium Atkinson Hyperlegible Next with tight leading and terracotta hover.
 - **Body:** 17px Atkinson Hyperlegible Next at 1.65 line height.
 - **Guide Prose:** 18px Atkinson Hyperlegible Next at 1.78 line height.
+- **Guide Chapter:** 24px semibold Atkinson Hyperlegible Next at 32px leading with `-0.018em` tracking.
+- **Guide Subsection:** 18px semibold Atkinson Hyperlegible Next at 28px leading with `-0.012em` tracking.
 
 **The Reading Rule.** No oversized display type or decorative serif hierarchy. Technical ideas earn emphasis through clarity, sequence, and breathing room.
 
@@ -105,7 +107,7 @@ The neutrals are true greyscale at chroma `0`, so terracotta is the only hue in 
 
 The system is flat. Borders divide lists and sections; whitespace establishes priority. There are no decorative shadows, card shells, gradients, or glass effects.
 
-Code is rendered by Expressive Code with the Pierre light and dark syntax themes (`@pierre/theme`, wired in `vite.config.ts`). Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact terracotta-tinted surface with no generated backticks.
+Code is rendered by Expressive Code with the Pierre light and dark syntax themes (`@pierre/theme`, wired in `vite.config.ts`). Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact, quiet terracotta-tinted surface with no generated backticks.
 
 ## 5. Components
 

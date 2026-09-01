@@ -396,9 +396,7 @@ The linear (O(n)) speed comes entirely from two assumptions.
 - **Same `type`** → keep the fiber and the real DOM node, update only the changed props, recurse into children.
 - **Different `type`** (`'div'` to `'span'`, or `ComponentA` to `ComponentB`) → no attempt to find similarities. Tear down the entire old subtree (unmount everything, run cleanups, destroy nodes) and build the new one fresh.
 
-The consequence to burn into memory: **changing the type at a position discards all state below it.** `condition ?
-
-<Editor/> : <Viewer/>` with different component types means every flip unmounts one whole subtree and mounts the other, losing local state, focus, scroll, everything.
+The consequence to burn into memory: **changing the type at a position discards all state below it.** `condition ? <Editor/> : <Viewer/>` with different component types means every flip unmounts one whole subtree and mounts the other, losing local state, focus, scroll, everything.
 
 Keep the type stable and the state survives.
 

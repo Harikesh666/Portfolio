@@ -146,7 +146,7 @@ function PostPage() {
                     </header>
 
                     <article
-                        className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:decoration-accent prose-a:decoration-1 prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-semibold prose-headings:text-foreground-strong prose-h2:text-2xl prose-h3:text-xl prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:font-semibold prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:before:content-none prose-code:after:content-none"
+                        className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:decoration-accent prose-a:decoration-1 prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-semibold prose-headings:text-foreground-strong prose-h2:text-2xl prose-h3:text-lg prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:font-semibold prose-strong:text-foreground-strong prose-table:block prose-table:overflow-x-auto prose-code:font-medium prose-code:before:content-none prose-code:after:content-none"
                         dangerouslySetInnerHTML={{ __html: post.html }}
                         ref={articleRef}
                     />

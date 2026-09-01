@@ -12,6 +12,11 @@
     --toc-track: oklch(0.62 0 0);
     --accent: oklch(0.51 0.13 32);
     --accent-soft: oklch(0.94 0.028 32);
+    --inline-code-surface: color-mix(
+        in oklab,
+        var(--accent-soft) 72%,
+        var(--surface)
+    );
     --code-surface: var(--foreground-strong);
     --code-foreground: var(--surface);
 }
@@ -37,6 +42,7 @@
     --color-divider: var(--divider);
     --color-accent: var(--accent);
     --color-accent-soft: var(--accent-soft);
+    --color-inline-code-surface: var(--inline-code-surface);
     --color-code-surface: var(--code-surface);
     --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
@@ -138,9 +144,9 @@
 
     .guide-content :not(pre) > code {
         border-radius: 0.25rem;
-        background: var(--accent-soft);
+        background: var(--inline-code-surface);
         padding: 0.1rem 0.3rem;
-        color: var(--foreground-strong);
+        color: var(--foreground);
         font-family: var(--font-mono);
         font-size: 0.84em;
         font-weight: 500;

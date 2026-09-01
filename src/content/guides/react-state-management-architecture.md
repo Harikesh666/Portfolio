@@ -910,9 +910,7 @@ function AppProvider({ children }) {
 }
 ```
 
-Every time `AppProvider` re-renders, for _any_ reason, including a parent re-rendering or either `useState` changing, the `value={{ ...
-
-}}` expression constructs a new object with a new identity.
+Every time `AppProvider` re-renders, for _any_ reason, including a parent re-rendering or either `useState` changing, the `value={{ ... }}` expression constructs a new object with a new identity.
 
 React compares it to the previous value with `Object.is`, sees a different object, concludes "the value changed," and re-renders every consumer of `AppContext`, even consumers that only read `theme` when it was `user` that changed, even consumers wrapped in `React.memo`.
 
