@@ -7,6 +7,13 @@
     <language>en</language>
     <atom:link href="https://www.harikesh.xyz/feed.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>V8 Engine</title>
+      <link>https://www.harikesh.xyz/articles/v8</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/v8</guid>
+      <description>How Node.js extends JavaScript, how V8 executes and optimizes code, and how the engine manages memory.</description>
+      <pubDate>Thu, 03 Sep 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
       <title>React Data Fetching and Server State</title>
       <link>https://www.harikesh.xyz/articles/react-data-fetching-server-state</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-data-fetching-server-state</guid>
