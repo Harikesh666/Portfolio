@@ -42,8 +42,6 @@ With some mechanism, we will try to run the program. What actually happens is th
 
 ## What Is a Process?
 
-What is a process?
-
 A program under execution is a process. It is technically loaded into your RAM. The program we write stays on the HDD, while the process stays in RAM. A process is a complete entity in the OS.
 
 The process has a lot of important information. You might have heard about the call stack. The process contains the call stack, heap memory, and a few more things, for example, a text area (where the actual instructions are stored).
