@@ -7,6 +7,13 @@
     <language>en</language>
     <atom:link href="https://www.harikesh.xyz/feed.xml" rel="self" type="application/rss+xml" />
     <item>
+      <title>Processes, Threads, and How Servers Handle Work</title>
+      <link>https://www.harikesh.xyz/articles/processing</link>
+      <guid isPermaLink="true">https://www.harikesh.xyz/articles/processing</guid>
+      <description>From programs on disk to processes, CPU scheduling, context switches, and threads, with the connection to Node.js and libuv.</description>
+      <pubDate>Mon, 07 Sep 2026 03:30:00 GMT</pubDate>
+    </item>
+    <item>
       <title>Node.js Runtime and the V8 Engine</title>
       <link>https://www.harikesh.xyz/articles/v8</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/v8</guid>

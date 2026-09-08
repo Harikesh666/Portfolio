@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://www.harikesh.xyz</loc><lastmod>2026-09-03</lastmod></url>
-  <url><loc>https://www.harikesh.xyz/about</loc><lastmod>2026-09-03</lastmod></url>
-  <url><loc>https://www.harikesh.xyz/articles</loc><lastmod>2026-09-03</lastmod></url>
-  <url><loc>https://www.harikesh.xyz/contact</loc><lastmod>2026-09-03</lastmod></url>
-  <url><loc>https://www.harikesh.xyz/privacy</loc><lastmod>2026-09-03</lastmod></url>
-  <url><loc>https://www.harikesh.xyz/resume</loc><lastmod>2026-09-03</lastmod></url>
+  <url><loc>https://www.harikesh.xyz</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/about</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/articles</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/contact</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/privacy</loc><lastmod>2026-09-08</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/resume</loc><lastmod>2026-09-08</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/asynchronous-javascript-event-loop</loc><lastmod>2025-01-07</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/callback-functions-javascript-calls-you-back</loc><lastmod>2025-01-10</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/callback-hell-pyramid-of-doom</loc><lastmod>2025-01-12</lastmod></url>
@@ -22,6 +22,7 @@
   <url><loc>https://www.harikesh.xyz/articles/javascript-scope-how-names-find-values</loc><lastmod>2025-02-11</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/javascript-type-conversion-and-coercion</loc><lastmod>2025-02-17</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/map-filter-reduce-transform-select-combine</loc><lastmod>2025-02-02</lastmod></url>
+  <url><loc>https://www.harikesh.xyz/articles/processing</loc><lastmod>2026-09-07</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/react-data-fetching-server-state</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/react-error-boundaries-resilience</loc><lastmod>2026-05-01</lastmod></url>
   <url><loc>https://www.harikesh.xyz/articles/react-event-system-internals</loc><lastmod>2026-05-01</lastmod></url>
