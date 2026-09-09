@@ -70,7 +70,7 @@ There is no rush.
 1. **Run the experiments.** Each section ends with a short **"Try it."** A bug you have personally caused and watched happen is a bug you will never ship. Reading about it is worth maybe a tenth as much. Keep a throwaway React project open (a Vite scratch app, or any sandbox) and actually reproduce each one. It takes two minutes and it is the difference between knowing this and forgetting it.
 2. **Trust the order.** The sections build on each other. If something feels arbitrary, the reason is almost always in an earlier section, so go back rather than push forward. Here is the build order, so you can see why:
 
-```
+```text role="diagram"
    What problem are we even solving?            (1)
             │
    What are the things we're moving around?     (2, 3, 4)

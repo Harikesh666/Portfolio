@@ -38,7 +38,9 @@ Avoid generic template portfolios, buzzword-heavy copy, and flashy motion showca
 
 ## Design Principles
 
-Article context and exercises retain italics without quotation bars or generated quotes, while genuine quotations remain distinct. Chapter headings provide separation without redundant horizontal rules. Explicit structural headings improve navigation without changing the reading typography or explanatory wording.
+Article examples distinguish explicitly labeled output and diagrams from source code. Readers can scroll wide tables with a keyboard or touch, read authored figure captions, and expand existing diagrams. These changes preserve the article typography and explanatory content.
+
+Article context and exercises retain italics without quotation bars or generated quotes, and all article blockquotes omit the left border while preserving italics. Chapter headings provide separation without redundant horizontal rules. Explicit structural headings improve navigation without changing the reading typography or explanatory wording.
 
 1. Make proof scannable: lead with concrete outcomes, constraints, and scope.
 2. Let technical depth be legible: writing should be structured for both quick evaluation and deep reading.

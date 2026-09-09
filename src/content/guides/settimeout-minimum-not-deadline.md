@@ -34,7 +34,7 @@ Before reading further, what output do you expect?
 
 The actual output is:
 
-```text
+```text role="output"
 Start
 End
 Callback
@@ -60,7 +60,7 @@ console.log("Start");
 
 The output so far is:
 
-```text
+```text role="output"
 Start
 ```
 
@@ -88,7 +88,7 @@ The timer is still being tracked, but JavaScript continues and logs `"End"`.
 
 The output is now:
 
-```text
+```text role="output"
 Start
 End
 ```
@@ -109,7 +109,7 @@ The browser invokes `callback`, its execution context is placed on the call stac
 
 The final output is:
 
-```text
+```text role="output"
 Start
 End
 Callback
@@ -171,7 +171,7 @@ Only after the current script finishes can the event loop select the timer task 
 
 The output is:
 
-```text
+```text role="output"
 Start
 End
 While loop finished
@@ -202,7 +202,7 @@ You might expect the zero-delay callback to run immediately. It does not.
 
 The output is:
 
-```text
+```text role="output"
 Start
 End
 Callback

@@ -12,6 +12,9 @@ import tailwindcss from "@tailwindcss/vite";
 import satteri from "vite-plugin-satteri";
 import { headingIds } from "./src/lib/satteri-plugins";
 import { guidePresentation } from "./src/lib/guide-presentation";
+import { createGuideCodeBlock } from "./src/lib/guide-code";
+import { guideTables } from "./src/lib/guide-tables";
+import { guideFigures } from "./src/lib/guide-figures";
 import { extractTocItems } from "./src/lib/content-headings";
 import { nitro } from "nitro/vite";
 import pierreDark from "@pierre/theme/pierre-dark";
@@ -87,8 +90,11 @@ const config = defineConfig({
             },
                 hastPlugins: [
                     guidePresentation,
+                    guideTables,
+                    guideFigures,
                     headingIds,
                     expressiveCode({
+                    customCreateBlock: createGuideCodeBlock,
                     themes: [pierreDark, pierreLight],
                     useDarkModeMediaQuery: false,
                         themeCssSelector: (theme) => `[data-theme='${theme.type}']`,

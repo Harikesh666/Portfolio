@@ -161,7 +161,7 @@ This is the first important separation:
 
 > Starting an asynchronous operation and running its callback are two different events.
 
-![The initial script registers a timer with the browser, while the call stack completes the synchronous Start and End logs.](/diagrams/event-loop-timer-registered.png)
+![The initial script registers a timer with the browser, while the call stack completes the synchronous Start and End logs.](/diagrams/event-loop-timer-registered.png "The timer runs while the initial script finishes.")
 
 ### Step 4: End is logged
 
@@ -186,7 +186,7 @@ Notice the wording: **queue a task**. The browser does not force the callback in
 
 A **task** is one scheduled turn of browser work. Running the initial script, handling a ready timer, and dispatching a click can each begin as a task.
 
-![Once the timer becomes eligible, its callback waits in the task queue until the event loop can give the empty call stack another task.](/diagrams/event-loop-timer-ready.png)
+![Once the timer becomes eligible, its callback waits in the task queue until the event loop can give the empty call stack another task.](/diagrams/event-loop-timer-ready.png "An eligible timer still waits for an empty call stack.")
 
 ### Step 6: The callback gets a turn
 
