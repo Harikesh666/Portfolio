@@ -89,20 +89,6 @@ function TocSheetRow({
                       }
             }
         >
-            {isActive && (
-                <motion.span
-                    aria-hidden="true"
-                    className="absolute inset-y-1 left-1 w-0.5 rounded-full bg-accent"
-                    layoutId="toc-sheet-active"
-                    transition={{
-                        layout: shouldReduceMotion
-                            ? {
-                                  duration: 0,
-                              }
-                            : snappySpring,
-                    }}
-                />
-            )}
             <a
                 aria-current={isActive ? "location" : undefined}
                 className={`flex min-h-11 min-w-0 items-center rounded-md px-4 py-2 text-sm leading-snug hover:bg-accent-soft hover:text-foreground-strong ${

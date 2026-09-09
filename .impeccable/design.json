@@ -131,7 +131,7 @@
       "name": "Floating Article Table of Contents",
       "kind": "nav",
       "refersTo": "floating-toc",
-      "description": "An xl-only fixed H2 progress rail whose section markers morph into a bounded label panel with shared active and hover indicators, history-backed semantic hash links, and reduced-motion parity.",
+      "description": "An xl-only fixed H2 progress rail whose section markers morph into a bounded label panel with active text color and a shared hover background, without vertical selection markers, history-backed semantic hash links, and reduced-motion parity.",
       "html": "<nav aria-label=\"Table of contents\"><a href=\"#section\">Section title</a></nav>",
       "css": ".floating-toc { position: fixed; right: 24px; top: 50%; max-width: 240px; } .floating-toc-panel { overflow: hidden; border-radius: 8px; } .floating-toc-list { max-height: min(60vh, 520px); overflow-y: auto; }"
     },

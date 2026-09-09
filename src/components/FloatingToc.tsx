@@ -12,17 +12,13 @@ import {
     AnimatePresence,
     LayoutGroup,
     motion,
-    useMotionValue,
     useReducedMotion,
     useSpring,
-    useTransform,
-    useVelocity,
     type MotionValue,
 } from "motion/react";
 import {
     hoverExitTween,
     snappySpring,
-    stretchSpring,
     tocCollapseSpring,
     tocMorphSpring,
 } from "../lib/motion";
@@ -45,8 +41,6 @@ const collapseDelayRatio = 0.65;
 const activeTickScale = 1;
 const neighborTickScale = 20 / 28;
 const baseTickScale = 14 / 28;
-const maximumIndicatorStretch = 0.6;
-const indicatorVelocityScale = 0.02;
 
 type TocStaggerPhase = "expanding" | "collapsing";
 
@@ -243,8 +237,6 @@ type FloatingTocPanelRowProps = Readonly<{
     hasPaintedActiveSection: boolean;
     href: string;
     id: string;
-    indicatorScaleY: MotionValue<number>;
-    indicatorTransformOrigin: MotionValue<"50% 0%" | "50% 100%">;
     isActive: boolean;
     isExpanded: boolean;
     isHovered: boolean;
@@ -261,8 +253,6 @@ function FloatingTocPanelRow({
     hasPaintedActiveSection,
     href,
     id,
-    indicatorScaleY,
-    indicatorTransformOrigin,
     isActive,
     isExpanded,
     isHovered,
@@ -309,26 +299,6 @@ function FloatingTocPanelRow({
                     />
                 )}
             </AnimatePresence>
-            {isActive && (
-                <motion.span
-                    aria-hidden="true"
-                    className="absolute inset-y-0 left-0 z-10 w-0.5 rounded-full bg-accent"
-                    layoutId="toc-active"
-                    style={
-                        shouldReduceMotion
-                            ? undefined
-                            : {
-                                  scaleY: indicatorScaleY,
-                                  transformOrigin: indicatorTransformOrigin,
-                              }
-                    }
-                    transition={{
-                        layout: shouldReduceMotion
-                            ? instantTransition
-                            : stretchSpring,
-                    }}
-                />
-            )}
             {isExpanded && (
                 <motion.span
                     aria-hidden="true"
@@ -400,20 +370,6 @@ function FloatingTocView({
         [start, stop],
     );
     const animatedSectionProgress = useSpring(sectionProgress, snappySpring);
-    const activePosition = useMotionValue(0);
-    const animatedActivePosition = useSpring(activePosition, stretchSpring);
-    const activeVelocity = useVelocity(animatedActivePosition);
-    const indicatorScaleY = useTransform(activeVelocity, (velocity) =>
-        1 +
-        Math.min(
-            Math.abs(velocity) * indicatorVelocityScale,
-            maximumIndicatorStretch,
-        ),
-    );
-    const indicatorTransformOrigin = useTransform(
-        activeVelocity,
-        (velocity) => (velocity >= 0 ? "50% 0%" : "50% 100%"),
-    );
     const shouldReduceMotion = useReducedMotion();
     const instantTransition = { duration: 0 };
 
@@ -459,10 +415,6 @@ function FloatingTocView({
             setHoveredId(null);
         }
     };
-
-    useEffect(() => {
-        if (hasActiveItem) activePosition.set(activeIndex);
-    }, [activeIndex, activePosition, hasActiveItem]);
 
     if (items.length === 0) return null;
 
@@ -608,10 +560,6 @@ function FloatingTocView({
                                     }
                                     href={`#${item.id}`}
                                     id={item.id}
-                                    indicatorScaleY={indicatorScaleY}
-                                    indicatorTransformOrigin={
-                                        indicatorTransformOrigin
-                                    }
                                     isActive={isActive}
                                     isExpanded={isExpanded}
                                     isHovered={hoveredId === item.id}
