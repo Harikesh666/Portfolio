@@ -405,13 +405,13 @@ A single boolean cannot represent "present and fetching" distinctly from "empty 
 
 So the model splits into two axes:
 
-**The `status` axis: do I have data?**
+#### The `status` axis: do I have data?
 
 - `pending`: there is no data yet. (In v5 this was renamed from `loading`, and the status value is now `pending`.)
 - `success`: there is data.
 - `error`: the fetch failed and there is no data to show (or the last attempt errored).
 
-**The `fetchStatus` axis: is a request in flight right now?**
+#### The `fetchStatus` axis: is a request in flight right now?
 
 - `fetching`: the `queryFn` is currently running (a first load _or_ a background refetch).
 - `paused`: the query wanted to fetch but cannot (for example, offline).

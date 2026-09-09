@@ -360,7 +360,7 @@ The callback closed over render zero's `count`, which is `0`, and the empty depe
 
 Now the three fixes, each with its mechanism and its trade.
 
-**Fix A: do not depend on the stale value at all (updater form).**
+#### Fix A: do not depend on the stale value at all (updater form).
 
 ```js
 useEffect(() => {
@@ -379,7 +379,7 @@ React hands it the current value when it processes the queue (Section 4).
 
 When your effect's logic only needs the previous state to compute the next state, this is almost always the cleanest fix, because the effect genuinely does not depend on `count`, so it should not list `count`.
 
-**Fix B: recreate the effect when the value changes (honest deps).**
+#### Fix B: recreate the effect when the value changes (honest deps).
 
 ```js
 useEffect(() => {

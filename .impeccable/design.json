@@ -23,6 +23,7 @@
         "tonalRamp": ["oklch(0.94 0.028 32)", "oklch(0.51 0.13 32)", "oklch(0.72 0.13 32)"]
       }
     },
+    "articleProcessing": "Build-time context asides and grouped exercises retain italic prose with 1.6em group margins, without quotation bars or generated quotes. Genuine quotes retain blockquote styling. Omit rules immediately before chapters; promote structural labels explicitly while preserving wording and the existing type scale.",
     "typographyMeta": {
       "body": {
         "displayName": "Atkinson Hyperlegible Next",

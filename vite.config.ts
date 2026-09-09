@@ -11,6 +11,7 @@ import expressiveCode from "satteri-expressive-code";
 import tailwindcss from "@tailwindcss/vite";
 import satteri from "vite-plugin-satteri";
 import { headingIds } from "./src/lib/satteri-plugins";
+import { guidePresentation } from "./src/lib/guide-presentation";
 import { extractTocItems } from "./src/lib/content-headings";
 import { nitro } from "nitro/vite";
 import pierreDark from "@pierre/theme/pierre-dark";
@@ -85,6 +86,7 @@ const config = defineConfig({
                 frontmatter: true,
             },
                 hastPlugins: [
+                    guidePresentation,
                     headingIds,
                     expressiveCode({
                     themes: [pierreDark, pierreLight],

@@ -391,7 +391,7 @@ At each position it decides: reuse-and-update, replace, create, or delete.
 
 The linear (O(n)) speed comes entirely from two assumptions.
 
-**Assumption 1: different types produce different trees.**
+#### Assumption 1: different types produce different trees.
 
 - **Same `type`** → keep the fiber and the real DOM node, update only the changed props, recurse into children.
 - **Different `type`** (`'div'` to `'span'`, or `ComponentA` to `ComponentB`) → no attempt to find similarities. Tear down the entire old subtree (unmount everything, run cleanups, destroy nodes) and build the new one fresh.
