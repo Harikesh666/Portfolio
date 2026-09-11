@@ -100,7 +100,7 @@ function TocSheetRow({
                 aria-current={isActive ? "location" : undefined}
                 className={`relative flex min-w-0 items-center gap-3 rounded-[14px] px-3 py-2 text-left text-sm font-medium leading-none [corner-shape:squircle] ${
                     isActive
-                        ? "text-[var(--toc-major)]"
+                        ? "text-(--toc-major)"
                         : "text-foreground/55 hover:text-foreground/80"
                 }`}
                 href={href}
@@ -623,7 +623,7 @@ export function TocSheet({
                         <motion.div
                             aria-labelledby={isOpen ? sheetTitleId : undefined}
                             aria-modal={isOpen ? "true" : undefined}
-                            className="pointer-events-auto relative min-w-0 overflow-hidden border border-[var(--toc-border)] bg-[var(--toc-surface)] shadow-lg [corner-shape:squircle]"
+                            className="pointer-events-auto relative min-w-0 overflow-hidden border border-(--toc-border) bg-(--toc-surface) shadow-lg [corner-shape:squircle]"
                             drag={isOpen ? "y" : false}
                             dragConstraints={{ top: 0 }}
                             dragControls={dragControls}
@@ -651,7 +651,7 @@ export function TocSheet({
                         >
                             <motion.div
                                 aria-hidden="true"
-                                className="pointer-events-none absolute inset-0 flex items-center gap-2.5 whitespace-nowrap py-1.5 pl-2 pr-4 text-left text-[var(--toc-major)]"
+                                className="pointer-events-none absolute inset-0 flex items-center gap-2.5 whitespace-nowrap py-1.5 pl-2 pr-4 text-left text-(--toc-major)"
                                 initial={false}
                                 animate={{ opacity: isOpen ? 0 : 1 }}
                                 transition={
@@ -705,7 +705,7 @@ export function TocSheet({
                                     >
                                         <motion.span
                                             animate={{ opacity: 1 }}
-                                            className="block truncate"
+                                            className="flex h-full items-center truncate"
                                             exit={{ opacity: 0 }}
                                             initial={{ opacity: 0 }}
                                             key={activeId ?? "toc-neutral"}
