@@ -15,7 +15,10 @@ import { guidePresentation } from "./src/lib/guide-presentation";
 import { createGuideCodeBlock } from "./src/lib/guide-code";
 import { guideTables } from "./src/lib/guide-tables";
 import { guideFigures } from "./src/lib/guide-figures";
-import { extractTocItems } from "./src/lib/content-headings";
+import {
+    extractMinimapItems,
+    extractTocItems,
+} from "./src/lib/content-headings";
 import { nitro } from "nitro/vite";
 import pierreDark from "@pierre/theme/pierre-dark";
 import pierreLight from "@pierre/theme/pierre-light";
@@ -30,7 +33,7 @@ function guideToc(): Plugin {
 
             const source = await readFile(filename, "utf8");
             return {
-                code: `${code}\nexport const toc = ${JSON.stringify(extractTocItems(source))};`,
+                code: `${code}\nexport const toc = ${JSON.stringify(extractTocItems(source))};\nexport const minimap = ${JSON.stringify(extractMinimapItems(source))};`,
                 map: null,
             };
         },

@@ -1,9 +1,16 @@
-import { tocItemDelayCap, tocItemDelayStep } from "./motion";
+import {
+    tocItemDelayCap,
+    tocItemDelayInitial,
+    tocItemDelayStep,
+} from "./motion";
 
 export const desktopQuery = "(min-width: 1280px)";
 
-export function getTocItemDelay(distance: number): number {
-    return Math.min(distance * tocItemDelayStep, tocItemDelayCap);
+export function getTocItemDelay(index: number): number {
+    return Math.min(
+        tocItemDelayInitial + index * tocItemDelayStep,
+        tocItemDelayCap,
+    );
 }
 
 export function shouldDismissSheet(

@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { getTocItemDelay, shouldDismissSheet } from "./toc";
 
 describe("mobile table of contents physics", () => {
-    it("uses distance-capped outward row delays", () => {
-        expect(getTocItemDelay(3)).toBe(0.048);
-        expect(getTocItemDelay(100)).toBe(0.25);
+    it("uses source-order row delays with a long-list cap", () => {
+        expect(getTocItemDelay(0)).toBe(0.04);
+        expect(getTocItemDelay(3)).toBeCloseTo(0.13);
+        expect(getTocItemDelay(100)).toBe(0.4);
     });
 
     it("dismisses by distance or downward velocity", () => {

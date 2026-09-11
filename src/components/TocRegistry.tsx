@@ -5,11 +5,11 @@ import {
     type ReactNode,
     type RefObject,
 } from "react";
-import type { TocItem } from "../lib/content-headings";
+import type { MinimapItem } from "../lib/content-headings";
 
 export type FloatingTocProps = Readonly<{
     containerRef: RefObject<HTMLElement | null>;
-    items: TocItem[];
+    items: MinimapItem[];
     onNavigate: (id: string) => void;
     slug: string;
 }>;

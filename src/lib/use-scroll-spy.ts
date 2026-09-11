@@ -13,6 +13,7 @@ const viewportThreshold = 120;
 type ScrollSpyState = Readonly<{
     activeId: string | null;
     activeIndex: number | null;
+    scrollActivity: MotionValue<number>;
     sectionProgress: MotionValue<number>;
     start: () => void;
     stop: () => void;
@@ -24,6 +25,7 @@ export function useScrollSpy(
     enabled = true,
 ): ScrollSpyState {
     const [activeId, setActiveId] = useState<string | null>(null);
+    const scrollActivity = useMotionValue(0);
     const sectionProgress = useMotionValue(0);
     const cleanupRef = useRef<(() => void) | undefined>(undefined);
     const startRef = useRef<() => void>(() => undefined);
@@ -109,6 +111,7 @@ export function useScrollSpy(
                 const nextActiveId = activeHeading.id;
 
                 sectionProgress.set(nextProgress);
+                scrollActivity.set(scrollActivity.get() + 1);
                 setActiveId((currentId) =>
                     currentId === nextActiveId ? currentId : nextActiveId,
                 );
@@ -144,7 +147,7 @@ export function useScrollSpy(
             stop();
             startRef.current = () => undefined;
         };
-    }, [containerRef, enabled, items, sectionProgress, stop]);
+    }, [containerRef, enabled, items, scrollActivity, sectionProgress, stop]);
 
     const activeIndex = activeId
         ? items.findIndex((item) => item.id === activeId)
@@ -154,6 +157,7 @@ export function useScrollSpy(
         activeId,
         activeIndex:
             activeIndex !== null && activeIndex >= 0 ? activeIndex : null,
+        scrollActivity,
         sectionProgress,
         start,
         stop,

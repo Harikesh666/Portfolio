@@ -1,28 +1,32 @@
 import {
+    useCallback,
     useEffect,
     useImperativeHandle,
     useLayoutEffect,
     useRef,
     useState,
+    type PointerEvent,
     type Ref,
-    type RefObject,
 } from "react";
 import { useLocation } from "@tanstack/react-router";
 import {
-    AnimatePresence,
-    LayoutGroup,
     motion,
+    useMotionValue,
+    useMotionValueEvent,
     useReducedMotion,
     useSpring,
+    useTransform,
     type MotionValue,
 } from "motion/react";
+import type { MinimapKind } from "../lib/content-headings";
 import {
+    tocActivePulseResetDelay,
+    tocProximitySpring,
+    tocRailLabelInstantTween,
+    tocRailLabelSpring,
+    tocRailLabelVariants,
     hoverExitTween,
-    snappySpring,
-    tocCollapseSpring,
-    tocMorphSpring,
 } from "../lib/motion";
-import { getTocItemDelay } from "../lib/toc";
 import { useScrollSpy } from "../lib/use-scroll-spy";
 import {
     useTocRegistration,
@@ -36,13 +40,42 @@ type FloatingTocLifecycle = {
     deactivate: () => void;
 };
 
-const collapsedPanelScale = 0.08;
-const collapseDelayRatio = 0.65;
-const activeTickScale = 1;
-const neighborTickScale = 20 / 28;
-const baseTickScale = 14 / 28;
+const proximityRadius = 40;
+const maximumDashWidth = 110;
+const dashGap = 8;
+type DashPreset = Readonly<{
+    base: number;
+    bump: number;
+    thickness: number;
+    color: string;
+}>;
 
-type TocStaggerPhase = "expanding" | "collapsing";
+const DASH_PRESETS: Record<MinimapKind, DashPreset> = {
+    title: {
+        base: 40,
+        bump: 70,
+        thickness: 1,
+        color: "var(--toc-major)",
+    },
+    subtitle: {
+        base: 36,
+        bump: 64,
+        thickness: 1,
+        color: "var(--toc-major)",
+    },
+    section: {
+        base: 30,
+        bump: 56,
+        thickness: 1,
+        color: "var(--toc-track)",
+    },
+    body: {
+        base: 24,
+        bump: 50,
+        thickness: 1,
+        color: "var(--toc-track)",
+    },
+};
 
 export function FloatingToc({
     containerRef,
@@ -152,193 +185,146 @@ export function FloatingTocHost({
 }
 
 type FloatingTocRailTickProps = Readonly<{
-    enterDelay: number;
-    hasPaintedActiveSection: boolean;
     id: string;
     isActive: boolean;
-    isExpanded: boolean;
-    isRead: boolean;
-    progress: MotionValue<number> | undefined;
+    dashCenters: ReadonlyMap<string, number>;
+    centerVersion: MotionValue<number>;
+    mouseY: MotionValue<number>;
+    preset: DashPreset;
     shouldReduceMotion: boolean | null;
-    tickScale: number;
-    trackColor: string;
+    title: string;
+    registerDash: (id: string, node: HTMLAnchorElement | null) => void;
+    onNavigate: (id: string) => void;
 }>;
 
 function FloatingTocRailTick({
-    enterDelay,
-    hasPaintedActiveSection,
     id,
     isActive,
-    isExpanded,
-    isRead,
-    progress,
-    shouldReduceMotion,
-    tickScale,
-    trackColor,
-}: FloatingTocRailTickProps) {
-    const instantTransition = { duration: 0 };
-    const activeTransition = hasPaintedActiveSection
-        ? shouldReduceMotion
-            ? instantTransition
-            : snappySpring
-        : instantTransition;
-
-    return (
-        <li className="flex h-2.5 items-center justify-end">
-            {!isExpanded && (
-                <motion.span
-                    aria-hidden="true"
-                    className="relative block h-2.5 w-7"
-                    layoutId={`toc-item-${id}`}
-                    transition={{
-                        layout: {
-                            ...(isExpanded ? tocMorphSpring : tocCollapseSpring),
-                            delay: enterDelay,
-                        },
-                    }}
-                >
-                    <motion.span
-                        className="absolute right-0 top-1/2 h-0.5 w-full -translate-y-1/2 origin-right rounded-full"
-                        animate={{
-                            opacity: isActive ? 0.62 : 1,
-                            scaleX: tickScale,
-                        }}
-                        style={{ backgroundColor: trackColor }}
-                        transition={activeTransition}
-                    />
-                    <motion.span
-                        className="absolute right-0 top-1/2 h-0.5 w-full -translate-y-1/2 origin-right rounded-full"
-                        animate={{ scaleX: tickScale }}
-                        transition={activeTransition}
-                    >
-                        <motion.span
-                            className="block h-full w-full origin-left rounded-full"
-                            style={{
-                                backgroundColor: isActive
-                                    ? "var(--accent)"
-                                    : "var(--accent-soft)",
-                                scaleX: isActive
-                                    ? progress
-                                    : isRead
-                                      ? 1
-                                      : 0,
-                            }}
-                        />
-                    </motion.span>
-                </motion.span>
-            )}
-        </li>
-    );
-}
-
-type FloatingTocPanelRowProps = Readonly<{
-    activeItemRef: RefObject<HTMLAnchorElement | null>;
-    enterDelay: number;
-    hasPaintedActiveSection: boolean;
-    href: string;
-    id: string;
-    isActive: boolean;
-    isExpanded: boolean;
-    isHovered: boolean;
-    onHover: (id: string) => void;
-    onNavigate: (id: string) => void;
-    onStaggerComplete: (() => void) | undefined;
-    shouldReduceMotion: boolean | null;
-    title: string;
-}>;
-
-function FloatingTocPanelRow({
-    activeItemRef,
-    enterDelay,
-    hasPaintedActiveSection,
-    href,
-    id,
-    isActive,
-    isExpanded,
-    isHovered,
-    onHover,
-    onNavigate,
-    onStaggerComplete,
+    dashCenters,
+    centerVersion,
+    mouseY,
+    preset,
     shouldReduceMotion,
     title,
-}: FloatingTocPanelRowProps) {
-    const instantTransition = { duration: 0 };
+    onNavigate,
+    registerDash,
+}: FloatingTocRailTickProps) {
+    const anchorRef = useRef<HTMLAnchorElement>(null);
+    const [hasFocus, setHasFocus] = useState(false);
+    const [isPointerOver, setIsPointerOver] = useState(false);
+    const isLabelVisible = hasFocus || isPointerOver;
 
+    useEffect(() => {
+        registerDash(id, anchorRef.current);
+        return () => registerDash(id, null);
+    }, [id, registerDash]);
+
+    const targetScaleX = useTransform(
+        [mouseY, centerVersion],
+        ([pointerY]: number[]) => {
+            const centerY = dashCenters.get(id);
+            const baseScale = preset.base / maximumDashWidth;
+            const activeScale =
+                (preset.base + preset.bump) / maximumDashWidth;
+            if (centerY === undefined || !Number.isFinite(pointerY)) {
+                return baseScale;
+            }
+
+            const proximity = Math.max(
+                0,
+                1 - Math.abs(pointerY - centerY) / proximityRadius,
+            );
+
+            return (
+                baseScale + (activeScale - baseScale) * proximity
+            );
+        },
+    );
+    const smoothedProximityScale = useSpring(
+        targetScaleX,
+        tocProximitySpring,
+    );
+    const tickScale = shouldReduceMotion
+        ? targetScaleX
+        : smoothedProximityScale;
     return (
-        <motion.li
-            animate={{
-                opacity: isExpanded ? 1 : 0,
-                x: isExpanded || shouldReduceMotion ? 0 : 8,
+        <a
+            aria-current={isActive ? "location" : undefined}
+            aria-label={`Go to ${title}`}
+            className="group relative flex h-px w-27.5 items-center justify-end border-0 bg-transparent p-0"
+            href={`#${id}`}
+            ref={anchorRef}
+            onBlur={() => {
+                setHasFocus(false);
+                if (!isPointerOver) {
+                    mouseY.set(Number.POSITIVE_INFINITY);
+                }
             }}
-            className="relative w-full min-w-0"
-            initial={false}
-            onAnimationComplete={onStaggerComplete}
-            onPointerEnter={() => onHover(id)}
-            transition={{
-                ...(isExpanded ? tocMorphSpring : tocCollapseSpring),
-                delay: enterDelay,
+            onClick={(event) => {
+                if (
+                    event.button !== 0 ||
+                    event.metaKey ||
+                    event.ctrlKey ||
+                    event.shiftKey ||
+                    event.altKey
+                ) {
+                    return;
+                }
+                event.preventDefault();
+                onNavigate(id);
+                if (event.detail > 0) event.currentTarget.blur();
+            }}
+            onFocus={() => {
+                setHasFocus(true);
+                const center = dashCenters.get(id);
+                if (center !== undefined) mouseY.set(center);
+            }}
+            onPointerEnter={() => setIsPointerOver(true)}
+            onPointerLeave={() => {
+                setIsPointerOver(false);
+                if (!hasFocus) {
+                    mouseY.set(Number.POSITIVE_INFINITY);
+                }
             }}
         >
-            <AnimatePresence initial={false}>
-                {isHovered && (
-                    <motion.span
-                        animate={{ opacity: 1 }}
-                        aria-hidden="true"
-                        className="absolute inset-0 z-0 rounded-sm bg-accent-soft"
-                        exit={{ opacity: 0 }}
-                        initial={{ opacity: 0 }}
-                        layoutId="toc-hover"
-                        transition={
-                            shouldReduceMotion
-                                ? instantTransition
-                                : {
-                                      layout: snappySpring,
-                                      opacity: hoverExitTween,
-                                  }
-                        }
-                    />
-                )}
-            </AnimatePresence>
-            {isExpanded && (
-                <motion.span
-                    aria-hidden="true"
-                    className="absolute left-1 top-1/2 z-10 block h-2 w-1.5 -translate-y-1/2"
-                    layoutId={`toc-item-${id}`}
-                    transition={{
-                        layout: {
-                            ...(isExpanded ? tocMorphSpring : tocCollapseSpring),
-                            delay: enterDelay,
-                        },
-                    }}
-                >
-                    <span className="absolute left-0 top-1/2 block h-0.5 w-1.5 -translate-y-1/2 rounded-full bg-divider" />
-                </motion.span>
-            )}
-            <a
-                aria-current={isActive ? "true" : undefined}
-                className={`relative z-10 block min-w-0 truncate rounded-sm py-1 pl-4 text-left text-[12px] leading-snug hover:text-foreground-strong ${
-                    hasPaintedActiveSection ? "transition-colors" : ""
-                } ${isActive ? "text-accent" : "text-foreground"}`}
-                href={href}
-                onClick={(event) => {
-                    if (
-                        event.button !== 0 ||
-                        event.metaKey ||
-                        event.ctrlKey ||
-                        event.shiftKey ||
-                        event.altKey
-                    ) {
-                        return;
-                    }
-                    event.preventDefault();
-                    onNavigate(id);
-                    if (event.detail > 0) event.currentTarget.blur();
-                }}
-                ref={isActive ? activeItemRef : undefined}
+            <span
+                aria-hidden="true"
+                className="absolute -inset-y-1 right-0 w-full"
+            />
+            <span
+                aria-hidden="true"
+                className="pointer-events-none absolute right-full top-1/2 z-10 mr-4 -translate-y-1/2"
             >
-                {title}
-            </a>
-        </motion.li>
+                <motion.span
+                    animate={isLabelVisible ? "visible" : "hidden"}
+                    className={`relative block w-max max-w-64 rounded-lg border bg-surface px-3 py-2 text-right text-[13px] font-medium leading-snug text-foreground-strong shadow-lg shadow-black/10 after:hidden dark:shadow-black/30 ${
+                        isActive ? "border-accent/40" : "border-divider"
+                    }`}
+                    initial={false}
+                    transition={
+                        shouldReduceMotion
+                            ? tocRailLabelInstantTween
+                            : isLabelVisible
+                              ? tocRailLabelSpring
+                              : hoverExitTween
+                    }
+                    variants={tocRailLabelVariants}
+                >
+                    {title}
+                </motion.span>
+            </span>
+            <motion.span
+                aria-hidden="true"
+                className="pointer-events-none block origin-right transition-colors duration-150 ease-out group-focus-visible:ring-2 group-focus-visible:ring-accent group-focus-visible:ring-offset-2"
+                style={{
+                    backgroundColor: preset.color,
+                    scaleX: tickScale,
+                    height: preset.thickness,
+                    width: maximumDashWidth,
+                    transformOrigin: "right center",
+                }}
+            />
+        </a>
     );
 }
 
@@ -347,245 +333,155 @@ function FloatingTocView({
     items,
     lifecycleRef,
     onNavigate,
-    slug,
-}: FloatingTocProps &
-    Readonly<{ lifecycleRef: Ref<FloatingTocLifecycle> }>) {
-    const [hoveredId, setHoveredId] = useState<string | null>(null);
-    const [isExpanded, setIsExpanded] = useState(false);
-    const [staggerPhase, setStaggerPhase] =
-        useState<TocStaggerPhase | null>(null);
-    const activeItemRef = useRef<HTMLAnchorElement>(null);
-    const [hasPaintedActiveSection, setHasPaintedActiveSection] =
-        useState(false);
-    const isPointerOver = useRef(false);
-    const isFocusWithin = useRef(false);
-    const isExpandedRef = useRef(false);
-    const { activeId, activeIndex, sectionProgress, start, stop } = useScrollSpy(
+}: FloatingTocProps & Readonly<{ lifecycleRef: Ref<FloatingTocLifecycle> }>) {
+    const mouseY = useMotionValue(Number.POSITIVE_INFINITY);
+    const centerVersion = useMotionValue(0);
+    const dashRefs = useRef(new Map<string, HTMLAnchorElement>());
+    const dashCenters = useRef(new Map<string, number>());
+    const pointerInsideRef = useRef(false);
+    const { activeId, scrollActivity, start, stop } = useScrollSpy(
         items,
         containerRef,
     );
+    const shouldReduceMotion = useReducedMotion();
+    const previousActiveIdRef = useRef<string | null>(null);
+    const activeIdRef = useRef<string | null>(null);
+    const pulseTimeoutRef = useRef<number | null>(null);
+
+    const registerDash = useCallback(
+        (id: string, node: HTMLAnchorElement | null) => {
+            if (node) {
+                dashRefs.current.set(id, node);
+            } else {
+                dashRefs.current.delete(id);
+                dashCenters.current.delete(id);
+            }
+        },
+        [],
+    );
+
+    const cacheDashCenters = useCallback(() => {
+        for (const [id, node] of dashRefs.current) {
+            if (!node.isConnected) continue;
+            const rect = node.getBoundingClientRect();
+            dashCenters.current.set(id, rect.top + rect.height / 2);
+        }
+        centerVersion.set(centerVersion.get() + 1);
+    }, [centerVersion]);
+
+    const clearActivePulse = useCallback(() => {
+        if (pulseTimeoutRef.current === null) return;
+        window.clearTimeout(pulseTimeoutRef.current);
+        pulseTimeoutRef.current = null;
+    }, []);
+
+    const pulseActiveDash = useCallback(
+        (id: string) => {
+            const center = dashCenters.current.get(id);
+            if (center === undefined) return;
+            clearActivePulse();
+            mouseY.set(center);
+            if (pointerInsideRef.current) return;
+            pulseTimeoutRef.current = window.setTimeout(() => {
+                mouseY.set(Number.POSITIVE_INFINITY);
+                pulseTimeoutRef.current = null;
+            }, tocActivePulseResetDelay);
+        },
+        [clearActivePulse, mouseY],
+    );
+
     useImperativeHandle(
         lifecycleRef,
-        () => ({ activate: start, deactivate: stop }),
-        [start, stop],
+        () => ({
+            activate: start,
+            deactivate: () => {
+                clearActivePulse();
+                mouseY.set(Number.POSITIVE_INFINITY);
+                stop();
+            },
+        }),
+        [clearActivePulse, mouseY, start, stop],
     );
-    const animatedSectionProgress = useSpring(sectionProgress, snappySpring);
-    const shouldReduceMotion = useReducedMotion();
-    const instantTransition = { duration: 0 };
 
     useEffect(() => {
-        if (activeId !== null) {
-            setHasPaintedActiveSection(true);
+        activeIdRef.current = activeId;
+        if (activeId === null || previousActiveIdRef.current === activeId) {
+            return;
         }
-    }, [activeId]);
-    const hasActiveItem = activeIndex !== null;
-    const maximumItemDistance = hasActiveItem
-        ? Math.max(activeIndex, items.length - 1 - activeIndex)
-        : 0;
+        previousActiveIdRef.current = activeId;
+        if (!dashCenters.current.has(activeId)) cacheDashCenters();
+        pulseActiveDash(activeId);
+    }, [activeId, cacheDashCenters, pulseActiveDash]);
 
-    const getItemDelay = (index: number) => {
-        if (shouldReduceMotion || !hasActiveItem || staggerPhase === null) {
-            return 0;
-        }
+    useMotionValueEvent(scrollActivity, "change", () => {
+        const currentActiveId = activeIdRef.current;
+        if (currentActiveId) pulseActiveDash(currentActiveId);
+    });
 
-        const distance = Math.abs(index - activeIndex);
-        const isExpanding = staggerPhase === "expanding";
-        const staggerDistance = isExpanding
-            ? distance
-            : maximumItemDistance - distance;
-        const delay = getTocItemDelay(staggerDistance);
-
-        return isExpanding ? delay : delay * collapseDelayRatio;
-    };
-
-    const updateExpandedState = () => {
-        const nextIsExpanded = isPointerOver.current || isFocusWithin.current;
-
-        if (nextIsExpanded === isExpandedRef.current) return;
-
-        isExpandedRef.current = nextIsExpanded;
-        setStaggerPhase(nextIsExpanded ? "expanding" : "collapsing");
-        setIsExpanded(nextIsExpanded);
-
-        if (nextIsExpanded) {
-            window.requestAnimationFrame(() => {
-                activeItemRef.current?.scrollIntoView({ block: "nearest" });
-            });
-        } else {
-            setHoveredId(null);
-        }
-    };
+    useEffect(() => {
+        cacheDashCenters();
+        const handleResize = () => cacheDashCenters();
+        window.addEventListener("resize", handleResize);
+        return () => {
+            window.removeEventListener("resize", handleResize);
+            clearActivePulse();
+        };
+    }, [cacheDashCenters, clearActivePulse]);
 
     if (items.length === 0) return null;
 
-    const panelId = `floating-toc-panel-${slug}`;
-    const outwardStaggerEndIndex = hasActiveItem
-        ? activeIndex <= items.length - 1 - activeIndex
-            ? items.length - 1
-            : 0
-        : items.length - 1;
-    const staggerCompletionIndex =
-        staggerPhase === "expanding"
-            ? outwardStaggerEndIndex
-            : staggerPhase === "collapsing"
-              ? (activeIndex ?? items.length - 1)
-              : -1;
-
+    const handlePointerEnter = (event: PointerEvent<HTMLElement>) => {
+        clearActivePulse();
+        pointerInsideRef.current = true;
+        cacheDashCenters();
+        mouseY.set(event.clientY);
+    };
+    const handlePointerMove = (event: PointerEvent<HTMLElement>) => {
+        if (pointerInsideRef.current) mouseY.set(event.clientY);
+    };
+    const handlePointerLeave = () => {
+        clearActivePulse();
+        pointerInsideRef.current = false;
+        mouseY.set(Number.POSITIVE_INFINITY);
+    };
     return (
-        <LayoutGroup id={`floating-toc-${slug}`}>
-            <div className="pointer-events-none fixed inset-y-0 right-6 z-20 hidden w-60 max-w-60 items-center xl:flex">
-                <motion.nav
-                    aria-label="Table of contents"
-                    className="pointer-events-auto relative isolate w-full"
-                    onBlurCapture={(event) => {
-                        if (!event.currentTarget.contains(event.relatedTarget)) {
-                            isFocusWithin.current = false;
-                            updateExpandedState();
-                        }
-                    }}
-                    onFocusCapture={() => {
-                        isFocusWithin.current = true;
-                        updateExpandedState();
-                    }}
-                    onKeyDown={(event) => {
-                        if (event.key !== "Escape") return;
-
-                        isFocusWithin.current = false;
-                        (document.activeElement as HTMLElement | null)?.blur();
-                        updateExpandedState();
-                    }}
-                    onMouseEnter={() => {
-                        isPointerOver.current = true;
-                        updateExpandedState();
-                    }}
-                    onMouseLeave={() => {
-                        isPointerOver.current = false;
-                        updateExpandedState();
-                    }}
+        <aside className="pointer-events-none fixed inset-y-0 right-0 z-20 hidden w-24 xl:block">
+            <motion.nav
+                aria-label="Table of contents"
+                className="pointer-events-auto flex h-full min-h-0 items-center justify-end"
+                onKeyDown={(event) => {
+                    if (event.key !== "Escape") return;
+                    (document.activeElement as HTMLElement | null)?.blur();
+                }}
+            >
+                <div
+                    className="mx-8 flex flex-col items-end"
+                    onPointerEnter={handlePointerEnter}
+                    onPointerLeave={handlePointerLeave}
+                    onPointerMove={handlePointerMove}
+                    style={{ gap: dashGap }}
                 >
-                <a className="sr-only" href={`#${panelId}`}>
-                    Table of contents
-                </a>
-                <ol
-                    aria-hidden="true"
-                    className="ml-auto flex w-7 flex-col items-end gap-1.5"
-                    style={{ pointerEvents: isExpanded ? "none" : "auto" }}
-                >
-                    {items.map((item, index) => {
-                        const distance = hasActiveItem
-                            ? Math.abs(index - activeIndex)
-                            : Number.POSITIVE_INFINITY;
-                        const isActive = hasActiveItem && distance === 0;
-                        const isRead = hasActiveItem && index < activeIndex;
-                        const tickScale = isActive
-                            ? activeTickScale
-                            : distance === 1
-                              ? neighborTickScale
-                              : baseTickScale;
-                        const trackColor = isActive
-                            ? "var(--accent)"
-                            : distance === 1
-                              ? "color-mix(in oklab, var(--accent) 38%, var(--toc-track))"
-                              : isRead
-                                ? "var(--accent-soft)"
-                                : "var(--toc-track)";
+                    {items.map((item) => {
+                        const isActive = item.id === activeId;
 
                         return (
                             <FloatingTocRailTick
-                                enterDelay={getItemDelay(index)}
-                                hasPaintedActiveSection={
-                                    hasPaintedActiveSection
-                                }
                                 id={item.id}
                                 isActive={isActive}
-                                isExpanded={isExpanded}
-                                isRead={isRead}
                                 key={item.id}
-                                progress={
-                                    isActive
-                                        ? shouldReduceMotion
-                                            ? sectionProgress
-                                            : animatedSectionProgress
-                                        : undefined
-                                }
+                                dashCenters={dashCenters.current}
+                                centerVersion={centerVersion}
+                                mouseY={mouseY}
+                                onNavigate={onNavigate}
+                                preset={DASH_PRESETS[item.kind]}
+                                registerDash={registerDash}
                                 shouldReduceMotion={shouldReduceMotion}
-                                tickScale={tickScale}
-                                trackColor={trackColor}
+                                title={item.title}
                             />
                         );
                     })}
-                </ol>
-                <motion.div
-                    animate={
-                        isExpanded
-                            ? {
-                                  opacity: 1,
-                                  scaleX: 1,
-                              }
-                            : {
-                                  opacity: 0,
-                                  scaleX: shouldReduceMotion
-                                      ? 1
-                                      : collapsedPanelScale,
-                              }
-                    }
-                    className="absolute right-0 top-0 w-60 overflow-hidden rounded-lg border border-foreground/20 bg-surface shadow-sm"
-                    id={panelId}
-                    initial={false}
-                    style={{
-                        transformOrigin: "100% 50%",
-                        visibility: isExpanded ? "visible" : "hidden",
-                    }}
-                    transition={
-                        shouldReduceMotion
-                            ? instantTransition
-                            : isExpanded
-                              ? tocMorphSpring
-                              : tocCollapseSpring
-                    }
-                >
-                    <ol
-                        className="floating-toc-list flex max-h-[min(60vh,520px)] min-w-0 flex-col gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain px-4 py-3"
-                        onPointerLeave={() => setHoveredId(null)}
-                    >
-                        {items.map((item, index) => {
-                            const isActive = item.id === activeId;
-
-                            return (
-                                <FloatingTocPanelRow
-                                    activeItemRef={activeItemRef}
-                                    enterDelay={getItemDelay(index)}
-                                    hasPaintedActiveSection={
-                                        hasPaintedActiveSection
-                                    }
-                                    href={`#${item.id}`}
-                                    id={item.id}
-                                    isActive={isActive}
-                                    isExpanded={isExpanded}
-                                    isHovered={hoveredId === item.id}
-                                    key={item.id}
-                                    onHover={setHoveredId}
-                                    onNavigate={onNavigate}
-                                    onStaggerComplete={
-                                        index === staggerCompletionIndex &&
-                                        staggerPhase !== null
-                                            ? () =>
-                                                  setStaggerPhase((current) =>
-                                                      current === staggerPhase
-                                                          ? null
-                                                          : current,
-                                                  )
-                                            : undefined
-                                    }
-                                    shouldReduceMotion={shouldReduceMotion}
-                                    title={item.title}
-                                />
-                            );
-                        })}
-                    </ol>
-                </motion.div>
-                </motion.nav>
-            </div>
-        </LayoutGroup>
+                </div>
+            </motion.nav>
+        </aside>
     );
 }

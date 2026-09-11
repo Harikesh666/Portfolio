@@ -56,7 +56,7 @@
       },
       {
         "name": "reading-motion",
-        "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 400ms sheet spring; cubic-bezier(0.16, 1, 0.3, 1)",
+        "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 500ms TOC surface spring; cubic-bezier(0.16, 1, 0.3, 1)",
         "purpose": "Materializes viewport-sized blocks while route heroes remain their sole entrance owners and home content and complete article bodies stay stationary; article-list focus is opacity-only, simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
       },
       {
@@ -131,17 +131,17 @@
       "name": "Floating Article Table of Contents",
       "kind": "nav",
       "refersTo": "floating-toc",
-      "description": "An xl-only fixed H2 progress rail whose section markers morph into a bounded label panel with active text color and a shared hover background, without vertical selection markers, history-backed semantic hash links, and reduced-motion parity.",
+      "description": "An xl-only fixed right Rare UI-inspired build-time minimap in a 96px aside, with marks beginning 32px from the right edge and expanding inward from the right. It preserves source order and includes up to 34 real H2-H4 anchors, evenly sampling in source order when needed. Major marks follow Rare's 6:34 ratio and scale down proportionally on shorter guides; every other sampled anchor uses the body/short preset. At full density the major marks occupy indices 0, 7, 13, 20, 26, and 33. Minor marks use muted foreground at 40%, and all use 1px strokes, 8px gaps, a 40px pointer radius, a connected surface label for hovered or keyboard-focused sections, semantic history-backed hash anchors, keyboard, Escape, route-safe lifecycle, and reduced-motion parity. An 80ms shared scroll pulse replaces persistent read-fill.",
       "html": "<nav aria-label=\"Table of contents\"><a href=\"#section\">Section title</a></nav>",
-      "css": ".floating-toc { position: fixed; right: 24px; top: 50%; max-width: 240px; } .floating-toc-panel { overflow: hidden; border-radius: 8px; } .floating-toc-list { max-height: min(60vh, 520px); overflow-y: auto; }"
+      "css": ".floating-toc { position: fixed; top: 50%; left: 0; width: 96px; } .floating-toc-rail { padding-left: 32px; } .floating-toc-dash { width: 110px; height: 1px; transform-origin: left center; } .floating-toc-dash-list { gap: 8px; } .floating-toc-dash--minor { color: color-mix(in oklab, var(--muted) 40%, transparent); }"
     },
     {
       "name": "Mobile Article Table of Contents",
       "kind": "dialog",
       "refersTo": "toc-sheet",
-      "description": "A below-xl 48px active-section pill capped at 19rem with a leading marker, compact 32px circular current-section progress ring, and safe-area-aware bottom sheet with 44px targets, two-line section labels, history-backed semantic hash links, coupled backdrop progress, focus containment, native list momentum, and velocity-or-distance dismissal.",
-      "html": "<button aria-expanded=\"false\" aria-controls=\"toc-sheet\" aria-haspopup=\"dialog\"><span aria-hidden=\"true\"></span><span>Section title</span><svg aria-hidden=\"true\"><circle></circle><circle></circle></svg></button><div id=\"toc-sheet\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"toc-sheet-title\"><h2 id=\"toc-sheet-title\">Table of contents</h2><a href=\"#section\" aria-current=\"location\">Section title</a></div>",
-      "css": ".toc-sheet-trigger { position: fixed; width: min(calc(100% - 2.5rem), 19rem); height: 48px; bottom: calc(1rem + env(safe-area-inset-bottom)); } .toc-sheet-trigger svg { width: 32px; height: 32px; transform: rotate(-90deg); } .toc-sheet { max-height: min(72dvh, 560px); overflow: hidden; border-radius: 16px 16px 0 0; } .toc-sheet-list { overflow-y: auto; overscroll-behavior: contain; } .toc-sheet-list a { min-height: 44px; }"
+      "description": "A below-xl content-measured visual pill near 32px tall with a separate invisible 44px trigger target and a 20px current-section progress ring before the title. The same surface expands upward and in place into a content-measured w-max 26px squircle-style menu capped by the viewport and min(64dvh, 520px). A 98% surface compensates for the no-blur invariant while Rare's 60%-border token remains, with neutral 30px semantic anchor rows, transparent outside-click dismissal, inert background, safe areas, focus containment, Escape, focus return, optional bounded drag dismissal, source-like timing, and a 0.4s long-list stagger cap.",
+      "html": "<button aria-expanded=\"false\" aria-haspopup=\"dialog\"><svg aria-hidden=\"true\"><circle></circle><circle></circle></svg><span>Section title</span></button><div id=\"toc-sheet\" role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"toc-sheet-title\"><h2 id=\"toc-sheet-title\">Table of contents</h2><a href=\"#section\" aria-current=\"location\">Section title</a></div>",
+      "css": ".toc-sheet-root { position: fixed; bottom: calc(1.5rem + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); } .toc-sheet-trigger { min-height: 44px; } .toc-sheet-surface { width: max-content; max-width: calc(100vw - 2rem); min-height: 32px; overflow: hidden; border-radius: 999px; background: var(--toc-surface); border-color: var(--toc-border); } .toc-sheet-trigger svg { width: 20px; height: 20px; transform: rotate(-90deg); } .toc-sheet-surface[role='dialog'] { width: max-content; max-width: calc(100vw - 2rem); max-height: min(64dvh, 520px); border-radius: 26px; } .toc-sheet-outside { background: transparent; } .toc-sheet-list { overflow-y: auto; overscroll-behavior: contain; } .toc-sheet-list a { min-height: 30px; }"
     }
   ],
   "narrative": {

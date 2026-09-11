@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start";
-import type { TocItem } from "./content-headings";
+import type { MinimapItem, TocItem } from "./content-headings";
 import { getPostRecord, type PostSummary } from "./content";
 
 type Post = PostSummary & {
     html: string;
+    minimap: MinimapItem[];
     toc: TocItem[];
 };
 
@@ -14,6 +15,11 @@ const loaders = import.meta.glob<string>("../content/guides/**/*.md", {
 const tocLoaders = import.meta.glob<TocItem[]>("../content/guides/**/*.md", {
     import: "toc",
 });
+
+const minimapLoaders = import.meta.glob<MinimapItem[]>(
+    "../content/guides/**/*.md",
+    { import: "minimap" },
+);
 
 export const getPost = createServerFn({ method: "GET" })
     .validator((data: { slug: string }) => {
@@ -29,12 +35,17 @@ export const getPost = createServerFn({ method: "GET" })
 
         const loader = loaders[post.path];
         const tocLoader = tocLoaders[post.path];
-        if (!loader || !tocLoader) {
+        const minimapLoader = minimapLoaders[post.path];
+        if (!loader || !tocLoader || !minimapLoader) {
             throw new Error(`Missing content loader for ${post.path}`);
         }
 
         const { path: _, ...metadata } = post;
-        const [html, toc] = await Promise.all([loader(), tocLoader()]);
+        const [html, toc, minimap] = await Promise.all([
+            loader(),
+            tocLoader(),
+            minimapLoader(),
+        ]);
 
-        return { ...metadata, html, toc };
+        return { ...metadata, html, minimap, toc };
     });

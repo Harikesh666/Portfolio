@@ -5,21 +5,66 @@ export const snappySpring = {
     bounce: 0.15,
 };
 
-// Carries TOC items between the compact rail and expanded panel.
-export const tocMorphSpring = {
+export const pageEase = [0.16, 1, 0.3, 1] as const;
+
+export const tocLayerEase = [0.65, 0, 0.35, 1] as const;
+export const tocLabelEase = [0.22, 1, 0.36, 1] as const;
+
+// Tracks pointer proximity with Rare UI's original restrained dash spring.
+export const tocProximitySpring = {
     type: "spring" as const,
-    visualDuration: 0.34,
+    stiffness: 320,
+    damping: 34,
+    mass: 0.7,
+};
+
+// Brings the desktop TOC section label inward from the right rail.
+export const tocRailLabelSpring = {
+    type: "spring" as const,
+    visualDuration: 0.18,
     bounce: 0.08,
 };
 
-export const pageEase = [0.16, 1, 0.3, 1] as const;
-
-// Reverses the TOC morph faster than expansion without losing interruptibility.
-export const tocCollapseSpring = {
-    type: "spring" as const,
-    visualDuration: 0.22,
-    bounce: 0,
+// Defines the desktop TOC label's small, projection-free hover states.
+export const tocRailLabelVariants = {
+    hidden: { opacity: 0, x: 6 },
+    visible: { opacity: 1, x: 0 },
 };
+
+// Removes desktop TOC label motion when reduced motion is requested.
+export const tocRailLabelInstantTween = {
+    duration: 0,
+};
+
+// Morphs the mobile TOC pill into its bounded section menu.
+export const tocSurfaceSpring = {
+    type: "spring" as const,
+    duration: 0.5,
+    bounce: 0.16,
+};
+
+// Crossfades the mobile TOC surface layers without blur.
+export const tocSurfaceFadeTween = {
+    duration: 0.24,
+    ease: tocLayerEase,
+};
+
+// Crossfades the mobile TOC label without spatial or blur motion.
+export const tocLabelCrossfadeTween = {
+    duration: 0.22,
+    ease: tocLabelEase,
+};
+
+// Smooths section progress with the Rare UI indicator's spring.
+export const tocProgressSpring = {
+    type: "spring" as const,
+    stiffness: 120,
+    damping: 30,
+    mass: 0.3,
+};
+
+// Holds the shared desktop TOC pointer over the active dash during scroll.
+export const tocActivePulseResetDelay = 80;
 
 // Settles the directional active-section stretch without overshooting its row.
 export const stretchSpring = {
@@ -170,14 +215,15 @@ export const diagramDialogSheetVariants = {
     visible: { opacity: 1, transform: "translateY(0px) scale(1)" },
 };
 
-// Reveals mobile TOC rows with a quiet active-outward cascade.
+// Reveals mobile TOC rows in Rare UI's source-order cadence.
 export const sheetRowTween = {
-    duration: 0.18,
-    ease: pageEase,
+    duration: 0.3,
+    ease: tocLayerEase,
 };
 
-export const tocItemDelayStep = 0.016;
-export const tocItemDelayCap = 0.25;
+export const tocItemDelayInitial = 0.04;
+export const tocItemDelayStep = 0.03;
+export const tocItemDelayCap = 0.4;
 export const pageEnterStagger = 0.05;
 
 // Preserves reading order while keeping editorial headline lines within one gesture.

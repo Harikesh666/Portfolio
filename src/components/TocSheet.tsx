@@ -17,19 +17,19 @@ import {
     useMotionValue,
     useReducedMotion,
     useSpring,
-    useTransform,
     type PanInfo,
 } from "motion/react";
 import type { TocItem } from "../lib/content-headings";
 import {
-    materializeBlock,
-    reducedPageBlock,
     sheetCloseSpring,
     sheetFadeTween,
     sheetNavigationFadeTween,
     sheetRowTween,
     sheetSpring,
-    snappySpring,
+    tocLabelCrossfadeTween,
+    tocProgressSpring,
+    tocSurfaceFadeTween,
+    tocSurfaceSpring,
 } from "../lib/motion";
 import { getTocItemDelay, shouldDismissSheet } from "../lib/toc";
 import { useScrollSpy } from "../lib/use-scroll-spy";
@@ -41,10 +41,16 @@ type TocSheetProps = Readonly<{
     slug: string;
 }>;
 
+type SurfaceSize = Readonly<{
+    width: number;
+    height: number;
+}>;
+
 const focusableSelector =
     'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 type TocSheetRowProps = Readonly<{
+    activeIndicatorLayoutId: string;
     activeItemRef: RefObject<HTMLAnchorElement | null>;
     enterDelay: number;
     href: string;
@@ -57,6 +63,7 @@ type TocSheetRowProps = Readonly<{
 }>;
 
 function TocSheetRow({
+    activeIndicatorLayoutId,
     activeItemRef,
     enterDelay,
     href,
@@ -76,7 +83,7 @@ function TocSheetRow({
                     ? false
                     : {
                           opacity: 0,
-                          y: 6,
+                          y: 4,
                       }
             }
             onAnimationComplete={onStaggerComplete}
@@ -91,10 +98,10 @@ function TocSheetRow({
         >
             <a
                 aria-current={isActive ? "location" : undefined}
-                className={`flex min-h-11 min-w-0 items-center rounded-md px-4 py-2 text-sm leading-snug hover:bg-accent-soft hover:text-foreground-strong ${
+                className={`relative flex min-w-0 items-center gap-3 rounded-[14px] px-3 py-2 text-left text-sm font-medium leading-none [corner-shape:squircle] ${
                     isActive
-                        ? "bg-accent-soft font-medium text-accent"
-                        : "text-muted"
+                        ? "text-[var(--toc-major)]"
+                        : "text-foreground/55 hover:text-foreground/80"
                 }`}
                 href={href}
                 onClick={(event) => {
@@ -112,7 +119,27 @@ function TocSheetRow({
                 }}
                 ref={isActive ? activeItemRef : undefined}
             >
-                <span className="line-clamp-2 min-w-0">{title}</span>
+                {isActive && (
+                    <motion.span
+                        aria-hidden="true"
+                        className="absolute inset-0 rounded-[14px] bg-foreground/10 [corner-shape:squircle]"
+                        layoutId={activeIndicatorLayoutId}
+                        transition={
+                            shouldReduceMotion
+                                ? { duration: 0 }
+                                : tocSurfaceSpring
+                        }
+                    />
+                )}
+                <span
+                    aria-hidden="true"
+                    className={`relative size-1.5 shrink-0 rounded-full ${
+                        isActive ? "bg-foreground" : "bg-foreground/30"
+                    }`}
+                />
+                <span className="relative min-w-0 truncate whitespace-nowrap">
+                    {title}
+                </span>
             </a>
         </motion.li>
     );
@@ -137,40 +164,46 @@ export function TocSheet({
     const shouldReduceMotion = useReducedMotion();
     const dragControls = useDragControls();
     const sheetY = useMotionValue(0);
-    const sheetOpacity = useMotionValue(1);
-    const animatedSectionProgress = useSpring(sectionProgress, snappySpring);
-    const [sheetHeight, setSheetHeight] = useState(1);
+    const animatedSectionProgress = useSpring(
+        sectionProgress,
+        tocProgressSpring,
+    );
     const [isOpen, setIsOpen] = useState(false);
-    const [isSheetMounted, setIsSheetMounted] = useState(false);
     const [isSheetRowStaggering, setIsSheetRowStaggering] = useState(false);
     const [isListAtTop, setIsListAtTop] = useState(true);
+    const [collapsedSize, setCollapsedSize] = useState<SurfaceSize | null>(
+        null,
+    );
+    const [openSize, setOpenSize] = useState<SurfaceSize | null>(null);
+    const [labelWidth, setLabelWidth] = useState<number | null>(null);
     const supportsDirectionalTouchAction =
-        typeof CSS !== "undefined" &&
-        CSS.supports("touch-action", "pan-down");
+        typeof CSS !== "undefined" && CSS.supports("touch-action", "pan-down");
     const triggerRef = useRef<HTMLButtonElement>(null);
     const portalRef = useRef<HTMLDivElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLOListElement>(null);
     const activeItemRef = useRef<HTMLAnchorElement>(null);
+    const collapsedMeasureRef = useRef<HTMLDivElement>(null);
+    const labelMeasureRef = useRef<HTMLSpanElement>(null);
+    const openMeasureRef = useRef<HTMLDivElement>(null);
     const returnFocusRef = useRef<HTMLElement | null>(null);
     const sheetHeightRef = useRef(1);
     const isOpenRef = useRef(false);
-    const isSheetMountedRef = useRef(false);
     const animationSequenceRef = useRef(0);
     const animationRef = useRef<{ stop: () => void } | null>(null);
     const hasDraggedRef = useRef(false);
-    const backdropOpacity = useTransform(
-        sheetY,
-        [0, Math.max(sheetHeight, 1)],
-        [1, 0],
-    );
     const currentTitle =
         activeIndex === null
             ? "Table of contents"
             : (items[activeIndex]?.title ?? "Table of contents");
     const sheetId = `toc-sheet-${slug}`;
     const sheetTitleId = `${sheetId}-title`;
-
+    const sheetContentId = `${sheetId}-content`;
+    const activeIndicatorLayoutId = `${sheetId}-active`;
+    const surfaceSize = isOpen ? openSize : collapsedSize;
+    const surfaceRadius = isOpen
+        ? 26
+        : Math.max((collapsedSize?.height ?? 48) / 2, 16);
     useLayoutEffect(() => {
         if (isRouteActive) return;
 
@@ -178,11 +211,52 @@ export function TocSheet({
         animationRef.current?.stop();
         dragControls.cancel();
         isOpenRef.current = false;
-        isSheetMountedRef.current = false;
+        sheetY.set(0);
         setIsOpen(false);
-        setIsSheetMounted(false);
         setIsSheetRowStaggering(false);
-    }, [dragControls, isRouteActive]);
+    }, [dragControls, isRouteActive, sheetY]);
+
+    useLayoutEffect(() => {
+        const measure = () => {
+            const collapsed = collapsedMeasureRef.current;
+            const label = labelMeasureRef.current;
+            const open = openMeasureRef.current;
+            if (label) {
+                const maxLabelWidth = collapsed
+                    ? Math.max(collapsed.offsetWidth - 54, 1)
+                    : label.offsetWidth;
+                setLabelWidth(
+                    Math.max(Math.min(label.scrollWidth, maxLabelWidth), 1),
+                );
+            }
+            if (collapsed) {
+                setCollapsedSize({
+                    width: Math.max(collapsed.offsetWidth, 1),
+                    height: Math.max(collapsed.offsetHeight, 1),
+                });
+            }
+            if (open) {
+                setOpenSize({
+                    width: Math.max(open.offsetWidth, 1),
+                    height: Math.max(open.offsetHeight, 1),
+                });
+            }
+        };
+
+        measure();
+        const resizeObserver = new ResizeObserver(measure);
+        if (collapsedMeasureRef.current) {
+            resizeObserver.observe(collapsedMeasureRef.current);
+        }
+        if (labelMeasureRef.current) {
+            resizeObserver.observe(labelMeasureRef.current);
+        }
+        if (openMeasureRef.current) {
+            resizeObserver.observe(openMeasureRef.current);
+        }
+
+        return () => resizeObserver.disconnect();
+    }, [currentTitle, items]);
 
     const returnFocus = () => {
         window.requestAnimationFrame(() => {
@@ -198,27 +272,10 @@ export function TocSheet({
         returnFocusRef.current = triggerRef.current;
         isOpenRef.current = true;
         setIsOpen(true);
+        setIsSheetRowStaggering(!shouldReduceMotion);
         animationSequenceRef.current += 1;
         animationRef.current?.stop();
-
-        if (!isSheetMountedRef.current) {
-            isSheetMountedRef.current = true;
-            setIsSheetRowStaggering(!shouldReduceMotion);
-            setIsSheetMounted(true);
-            return;
-        }
-
-        if (shouldReduceMotion) {
-            sheetY.set(0);
-            animationRef.current = animate(
-                sheetOpacity,
-                1,
-                sheetFadeTween,
-            );
-        } else {
-            sheetOpacity.set(1);
-            animationRef.current = animate(sheetY, 0, sheetSpring);
-        }
+        sheetY.set(0);
     };
 
     const closeSheet = (
@@ -226,16 +283,17 @@ export function TocSheet({
         velocity = 0,
         onClosed?: () => void,
     ) => {
-        if (!isSheetMountedRef.current) return;
+        if (!isOpenRef.current) return;
 
         isOpenRef.current = false;
         setIsOpen(false);
+        setIsSheetRowStaggering(false);
         const sequence = ++animationSequenceRef.current;
         animationRef.current?.stop();
 
         const animation = shouldReduceMotion
-            ? animate(sheetOpacity, 0, reducedTransition)
-            : animate(sheetY, sheetHeightRef.current, {
+            ? animate(sheetY, 0, reducedTransition)
+            : animate(sheetY, 0, {
                   ...sheetCloseSpring,
                   velocity,
               });
@@ -248,10 +306,6 @@ export function TocSheet({
             ) {
                 return;
             }
-
-            isSheetMountedRef.current = false;
-            setIsSheetMounted(false);
-            setIsSheetRowStaggering(false);
             returnFocus();
             onClosed?.();
         });
@@ -262,53 +316,23 @@ export function TocSheet({
     };
 
     useLayoutEffect(() => {
-        if (!isSheetMounted || !panelRef.current) return;
+        if (!isOpen || !panelRef.current) return;
 
         const panel = panelRef.current;
-        const measureSheet = () => {
-            const nextHeight = Math.max(panel.getBoundingClientRect().height, 1);
-            sheetHeightRef.current = nextHeight;
-            setSheetHeight(nextHeight);
-        };
-
-        measureSheet();
-        const sequence = ++animationSequenceRef.current;
-        animationRef.current?.stop();
-
-        if (shouldReduceMotion) {
-            sheetY.set(0);
-            sheetOpacity.set(0);
-            animationRef.current = animate(
-                sheetOpacity,
-                1,
-                sheetFadeTween,
-            );
-        } else {
-            sheetOpacity.set(1);
-            sheetY.set(sheetHeightRef.current);
-            animationRef.current = animate(sheetY, 0, sheetSpring);
-        }
-
+        sheetHeightRef.current = Math.max(panel.offsetHeight, 1);
         const focusFrame = window.requestAnimationFrame(() => {
-            if (sequence !== animationSequenceRef.current) return;
-
             const focusTarget =
                 activeItemRef.current ??
                 panel.querySelector<HTMLElement>(focusableSelector);
             activeItemRef.current?.scrollIntoView({ block: "center" });
             focusTarget?.focus({ preventScroll: true });
         });
-        const resizeObserver = new ResizeObserver(measureSheet);
-        resizeObserver.observe(panel);
 
-        return () => {
-            window.cancelAnimationFrame(focusFrame);
-            resizeObserver.disconnect();
-        };
-    }, [isSheetMounted, sheetOpacity, sheetY, shouldReduceMotion]);
+        return () => window.cancelAnimationFrame(focusFrame);
+    }, [isOpen]);
 
     useLayoutEffect(() => {
-        if (!isRouteActive || !isSheetMounted || !portalRef.current) return;
+        if (!isRouteActive || !isOpen || !portalRef.current) return;
 
         const html = document.documentElement;
         const body = document.body;
@@ -316,7 +340,10 @@ export function TocSheet({
         const previousHtmlOverflow = html.style.overflow;
         const previousBodyOverflow = body.style.overflow;
         const siblings = Array.from(body.children).flatMap((element) => {
-            if (!(element instanceof HTMLElement) || element === portalRef.current) {
+            if (
+                !(element instanceof HTMLElement) ||
+                element === portalRef.current
+            ) {
                 return [];
             }
 
@@ -350,7 +377,7 @@ export function TocSheet({
                 }
             });
         };
-    }, [isRouteActive, isSheetMounted]);
+    }, [isOpen, isRouteActive]);
 
     useEffect(
         () => () => {
@@ -368,11 +395,15 @@ export function TocSheet({
             return;
         }
 
-        if (event.key !== "Tab" || !panelRef.current) return;
+        if (!isOpen || event.key !== "Tab" || !panelRef.current) return;
 
         const focusableElements = Array.from(
             panelRef.current.querySelectorAll<HTMLElement>(focusableSelector),
-        ).filter((element) => !element.hasAttribute("disabled"));
+        ).filter(
+            (element) =>
+                !element.hasAttribute("disabled") &&
+                !element.hasAttribute("aria-hidden"),
+        );
         const firstElement = focusableElements[0];
         const lastElement = focusableElements.at(-1);
         if (!firstElement || !lastElement) return;
@@ -392,13 +423,10 @@ export function TocSheet({
         animationRef.current?.stop();
         isOpenRef.current = true;
         setIsOpen(true);
-        sheetOpacity.set(1);
     };
 
     const settleDrag = (offset: number, velocity: number) => {
-        if (
-            shouldDismissSheet(offset, velocity, sheetHeightRef.current)
-        ) {
+        if (shouldDismissSheet(offset, velocity, sheetHeightRef.current)) {
             closeSheet(sheetFadeTween, velocity);
         } else if (shouldReduceMotion) {
             sheetY.set(0);
@@ -409,9 +437,9 @@ export function TocSheet({
             });
         }
 
-        window.setTimeout(() => {
+        window.requestAnimationFrame(() => {
             hasDraggedRef.current = false;
-        }, 0);
+        });
     };
 
     const handleDragEnd = (
@@ -420,22 +448,9 @@ export function TocSheet({
     ) => settleDrag(info.offset.y, info.velocity.y);
     const handleTouchDragStart = useEffectEvent(handleDragStart);
     const settleTouchDrag = useEffectEvent(settleDrag);
-    const sheetStaggerCompletionIndex =
-        activeIndex === null
-            ? items.length - 1
-            : activeIndex <= items.length - 1 - activeIndex
-              ? items.length - 1
-              : 0;
-
     useEffect(() => {
         const list = listRef.current;
-        if (
-            !isSheetMounted ||
-            !list ||
-            supportsDirectionalTouchAction
-        ) {
-            return;
-        }
+        if (!isOpen || !list || supportsDirectionalTouchAction) return;
 
         let gesture:
             | {
@@ -474,11 +489,7 @@ export function TocSheet({
             const offset = touch.clientY - gesture.startY;
             if (!gesture.dragging) {
                 if (Math.abs(offset) < 4) return;
-                if (offset < 0) {
-                    gesture = undefined;
-                    return;
-                }
-                if (!event.cancelable) {
+                if (offset < 0 || !event.cancelable) {
                     gesture = undefined;
                     return;
                 }
@@ -519,243 +530,306 @@ export function TocSheet({
             list.removeEventListener("touchend", finishTouch);
             list.removeEventListener("touchcancel", finishTouch);
         };
-    }, [
-        isSheetMounted,
-        sheetY,
-        supportsDirectionalTouchAction,
-    ]);
+    }, [isOpen, sheetY, supportsDirectionalTouchAction]);
 
     if (!isRouteActive || items.length === 0) return null;
 
-    return (
-        <>
-            <motion.button
-                aria-controls={sheetId}
-                aria-expanded={isOpen}
-                aria-haspopup="dialog"
-                aria-label={
-                    activeIndex === null
-                        ? "Open table of contents"
-                        : `Open table of contents. Current section: ${currentTitle}`
-                }
-                className="fixed left-1/2 z-30 flex h-12 -translate-x-1/2 items-center gap-2.5 overflow-hidden rounded-full border border-divider bg-surface px-3.5 text-left text-foreground-strong shadow-sm"
-                onClick={openSheet}
-                ref={triggerRef}
-                style={{
-                    bottom: "calc(1rem + env(safe-area-inset-bottom))",
-                    width: "min(calc(100% - 2.5rem), 19rem)",
-                }}
-                type="button"
-                variants={
-                    shouldReduceMotion ? reducedPageBlock : materializeBlock
-                }
-            >
-                <span
+    return createPortal(
+        <div className="pointer-events-none fixed inset-0 z-50" ref={portalRef}>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        aria-hidden="true"
+                        className="pointer-events-auto absolute inset-0"
+                        exit={{ opacity: 0 }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        onClick={() => closeSheet()}
+                        style={{ backgroundColor: "transparent" }}
+                        transition={
+                            shouldReduceMotion
+                                ? { duration: 0 }
+                                : tocSurfaceFadeTween
+                        }
+                    />
+                )}
+            </AnimatePresence>
+
+            <div className="pointer-events-none fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-51 -translate-x-1/2">
+                <div
                     aria-hidden="true"
-                    className="size-1.5 shrink-0 rounded-full bg-foreground-strong"
-                />
-                <span className="relative min-w-0 flex-1 overflow-hidden text-[13px] font-medium leading-none">
-                    <AnimatePresence initial={false} mode="popLayout">
-                        <motion.span
-                            animate={{ opacity: 1, y: 0 }}
-                            className="block truncate"
-                            exit={
-                                shouldReduceMotion
-                                    ? { opacity: 1 }
-                                    : { opacity: 0, y: -8 }
+                    className="pointer-events-none invisible absolute"
+                >
+                    <div
+                        className="inline-flex max-w-[calc(100vw-2.5rem)] items-center gap-2.5 whitespace-nowrap py-1.5 pl-2 pr-4"
+                        ref={collapsedMeasureRef}
+                    >
+                        <span className="size-5 shrink-0" />
+                        <span
+                            className="whitespace-nowrap text-sm font-medium leading-none"
+                            ref={labelMeasureRef}
+                        >
+                            {currentTitle}
+                        </span>
+                    </div>
+                    <div
+                        className="w-max max-w-[calc(100vw-2rem)] max-h-[min(64dvh,520px)] overflow-hidden p-1.5"
+                        ref={openMeasureRef}
+                    >
+                        <ol className="space-y-0.5">
+                            {items.map((item) => (
+                                <li
+                                    className="flex items-center gap-3 whitespace-nowrap px-3 py-2 text-sm font-medium leading-none"
+                                    key={item.id}
+                                >
+                                    <span className="size-1.5 shrink-0" />
+                                    <span className="truncate">
+                                        {item.title}
+                                    </span>
+                                </li>
+                            ))}
+                        </ol>
+                    </div>
+                </div>
+
+                {surfaceSize && (
+                    <LayoutGroup id={`toc-sheet-layout-${slug}`}>
+                        <motion.button
+                            aria-controls={isOpen ? sheetContentId : undefined}
+                            aria-expanded={isOpen}
+                            aria-haspopup="dialog"
+                            aria-hidden={isOpen ? true : undefined}
+                            aria-label={
+                                activeIndex === null
+                                    ? "Open table of contents"
+                                    : `Open table of contents. Current section: ${currentTitle}`
                             }
-                            initial={
-                                shouldReduceMotion
-                                    ? false
-                                    : { opacity: 0, y: 8 }
-                            }
-                            key={activeId ?? "toc-neutral"}
+                            className={`pointer-events-auto absolute bottom-0 left-1/2 z-10 h-11 -translate-x-1/2 rounded-[1.25rem] border border-transparent bg-transparent outline-none focus-visible:border-accent focus-visible:ring-2 focus-visible:ring-accent/50 ${
+                                isOpen ? "pointer-events-none" : ""
+                            }`}
+                            initial={false}
+                            animate={{ opacity: isOpen ? 0 : 1 }}
+                            onClick={openSheet}
+                            ref={triggerRef}
+                            style={{ width: collapsedSize?.width }}
+                            tabIndex={isOpen ? -1 : undefined}
+                            type="button"
                             transition={
                                 shouldReduceMotion
                                     ? { duration: 0 }
-                                    : snappySpring
+                                    : tocSurfaceFadeTween
+                            }
+                        />
+                        <motion.div
+                            aria-labelledby={isOpen ? sheetTitleId : undefined}
+                            aria-modal={isOpen ? "true" : undefined}
+                            className="pointer-events-auto relative min-w-0 overflow-hidden border border-[var(--toc-border)] bg-[var(--toc-surface)] shadow-lg [corner-shape:squircle]"
+                            drag={isOpen ? "y" : false}
+                            dragConstraints={{ top: 0 }}
+                            dragControls={dragControls}
+                            dragElastic={{ top: 0.05, bottom: 0.6 }}
+                            dragListener={false}
+                            dragMomentum={false}
+                            id={sheetId}
+                            initial={false}
+                            animate={{
+                                width: surfaceSize.width,
+                                height: surfaceSize.height,
+                                borderRadius: surfaceRadius,
+                            }}
+                            onDragEnd={handleDragEnd}
+                            onDragStart={handleDragStart}
+                            onKeyDown={handleDialogKeyDown}
+                            ref={panelRef}
+                            role={isOpen ? "dialog" : undefined}
+                            style={{ y: sheetY }}
+                            transition={
+                                shouldReduceMotion
+                                    ? { duration: 0 }
+                                    : tocSurfaceSpring
                             }
                         >
-                            {currentTitle}
-                        </motion.span>
-                    </AnimatePresence>
-                </span>
-                <svg
-                    aria-hidden="true"
-                    className="size-8 shrink-0 -rotate-90"
-                    viewBox="0 0 32 32"
-                >
-                    <circle
-                        cx="16"
-                        cy="16"
-                        fill="none"
-                        r="13"
-                        stroke="var(--divider)"
-                        strokeWidth="2.25"
-                    />
-                    <motion.circle
-                        cx="16"
-                        cy="16"
-                        fill="none"
-                        r="13"
-                        stroke="var(--accent)"
-                        strokeLinecap="round"
-                        strokeWidth="2.25"
-                        style={{
-                            pathLength: shouldReduceMotion
-                                ? sectionProgress
-                                : animatedSectionProgress,
-                        }}
-                    />
-                </svg>
-            </motion.button>
-
-            {isSheetMounted &&
-                createPortal(
-                    <div
-                        className="fixed inset-0 z-50"
-                        ref={portalRef}
-                        style={{ touchAction: "none" }}
-                    >
-                        <motion.div
-                            aria-hidden="true"
-                            className="absolute inset-0"
-                            onClick={() => closeSheet()}
-                            style={{
-                                backgroundColor:
-                                    "color-mix(in oklab, var(--code-surface) 68%, transparent)",
-                                opacity: shouldReduceMotion
-                                    ? sheetOpacity
-                                    : backdropOpacity,
-                            }}
-                        />
-                        <LayoutGroup id={`toc-sheet-layout-${slug}`}>
                             <motion.div
-                                aria-labelledby={sheetTitleId}
-                                aria-modal="true"
-                                className="absolute inset-x-0 bottom-0 flex max-h-[min(72dvh,560px)] min-w-0 flex-col overflow-hidden rounded-t-2xl border-t border-divider bg-surface shadow-lg"
-                                drag="y"
-                                dragConstraints={{ top: 0 }}
-                                dragControls={dragControls}
-                                dragElastic={{ top: 0.05, bottom: 0.6 }}
-                                dragListener={false}
-                                dragMomentum={false}
-                                id={sheetId}
-                                onDragEnd={handleDragEnd}
-                                onDragStart={handleDragStart}
-                                onKeyDown={handleDialogKeyDown}
-                                ref={panelRef}
-                                role="dialog"
-                                style={{
-                                    opacity: shouldReduceMotion
-                                        ? sheetOpacity
-                                        : 1,
-                                    y: sheetY,
-                                }}
+                                aria-hidden="true"
+                                className="pointer-events-none absolute inset-0 flex items-center gap-2.5 whitespace-nowrap py-1.5 pl-2 pr-4 text-left text-[var(--toc-major)]"
+                                initial={false}
+                                animate={{ opacity: isOpen ? 0 : 1 }}
+                                transition={
+                                    shouldReduceMotion
+                                        ? { duration: 0 }
+                                        : tocSurfaceFadeTween
+                                }
                             >
-                                <button
-                                    aria-label="Close table of contents"
-                                    className="flex h-11 shrink-0 touch-none items-center justify-center"
-                                    onClick={() => {
-                                        if (!hasDraggedRef.current) closeSheet();
-                                    }}
-                                    onPointerDown={(event) =>
-                                        dragControls.start(event)
-                                    }
-                                    type="button"
-                                >
-                                    <span
+                                <span className="shrink-0">
+                                    <svg
                                         aria-hidden="true"
-                                        className="h-1 w-9 rounded-full bg-divider"
-                                    />
-                                </button>
-                                <div
-                                    className="flex shrink-0 touch-none items-baseline justify-between px-5 pb-2"
-                                    onPointerDown={(event) =>
-                                        dragControls.start(event)
-                                    }
-                                >
-                                    <h2
-                                        className="text-sm font-semibold text-foreground-strong"
-                                        id={sheetTitleId}
+                                        className="size-5 -rotate-90"
+                                        viewBox="0 0 24 24"
                                     >
-                                        Table of contents
-                                    </h2>
-                                    <span className="font-mono text-[11px] text-muted">
-                                        {items.length} sections
-                                    </span>
-                                </div>
-                                <ol
-                                    className="toc-sheet-list min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
-                                    onPointerDown={(event) => {
-                                        if (
-                                            isListAtTop &&
-                                            (event.pointerType !== "touch" ||
-                                                supportsDirectionalTouchAction)
-                                        ) {
-                                            dragControls.start(event);
-                                        }
-                                    }}
-                                    onScroll={(event) =>
-                                        setIsListAtTop(
-                                            event.currentTarget.scrollTop <= 1,
-                                        )
+                                        <circle
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            fill="none"
+                                        opacity="0.15"
+                                        stroke="var(--toc-major)"
+                                            strokeWidth="2.5"
+                                        />
+                                        <motion.circle
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            fill="none"
+                                            stroke="var(--toc-major)"
+                                            strokeLinecap="round"
+                                            strokeWidth="2.5"
+                                            style={{
+                                                pathLength: shouldReduceMotion
+                                                    ? sectionProgress
+                                                    : animatedSectionProgress,
+                                            }}
+                                        />
+                                    </svg>
+                                </span>
+                                <span
+                                    className="relative h-5 shrink-0 overflow-hidden text-sm font-medium leading-none"
+                                    style={
+                                        labelWidth === null
+                                            ? undefined
+                                            : { width: labelWidth }
                                     }
-                                    ref={listRef}
-                                    style={{
-                                        touchAction:
-                                            isListAtTop &&
-                                            supportsDirectionalTouchAction
-                                                ? "pan-down"
-                                                : "pan-y",
-                                        WebkitOverflowScrolling: "touch",
-                                    }}
                                 >
-                                    {items.map((item, index) => {
-                                        const isActive = item.id === activeId;
-                                        const delay =
-                                            shouldReduceMotion ||
-                                            activeIndex === null ||
-                                            !isSheetRowStaggering
-                                                ? 0
-                                                : getTocItemDelay(
-                                                      Math.abs(
-                                                          index - activeIndex,
-                                                      ),
-                                                  );
-
-                                        return (
-                                            <TocSheetRow
-                                                activeItemRef={activeItemRef}
-                                                enterDelay={delay}
-                                                href={`#${item.id}`}
-                                                id={item.id}
-                                                isActive={isActive}
-                                                key={item.id}
-                                                onNavigate={navigateFromSheet}
-                                                onStaggerComplete={
-                                                    isSheetRowStaggering &&
-                                                    index ===
-                                                        sheetStaggerCompletionIndex
-                                                        ? () =>
-                                                              setIsSheetRowStaggering(
-                                                                  false,
-                                                              )
-                                                        : undefined
-                                                }
-                                                shouldReduceMotion={
-                                                    shouldReduceMotion
-                                                }
-                                                title={item.title}
-                                            />
-                                        );
-                                    })}
-                                </ol>
+                                    <AnimatePresence
+                                        initial={false}
+                                        mode="popLayout"
+                                    >
+                                        <motion.span
+                                            animate={{ opacity: 1 }}
+                                            className="block truncate"
+                                            exit={{ opacity: 0 }}
+                                            initial={{ opacity: 0 }}
+                                            key={activeId ?? "toc-neutral"}
+                                            transition={
+                                                shouldReduceMotion
+                                                    ? { duration: 0 }
+                                                    : tocLabelCrossfadeTween
+                                            }
+                                        >
+                                            {currentTitle}
+                                        </motion.span>
+                                    </AnimatePresence>
+                                </span>
                             </motion.div>
-                        </LayoutGroup>
-                    </div>,
-                    document.body,
+
+                            <AnimatePresence initial={false} mode="popLayout">
+                                {isOpen && (
+                                    <motion.div
+                                        aria-labelledby={sheetTitleId}
+                                        className="absolute inset-0 min-h-0 min-w-0"
+                                        id={sheetContentId}
+                                        key="toc-list"
+                                        initial={
+                                            shouldReduceMotion
+                                                ? false
+                                                : { opacity: 0 }
+                                        }
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={
+                                            shouldReduceMotion
+                                                ? { duration: 0 }
+                                                : tocSurfaceFadeTween
+                                        }
+                                    >
+                                        <h2
+                                            className="sr-only"
+                                            id={sheetTitleId}
+                                        >
+                                            Table of contents
+                                        </h2>
+                                        <ol
+                                            className="toc-sheet-list min-h-0 min-w-0 max-h-[min(64dvh,520px)] overflow-y-auto overscroll-contain p-1.5"
+                                            onPointerDown={(event) => {
+                                                if (
+                                                    isListAtTop &&
+                                                    (event.pointerType !==
+                                                        "touch" ||
+                                                        supportsDirectionalTouchAction)
+                                                ) {
+                                                    dragControls.start(event);
+                                                }
+                                            }}
+                                            onScroll={(event) =>
+                                                setIsListAtTop(
+                                                    event.currentTarget
+                                                        .scrollTop <= 1,
+                                                )
+                                            }
+                                            ref={listRef}
+                                            style={{
+                                                height: "100%",
+                                                touchAction:
+                                                    isListAtTop &&
+                                                    supportsDirectionalTouchAction
+                                                        ? "pan-down"
+                                                        : "pan-y",
+                                                WebkitOverflowScrolling:
+                                                    "touch",
+                                            }}
+                                        >
+                                            {items.map((item, index) => {
+                                                const isActive =
+                                                    item.id === activeId;
+                                                const delay =
+                                                    shouldReduceMotion ||
+                                                    !isSheetRowStaggering
+                                                        ? 0
+                                                        : getTocItemDelay(
+                                                              index,
+                                                          );
+
+                                                return (
+                                                    <TocSheetRow
+                                                        activeIndicatorLayoutId={
+                                                            activeIndicatorLayoutId
+                                                        }
+                                                        activeItemRef={
+                                                            activeItemRef
+                                                        }
+                                                        enterDelay={delay}
+                                                        href={`#${item.id}`}
+                                                        id={item.id}
+                                                        isActive={isActive}
+                                                        key={item.id}
+                                                        onNavigate={
+                                                            navigateFromSheet
+                                                        }
+                                                        onStaggerComplete={
+                                                            isSheetRowStaggering &&
+                                                            index ===
+                                                                items.length - 1
+                                                                ? () =>
+                                                                      setIsSheetRowStaggering(
+                                                                          false,
+                                                                      )
+                                                                : undefined
+                                                        }
+                                                        shouldReduceMotion={
+                                                            shouldReduceMotion
+                                                        }
+                                                        title={item.title}
+                                                    />
+                                                );
+                                            })}
+                                        </ol>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </motion.div>
+                    </LayoutGroup>
                 )}
-        </>
+            </div>
+        </div>,
+        document.body,
     );
 }
