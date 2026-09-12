@@ -5,9 +5,9 @@ import { findPostNeighbors } from "./post-neighbors";
 const posts = [
     { slug: "series-one", series: "series" },
     { slug: "series-two", series: "series" },
-    { slug: "topic-newest", topic: "topic" },
-    { slug: "topic-middle", topic: "topic" },
-    { slug: "topic-oldest", topic: "topic" },
+    { slug: "topic-first", topic: "topic" },
+    { slug: "topic-second", topic: "topic" },
+    { slug: "topic-third", topic: "topic" },
 ];
 
 describe("findPostNeighbors", () => {
@@ -18,10 +18,10 @@ describe("findPostNeighbors", () => {
         expect(neighbors.next?.slug).toBe("series-two");
     });
 
-    it("keeps navigation inside an ordered topic", () => {
+    it("keeps navigation inside a topic reading path", () => {
         const neighbors = findPostNeighbors(posts, posts[3]);
 
-        expect(neighbors.previous?.slug).toBe("topic-newest");
-        expect(neighbors.next?.slug).toBe("topic-oldest");
+        expect(neighbors.previous?.slug).toBe("topic-first");
+        expect(neighbors.next?.slug).toBe("topic-third");
     });
 });

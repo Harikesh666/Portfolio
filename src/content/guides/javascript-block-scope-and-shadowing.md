@@ -3,6 +3,7 @@ title: "JavaScript Blocks, Scope, and Shadowing"
 description: "How blocks group statements, how let and const create block scope, how shadowing works, and why some redeclarations are illegal."
 category: "JavaScript"
 topic: "scope-and-closures"
+order: 3
 readTime: "14 min read"
 date: "February 2025"
 publishedAt: "2025-02-05"

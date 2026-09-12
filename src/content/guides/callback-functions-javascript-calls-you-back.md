@@ -3,6 +3,7 @@ title: "Callback Functions: JavaScript Calls You Back"
 description: "What callbacks really are, when they run synchronously or asynchronously, and how they shape timers, events, array methods, and closures."
 category: "JavaScript"
 topic: "functions-and-composition"
+order: 2
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-10"

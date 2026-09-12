@@ -99,7 +99,7 @@
       "name": "Article Pager",
       "kind": "nav",
       "refersTo": "article-navigation",
-      "description": "Collection-aware previous and next links for ordered series and authored JavaScript topics; links stack on narrow screens and occupy left and right columns from the small breakpoint upward.",
+      "description": "Collection-aware previous and next links for ordered series and authored JavaScript topic reading paths; links stack on narrow screens and occupy left and right columns from the small breakpoint upward.",
       "html": "<nav class=\"ds-article-pager\" aria-label=\"Article navigation\"><a href=\"#\">← Previous article</a><a href=\"#\">Next article →</a></nav>",
       "css": ".ds-article-pager { display: grid; grid-template-columns: 1fr; gap: 16px; border-top: 1px solid var(--color-divider); padding-top: 20px; } @media (min-width: 640px) { .ds-article-pager { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ds-article-pager a:last-child { grid-column-start: 2; text-align: right; } }"
     },

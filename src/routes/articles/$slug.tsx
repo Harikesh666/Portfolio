@@ -108,9 +108,9 @@ function PostPage() {
     const articleRef = useRef<HTMLElement>(null);
     const navigateToTocItem = useTocNavigation(articleRef);
     const { previous, next } = getPostNeighbors(post);
-    const seriesPostCount = post.series
+    const collectionPostCount = post.series
         ? posts.filter((item) => item.series === post.series).length
-        : 0;
+        : posts.filter((item) => item.topic === post.topic).length;
 
     return (
         <>
@@ -138,8 +138,8 @@ function PostPage() {
                                 className="mt-3 font-mono text-[13px] font-medium tabular-nums tracking-[-0.005em] text-muted"
                             >
                                 {post.date} · {post.readTime}
-                                {post.series && post.order !== undefined
-                                    ? ` · ${String(post.order).padStart(2, "0")} of ${seriesPostCount}`
+                                {post.order !== undefined
+                                    ? ` · ${String(post.order).padStart(2, "0")} of ${collectionPostCount}`
                                     : ""}
                             </StaggerReveal.Item>
                         </StaggerReveal>

@@ -3,6 +3,7 @@ title: "var, let, and const: Bindings, Scope, and the TDZ"
 description: "Compare var, let, and const through declaration setup, scope, redeclaration, reassignment, global behavior, and the Temporal Dead Zone."
 category: "JavaScript"
 topic: "scope-and-closures"
+order: 2
 readTime: "14 min read"
 date: "February 2025"
 publishedAt: "2025-02-08"

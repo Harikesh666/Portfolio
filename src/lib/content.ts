@@ -12,9 +12,14 @@ export const seriesIndex = {
 
 export const topicIndex = {
     "execution-model": {
-        title: "Execution model",
+        title: "JavaScript execution and values",
         description:
             "How JavaScript evaluates code, tracks execution, resolves declarations, and converts values.",
+    },
+    "engines-and-runtimes": {
+        title: "Engines and runtimes",
+        description:
+            "How operating systems schedule work, JavaScript engines execute code, and Node.js brings the pieces together.",
     },
     "scope-and-closures": {
         title: "Scope & closures",
@@ -129,11 +134,7 @@ function toPost(
             ? undefined
             : assertOrder(frontmatter.order, filename);
 
-    if (series !== undefined && order === undefined) {
-        throw new Error(`Invalid order in ${filename}`);
-    }
-
-    if (series === undefined && order !== undefined) {
+    if (order === undefined) {
         throw new Error(`Invalid order in ${filename}`);
     }
 
@@ -160,6 +161,30 @@ function toPost(
     };
 }
 
+function validateCollectionOrders(records: ReadonlyArray<PostRecord>) {
+    const collections = new Map<string, PostRecord[]>();
+
+    for (const post of records) {
+        const collection = post.series
+            ? `series:${post.series}`
+            : `topic:${post.topic}`;
+
+        const collectionPosts = collections.get(collection) ?? [];
+        collectionPosts.push(post);
+        collections.set(collection, collectionPosts);
+    }
+
+    for (const [collection, collectionPosts] of collections) {
+        const orders = collectionPosts
+            .map((post) => post.order)
+            .sort((first, second) => (first ?? 0) - (second ?? 0));
+
+        if (orders.some((order, index) => order !== index + 1)) {
+            throw new Error(`Invalid order in ${collection}`);
+        }
+    }
+}
+
 const postRecords = Object.entries(meta)
     .map(([path, frontmatter]) => toPost(path, frontmatter))
     .sort((first, second) => {
@@ -172,11 +197,24 @@ const postRecords = Object.entries(meta)
         }
 
         if (!first.series && !second.series) {
-            return second.publishedAt.localeCompare(first.publishedAt);
+            const firstTopicOrder = Object.keys(topicIndex).indexOf(
+                first.topic ?? "",
+            );
+            const secondTopicOrder = Object.keys(topicIndex).indexOf(
+                second.topic ?? "",
+            );
+
+            if (firstTopicOrder === secondTopicOrder) {
+                return (first.order ?? 0) - (second.order ?? 0);
+            }
+
+            return firstTopicOrder - secondTopicOrder;
         }
 
         return first.series ? -1 : 1;
     });
+
+validateCollectionOrders(postRecords);
 
 export const posts = postRecords.map(({ path: _, ...post }) => post);
 

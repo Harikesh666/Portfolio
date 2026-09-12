@@ -297,7 +297,7 @@ function FloatingTocRailTick({
             >
                 <motion.span
                     animate={isLabelVisible ? "visible" : "hidden"}
-                    className={`relative block w-max max-w-64 rounded-lg border bg-surface px-3 py-2 text-right text-[13px] font-medium leading-snug text-foreground-strong shadow-lg shadow-black/10 after:hidden dark:shadow-black/30 ${
+                    className={`relative block w-max max-w-64 rounded-lg border bg-surface px-3 py-2 text-center text-[13px] font-medium leading-snug text-foreground-strong shadow-lg shadow-black/10 after:hidden dark:shadow-black/30 ${
                         isActive ? "border-accent/40" : "border-divider"
                     }`}
                     initial={false}

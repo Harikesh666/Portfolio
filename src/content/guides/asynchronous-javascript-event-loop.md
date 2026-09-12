@@ -3,6 +3,7 @@ title: "JavaScript, the Browser, and the Event Loop"
 description: "How browser APIs, tasks, microtasks, and the event loop let JavaScript handle delayed work without blocking the main thread."
 category: "JavaScript"
 topic: "async-and-concurrency"
+order: 2
 readTime: "15 min read"
 date: "January 2025"
 publishedAt: "2025-01-07"

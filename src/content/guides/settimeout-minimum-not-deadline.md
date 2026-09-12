@@ -3,6 +3,7 @@ title: "setTimeout Has Trust Issues"
 description: "Why a timer delay is a minimum, not an exact execution time, explained through the call stack and event loop."
 category: "JavaScript"
 topic: "async-and-concurrency"
+order: 3
 readTime: "8 min read"
 date: "January 2025"
 publishedAt: "2025-01-01"

@@ -3,6 +3,7 @@ title: "JavaScript Scope: How Names Find Their Values"
 description: "How global, function, and block scope shape name lookup, lexical environments, scope chains, hoisting, shadowing, and ReferenceError behavior."
 category: "JavaScript"
 topic: "scope-and-closures"
+order: 1
 readTime: "14 min read"
 date: "February 2025"
 publishedAt: "2025-02-11"

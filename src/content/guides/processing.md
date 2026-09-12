@@ -2,7 +2,8 @@
 title: "Processes, Threads, and How Servers Handle Work"
 description: "From programs on disk to processes, CPU scheduling, context switches, and threads, with the connection to Node.js and libuv."
 category: "JavaScript"
-topic: "execution-model"
+topic: "engines-and-runtimes"
+order: 1
 readTime: "14 min read"
 date: "September 2026"
 publishedAt: "2026-09-07"

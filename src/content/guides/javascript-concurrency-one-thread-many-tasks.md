@@ -3,6 +3,7 @@ title: "JavaScript Concurrency: One Thread, Many Tasks"
 description: "How JavaScript makes progress on timers, network requests, rendering, and user input without confusing concurrency with parallel execution."
 category: "JavaScript"
 topic: "async-and-concurrency"
+order: 1
 readTime: "15 min read"
 date: "January 2025"
 publishedAt: "2025-01-15"

@@ -3,6 +3,7 @@ title: "Global Scope and this: Look at the Call Site"
 description: "How global bindings, classic scripts, modules, strict mode, methods, arrows, constructors, and event listeners determine the value of this."
 category: "JavaScript"
 topic: "scope-and-closures"
+order: 6
 readTime: "16 min read"
 date: "January 2025"
 publishedAt: "2025-01-21"

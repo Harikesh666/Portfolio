@@ -38,6 +38,7 @@ title: "Post title"
 description: "Short article summary."
 category: "JavaScript"
 topic: "async-and-concurrency"
+order: 1
 readTime: "10 min read"
 date: "May 2026"
 publishedAt: "2026-05-01"
@@ -45,10 +46,10 @@ publishedAt: "2026-05-01"
 ```
 
 - `title`, `description`, `category`, `readTime`, `date`, and `publishedAt` are required.
-- Standalone posts require a `topic` ID and sort by `publishedAt` descending within that topic. Topic definitions and their display order live in `src/lib/content.ts`.
+- Standalone posts require a `topic` ID and an `order`. Orders must be contiguous from `1` within each topic, so renumber that topic when inserting a guide. Topic definitions and their display order live in `src/lib/content.ts`.
 - Series posts use `series` and `order` together instead of `topic`. Add a series definition to `src/lib/content.ts` before assigning its ID in frontmatter.
 - The articles index presents a compact anchor overview, followed by learning paths and authored topic sections; it does not infer taxonomy from guide titles.
-- Article detail pages use the same collection order for previous/next navigation: `order` within a series and descending `publishedAt` within a topic.
+- Article detail pages use the same collection order for previous/next navigation: `order` within a series or topic.
 - `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk. Article-list links prefetch article data on hover or touch, then reuse it on a direct click.
 
 Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control. Images from `public/diagrams/` are enhanced after hydration into keyboard-accessible `Open full diagram` controls. They open a full-canvas native dialog that keeps the sketch on its white teaching surface. At `xl` and above, up to 34 real H2–H4 anchors populate a fixed Rare UI-inspired right minimap in a 96px aside. Marks begin 32px from the right edge and expand inward from the right. The build-time minimap preserves source order and evenly samples anchors when needed. Major marks follow Rare's 6:34 ratio and scale down proportionally on shorter guides; every other sampled anchor uses the body/short preset. At full density this reproduces Rare's `0, 7, 13, 20, 26, 33` major-mark rhythm. Major marks use Rare proportions, minor marks use muted foreground at 40%, all use 1px strokes and 8px gaps, pointer proximity reaches 40px, and a connected surface label identifies each hovered or keyboard-focused section. A shared pointer pulse lasts 80ms on scroll. Below `xl`, a content-measured pill stays near 32px tall within the viewport and has a separate invisible 44px trigger target. Its 20px current-section progress ring precedes the title, and the same surface expands upward into a content-measured `w-max` squircle menu capped by the viewport and `min(64dvh, 520px)`. The menu uses a 26px open radius, a 98% no-blur surface that preserves Rare's visual separation, the Rare 60%-border token, neutral 30px active rows, a transparent outside layer, and source-like progress, surface, label, and row timing. Long lists cap their stagger at 0.4s. Both views push shareable hash entries, support back/forward section traversal, restore the pre-section scroll position when returning to the hashless entry, and preserve reduced-motion behavior. The adapted component licenses are recorded in `THIRD_PARTY_NOTICES.md`.

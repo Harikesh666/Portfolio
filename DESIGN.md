@@ -134,7 +134,7 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 ### Articles Index
 - **Map:** A compact ruled `Browse` navigation follows the introduction and links to every learning path and authored topic with guide counts.
 - **Hierarchy:** Guided series remain the primary collection; standalone guides are divided into durable conceptual topics rather than one oversized language category.
-- **Taxonomy:** Standalone topic IDs and display metadata live in `src/lib/content.ts` and are validated from guide frontmatter. Series posts use their ordered learning-path metadata instead.
+- **Taxonomy:** Standalone topic IDs and display metadata live in `src/lib/content.ts`. Their frontmatter `order` values define and validate each recommended reading path. Series posts use their ordered learning-path metadata instead.
 - **Restraint:** The full catalog remains in one narrow document. Anchor links, section headings, and tighter rows provide orientation without cards, filter chips, hidden panels, search, or pagination.
 - **Motion:** The index hero shares Home's font-aware editorial entrance, revealing the title by rendered line before its description and count. Browse navigation, topic sections, and article rows render immediately and retain stable geometry during scrolling.
 
@@ -143,7 +143,7 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 - **Behavior:** On desktop pointer devices, hovering or keyboard-focusing a row dims sibling content to `0.35` and restores the active row over 140ms. The title also changes to terracotta; no cards, translation, or lift effects.
 
 ### Article Content
-- **Structure:** Back link, title, muted metadata, prose, then collection-aware previous/next links. The links follow series order or a JavaScript topic's descending publish order.
+- **Structure:** Back link, title, muted metadata, prose, then collection-aware previous/next links. The links follow series or JavaScript topic reading order.
 - **Pager:** Previous stays left and Next stays right in a two-column layout from `sm` upward. The links stack in reading order on narrower screens, and a lone Next link still occupies the right column on wider screens.
 - **Anchors:** H2–H4 headings have stable IDs and a 2rem scroll margin. Table-of-contents activation pushes a shareable same-route hash entry, repeated activation replaces it, back/forward re-traverses headings, and returning to the hashless entry restores the captured pre-click scroll position.
 - **Desktop Table of Contents:** At `xl` and above, the build-time fixed right minimap sits in a 96px aside, with marks beginning 32px from the right edge and expanding inward from the right. It preserves source order and includes up to 34 real H2–H4 anchors, evenly sampling in source order when needed. Major marks follow Rare's 6:34 ratio and scale down proportionally on shorter guides; every other sampled anchor uses the body/short preset. At full density the major marks occupy indices 0, 7, 13, 20, 26, and 33. Minor marks use muted foreground at 40%, and all marks use 1px strokes, 8px gaps, a 40px pointer radius, a connected surface label for hovered or keyboard-focused sections, semantic hash anchors, keyboard focus, Escape behavior, reduced-motion parity, and the retained route-safe lifecycle. A shared 80ms scroll pulse provides the active cue without a persistent read-fill.

@@ -3,6 +3,7 @@ title: "More on Closures: Scope Chains, Privacy, and Memory"
 description: "A deeper look at returned functions, lexical bindings, shadowing, private state, constructor closures, and garbage collection."
 category: "JavaScript"
 topic: "scope-and-closures"
+order: 5
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-03"

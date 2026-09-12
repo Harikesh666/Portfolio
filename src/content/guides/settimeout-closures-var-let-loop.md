@@ -3,6 +3,7 @@ title: "setTimeout, Closures, and the Famous Loop Problem"
 description: "Why delayed callbacks share one var binding, how let creates a binding per loop iteration, and how helper functions preserve each value."
 category: "JavaScript"
 topic: "async-and-concurrency"
+order: 4
 readTime: "15 min read"
 date: "February 2025"
 publishedAt: "2025-02-14"

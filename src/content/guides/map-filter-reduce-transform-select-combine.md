@@ -3,6 +3,7 @@ title: "Map, Filter, and Reduce: Transform, Select, Combine"
 description: "Learn how map, filter, and reduce work through numbers, user records, accumulator traces, and practical combinations."
 category: "JavaScript"
 topic: "functions-and-composition"
+order: 4
 readTime: "15 min read"
 date: "February 2025"
 publishedAt: "2025-02-02"

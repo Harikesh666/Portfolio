@@ -3,6 +3,7 @@ title: "Higher-Order Functions: Stop Rewriting the Loop"
 description: "How passing and returning functions separates repeated control flow from changing logic, with a circle calculator built step by step."
 category: "JavaScript"
 topic: "functions-and-composition"
+order: 3
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-24"

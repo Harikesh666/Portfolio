@@ -3,6 +3,7 @@ title: "Callback Hell: When JavaScript Starts Leaning Sideways"
 description: "How dependent asynchronous callbacks create the pyramid of doom, scatter errors, surrender control, and how promises and async functions restore structure."
 category: "JavaScript"
 topic: "async-and-concurrency"
+order: 5
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-12"

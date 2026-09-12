@@ -3,6 +3,7 @@ title: "JavaScript Functions Are Values with Behavior"
 description: "A practical tour of declarations, expressions, names, parameters, returned functions, first-class behavior, and arrow functions."
 category: "JavaScript"
 topic: "functions-and-composition"
+order: 1
 readTime: "15 min read"
 date: "January 2025"
 publishedAt: "2025-01-18"

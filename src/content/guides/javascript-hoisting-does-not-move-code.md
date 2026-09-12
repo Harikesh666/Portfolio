@@ -3,6 +3,7 @@ title: "JavaScript Hoisting Does Not Move Your Code"
 description: "What actually happens to var, let, const, function, class, and function-expression bindings before JavaScript evaluates a scope."
 category: "JavaScript"
 topic: "execution-model"
+order: 2
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-27"

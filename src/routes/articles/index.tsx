@@ -107,9 +107,9 @@ function ArticlesPage() {
                         {topic.description}
                     </p>
                     <p className="mt-3 font-mono text-[13px] font-medium tabular-nums tracking-[-0.005em] text-muted">
-                        {topic.posts.length} guides · newest first
+                        {topic.posts.length} guides · recommended reading order
                     </p>
-                    <ArticleList posts={topic.posts} />
+                    <ArticleList ordered posts={topic.posts} />
                 </section>
             ))}
         </main>
@@ -196,7 +196,7 @@ function ArticleList(props: ArticleListProps) {
                                 {post.description}
                             </span>
                             <span className="mt-2 block text-[13px] font-medium leading-5 tabular-nums tracking-[-0.005em] text-muted">
-                                {ordered
+                                {post.series
                                     ? post.readTime
                                     : `${post.date} · ${post.readTime}`}
                             </span>

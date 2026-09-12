@@ -3,6 +3,7 @@ title: "How JavaScript Keeps Track of Running Code"
 description: "Understand execution contexts, the call stack, and how asynchronous code fits into JavaScript's single-threaded execution model."
 category: "JavaScript"
 topic: "execution-model"
+order: 1
 readTime: "14 min read"
 date: "January 2025"
 publishedAt: "2025-01-30"
