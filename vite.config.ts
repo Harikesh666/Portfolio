@@ -10,15 +10,15 @@ import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import expressiveCode from "satteri-expressive-code";
 import tailwindcss from "@tailwindcss/vite";
 import satteri from "vite-plugin-satteri";
-import { headingIds } from "./src/lib/satteri-plugins";
-import { guidePresentation } from "./src/lib/guide-presentation";
-import { createGuideCodeBlock } from "./src/lib/guide-code";
-import { guideTables } from "./src/lib/guide-tables";
-import { guideFigures } from "./src/lib/guide-figures";
+import { headingIds } from "./src/lib/satteri-plugins.ts";
+import { guidePresentation } from "./src/lib/guide-presentation.ts";
+import { createGuideCodeBlock } from "./src/lib/guide-code.ts";
+import { guideTables } from "./src/lib/guide-tables.ts";
+import { guideFigures } from "./src/lib/guide-figures.ts";
 import {
     extractMinimapItems,
     extractTocItems,
-} from "./src/lib/content-headings";
+} from "./src/lib/content-headings.ts";
 import { nitro } from "nitro/vite";
 import pierreDark from "@pierre/theme/pierre-dark";
 import pierreLight from "@pierre/theme/pierre-light";

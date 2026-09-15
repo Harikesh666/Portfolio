@@ -1,5 +1,5 @@
 import { markdownToHast, type HastNode } from "satteri";
-import { slugifyHeading } from "./satteri-plugins";
+import { slugifyHeading } from "./satteri-plugins.ts";
 
 export type TocItem = {
     id: string;

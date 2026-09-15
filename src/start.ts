@@ -1,4 +1,8 @@
-import { createMiddleware, createStart } from "@tanstack/react-start";
+import {
+    createCsrfMiddleware,
+    createMiddleware,
+    createStart,
+} from "@tanstack/react-start";
 import { posts } from "./lib/content";
 import {
     homeMarkdown,
@@ -22,6 +26,10 @@ const pagePaths = new Set([
         `/writing/${post.slug}`,
     ]),
 ]);
+
+const csrfMiddleware = createCsrfMiddleware({
+    filter: (context) => context.handlerType === "serverFn",
+});
 
 const agentContentMiddleware = createMiddleware().server(
     async ({ next, request }) => {
@@ -87,5 +95,5 @@ function notAcceptableResponse() {
 }
 
 export const startInstance = createStart(() => ({
-    requestMiddleware: [agentContentMiddleware],
+    requestMiddleware: [csrfMiddleware, agentContentMiddleware],
 }));
