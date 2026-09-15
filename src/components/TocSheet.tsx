@@ -16,7 +16,6 @@ import {
     useDragControls,
     useMotionValue,
     useReducedMotion,
-    useSpring,
     type PanInfo,
 } from "motion/react";
 import type { TocItem } from "../lib/content-headings";
@@ -27,7 +26,6 @@ import {
     sheetRowTween,
     sheetSpring,
     tocLabelCrossfadeTween,
-    tocProgressSpring,
     tocSurfaceFadeTween,
     tocSurfaceSpring,
 } from "../lib/motion";
@@ -156,7 +154,7 @@ export function TocSheet({
     });
     const [routeId] = useState(currentRouteId);
     const isRouteActive = currentRouteId === routeId;
-    const { activeId, activeIndex, sectionProgress } = useScrollSpy(
+    const { activeId, activeIndex } = useScrollSpy(
         items,
         containerRef,
         isRouteActive,
@@ -164,10 +162,6 @@ export function TocSheet({
     const shouldReduceMotion = useReducedMotion();
     const dragControls = useDragControls();
     const sheetY = useMotionValue(0);
-    const animatedSectionProgress = useSpring(
-        sectionProgress,
-        tocProgressSpring,
-    );
     const [isOpen, setIsOpen] = useState(false);
     const [isSheetRowStaggering, setIsSheetRowStaggering] = useState(false);
     const [isListAtTop, setIsListAtTop] = useState(true);
@@ -223,7 +217,7 @@ export function TocSheet({
             const open = openMeasureRef.current;
             if (label) {
                 const maxLabelWidth = collapsed
-                    ? Math.max(collapsed.offsetWidth - 54, 1)
+                    ? Math.max(collapsed.offsetWidth - 32, 1)
                     : label.offsetWidth;
                 setLabelWidth(
                     Math.max(Math.min(label.scrollWidth, maxLabelWidth), 1),
@@ -561,12 +555,11 @@ export function TocSheet({
                     className="pointer-events-none invisible absolute"
                 >
                     <div
-                        className="inline-flex max-w-[calc(100vw-2.5rem)] items-center gap-2.5 whitespace-nowrap py-1.5 pl-2 pr-4"
+                        className="inline-flex max-w-[calc(100vw-2.5rem)] items-center whitespace-nowrap px-4 py-1.5"
                         ref={collapsedMeasureRef}
                     >
-                        <span className="size-5 shrink-0" />
                         <span
-                            className="whitespace-nowrap text-sm font-medium leading-none"
+                            className="flex h-5 items-center whitespace-nowrap text-sm font-medium leading-none"
                             ref={labelMeasureRef}
                         >
                             {currentTitle}
@@ -651,7 +644,7 @@ export function TocSheet({
                         >
                             <motion.div
                                 aria-hidden="true"
-                                className="pointer-events-none absolute inset-0 flex items-center gap-2.5 whitespace-nowrap py-1.5 pl-2 pr-4 text-left text-(--toc-major)"
+                                className="pointer-events-none absolute inset-0 flex items-center whitespace-nowrap px-4 py-1.5 text-left text-(--toc-major)"
                                 initial={false}
                                 animate={{ opacity: isOpen ? 0 : 1 }}
                                 transition={
@@ -660,37 +653,6 @@ export function TocSheet({
                                         : tocSurfaceFadeTween
                                 }
                             >
-                                <span className="shrink-0">
-                                    <svg
-                                        aria-hidden="true"
-                                        className="size-5 -rotate-90"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <circle
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            fill="none"
-                                        opacity="0.15"
-                                        stroke="var(--toc-major)"
-                                            strokeWidth="2.5"
-                                        />
-                                        <motion.circle
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            fill="none"
-                                            stroke="var(--toc-major)"
-                                            strokeLinecap="round"
-                                            strokeWidth="2.5"
-                                            style={{
-                                                pathLength: shouldReduceMotion
-                                                    ? sectionProgress
-                                                    : animatedSectionProgress,
-                                            }}
-                                        />
-                                    </svg>
-                                </span>
                                 <span
                                     className="relative h-5 shrink-0 overflow-hidden text-sm font-medium leading-none"
                                     style={

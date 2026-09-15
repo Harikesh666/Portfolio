@@ -55,14 +55,6 @@ export const tocLabelCrossfadeTween = {
     ease: tocLabelEase,
 };
 
-// Smooths section progress with the Rare UI indicator's spring.
-export const tocProgressSpring = {
-    type: "spring" as const,
-    stiffness: 120,
-    damping: 30,
-    mass: 0.3,
-};
-
 // Holds the shared desktop TOC pointer over the active dash during scroll.
 export const tocActivePulseResetDelay = 80;
 
