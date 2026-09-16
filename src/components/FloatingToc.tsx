@@ -22,6 +22,7 @@ import type { MinimapKind } from "../lib/content-headings";
 import {
     tocActivePulseResetDelay,
     tocProximitySpring,
+    tocRailActiveTween,
     tocRailLabelInstantTween,
     tocRailLabelSpring,
     tocRailLabelVariants,
@@ -39,6 +40,11 @@ type FloatingTocLifecycle = {
     activate: () => void;
     deactivate: () => void;
 };
+
+type FloatingTocHostState = Readonly<{
+    registration: TocRegistration | null;
+    retiredInstanceId: number | null;
+}>;
 
 const proximityRadius = 40;
 const maximumDashWidth = 110;
@@ -117,8 +123,11 @@ export function FloatingTocHost({
     const currentRouteId = useLocation({
         select: (location) => location.pathname,
     });
-    const [hostedRegistration, setHostedRegistration] =
-        useState<TocRegistration | null>(null);
+    const [hostState, setHostState] = useState<FloatingTocHostState>({
+        registration: null,
+        retiredInstanceId: null,
+    });
+    const hostedRegistration = hostState.registration;
     const lifecycleRef = useRef<FloatingTocLifecycle>(null);
     const activeRegistration =
         registration?.routeId === currentRouteId &&
@@ -131,40 +140,53 @@ export function FloatingTocHost({
         hostedRegistration.token === activeRegistration?.token;
 
     useLayoutEffect(() => {
-        if (activeRegistration) {
-            if (hostedRegistration?.token === activeRegistration.token) {
-                lifecycleRef.current?.activate();
-                return;
-            }
-            setHostedRegistration((current) => {
-                if (current?.token === activeRegistration.token) {
-                    return current;
-                }
-                if (current) {
-                    performance.mark("portfolio-toc-dispose");
-                }
-                return activeRegistration;
-            });
-            return;
-        }
-
-        if (hostedRegistration?.routeId !== currentRouteId) {
-            lifecycleRef.current?.deactivate();
+        if (hostState.retiredInstanceId !== null) {
+            performance.mark("portfolio-toc-dispose");
         }
 
         if (
-            hostedRegistration?.routeId !== currentRouteId &&
-            settledRouteId === currentRouteId
+            activeRegistration &&
+            activeRegistration.token === hostedRegistration?.token
         ) {
-            performance.mark("portfolio-toc-dispose");
-            setHostedRegistration(null);
+            lifecycleRef.current?.activate();
+            return;
+        }
+
+        if (
+            hostedRegistration &&
+            hostedRegistration.routeId !== currentRouteId
+        ) {
+            lifecycleRef.current?.deactivate();
         }
     }, [
         activeRegistration,
         currentRouteId,
+        hostState.retiredInstanceId,
         hostedRegistration,
-        settledRouteId,
     ]);
+
+    if (
+        activeRegistration &&
+        hostedRegistration?.token !== activeRegistration.token
+    ) {
+        setHostState({
+            registration: activeRegistration,
+            retiredInstanceId: hostedRegistration?.instanceId ?? null,
+        });
+        return null;
+    }
+
+    if (
+        hostedRegistration &&
+        hostedRegistration.routeId !== currentRouteId &&
+        settledRouteId === currentRouteId
+    ) {
+        setHostState({
+            registration: null,
+            retiredInstanceId: hostedRegistration?.instanceId ?? null,
+        });
+        return null;
+    }
 
     return hostedRegistration ? (
         <div
@@ -187,21 +209,21 @@ export function FloatingTocHost({
 type FloatingTocRailTickProps = Readonly<{
     id: string;
     isActive: boolean;
-    dashCenters: ReadonlyMap<string, number>;
-    centerVersion: MotionValue<number>;
     mouseY: MotionValue<number>;
     preset: DashPreset;
     shouldReduceMotion: boolean | null;
     title: string;
-    registerDash: (id: string, node: HTMLAnchorElement | null) => void;
+    registerDash: (
+        id: string,
+        node: HTMLAnchorElement | null,
+        centerY: MotionValue<number>,
+    ) => void;
     onNavigate: (id: string) => void;
 }>;
 
 function FloatingTocRailTick({
     id,
     isActive,
-    dashCenters,
-    centerVersion,
     mouseY,
     preset,
     shouldReduceMotion,
@@ -210,29 +232,32 @@ function FloatingTocRailTick({
     registerDash,
 }: FloatingTocRailTickProps) {
     const anchorRef = useRef<HTMLAnchorElement>(null);
+    const centerY = useMotionValue(Number.POSITIVE_INFINITY);
     const [hasFocus, setHasFocus] = useState(false);
     const [isPointerOver, setIsPointerOver] = useState(false);
     const isLabelVisible = hasFocus || isPointerOver;
 
     useEffect(() => {
-        registerDash(id, anchorRef.current);
-        return () => registerDash(id, null);
-    }, [id, registerDash]);
+        registerDash(id, anchorRef.current, centerY);
+        return () => registerDash(id, null, centerY);
+    }, [centerY, id, registerDash]);
 
     const targetScaleX = useTransform(
-        [mouseY, centerVersion],
-        ([pointerY]: number[]) => {
-            const centerY = dashCenters.get(id);
+        [mouseY, centerY],
+        ([pointerY, dashCenterY]: number[]) => {
             const baseScale = preset.base / maximumDashWidth;
             const activeScale =
                 (preset.base + preset.bump) / maximumDashWidth;
-            if (centerY === undefined || !Number.isFinite(pointerY)) {
+            if (
+                !Number.isFinite(dashCenterY) ||
+                !Number.isFinite(pointerY)
+            ) {
                 return baseScale;
             }
 
             const proximity = Math.max(
                 0,
-                1 - Math.abs(pointerY - centerY) / proximityRadius,
+                1 - Math.abs(pointerY - dashCenterY) / proximityRadius,
             );
 
             return (
@@ -276,8 +301,8 @@ function FloatingTocRailTick({
             }}
             onFocus={() => {
                 setHasFocus(true);
-                const center = dashCenters.get(id);
-                if (center !== undefined) mouseY.set(center);
+                const dashCenterY = centerY.get();
+                if (Number.isFinite(dashCenterY)) mouseY.set(dashCenterY);
             }}
             onPointerEnter={() => setIsPointerOver(true)}
             onPointerLeave={() => {
@@ -315,14 +340,24 @@ function FloatingTocRailTick({
             </span>
             <motion.span
                 aria-hidden="true"
-                className="pointer-events-none block origin-right transition-colors duration-150 ease-out group-focus-visible:ring-2 group-focus-visible:ring-accent group-focus-visible:ring-offset-2"
+                animate={{
+                    backgroundColor: isActive
+                        ? "var(--accent)"
+                        : preset.color,
+                }}
+                className="pointer-events-none block origin-right group-focus-visible:ring-2 group-focus-visible:ring-accent group-focus-visible:ring-offset-2"
+                initial={false}
                 style={{
-                    backgroundColor: preset.color,
                     scaleX: tickScale,
                     height: preset.thickness,
                     width: maximumDashWidth,
                     transformOrigin: "right center",
                 }}
+                transition={
+                    shouldReduceMotion
+                        ? tocRailLabelInstantTween
+                        : tocRailActiveTween
+                }
             />
         </a>
     );
@@ -335,9 +370,15 @@ function FloatingTocView({
     onNavigate,
 }: FloatingTocProps & Readonly<{ lifecycleRef: Ref<FloatingTocLifecycle> }>) {
     const mouseY = useMotionValue(Number.POSITIVE_INFINITY);
-    const centerVersion = useMotionValue(0);
-    const dashRefs = useRef(new Map<string, HTMLAnchorElement>());
-    const dashCenters = useRef(new Map<string, number>());
+    const dashRegistrations = useRef(
+        new Map<
+            string,
+            Readonly<{
+                node: HTMLAnchorElement;
+                centerY: MotionValue<number>;
+            }>
+        >(),
+    );
     const pointerInsideRef = useRef(false);
     const { activeId, scrollActivity, start, stop } = useScrollSpy(
         items,
@@ -349,25 +390,27 @@ function FloatingTocView({
     const pulseTimeoutRef = useRef<number | null>(null);
 
     const registerDash = useCallback(
-        (id: string, node: HTMLAnchorElement | null) => {
+        (
+            id: string,
+            node: HTMLAnchorElement | null,
+            centerY: MotionValue<number>,
+        ) => {
             if (node) {
-                dashRefs.current.set(id, node);
+                dashRegistrations.current.set(id, { node, centerY });
             } else {
-                dashRefs.current.delete(id);
-                dashCenters.current.delete(id);
+                dashRegistrations.current.delete(id);
             }
         },
         [],
     );
 
     const cacheDashCenters = useCallback(() => {
-        for (const [id, node] of dashRefs.current) {
+        for (const { node, centerY } of dashRegistrations.current.values()) {
             if (!node.isConnected) continue;
             const rect = node.getBoundingClientRect();
-            dashCenters.current.set(id, rect.top + rect.height / 2);
+            centerY.set(rect.top + rect.height / 2);
         }
-        centerVersion.set(centerVersion.get() + 1);
-    }, [centerVersion]);
+    }, []);
 
     const clearActivePulse = useCallback(() => {
         if (pulseTimeoutRef.current === null) return;
@@ -377,10 +420,10 @@ function FloatingTocView({
 
     const pulseActiveDash = useCallback(
         (id: string) => {
-            const center = dashCenters.current.get(id);
-            if (center === undefined) return;
+            const centerY = dashRegistrations.current.get(id)?.centerY.get();
+            if (centerY === undefined || !Number.isFinite(centerY)) return;
             clearActivePulse();
-            mouseY.set(center);
+            mouseY.set(centerY);
             if (pointerInsideRef.current) return;
             pulseTimeoutRef.current = window.setTimeout(() => {
                 mouseY.set(Number.POSITIVE_INFINITY);
@@ -409,7 +452,7 @@ function FloatingTocView({
             return;
         }
         previousActiveIdRef.current = activeId;
-        if (!dashCenters.current.has(activeId)) cacheDashCenters();
+        if (!dashRegistrations.current.has(activeId)) cacheDashCenters();
         pulseActiveDash(activeId);
     }, [activeId, cacheDashCenters, pulseActiveDash]);
 
@@ -469,8 +512,6 @@ function FloatingTocView({
                                 id={item.id}
                                 isActive={isActive}
                                 key={item.id}
-                                dashCenters={dashCenters.current}
-                                centerVersion={centerVersion}
                                 mouseY={mouseY}
                                 onNavigate={onNavigate}
                                 preset={DASH_PRESETS[item.kind]}

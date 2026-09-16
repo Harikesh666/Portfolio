@@ -36,6 +36,12 @@ export const tocRailLabelInstantTween = {
     duration: 0,
 };
 
+// Highlights the active desktop TOC rail without changing its geometry.
+export const tocRailActiveTween = {
+    duration: 0.15,
+    ease: tocLabelEase,
+};
+
 // Morphs the mobile TOC pill into its bounded section menu.
 export const tocSurfaceSpring = {
     type: "spring" as const,
