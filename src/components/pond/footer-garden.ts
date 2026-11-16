@@ -4,8 +4,12 @@ import { createRipples, glslRippleHeight, type Ripples } from "./pond-ripples";
 
 /** The petal photo: a 1600×520 strip, tiled with mirroring so it never shows a seam. */
 const imageUrl = "/footer/petals.webp";
-/** How tall one tile of the photo is drawn, in CSS pixels. Petals land at roughly 20px. */
-const tileHeight = 170;
+/**
+ * How tall one tile of the photo is drawn, in CSS pixels: 1.3 strip heights,
+ * at most 170px. Petals land near 20px on a desktop strip and stay in
+ * proportion on the shorter phone strip.
+ */
+const tileHeightFor = (stripHeight: number) => Math.min(170, stripHeight * 1.3);
 /** After the last touch, the garden keeps moving this long so it can settle, in seconds. */
 const settleSeconds = 4;
 /** The garden grows in over this long the first time it scrolls into view, in seconds. */
@@ -191,6 +195,7 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
         gl.uniform2f(u.uSimSize, ripples.width(), ripples.height());
         gl.uniform2f(u.uCss, width, height);
         gl.uniform1f(u.uDpr, ratio);
+        const tileHeight = tileHeightFor(height);
         gl.uniform2f(u.uTile, (imageSize.width / imageSize.height) * tileHeight, tileHeight);
         gl.uniform4f(u.uBrush, brush.x, brush.y, brushRadius, brush.strength * brushPush);
         gl.uniform1f(u.uGrow, grow);

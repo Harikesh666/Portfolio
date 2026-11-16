@@ -115,10 +115,10 @@ export function Pond({ caption, description, labels = [], mode }: PondProps) {
 
     return (
         <figure className="not-prose m-0">
-            <div className="relative">
+            <div className="pond-frame relative">
                 <div
                     aria-label={description}
-                    className="event-loop-pond relative aspect-[2/1] w-full overflow-hidden rounded-2xl sm:aspect-[11/4]"
+                    className="event-loop-pond relative aspect-[2/1] w-full overflow-hidden sm:aspect-[11/4] sm:rounded-2xl"
                     data-mode={mode}
                     data-ready={isReady ? "" : undefined}
                     onPointerDown={handlePointerDown}

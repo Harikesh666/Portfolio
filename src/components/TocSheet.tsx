@@ -170,6 +170,7 @@ export function TocSheet({
     );
     const [openSize, setOpenSize] = useState<SurfaceSize | null>(null);
     const [labelWidth, setLabelWidth] = useState<number | null>(null);
+    const [isFooterInView, setIsFooterInView] = useState(false);
     const supportsDirectionalTouchAction =
         typeof CSS !== "undefined" && CSS.supports("touch-action", "pan-down");
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -526,6 +527,23 @@ export function TocSheet({
         };
     }, [isOpen, sheetY, supportsDirectionalTouchAction]);
 
+    // Past the article, the pill would only cover the footer: it steps aside
+    // while the site footer is on screen and returns when the reader scrolls up.
+    useEffect(() => {
+        if (!isRouteActive) return;
+        const footer = document.querySelector("[data-site-footer]");
+        if (!footer) return;
+        const observer = new IntersectionObserver(([entry]) =>
+            setIsFooterInView(entry.isIntersecting),
+        );
+        observer.observe(footer);
+        return () => {
+            observer.disconnect();
+            setIsFooterInView(false);
+        };
+    }, [isRouteActive]);
+    const isTriggerTucked = isFooterInView && !isOpen;
+
     if (!isRouteActive || items.length === 0) return null;
 
     return createPortal(
@@ -549,7 +567,12 @@ export function TocSheet({
                 )}
             </AnimatePresence>
 
-            <div className="pointer-events-none fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-51 -translate-x-1/2">
+            <div
+                aria-hidden={isTriggerTucked ? true : undefined}
+                className="toc-sheet-dock pointer-events-none fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-51 -translate-x-1/2"
+                data-tucked={isTriggerTucked ? "" : undefined}
+                inert={isTriggerTucked ? true : undefined}
+            >
                 <div
                     aria-hidden="true"
                     className="pointer-events-none invisible absolute"
