@@ -1,4 +1,4 @@
-type Stone = Readonly<{ x: number; y: number; rx: number; ry: number; rotation: number; tone: number }>;
+export type Stone = Readonly<{ x: number; y: number; rx: number; ry: number; rotation: number; tone: number }>;
 type Blade = Readonly<{ angle: number; length: number; bend: number; phase: number; width: number }>;
 type Reeds = Readonly<{ x: number; y: number; blades: readonly Blade[] }>;
 type LilyPad = { x: number; y: number; radius: number; rotation: number; notch: number; vx: number; vy: number; spin: number };

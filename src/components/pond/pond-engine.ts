@@ -18,6 +18,7 @@ import {
     type Fish,
     type Vec,
 } from "./pond-fish";
+import { createGpuPond } from "./pond-gpu";
 import { EventLoopModel, type Job } from "./pond-scheduler";
 import { createWater, waterThemes, type Water } from "./pond-water";
 
@@ -69,6 +70,12 @@ const nightPace = 0.6;
 const daylightRefreshSeconds = 20;
 /** Shadows render at this fraction of size; scaling them up blurs them for free. */
 const shadowScale = 0.22;
+/** A tap dents the water this deep; eating a pellet leaves a smaller ring. */
+const tapStrength = -2.4;
+const biteStrength = -0.7;
+/** The pointer stirs the water once it has moved this many pixels. */
+const stirDistance = 14;
+const stirStrength = -0.35;
 /** Fish canvas resolution cap; the water renders at a lower cap to spare the GPU. */
 const fishPixelRatioCap = 2;
 const waterPixelRatioCap = 1.5;
@@ -158,7 +165,11 @@ export function createPond(options: PondOptions): Pond {
     let pointer: Vec | null = null;
     let daylightHour = hourOverride ?? mumbaiHour();
     let daylightAge = 0;
-    const water: Water | null = createWater(waterCanvas);
+    // WebGL2 draws the water, stones, koi, and real ripples. Without it the
+    // older WebGL1 water and the 2D koi take over.
+    const gpu = createGpuPond(waterCanvas);
+    const water: Water | null = gpu ? null : createWater(waterCanvas);
+    let lastStir: Vec | null = null;
     const context = fishCanvas.getContext("2d");
     const model = new EventLoopModel();
     const fishes: Fish[] = [];
@@ -264,7 +275,8 @@ export function createPond(options: PondOptions): Pond {
                 steer(fish, nearest, taskSpeed * 1.15 * pace, dt);
                 if (nearestDistance < fish.length * 0.2) {
                     pellets.splice(pellets.indexOf(nearest), 1);
-                    ripples.push({ x: nearest.x, y: nearest.y, age: 0.55 });
+                    if (gpu) gpu.drop(nearest.x, nearest.y, biteStrength, 3);
+                    else ripples.push({ x: nearest.x, y: nearest.y, age: 0.55 });
                 }
                 continue;
             }
@@ -409,20 +421,30 @@ export function createPond(options: PondOptions): Pond {
         }
     }
 
-    function draw() {
+    function draw(dt = 0) {
         const dark = isDark();
         const light = isGarden ? daylight() : undefined;
-        water?.render(time, light ?? waterThemes[dark ? "dark" : "light"]);
+        if (gpu) {
+            gpu.render({
+                time,
+                dt,
+                light: light ?? { ...waterThemes[dark ? "dark" : "light"], night: 0 },
+                fishes,
+                stones: isGarden && decor ? decor.stones : [],
+            });
+        } else {
+            water?.render(time, light ?? waterThemes[dark ? "dark" : "light"]);
+        }
         if (!context) return;
 
         const ratio = Math.min(fishPixelRatioCap, window.devicePixelRatio || 1);
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
         context.clearRect(0, 0, width, height);
-        if (light) {
+        if (!light) {
+            drawGuides(context, layout, dark ? "rgba(170, 225, 220, 0.32)" : "rgba(255, 255, 255, 0.7)");
+        } else if (!gpu) {
             if (stoneLayer) context.drawImage(stoneLayer, 0, 0, width, height);
             drawMoon(light.night);
-        } else {
-            drawGuides(context, layout, dark ? "rgba(170, 225, 220, 0.32)" : "rgba(255, 255, 255, 0.7)");
         }
         drawShadows(dark || (light !== undefined && light.night > 0.5));
 
@@ -434,8 +456,10 @@ export function createPond(options: PondOptions): Pond {
             context.fill();
         }
 
-        for (const fish of [...fishes].sort((a, b) => a.points[0].y - b.points[0].y)) {
-            drawFish(context, fish);
+        if (!gpu) {
+            for (const fish of [...fishes].sort((a, b) => a.points[0].y - b.points[0].y)) {
+                drawFish(context, fish);
+            }
         }
         if (light && decor) {
             drawLilyPads(context, decor);
@@ -450,10 +474,11 @@ export function createPond(options: PondOptions): Pond {
             context.stroke();
         }
 
-        // Night dims everything drawn on this layer, never the empty water.
-        if (light && light.night > 0.02) {
+        // Night and the dark theme dim everything on this layer, never the empty water.
+        const dim = light ? Math.max(0.4 * light.night, dark ? 0.3 * (1 - light.night) : 0) : 0;
+        if (dim > 0.02) {
             context.globalCompositeOperation = "source-atop";
-            context.fillStyle = `rgba(8, 16, 38, ${0.4 * light.night})`;
+            context.fillStyle = `rgba(8, 16, 38, ${dim})`;
             context.fillRect(0, 0, width, height);
             context.globalCompositeOperation = "source-over";
         }
@@ -465,7 +490,8 @@ export function createPond(options: PondOptions): Pond {
         shadowContext.setTransform(1, 0, 0, 1, 0, 0);
         shadowContext.clearRect(0, 0, shadowCanvas.width, shadowContext.canvas.height);
         shadowContext.fillStyle = "#000";
-        for (const fish of fishes) {
+        // The GPU draws its own koi shadows.
+        for (const fish of gpu ? [] : fishes) {
             const depth = fish.length;
             shadowContext.setTransform(
                 shadowScale,
@@ -495,7 +521,7 @@ export function createPond(options: PondOptions): Pond {
         const dt = lastTimestamp === undefined ? 0 : (timestamp - lastTimestamp) / 1000;
         lastTimestamp = timestamp;
         step(Math.min(dt, maxStepSeconds));
-        draw();
+        draw(Math.min(dt, maxStepSeconds));
         frame = window.requestAnimationFrame(tick);
     }
 
@@ -518,11 +544,14 @@ export function createPond(options: PondOptions): Pond {
         waterCanvas.width = Math.round(width * waterRatio);
         waterCanvas.height = Math.round(height * waterRatio);
         water?.resize(waterCanvas.width, waterCanvas.height, waterRatio);
+        gpu?.resize(width, height, waterRatio);
 
         shadowCanvas.width = Math.max(1, Math.ceil(width * shadowScale));
         shadowCanvas.height = Math.max(1, Math.ceil(height * shadowScale));
         if (isGarden) {
             decor = createDecor(width, height);
+        }
+        if (isGarden && !gpu && decor) {
             stoneLayer ??= document.createElement("canvas");
             stoneLayer.width = Math.round(width * fishRatio);
             stoneLayer.height = Math.round(height * fishRatio);
@@ -564,8 +593,14 @@ export function createPond(options: PondOptions): Pond {
         }
     }
 
+    /** A tap makes a real ripple on the GPU, or a drawn ring without it. */
+    function splash(x: number, y: number) {
+        if (gpu) gpu.drop(x, y, tapStrength, 4.5);
+        else ripples.push({ x, y, age: 0 });
+    }
+
     function feed(x: number, y: number) {
-        ripples.push({ x, y, age: 0 });
+        splash(x, y);
         for (let i = 0; i < pelletsPerTap; i++) {
             pellets.push({ x: x + random(-14, 14), y: y + random(-10, 10), age: 0 });
         }
@@ -574,7 +609,7 @@ export function createPond(options: PondOptions): Pond {
     }
 
     function addTask(x: number, y: number) {
-        ripples.push({ x, y, age: 0 });
+        splash(x, y);
         const taskFish = fishes.filter((f) => f.job.kind === "task");
         if (taskFish.length < maxTaskFish) {
             // Like setTimeout(fn, 0): a short timer, then the task queue.
@@ -598,10 +633,18 @@ export function createPond(options: PondOptions): Pond {
         },
         setPointer(point) {
             pointer = point;
+            if (!point) {
+                lastStir = null;
+            } else if (gpu && isActive && (!lastStir || Math.hypot(point.x - lastStir.x, point.y - lastStir.y) > stirDistance)) {
+                // A finger trailing through the water leaves a faint wake.
+                if (lastStir) gpu.drop(point.x, point.y, stirStrength, 3);
+                lastStir = point;
+            }
         },
         destroy() {
             setActive(false);
             water?.destroy();
+            gpu?.destroy();
         },
     };
 }

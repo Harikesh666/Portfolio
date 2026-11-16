@@ -101,6 +101,10 @@ export type Fish = {
     speed: number;
     length: number;
     variety: Variety;
+    /** Index into the koi varieties; the micro variety is last. Used by the GPU palette. */
+    varietyIndex: number;
+    /** Stable per-fish value that places its markings. */
+    seed: number;
     markings: Marking[];
     target: Vec;
     timer: number;
@@ -128,16 +132,22 @@ export function widthAt(t: number, length: number) {
     return max * Math.max(0.06, (1 - taper) ** 1.25);
 }
 
+/** The most one spine joint can bend, in radians, so a koi turning on the spot never folds. */
+const maxJointBend = 0.28;
+
 export function follow(fish: Fish) {
     const spacing = fish.length / (segments - 1);
+    // Each segment points backward; the first is measured against the heading.
+    let previous = fish.heading + Math.PI;
     for (let i = 1; i < segments; i++) {
         const ahead = fish.points[i - 1];
         const point = fish.points[i];
-        const dx = point.x - ahead.x;
-        const dy = point.y - ahead.y;
-        const distance = Math.hypot(dx, dy) || 1;
-        point.x = ahead.x + (dx / distance) * spacing;
-        point.y = ahead.y + (dy / distance) * spacing;
+        const angle = Math.atan2(point.y - ahead.y, point.x - ahead.x);
+        const bend = Math.atan2(Math.sin(angle - previous), Math.cos(angle - previous));
+        const limited = previous + Math.max(-maxJointBend, Math.min(maxJointBend, bend));
+        point.x = ahead.x + Math.cos(limited) * spacing;
+        point.y = ahead.y + Math.sin(limited) * spacing;
+        previous = limited;
     }
 }
 
@@ -195,7 +205,8 @@ function markingsFor(variety: Variety): Marking[] {
 
 export function makeFish(job: Job, at: Vec, heading: number, length: number, isMicro: boolean): Fish {
     const spacing = length / (segments - 1);
-    const variety = isMicro ? microVariety : varieties[job.id % varieties.length];
+    const varietyIndex = isMicro ? varieties.length : job.id % varieties.length;
+    const variety = isMicro ? microVariety : varieties[varietyIndex];
     return {
         job,
         state: "wander",
@@ -207,6 +218,8 @@ export function makeFish(job: Job, at: Vec, heading: number, length: number, isM
         speed: 0,
         length,
         variety,
+        varietyIndex,
+        seed: random(0, 100),
         markings: markingsFor(variety),
         target: { ...at },
         timer: 0,

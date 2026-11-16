@@ -56,7 +56,7 @@ publishedAt: "2026-05-01"
 
 ### Ponds
 
-`src/components/pond/` holds one engine with two modes. The home page uses `MumbaiPond` (garden mode): koi in water lit by the current hour in Mumbai (`pond-daylight.ts`), which gather near the pointer and come to food on tap. The event-loop guide uses `EventLoopPond` as an island: koi act out the task queue, microtasks and the call stack (`pond-scheduler.ts`). `pond-water.ts` is the WebGL caustics shader and `pond-engine.ts` simulates and draws the fish. The engine is a lazy chunk loaded after the browser is idle, pauses off-screen and in background tabs, and starts paused under reduced motion. Add `?pond-hour=18.5` to the home URL to preview another hour. No dependencies are involved.
+`src/components/pond/` holds one engine with two modes. The home page uses `MumbaiPond` (garden mode): koi in water lit by the current hour in Mumbai (`pond-daylight.ts`), which gather near the pointer and come to food on tap. The event-loop guide uses `EventLoopPond` as an island: koi act out the task queue, microtasks and the call stack (`pond-scheduler.ts`). `pond-engine.ts` simulates the fish. `pond-gpu.ts` renders with WebGL2: a ripple simulation for taps and wakes, the refracted floor with caustics, and the koi as shaded ribbon meshes with rayed fins. Without WebGL2, `pond-water.ts` (WebGL1 caustics) and 2D koi take over. The engine is a lazy chunk loaded after the browser is idle, pauses off-screen and in background tabs, and starts paused under reduced motion. Add `?pond-hour=18.5` to the home URL to preview another hour. No dependencies are involved.
 
 ### Interactive islands
 
