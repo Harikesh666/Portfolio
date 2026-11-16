@@ -29,15 +29,29 @@ const headerGeometry = {
         avatarSize: 40, // h-10 → 40px, the height of the leading-6 name plus leading-4 role
         avatarY: 96, // pt-24 → 96px
         height: 136, // pt-24 + leading-6 name + leading-4 role → 96 + 24 + 16 = 136px
-        toggleY: 94, // identity row center (96 + 20) minus half the h-11 target (22) → 94px
     },
     breadcrumb: {
         avatarSize: 24, // h-6 → 24px
         avatarY: 26, // py-4 (16px) + centered within h-11 ((44px - 24px) / 2) → 26px
         height: 76, // py-4 + h-11 + py-4 → 76px
-        toggleY: 16, // py-4 → 16px
     },
 } as const;
+
+/*
+ * The toggle's vertical offset, as Tailwind `translate` classes so phones and
+ * wider screens get their own constants with no runtime measuring.
+ * - Phones, both modes: in the link band at the top, py-4 → 16px. So on phones
+ *   the toggle stays put when an article opens.
+ * - From sm, identity: the identity row center (96 + 20) minus half the h-11
+ *   target (22) → 94px. Breadcrumb: py-4 → 16px.
+ */
+const toggleOffsetClassName = {
+    identity: "translate-y-4 sm:translate-y-[94px]",
+    breadcrumb: "translate-y-4",
+} as const;
+
+// `translate` is its own CSS property, so this never fights Motion's hover scale on `transform`.
+const toggleMorphTransition = `translate ${headerMorphTween.duration}s cubic-bezier(${headerMorphTween.ease.join(", ")})`;
 
 const avatarBreadcrumbScale =
     headerGeometry.breadcrumb.avatarSize / headerGeometry.identity.avatarSize;
@@ -155,21 +169,19 @@ function ThemeToggle({
 
     return (
         <motion.button
-            animate={{ y: headerGeometry[mode].toggleY }}
-            className="absolute z-10 inline-flex min-h-11 min-w-11 items-center justify-center text-muted hover:text-foreground-strong"
-            initial={false}
-            style={{ top: 0, right: 20 }}
+            className={`absolute z-10 inline-flex min-h-11 min-w-11 items-center justify-center text-muted hover:text-foreground-strong ${toggleOffsetClassName[mode]}`}
+            style={{
+                top: 0,
+                right: 20,
+                transition: shouldReduceMotion ? "none" : toggleMorphTransition,
+            }}
             type="button"
             aria-label="Toggle theme"
             aria-pressed={theme === "dark"}
             onClick={toggleTheme}
             whileHover={shouldReduceMotion ? undefined : themeToggleButtonHover}
             whileTap={shouldReduceMotion ? undefined : themeToggleButtonTap}
-            transition={
-                shouldReduceMotion
-                    ? { duration: 0 }
-                    : { y: headerMorphTween, scale: snappySpring }
-            }
+            transition={shouldReduceMotion ? { duration: 0 } : snappySpring}
         >
             {shouldReduceMotion ? (
                 theme === "dark" ? (
@@ -209,7 +221,7 @@ function IdentityHeader() {
     return (
         <div className="relative flex items-center gap-3 px-5 pt-24">
             <span aria-hidden="true" className="h-10 w-10 shrink-0" />
-            <p className="flex min-w-0 flex-col pr-14 font-medium sm:pr-0">
+            <p className="flex min-w-0 flex-col font-medium">
                 <Link
                     className="w-fit leading-6 text-foreground-strong"
                     to="/"
@@ -219,17 +231,18 @@ function IdentityHeader() {
                 <span className="leading-4 text-muted">Software Engineer</span>
             </p>
             {/*
-              * Phones: the name and links don't fit in one row, so the links sit
-              * in the empty band above it (inside pt-24, no geometry change), with
-              * 40px targets. From sm they join the row; mr-12 clears the toggle.
+              * Phones: the name and links don't fit in one row, so the links and the
+              * theme toggle share the empty band above it (inside pt-24, no geometry
+              * change) as one bar, with 44px targets. right-16 clears the toggle
+              * (right 20px + 44px). From sm the links join the row; mr-12 clears it.
               */}
             <nav
                 aria-label="Primary"
-                className="absolute top-4 right-3 flex items-center text-[13px] font-medium sm:static sm:mr-12 sm:ml-auto sm:gap-5"
+                className="absolute top-4 right-16 flex items-center text-[13px] font-medium sm:static sm:mr-12 sm:ml-auto sm:gap-5"
             >
                 {headerLinks.map((link) => (
                     <Link
-                        className="header-link inline-flex h-10 items-center px-2 sm:h-auto sm:px-0"
+                        className="header-link inline-flex h-11 items-center px-2 sm:h-auto sm:px-0"
                         key={link.to}
                         to={link.to}
                     >
