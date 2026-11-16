@@ -4,40 +4,40 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
-    --surface: oklch(0.985 0 0);
-    --foreground: oklch(0.33 0 0);
-    --foreground-strong: oklch(0.19 0 0);
-    --muted: oklch(0.47 0 0);
-    --divider: oklch(0.87 0 0);
+    --surface: oklch(0.994 0 0);
+    --foreground: oklch(0.42 0 0);
+    --foreground-strong: oklch(0.205 0 0);
+    --muted: oklch(0.53 0 0);
+    --divider: oklch(0.92 0 0);
+    --hover: oklch(0.965 0 0);
     --toc-major: oklch(0.3211 0 0);
     --toc-surface: oklch(1 0 0 / 98%);
     --toc-border: oklch(0.9276 0.0058 264.5313 / 60%);
     --toc-track: oklch(0.551 0.0234 264.3637 / 40%);
     --accent: oklch(0.51 0.13 32);
     --accent-soft: oklch(0.94 0.028 32);
-    --inline-code-surface: color-mix(
-        in oklab,
-        var(--accent-soft) 72%,
-        var(--surface)
-    );
+    --inline-code-surface: var(--hover);
     --code-surface: var(--foreground-strong);
     --code-foreground: var(--surface);
+    --graph-0: oklch(0.205 0 0 / 7%);
 }
 
 [data-theme="dark"] {
-    --surface: oklch(0.17 0 0);
-    --foreground: oklch(0.84 0 0);
-    --foreground-strong: oklch(0.96 0 0);
-    --muted: oklch(0.68 0 0);
-    --divider: oklch(0.33 0 0);
+    --surface: oklch(0.145 0 0);
+    --foreground: oklch(0.78 0 0);
+    --foreground-strong: oklch(0.97 0 0);
+    --muted: oklch(0.63 0 0);
+    --divider: oklch(0.27 0 0);
+    --hover: oklch(0.205 0 0);
     --toc-major: oklch(0.9219 0 0);
     --toc-surface: oklch(0 0 0 / 98%);
     --toc-border: oklch(0.3715 0 0 / 60%);
     --toc-track: oklch(0.7155 0 0 / 40%);
     --accent: oklch(0.72 0.13 32);
     --accent-soft: oklch(0.31 0.04 32);
-    --code-surface: oklch(0.23 0 0);
+    --code-surface: oklch(0.2 0 0);
     --code-foreground: var(--foreground-strong);
+    --graph-0: oklch(0.97 0 0 / 8%);
 }
 
 @theme inline {
@@ -46,11 +46,12 @@
     --color-foreground-strong: var(--foreground-strong);
     --color-muted: var(--muted);
     --color-divider: var(--divider);
+    --color-hover: var(--hover);
     --color-accent: var(--accent);
     --color-accent-soft: var(--accent-soft);
     --color-inline-code-surface: var(--inline-code-surface);
     --color-code-surface: var(--code-surface);
-    --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
@@ -72,10 +73,11 @@
         background: var(--surface);
         color: var(--foreground);
         font-family: var(--font-sans);
-        font-size: 17px;
+        font-size: 16px;
         font-weight: 400;
         line-height: 1.65;
-        letter-spacing: 0.002em;
+        letter-spacing: -0.006em;
+        font-optical-sizing: auto;
         font-synthesis: none;
         text-rendering: optimizeLegibility;
         -webkit-font-smoothing: antialiased;
@@ -124,8 +126,8 @@
     .guide-content {
         min-width: 0;
         overflow-wrap: break-word;
-        font-size: 1.125rem;
-        line-height: 1.78;
+        font-size: 1.0625rem;
+        line-height: 1.75;
     }
 
     .guide-content > h1:first-child {
@@ -149,13 +151,14 @@
     }
 
     .guide-content :not(pre) > code {
-        border-radius: 0.25rem;
+        border: 1px solid var(--divider);
+        border-radius: 0.375rem;
         background: var(--inline-code-surface);
-        padding: 0.1rem 0.3rem;
-        color: var(--foreground);
+        padding: 0.05rem 0.3rem;
+        color: var(--foreground-strong);
         font-family: var(--font-mono);
-        font-size: 0.84em;
-        font-weight: 500;
+        font-size: 0.82em;
+        font-weight: 450;
     }
 
     .diagram-trigger {
@@ -278,14 +281,76 @@
         line-height: 1.55;
     }
 
+    /* A soft surface that appears behind a whole row on hover. The negative
+       margin lets the surface extend past the text column without moving it. */
+    .hover-row {
+        display: block;
+        margin-inline: -0.75rem;
+        border-radius: 0.75rem;
+        padding: 0.625rem 0.75rem;
+        transition: background-color 150ms ease;
+    }
+
+    .hover-row:focus-visible {
+        outline-offset: 0;
+    }
+
+    .chip-link {
+        display: inline-flex;
+        min-height: 2rem;
+        align-items: center;
+        gap: 0.375rem;
+        border: 1px solid var(--divider);
+        border-radius: 0.5rem;
+        padding: 0.25rem 0.625rem;
+        color: var(--foreground-strong);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        line-height: 1;
+        transition:
+            background-color 150ms ease,
+            border-color 150ms ease;
+    }
+
+    .text-link {
+        color: var(--foreground-strong);
+        text-decoration-line: underline;
+        text-decoration-color: color-mix(in oklab, var(--foreground-strong) 30%, transparent);
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+        transition: text-decoration-color 150ms ease;
+    }
+
+    .text-link:hover {
+        text-decoration-color: var(--foreground-strong);
+    }
+
+    .contribution-cell {
+        aspect-ratio: 1;
+        border-radius: 2px;
+        background: var(--graph-0);
+    }
+
+    .contribution-cell[data-level="1"] {
+        background: color-mix(in oklab, var(--foreground-strong) 25%, transparent);
+    }
+
+    .contribution-cell[data-level="2"] {
+        background: color-mix(in oklab, var(--foreground-strong) 45%, transparent);
+    }
+
+    .contribution-cell[data-level="3"] {
+        background: color-mix(in oklab, var(--foreground-strong) 68%, transparent);
+    }
+
+    .contribution-cell[data-level="4"] {
+        background: var(--foreground-strong);
+    }
+
     .stack-rule {
         height: 1px;
         flex: 1;
-        background: linear-gradient(
-            to right,
-            var(--divider),
-            color-mix(in oklab, var(--divider) 25%, transparent)
-        );
+        background: var(--divider);
     }
 
     .stack-item {
@@ -293,9 +358,9 @@
         align-items: center;
         gap: 0.5rem;
         border: 1px solid var(--divider);
-        padding: 0.45rem 0.7rem;
+        border-radius: 0.5rem;
+        padding: 0.4rem 0.65rem;
         color: var(--foreground-strong);
-        font-family: var(--font-mono);
         font-size: 0.8125rem;
         font-weight: 500;
         line-height: 1;
@@ -326,6 +391,15 @@
 
         .stack-groups:has(.stack-item:hover) .stack-item:not(:hover) {
             opacity: 0.4;
+        }
+
+        .hover-row:hover {
+            background: var(--hover);
+        }
+
+        .chip-link:hover {
+            border-color: color-mix(in oklab, var(--foreground-strong) 22%, var(--divider));
+            background: var(--hover);
         }
 
         .stack-item:hover {
