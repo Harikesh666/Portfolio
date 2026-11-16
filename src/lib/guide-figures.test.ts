@@ -22,6 +22,8 @@ describe("guide figures", () => {
         expect(Number(image?.getAttribute("width"))).toBeGreaterThan(0);
         expect(Number(image?.getAttribute("height"))).toBeGreaterThan(0);
         expect(image?.hasAttribute("title")).toBe(false);
+        expect(image?.getAttribute("loading")).toBe("lazy");
+        expect(image?.getAttribute("decoding")).toBe("async");
         expect(result.querySelector("figcaption")?.textContent).toBe("The script continues.");
     });
 

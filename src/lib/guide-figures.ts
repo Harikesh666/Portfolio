@@ -76,6 +76,12 @@ export function createGuideFigures(publicDirectory = resolve("public")) {
                     Object.assign(properties, pngDimensions(properties.src, publicDirectory));
                 }
 
+                // Guide figures sit well below the fold and reserve their size,
+                // so they can load lazily. This also stops React's server
+                // renderer from emitting a high-priority preload for each one.
+                properties.loading ??= "lazy";
+                properties.decoding ??= "async";
+
                 const figureImage: Element = { ...image, properties };
                 const figureContent: Element = content === image
                     ? figureImage
