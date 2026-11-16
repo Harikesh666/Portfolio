@@ -49,7 +49,7 @@ function AboutPage() {
                         About
                     </StaggerReveal.Headline>
                     <StaggerReveal.Item
-                        as="p"
+                        as="div"
                         className="mt-3 text-[1.0625rem] leading-7 text-foreground"
                     >
                         <p>
