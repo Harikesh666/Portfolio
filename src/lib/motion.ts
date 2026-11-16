@@ -238,10 +238,7 @@ export const editorialFollowerTransformTo = "translateY(0px)";
 export const editorialBlurFrom = "blur(4px)";
 export const editorialBlurTo = "blur(0px)";
 
-// Restores desktop article-list focus over 140ms without spatial motion.
-export const articleListFocusTransition = "opacity 140ms ease-out";
-
-// Work disclosure caret: one glyph rotating, matched to the article list's feedback speed.
+// Work disclosure caret: one glyph rotating at the same speed as other row feedback.
 export const workDisclosureTransition =
     "transform 160ms ease-out, color 160ms ease-out";
 

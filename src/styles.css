@@ -397,10 +397,6 @@
     }
 
     @media (min-width: 640px) and (hover: hover) and (pointer: fine) {
-        .article-list:is(:hover, :focus-within) .article-list-content {
-            opacity: 0.35;
-        }
-
         .stack-groups:has(.stack-item:hover) .stack-item:not(:hover) {
             opacity: 0.4;
         }
@@ -431,12 +427,8 @@
             transform: scale(1.14);
         }
 
-        .article-list :is(a:hover, a:focus-visible) .article-list-content {
-            opacity: 1;
-        }
-
         .diagram-trigger:hover .diagram-trigger__action {
-            color: var(--accent);
+            color: var(--foreground-strong);
         }
 
     }

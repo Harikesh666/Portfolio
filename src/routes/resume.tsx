@@ -44,31 +44,31 @@ function ResumePage() {
         >
             <PageEnter>
                 <StaggerReveal as="header">
-                    <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-tight text-foreground-strong sm:text-[2rem]">
+                    <StaggerReveal.Headline className="text-[1.375rem] font-semibold leading-tight tracking-[-0.02em] text-foreground-strong">
                         Harikesh Mishra
                     </StaggerReveal.Headline>
                     <StaggerReveal.Item
                         as="p"
-                        className="mt-2 flex flex-wrap items-center gap-x-2 font-mono text-sm text-muted"
+                        className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-muted"
                     >
                         <span>Mumbai, IN</span>
                         <span aria-hidden="true">·</span>
                         <a
-                            className="hover:text-accent"
+                            className="hover:text-foreground-strong"
                             href={`tel:${site.phone.replaceAll(" ", "")}`}
                         >
                             {site.phone}
                         </a>
                         <span aria-hidden="true">·</span>
                         <a
-                            className="hover:text-accent"
+                            className="hover:text-foreground-strong"
                             href={`mailto:${site.email}`}
                         >
                             {site.email}
                         </a>
                         <span aria-hidden="true">·</span>
                         <a
-                            className="hover:text-accent"
+                            className="hover:text-foreground-strong"
                             href={site.socials.linkedin}
                             target="_blank"
                             rel="noreferrer"
@@ -77,7 +77,7 @@ function ResumePage() {
                         </a>
                         <span aria-hidden="true">·</span>
                         <a
-                            className="hover:text-accent"
+                            className="hover:text-foreground-strong"
                             href={site.socials.github}
                             target="_blank"
                             rel="noreferrer"
@@ -87,7 +87,7 @@ function ResumePage() {
                     </StaggerReveal.Item>
                     <StaggerReveal.Item className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-3">
                         <motion.a
-                            className="inline-flex items-center gap-2 border border-divider px-3 py-2 font-mono text-sm text-foreground-strong hover:border-accent hover:text-accent"
+                            className="chip-link"
                             href={site.resumePdfPath}
                             download={site.resumePdfDownloadName}
                             whileHover={
@@ -106,7 +106,7 @@ function ResumePage() {
                             Download PDF
                         </motion.a>
                         <a
-                            className="font-mono text-sm text-muted underline decoration-accent underline-offset-4 hover:text-accent"
+                            className="text-sm text-link"
                             href={site.resumePdfPath}
                             target="_blank"
                             rel="noreferrer"
@@ -172,7 +172,7 @@ function ResumePage() {
                                             {experience.role},{" "}
                                             {experience.company}
                                         </h3>
-                                        <p className="shrink-0 font-mono text-sm text-muted">
+                                        <p className="shrink-0 text-[13px] tabular-nums text-muted">
                                             {experience.dates}
                                         </p>
                                     </div>
@@ -259,7 +259,7 @@ function ResumeSection({
 }>) {
     return (
         <section className="mt-14">
-            <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
+            <h2 className="text-[15px] font-medium text-foreground-strong">
                 {title}
             </h2>
             <div className="mt-4">{children}</div>

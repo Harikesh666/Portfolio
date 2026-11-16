@@ -39,7 +39,7 @@ function ContactPage() {
         >
             <PageEnter>
                 <StaggerReveal as="header">
-                    <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground-strong sm:text-[2rem]">
+                    <StaggerReveal.Headline className="text-[1.375rem] font-semibold leading-tight tracking-[-0.02em] text-foreground-strong">
                         Contact
                     </StaggerReveal.Headline>
                     <StaggerReveal.Item
@@ -54,7 +54,7 @@ function ContactPage() {
                 <Reveal>
                     <section className="mt-12" aria-labelledby="details-heading">
                         <h2
-                            className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
+                            className="text-[15px] font-medium text-foreground-strong"
                             id="details-heading"
                         >
                             Contact details
@@ -63,7 +63,7 @@ function ContactPage() {
                             <div className="grid gap-1 sm:grid-cols-[6rem_minmax(0,1fr)] sm:gap-4">
                                 <dt className="font-semibold text-foreground-strong">Email</dt>
                                 <dd>
-                                    <a className="underline decoration-accent underline-offset-4 hover:text-accent" href={`mailto:${site.email}`}>
+                                    <a className="text-link" href={`mailto:${site.email}`}>
                                         {site.email}
                                     </a>
                                 </dd>
@@ -71,7 +71,7 @@ function ContactPage() {
                             <div className="grid gap-1 sm:grid-cols-[6rem_minmax(0,1fr)] sm:gap-4">
                                 <dt className="font-semibold text-foreground-strong">Phone</dt>
                                 <dd>
-                                    <a className="underline decoration-accent underline-offset-4 hover:text-accent" href={`tel:${site.phone.replaceAll(" ", "")}`}>
+                                    <a className="text-link" href={`tel:${site.phone.replaceAll(" ", "")}`}>
                                         {site.phone}
                                     </a>
                                 </dd>
@@ -87,7 +87,7 @@ function ContactPage() {
                 <Reveal>
                     <section className="mt-12 space-y-4 text-foreground" aria-labelledby="before-heading">
                         <h2
-                            className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
+                            className="text-[15px] font-medium text-foreground-strong"
                             id="before-heading"
                         >
                             Before you write
@@ -96,7 +96,7 @@ function ContactPage() {
                             <p key={paragraph}>{paragraph}</p>
                         ))}
                         <p>
-                            Read the <Link className="underline decoration-accent underline-offset-4 hover:text-accent" to="/about">About page</Link> or review my <Link className="underline decoration-accent underline-offset-4 hover:text-accent" to="/resume">resume</Link> before getting in touch.
+                            Read the <Link className="text-link" to="/about">About page</Link> or review my <Link className="text-link" to="/resume">resume</Link> before getting in touch.
                         </p>
                     </section>
                 </Reveal>

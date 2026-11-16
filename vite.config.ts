@@ -174,6 +174,11 @@ const config = defineConfig({
                     expressiveCode({
                     customCreateBlock: createGuideCodeBlock,
                     themes: [pierreDark, pierreLight],
+                    // Flat frames: a hairline border and soft radius, no drop shadow.
+                    styleOverrides: {
+                        borderRadius: "0.75rem",
+                        frames: { frameBoxShadowCssValue: "none" },
+                    },
                     useDarkModeMediaQuery: false,
                         themeCssSelector: (theme) => `[data-theme='${theme.type}']`,
                     }),

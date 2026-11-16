@@ -39,7 +39,7 @@ function PrivacyPage() {
         >
             <PageEnter>
                 <StaggerReveal as="header">
-                    <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground-strong sm:text-[2rem]">
+                    <StaggerReveal.Headline className="text-[1.375rem] font-semibold leading-tight tracking-[-0.02em] text-foreground-strong">
                         Privacy
                     </StaggerReveal.Headline>
                     <StaggerReveal.Item
@@ -52,7 +52,7 @@ function PrivacyPage() {
                     </StaggerReveal.Item>
                     <StaggerReveal.Item
                         as="p"
-                        className="mt-3 font-mono text-sm text-muted"
+                        className="mt-3 text-[13px] text-muted"
                     >
                         Effective 30 August 2026
                     </StaggerReveal.Item>
@@ -61,7 +61,7 @@ function PrivacyPage() {
                 <Reveal>
                     <section className="mt-12 space-y-4 text-foreground" aria-labelledby="policy-heading">
                         <h2
-                            className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
+                            className="text-[15px] font-medium text-foreground-strong"
                             id="policy-heading"
                         >
                             Privacy policy
@@ -70,7 +70,7 @@ function PrivacyPage() {
                             <p key={paragraph}>{paragraph}</p>
                         ))}
                         <p>
-                            Questions can be sent through the <Link className="underline decoration-accent underline-offset-4 hover:text-accent" to="/contact">Contact page</Link> or directly to <a className="underline decoration-accent underline-offset-4 hover:text-accent" href={`mailto:${site.email}`}>{site.email}</a>.
+                            Questions can be sent through the <Link className="text-link" to="/contact">Contact page</Link> or directly to <a className="text-link" href={`mailto:${site.email}`}>{site.email}</a>.
                         </p>
                     </section>
                 </Reveal>

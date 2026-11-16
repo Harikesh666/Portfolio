@@ -2,7 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router";
 import { PageEnter } from "./PageEnter";
 
 const linkClassName =
-    "underline decoration-accent underline-offset-4 hover:text-accent";
+    "text-link";
 
 export function NotFound() {
     const pathname = useLocation({ select: (location) => location.pathname });
@@ -15,8 +15,8 @@ export function NotFound() {
             <PageEnter key={pathname}>
             <PageEnter.Item>
             <header>
-                <p className="font-mono text-sm text-muted">404</p>
-                <h1 className="mt-3 text-[1.75rem] font-semibold leading-[1.15] tracking-tight text-foreground-strong sm:text-[2rem]">
+                <p className="text-[13px] text-muted">404</p>
+                <h1 className="mt-3 text-[1.375rem] font-semibold leading-tight tracking-[-0.02em] text-foreground-strong">
                     This page doesn't exist
                 </h1>
             </header>
@@ -29,7 +29,7 @@ export function NotFound() {
                     If you typed the address, double-check the spelling.
                     Otherwise, these should get you back on track.
                 </p>
-                <p className="mt-7 flex flex-wrap items-center gap-x-4 font-mono text-sm text-foreground">
+                <p className="mt-7 flex flex-wrap items-center gap-x-4 text-sm text-foreground">
                     <Link className={linkClassName} to="/">
                         ← Home
                     </Link>

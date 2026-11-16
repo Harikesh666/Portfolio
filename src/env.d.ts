@@ -7,7 +7,7 @@ declare module "*.md" {
 }
 
 declare module "virtual:github-contributions" {
-    import type { ContributionCalendar } from "./lib/github-contributions";
+    import type { ContributionCalendar } from "#/lib/github-contributions";
 
     const calendar: ContributionCalendar | null;
     export default calendar;

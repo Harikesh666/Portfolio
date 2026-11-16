@@ -1,30 +1,56 @@
 import { Link } from "@tanstack/react-router";
+import { SectionHeading } from "./SectionHeading";
 import { site } from "../lib/site";
+
+const elsewhere = [
+    { label: "Email", href: `mailto:${site.email}`, external: false },
+    { label: "GitHub", href: site.socials.github, external: true },
+    { label: "LinkedIn", href: site.socials.linkedin, external: true },
+    { label: "RSS", href: "/feed.xml", external: false },
+] as const;
 
 export default function Footer() {
     return (
-        <footer className="mx-auto mt-14 w-full max-w-2xl border-t border-divider px-5 pb-8 pt-5">
-            <div className="flex flex-col justify-between gap-3 text-sm sm:flex-row sm:items-center">
-                <p className="max-w-md text-foreground">
-                    Interested in working together?{" "}
-                    <a
-                        className="font-semibold text-foreground-strong underline decoration-accent decoration-2 underline-offset-4"
-                        href={`mailto:${site.email}`}
-                    >
-                        Send an email.
-                    </a>
-                </p>
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted sm:justify-end">
-                    <Link className="hover:text-accent" to="/contact">
+        <footer className="mx-auto mt-16 w-full max-w-2xl px-5 pb-10 sm:mt-24">
+            <SectionHeading>Elsewhere</SectionHeading>
+            <p className="mt-1 text-muted">
+                Interested in working together? Reach me on any of these.
+            </p>
+            <ul
+                className="mt-4 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm"
+                role="list"
+            >
+                {elsewhere.map((item, index) => (
+                    <li className="flex items-center gap-1.5" key={item.label}>
+                        {index > 0 && (
+                            <span aria-hidden="true" className="text-divider">
+                                ·
+                            </span>
+                        )}
+                        <a
+                            className="text-link"
+                            href={item.href}
+                            {...(item.external
+                                ? { rel: "noreferrer", target: "_blank" }
+                                : {})}
+                        >
+                            {item.label}
+                        </a>
+                    </li>
+                ))}
+            </ul>
+            <div className="mt-12 flex flex-wrap items-center justify-between gap-3 border-t border-divider pt-5 text-[13px] text-muted">
+                <div className="flex items-center gap-3">
+                    <Link className="hover:text-foreground-strong" to="/contact">
                         Contact
                     </Link>
-                    <Link className="hover:text-accent" to="/privacy">
+                    <Link className="hover:text-foreground-strong" to="/privacy">
                         Privacy
                     </Link>
-                    <span>
-                        © {new Date().getFullYear()} {site.name}
-                    </span>
                 </div>
+                <span>
+                    © {new Date().getFullYear()} {site.name}
+                </span>
             </div>
         </footer>
     );

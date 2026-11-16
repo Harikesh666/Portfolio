@@ -44,7 +44,7 @@ function AboutPage() {
         >
             <PageEnter>
                 <StaggerReveal as="header">
-                    <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground-strong sm:text-[2rem]">
+                    <StaggerReveal.Headline className="text-[1.375rem] font-semibold leading-tight tracking-[-0.02em] text-foreground-strong">
                         About
                     </StaggerReveal.Headline>
                     <StaggerReveal.Item
@@ -164,7 +164,7 @@ function AboutPage() {
                                     className="sm:flex sm:gap-3"
                                     key={row.label}
                                 >
-                                    <dt className="shrink-0 font-mono text-[13px] font-medium text-muted sm:w-32">
+                                    <dt className="shrink-0 text-[13px] text-muted sm:w-32">
                                         {row.label}
                                     </dt>
                                     <dd className="text-foreground">
@@ -176,7 +176,7 @@ function AboutPage() {
                         <p className="text-sm text-muted">
                             The{" "}
                             <Link
-                                className="underline decoration-accent underline-offset-4 hover:text-accent"
+                                className="text-link"
                                 to="/resume"
                             >
                                 resume
@@ -188,16 +188,16 @@ function AboutPage() {
 
                 <Reveal>
                     <AboutSection title="Elsewhere">
-                        <p className="flex flex-wrap items-center gap-x-2 font-mono text-sm">
+                        <p className="flex flex-wrap items-center gap-x-2 text-sm">
                             <a
-                                className="underline decoration-accent underline-offset-4 hover:text-accent"
+                                className="text-link"
                                 href={`mailto:${site.email}`}
                             >
                                 Email
                             </a>
                             <span aria-hidden="true">·</span>
                             <a
-                                className="underline decoration-accent underline-offset-4 hover:text-accent"
+                                className="text-link"
                                 href={site.socials.github}
                                 target="_blank"
                                 rel="noreferrer"
@@ -206,7 +206,7 @@ function AboutPage() {
                             </a>
                             <span aria-hidden="true">·</span>
                             <a
-                                className="underline decoration-accent underline-offset-4 hover:text-accent"
+                                className="text-link"
                                 href={site.socials.linkedin}
                                 target="_blank"
                                 rel="noreferrer"
@@ -215,7 +215,7 @@ function AboutPage() {
                             </a>
                             <span aria-hidden="true">·</span>
                             <a
-                                className="underline decoration-accent underline-offset-4 hover:text-accent"
+                                className="text-link"
                                 href={site.resumePdfPath}
                                 target="_blank"
                                 rel="noreferrer"
@@ -239,7 +239,7 @@ function AboutSection({
     return (
         <section aria-labelledby={headingId} className="mt-12">
             <h2
-                className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
+                className="text-[15px] font-medium text-foreground-strong"
                 id={headingId}
             >
                 {title}

@@ -92,7 +92,7 @@ function PostPending() {
         >
             <div
                 aria-live="polite"
-                className="font-mono text-sm text-muted"
+                className="text-sm text-muted"
                 role="status"
             >
                 Loading article…
@@ -122,20 +122,20 @@ function PostPage() {
                 <PageEnter key={post.slug}>
                     <header>
                         <Link
-                            className="inline-flex items-center gap-2 font-mono text-[13px] font-medium tracking-[-0.005em] text-muted hover:text-accent"
+                            className="chip-link"
                             to="/articles"
                         >
-                            <ArrowUUpLeftIcon aria-hidden="true" size={18} />
+                            <ArrowUUpLeftIcon aria-hidden="true" size={14} />
                             Articles
                         </Link>
 
                         <StaggerReveal className="mt-7">
-                            <StaggerReveal.Headline className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.03em] text-foreground-strong sm:text-[2rem]">
+                            <StaggerReveal.Headline className="text-pretty text-[1.5rem] font-semibold leading-tight tracking-[-0.022em] text-foreground-strong sm:text-[1.625rem]">
                                 {post.title}
                             </StaggerReveal.Headline>
                             <StaggerReveal.Item
                                 as="p"
-                                className="mt-3 font-mono text-[13px] font-medium tabular-nums tracking-[-0.005em] text-muted"
+                                className="mt-3 text-[13px] tabular-nums text-muted"
                             >
                                 {post.date} · {post.readTime}
                                 {post.order !== undefined
@@ -146,7 +146,7 @@ function PostPage() {
                     </header>
 
                     <article
-                        className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:decoration-accent prose-a:decoration-1 prose-a:underline-offset-2 prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-semibold prose-headings:text-foreground-strong prose-h2:text-2xl prose-h3:text-lg prose-img:rounded-md prose-li:marker:text-accent prose-p:text-foreground prose-strong:font-semibold prose-strong:text-foreground-strong prose-code:font-medium prose-code:before:content-none prose-code:after:content-none"
+                        className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:decoration-foreground-strong/30 prose-a:decoration-1 prose-a:underline-offset-[3px] hover:prose-a:decoration-foreground-strong prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-semibold prose-headings:text-foreground-strong prose-h2:text-[1.25rem] prose-h3:text-[1.0625rem] prose-img:rounded-lg prose-li:marker:text-muted prose-li:text-foreground prose-p:text-foreground prose-strong:font-semibold prose-strong:text-foreground-strong prose-code:font-medium prose-code:before:content-none prose-code:after:content-none"
                         dangerouslySetInnerHTML={{ __html: post.html }}
                         ref={articleRef}
                     />
@@ -154,25 +154,35 @@ function PostPage() {
 
                     {(previous || next) && (
                         <nav
-                            className="mt-14 grid grid-cols-1 gap-4 border-t border-divider pt-5 sm:grid-cols-2"
+                            className="mt-16 grid grid-cols-1 gap-x-6 gap-y-2 border-t border-divider pt-6 sm:grid-cols-2"
                             aria-label="Article navigation"
                         >
                             {previous && (
                                 <Link
-                                    className="block min-w-0 text-[1rem] font-medium leading-5 tracking-[-0.008em] text-foreground-strong hover:text-accent"
+                                    className="hover-row min-w-0"
                                     to="/articles/$slug"
                                     params={{ slug: previous.slug }}
                                 >
-                                    ← {previous.title}
+                                    <span className="block text-[13px] text-muted">
+                                        Previous
+                                    </span>
+                                    <span className="mt-0.5 block font-medium leading-snug text-foreground-strong">
+                                        {previous.title}
+                                    </span>
                                 </Link>
                             )}
                             {next && (
                                 <Link
-                                    className="block min-w-0 text-[1rem] font-medium leading-5 tracking-[-0.008em] text-foreground-strong hover:text-accent sm:col-start-2 sm:text-right"
+                                    className="hover-row min-w-0 sm:col-start-2 sm:text-right"
                                     to="/articles/$slug"
                                     params={{ slug: next.slug }}
                                 >
-                                    {next.title} →
+                                    <span className="block text-[13px] text-muted">
+                                        Next
+                                    </span>
+                                    <span className="mt-0.5 block font-medium leading-snug text-foreground-strong">
+                                        {next.title}
+                                    </span>
                                 </Link>
                             )}
                         </nav>
