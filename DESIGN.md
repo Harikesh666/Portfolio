@@ -2,25 +2,27 @@
 name: Harikesh Mishra Portfolio
 description: A quiet, single-column engineer portfolio and technical writing system.
 colors:
-  surface-light: "oklch(0.985 0 0)"
-  foreground-light: "oklch(0.33 0 0)"
-  foreground-strong-light: "oklch(0.19 0 0)"
-  muted-light: "oklch(0.47 0 0)"
-  divider-light: "oklch(0.87 0 0)"
-  surface-dark: "oklch(0.17 0 0)"
-  foreground-dark: "oklch(0.84 0 0)"
-  foreground-strong-dark: "oklch(0.96 0 0)"
+  surface-light: "oklch(0.994 0 0)"
+  foreground-light: "oklch(0.42 0 0)"
+  foreground-strong-light: "oklch(0.205 0 0)"
+  muted-light: "oklch(0.53 0 0)"
+  divider-light: "oklch(0.92 0 0)"
+  hover-light: "oklch(0.965 0 0)"
+  surface-dark: "oklch(0.145 0 0)"
+  foreground-dark: "oklch(0.78 0 0)"
+  foreground-strong-dark: "oklch(0.97 0 0)"
+  hover-dark: "oklch(0.205 0 0)"
   accent: "oklch(0.51 0.13 32)"
 typography:
   display:
-    fontFamily: "Atkinson Hyperlegible Next, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "2rem"
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "1.375rem"
     fontWeight: 600
-    lineHeight: 1.15
-    letterSpacing: "-0.025em"
+    lineHeight: 1.25
+    letterSpacing: "-0.02em"
   body:
-    fontFamily: "Atkinson Hyperlegible Next, ui-sans-serif, system-ui, sans-serif"
-    fontSize: "1.0625rem"
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif"
+    fontSize: "1rem"
     fontWeight: 400
     lineHeight: 1.65
   mono:
@@ -30,6 +32,8 @@ typography:
     lineHeight: 1.5
 rounded:
   sm: "4px"
+  md: "8px"
+  lg: "12px"
 spacing:
   sm: "12px"
   md: "20px"
@@ -49,59 +53,65 @@ components:
 
 **Creative North Star: "The Quiet Engineering Notebook"**
 
-The portfolio is a minimal, proof-led introduction to a software engineer and a home for deep technical writing. The interface behaves like a dependable reading surface: one narrow column, direct navigation, calm spacing, and evidence before ornament.
+The portfolio is a minimal, proof-led introduction to a software engineer and a home for deep technical writing. The interface behaves like a dependable reading surface: one narrow column, direct navigation, generous spacing, and evidence before ornament.
+
+The system is a hybrid. Type, spacing, and lists follow the quiet text-first school: everything near body size, hierarchy from weight and color, large gaps between sections, and rows that show a soft surface on hover. A small set of showcase elements sits on top: an avatar identity with a pill nav, contact chips, two featured diagram tiles, a GitHub contribution graph, and icon stack chips.
 
 It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes quickly; fellow engineers can settle into substantial articles without visual noise.
 
 **Key Characteristics:**
 - A `42rem` single-column layout across portfolio, articles index, and article pages.
 - Explicit light and dark themes using the same semantic tokens.
-- Atkinson Hyperlegible Next for all prose and headings, JetBrains Mono for metadata and technical labels.
+- Inter for all interface text, prose, and headings; JetBrains Mono only for code.
 - Phosphor provides the single interface-icon language across navigation, downloads, disclosures, and article controls.
-- Terracotta acts as one intentional signal for links, list markers, series indices, inline code, focus, and important metrics.
+- Terracotta is reduced to focus rings, selection, and the reading-progress line. Links, markers, and inline code are neutral.
 
 ## 2. Colors
 
-The neutrals are true greyscale at chroma `0`, so terracotta is the only hue in the interface. All components consume semantic variables so light and dark modes switch together.
+The neutrals are true greyscale at chroma `0`. Stack-chip brand icons are the only other hue. All components consume semantic variables so light and dark modes switch together.
 
 ### Light Theme
-- **Surface** (`oklch(0.985 0 0)`): reading background.
-- **Foreground** (`oklch(0.33 0 0)`): body text.
-- **Strong Foreground** (`oklch(0.19 0 0)`): headings and key navigation.
-- **Muted** (`oklch(0.47 0 0)`): metadata and secondary context.
-- **Divider** (`oklch(0.87 0 0)`): list and layout rules.
+- **Surface** (`oklch(0.994 0 0)`): reading background.
+- **Foreground** (`oklch(0.42 0 0)`): body text and prose.
+- **Strong Foreground** (`oklch(0.205 0 0)`): titles, headings, and key navigation.
+- **Muted** (`oklch(0.53 0 0)`): descriptions, metadata, and secondary context.
+- **Divider** (`oklch(0.92 0 0)`): hairline borders and the rare rule.
+- **Hover** (`oklch(0.965 0 0)`): hover-row, chip, active nav, and inline-code surface.
 - **TOC Track** (`oklch(0.62 0 0)`): the floating rail's readable inactive state.
 
 ### Dark Theme
-- **Surface** (`oklch(0.17 0 0)`): near-black reading background.
-- **Foreground** (`oklch(0.84 0 0)`): body text.
-- **Strong Foreground** (`oklch(0.96 0 0)`): headings and key navigation.
-- **Muted** (`oklch(0.68 0 0)`): metadata and secondary context.
-- **Divider** (`oklch(0.33 0 0)`): quiet structural separation.
+- **Surface** (`oklch(0.145 0 0)`): near-black reading background.
+- **Foreground** (`oklch(0.78 0 0)`): body text and prose.
+- **Strong Foreground** (`oklch(0.97 0 0)`): titles, headings, and key navigation.
+- **Muted** (`oklch(0.63 0 0)`): descriptions, metadata, and secondary context.
+- **Divider** (`oklch(0.27 0 0)`): quiet structural separation.
+- **Hover** (`oklch(0.205 0 0)`): hover-row, chip, active nav, and inline-code surface.
 - **TOC Track** (`oklch(0.53 0 0)`): the floating rail's readable inactive state.
 
-**The Neutral Rule.** Neutrals stay at chroma `0`. Lightness values are unchanged from the previous warm palette, so contrast ratios are preserved exactly; only hue was removed.
+**The Neutral Rule.** Neutrals stay at chroma `0`. The contribution graph uses five opacity steps of Strong Foreground rather than a green ramp.
 
 ### Accent
-- **Terracotta** (`oklch(0.51 0.13 32)` light; `oklch(0.72 0.13 32)` dark): links, list markers, series numbers, inline-code surfaces, focus rings, and selected evidence. Soft surfaces use `oklch(0.94 0.028 32)` light and `oklch(0.31 0.04 32)` dark. Inline code blends that soft surface with the reading surface so repeated literals stay quieter than links and headings.
+- **Terracotta** (`oklch(0.51 0.13 32)` light; `oklch(0.72 0.13 32)` dark): focus rings, text selection, and the reading-progress line.
 
-**The Signal Rule.** Terracotta directs attention; it is never used as ambient decoration or a second palette.
+**The Signal Rule.** Terracotta marks interaction state only. Links use a 30% Strong Foreground underline that darkens on hover; list markers are muted; inline code is a neutral bordered pill.
 
 ## 3. Typography
 
-**Body and Headings:** Atkinson Hyperlegible Next, ui-sans-serif, system-ui, sans-serif
-**Technical Labels and Code:** JetBrains Mono, ui-monospace, monospace
+**Body and Headings:** Inter (optical sizing, 400–600, true italics), ui-sans-serif, system-ui, sans-serif
+**Code:** JetBrains Mono, ui-monospace, monospace
 
 ### Hierarchy
-- **Page Title:** 1.75rem on mobile and 2rem from `sm`, semibold, 1.15 leading, `-0.025em` tracking.
-- **Section Label:** 13px medium JetBrains Mono with compact tracking on article routes.
-- **Article Link:** 16px medium Atkinson Hyperlegible Next with tight leading and terracotta hover.
-- **Body:** 17px Atkinson Hyperlegible Next at 1.65 line height.
-- **Guide Prose:** 18px Atkinson Hyperlegible Next at 1.78 line height.
-- **Guide Chapter:** 24px semibold Atkinson Hyperlegible Next at 32px leading with `-0.018em` tracking.
-- **Guide Subsection:** 18px semibold Atkinson Hyperlegible Next at 28px leading with `-0.012em` tracking.
+- **Page Title:** 22px semibold, `-0.02em` tracking (Articles, About, Resume, Contact, Privacy). Article titles are 24px, 26px from `sm`.
+- **Home Intro:** 17px regular Strong Foreground; the follow-up paragraph is 16px Foreground.
+- **Section Heading:** 15px medium Strong Foreground, sentence case (`SectionHeading`). No uppercase mono labels.
+- **Row Title:** 16px medium Strong Foreground; the description below is 14px Muted.
+- **Metadata:** 13px Muted with tabular numerals.
+- **Body:** 16px Inter at 1.65 line height, `-0.006em` tracking.
+- **Guide Prose:** 17px Inter at 1.75 line height.
+- **Guide Chapter:** 20px semibold with `-0.018em` tracking.
+- **Guide Subsection:** 17px semibold with `-0.012em` tracking.
 
-**The Reading Rule.** No oversized display type or decorative serif hierarchy. Technical ideas earn emphasis through clarity, sequence, and breathing room.
+**The Reading Rule.** Everything stays near body size. Hierarchy comes from weight, color, and generous spacing (64px between home sections, 96px from `sm`), not from display type.
 
 Build-time presentation gives introductory context and exercises explicit roles with italic body text and 1.6em group margins, without quotation bars or generated quotes. Actual quotations retain italics and semantic markup, but left borders are removed from every article blockquote. Rules immediately before chapter headings are omitted; other thematic breaks remain. Structural labels become authored headings at the appropriate depth, using the existing type scale and preserving wording.
 
@@ -111,40 +121,44 @@ Build-time presentation gives introductory context and exercises explicit roles 
 
 Explicit output and ASCII-diagram fences use Expressive Code's native titles, without restyling its internals. Tables retain their semantic table layout inside a keyboard-focusable scroll region, with restrained rules and preserved column alignment. Standalone images use figures with authored captions in 14px muted text at 1.6 leading. Local PNG dimensions reserve the image's aspect ratio before loading. These treatments preserve the existing reading type scale and italic notes.
 
-The system is flat. Borders divide lists and sections; whitespace establishes priority. There are no decorative shadows, card shells, gradients, or glass effects.
+The system is flat. Whitespace establishes priority and hairline borders frame the few surfaces that need edges: chips, the pill nav, featured diagram tiles, and code frames. There are no shadows, gradients, or glass effects. Expressive Code frames use a 12px radius and `frameBoxShadowCssValue: none` through `styleOverrides` in `vite.config.ts`.
 
-Code is rendered by Expressive Code with the Pierre light and dark syntax themes (`@pierre/theme`, wired in `vite.config.ts`). Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact, quiet terracotta-tinted surface with no generated backticks.
+Code is rendered by Expressive Code with the Pierre light and dark syntax themes (`@pierre/theme`, wired in `vite.config.ts`). Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact neutral pill with a hairline border and no generated backticks.
 
 ## 5. Components
 
 ### Navigation
-- **Shape:** A single ruled row with site name, writing link, GitHub, resume, and theme toggle.
+- **Shape:** A 44px avatar beside a two-line identity (15px medium name, 14px muted "Software Engineer · Mumbai"), the theme toggle on the right of that row, then a rounded pill nav (Home, Articles, About, Resume) whose active item fills with the Hover surface. Geometry constants in `Header.tsx`: identity height 160px, avatar and toggle at y 48px.
 - **Resume Asset:** Resume links use a content-hashed public URL while downloads preserve the clean `Harikesh_Mishra_Resume.pdf` filename.
 - **Theme Control:** Minimum 44px target; persists explicit `light` or `dark` preference in local storage.
 - **Focus:** 3px terracotta outline with 3px offset.
 
 ### Home
 
-- **Hero:** A mono eyebrow (`Software Engineer, Mumbai`), one positioning line rendered as the semantic `h1`, then the contact row. `IdentityHeader` already renders the name directly above the main column, so the heading describes the work instead of repeating it. Metrics remain on the work rows.
+- **Hero:** One positioning line rendered as the semantic `h1`, then a first-person paragraph with inline links to the guides and About, then contact chips with Phosphor icons (Email me, GitHub, LinkedIn, Resume). The role and city live in the header identity.
+- **Writing:** Two featured guide tiles (the guides with hand-drawn diagrams) in a two-column grid: a white bordered 12px tile containing the diagram, with title and description below the tile. Then the next four authored guides as hover rows, then an "All N guides" chip.
+- **Work:** Hover-row disclosures showing company, dates, role, and outcome. The role's stack moves inside the disclosure.
+- **GitHub activity:** A 53-week contribution grid (26 weeks below `sm`) from `virtual:github-contributions`, which fetches `github.com/users/<name>/contributions` at build time and caches it for 12 hours in `node_modules/.cache`. The section renders nothing when no data is available.
+- **Stack:** Grouped icon chips with 8px radius and Inter labels.
+- **Footer:** An "Elsewhere" heading, one line of copy, Email · GitHub · LinkedIn · RSS links, then Contact, Privacy, and copyright above a hairline.
 - **Trust Pages:** About, Contact, and Privacy use the same narrow document shell, restrained page-title scale, section labels, plain links, and prose rhythm as Resume. They add no cards, forms, or decorative treatment; credibility comes from specific, consistent information.
-- **About:** Follows the hero, before Work, because it explains why the guides exist and should be read before them. Four short paragraphs in Harikesh's own voice, closing on the Hashimoto line.
-- **Work:** Each collapsed row shows role and company, dates, one concrete outcome, and the role's stack as quiet mono text. Detail stays behind the existing disclosure. There is no standalone skills list; technologies are always attached to the work that shipped them.
-- **Articles:** Shows `authoredPosts` only, newest first. The `react-internals` series is excluded because it is not Harikesh's writing and must never stand in for it on the home page.
+- **About:** The home hero carries one paragraph of it with a link to the full About page.
+- **Articles:** Home shows `authoredPosts` only. The `react-internals` series is excluded because it is not Harikesh's writing and must never stand in for it on the home page.
 
 ### Articles Index
-- **Map:** A compact ruled `Browse` navigation follows the introduction and links to every learning path and authored topic with guide counts.
+- **Map:** A `Browse` list of hover rows follows the introduction and links to every learning path and authored topic with guide counts.
 - **Hierarchy:** Guided series remain the primary collection; standalone guides are divided into durable conceptual topics rather than one oversized language category.
 - **Taxonomy:** Standalone topic IDs and display metadata live in `src/lib/content.ts`. Their frontmatter `order` values define and validate each recommended reading path. Series posts use their ordered learning-path metadata instead.
-- **Restraint:** The full catalog remains in one narrow document. Anchor links, section headings, and tighter rows provide orientation without cards, filter chips, hidden panels, search, or pagination.
+- **Restraint:** The full catalog remains in one narrow document. Anchor links, section headings, and hover rows provide orientation without cards, filter chips, hidden panels, search, or pagination.
 - **Motion:** The index hero shares Home's font-aware editorial entrance, revealing the title by rendered line before its description and count. Browse navigation, topic sections, and article rows render immediately and retain stable geometry during scrolling.
 
 ### Article List Item
-- **Structure:** Series index, title, summary, and reading time in a compact vertically stacked ruled list.
-- **Behavior:** On desktop pointer devices, hovering or keyboard-focusing a row dims sibling content to `0.35` and restores the active row over 140ms. The title also changes to terracotta; no cards, translation, or lift effects.
+- **Structure:** A muted two-digit index column, then title, description, and date or reading time. No rules between rows.
+- **Behavior:** On desktop pointer devices, hovering shows a 12px-radius Hover surface behind the whole row (`.hover-row`, 150ms background-color). Nothing translates or dims.
 
 ### Article Content
-- **Structure:** Back link, title, muted metadata, prose, then collection-aware previous/next links. The links follow series or JavaScript topic reading order.
-- **Pager:** Previous stays left and Next stays right in a two-column layout from `sm` upward. The links stack in reading order on narrower screens, and a lone Next link still occupies the right column on wider screens.
+- **Structure:** An "Articles" back chip, title, muted metadata, prose, then collection-aware previous/next links. The links follow series or JavaScript topic reading order.
+- **Pager:** Hover rows with a muted "Previous" or "Next" label above the title. Previous stays left and Next stays right in a two-column layout from `sm` upward. The links stack in reading order on narrower screens, and a lone Next link still occupies the right column on wider screens.
 - **Anchors:** H2–H4 headings have stable IDs and a 2rem scroll margin. Table-of-contents activation pushes a shareable same-route hash entry, repeated activation replaces it, back/forward re-traverses headings, and returning to the hashless entry restores the captured pre-click scroll position.
 - **Desktop Table of Contents:** At `xl` and above, the build-time fixed right minimap sits in a 96px aside, with marks beginning 32px from the right edge and expanding inward from the right. It preserves source order and includes up to 34 real H2–H4 anchors, evenly sampling in source order when needed. Major marks follow Rare's 6:34 ratio and scale down proportionally on shorter guides; every other sampled anchor uses the body/short preset. At full density the major marks occupy indices 0, 7, 13, 20, 26, and 33. Minor marks use muted foreground at 40%, and all marks use 1px strokes, 8px gaps, a 40px pointer radius, a connected surface label for hovered or keyboard-focused sections, semantic hash anchors, keyboard focus, Escape behavior, reduced-motion parity, and the retained route-safe lifecycle. A shared 80ms scroll pulse provides the active cue without a persistent read-fill.
 - **Mobile Table of Contents:** Below `xl`, a content-measured text pill stays near 32px tall within the viewport, with a separate invisible 44px trigger target. Opening expands that same surface upward and in place into a content-measured `w-max` menu capped by the viewport and `min(64dvh, 520px)`, with a 26px squircle radius. A 98% surface compensates for the no-blur invariant while Rare's 60%-border token remains. A transparent outside-click layer dismisses it without visible dimming. Neutral 30px semantic anchor rows retain safe-area padding, focus trapping, background inerting, native list momentum, Escape, focus return, optional bounded drag dismissal, and reduced-motion parity. Source-like surface, label, and row timing is retained, with the long-list stagger bounded at 0.4s.
@@ -167,10 +181,12 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 - **Do** preserve accessible focus, reduced-motion, and overflow safeguards.
 - **Do** publish guides through validated series or topic frontmatter rather than route-level title inference.
 - **Do** let evidence, writing, and code carry the visual weight.
+- **Do** use `SectionHeading`, `.hover-row`, `.chip-link`, and `.text-link` instead of one-off label and link styles.
 
 ### Don't:
 - **Don't** reintroduce a serif display system, oversized clamp-based headings, or magazine layouts.
-- **Don't** add a second accent color, gradients, glass, or decorative card grids.
+- **Don't** add a second accent color, gradients, glass, or shadows. Image tiles are limited to featured content with a real image (today, the two diagram guides).
+- **Don't** bring back uppercase mono section labels or terracotta link underlines.
 - **Don't** hardcode Markdown post metadata in route components.
 - **Don't** override Expressive Code fenced-block styles with legacy `pre` rules.
 - **Don't** use motion as decoration; respect reduced-motion preferences.

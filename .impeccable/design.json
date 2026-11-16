@@ -1,46 +1,58 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-01T00:00:00+05:30",
+  "generatedAt": "2026-11-16T00:00:00+05:30",
   "title": "Design System: Harikesh Mishra Portfolio",
   "extensions": {
     "colorMeta": {
       "surface": {
         "role": "neutral",
-        "displayName": "Warm Reading Surface",
-        "canonical": "oklch(0.985 0.003 95)",
-        "tonalRamp": ["oklch(0.985 0.003 95)", "oklch(0.87 0.008 85)", "oklch(0.33 0.008 85)"]
+        "displayName": "Neutral Reading Surface",
+        "canonical": "oklch(0.994 0 0)",
+        "tonalRamp": [
+          "oklch(0.994 0 0)",
+          "oklch(0.965 0 0)",
+          "oklch(0.92 0 0)"
+        ]
       },
       "foreground-strong": {
         "role": "neutral",
         "displayName": "Reading Ink",
-        "canonical": "oklch(0.19 0.018 85)",
-        "tonalRamp": ["oklch(0.19 0.018 85)", "oklch(0.33 0.016 85)", "oklch(0.47 0.012 85)"]
+        "canonical": "oklch(0.205 0 0)",
+        "tonalRamp": [
+          "oklch(0.205 0 0)",
+          "oklch(0.42 0 0)",
+          "oklch(0.53 0 0)"
+        ]
       },
       "accent": {
         "role": "primary",
-        "displayName": "Terracotta Signal",
+        "displayName": "Terracotta Focus Signal",
         "canonical": "oklch(0.51 0.13 32)",
-        "tonalRamp": ["oklch(0.94 0.028 32)", "oklch(0.51 0.13 32)", "oklch(0.72 0.13 32)"]
+        "tonalRamp": [
+          "oklch(0.94 0.028 32)",
+          "oklch(0.51 0.13 32)",
+          "oklch(0.72 0.13 32)"
+        ]
       }
     },
     "articleProcessing": "Build-time context asides and grouped exercises retain italic prose with 1.6em group margins, without quotation bars or generated quotes. All article blockquotes retain italics but never display a left border. Omit rules immediately before chapters; promote structural labels explicitly while preserving wording and the existing type scale.",
     "articleMedia": "Explicit code role metadata uses native Expressive Code titles and copy controls. Tables use focusable scroll regions with preserved alignment and column scope. Standalone image titles become 14px muted captions; local PNG dimensions are added at build time.",
     "typographyMeta": {
       "body": {
-        "displayName": "Atkinson Hyperlegible Next",
-        "purpose": "All prose and headings in the quiet single-column interface."
+        "displayName": "Inter",
+        "purpose": "All interface text, prose, and headings, kept near body size with hierarchy from weight and color."
       },
       "mono": {
         "displayName": "JetBrains Mono",
-        "purpose": "Section labels, metadata, series numbers, inline code, and code-adjacent UI."
+        "purpose": "Code blocks and inline code only."
       },
       "guideChapter": {
         "displayName": "Guide Chapter",
-        "purpose": "24px semibold chapter headings that divide the long-form guide into major concepts."
+        "purpose": "20px semibold chapter headings that divide the long-form guide into major concepts."
       },
       "guideSubsection": {
         "displayName": "Guide Subsection",
-        "purpose": "18px semibold subsection headings that sit clearly below chapter headings."
+        "purpose": "17px semibold subsection headings that sit clearly below chapter headings."
       }
     },
     "iconographyMeta": {
@@ -66,8 +78,14 @@
       }
     ],
     "breakpoints": [
-      { "name": "sm", "value": "640px" },
-      { "name": "xl", "value": "1280px" }
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      }
     ]
   },
   "components": [
@@ -146,14 +164,44 @@
   ],
   "narrative": {
     "northStar": "The Quiet Engineering Notebook",
-    "overview": "A narrow, theme-aware portfolio and writing surface that emphasizes readable proof and technical depth over editorial display.",
-    "keyCharacteristics": ["Single-column", "Sans and mono", "Explicit light and dark themes", "Topic-indexed writing library", "Code-first reading", "Quiet desktop article navigation"],
-    "rules": [
-      { "name": "The Signal Rule", "body": "Terracotta is reserved for links, list markers, series indices, inline code, focus, and selected evidence.", "section": "colors" },
-      { "name": "The Reading Rule", "body": "Hierarchy comes from sequence and spacing, not oversized display typography.", "section": "typography" },
-      { "name": "The Flat Rule", "body": "Rules and whitespace organize content; decorative cards and shadows do not.", "section": "elevation" }
+    "overview": "A narrow, theme-aware portfolio and writing surface: text-first type and spacing with a few showcase elements (avatar identity, pill nav, contact chips, featured diagram tiles, contribution graph, stack chips).",
+    "keyCharacteristics": [
+      "Single-column",
+      "Body-size hierarchy",
+      "Generous section spacing",
+      "Hover-row lists",
+      "Explicit light and dark themes",
+      "Topic-indexed writing library",
+      "Build-time GitHub activity"
     ],
-    "dos": ["Use semantic theme tokens.", "Keep pages inside the reading column.", "Publish through validated series or topic frontmatter and lazy guide imports.", "Use content-hashed resume PDF URLs while preserving a clean download name."],
-    "donts": ["Do not reintroduce serif display typography.", "Do not add a second accent palette.", "Do not override Expressive Code fenced blocks with legacy pre styles."]
+    "rules": [
+      {
+        "name": "The Signal Rule",
+        "body": "Terracotta marks focus, selection, and reading progress only; links, markers, and inline code stay neutral.",
+        "section": "colors"
+      },
+      {
+        "name": "The Reading Rule",
+        "body": "Hierarchy comes from weight, color, and spacing, with every label near body size.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat Rule",
+        "body": "Whitespace organizes content; hairline borders frame chips, tiles, and code, and nothing casts a shadow.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Use semantic theme tokens.",
+      "Keep pages inside the reading column.",
+      "Publish through validated series or topic frontmatter and lazy guide imports.",
+      "Use content-hashed resume PDF URLs while preserving a clean download name."
+    ],
+    "donts": [
+      "Do not reintroduce serif display typography.",
+      "Do not add a second accent palette, gradients, or shadows.",
+      "Do not bring back uppercase mono section labels.",
+      "Do not override Expressive Code fenced blocks with legacy pre styles."
+    ]
   }
 }
