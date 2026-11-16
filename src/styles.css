@@ -419,7 +419,12 @@
         position: absolute;
         overflow: visible;
         pointer-events: none;
-        clip-path: inset(-60% 100% -60% -6%);
+        /*
+         * Zero width at the left overhang. A right inset of only 100% would
+         * leave that 6% overhang showing, and the marker's round cap with it:
+         * a stray dot in the gutter whenever the phrase starts a line.
+         */
+        clip-path: inset(-60% 106% -60% -6%);
     }
 
     .sketch-mark[data-drawn] .sketch-mark__stroke {
@@ -778,9 +783,14 @@
     }
 }
 
-::view-transition-old(root),
-::view-transition-new(root) {
-    animation-duration: 200ms;
+/*
+ * Theme switch: the default crossfade is off so the old theme stays solid
+ * underneath while the Header grows the new one as a circle over it.
+ */
+html[data-theme-transition]::view-transition-old(root),
+html[data-theme-transition]::view-transition-new(root) {
+    animation: none;
+    mix-blend-mode: normal;
 }
 
 .reading-progress {

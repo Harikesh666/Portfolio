@@ -91,39 +91,11 @@ export const bouncySpring = {
     bounce: 0.35,
 };
 
-// Reveals the incoming theme through the supplied Skiper GIF mask.
-export const themeGifMaskTransitionStyles = `
-html[data-theme-transition]::view-transition-group(root) {
-    animation-timing-function: ease-in;
-}
-
-html[data-theme-transition]::view-transition-new(root) {
-    mask: url("/assets/theme-transition-mask.gif") center / 0 no-repeat;
-    animation: theme-gif-mask-scale 1.8s;
-}
-
-html[data-theme-transition]::view-transition-old(root) {
-    animation: theme-gif-mask-scale 1.8s;
-}
-
-@keyframes theme-gif-mask-scale {
-    0% {
-        mask-size: 0;
-    }
-
-    10% {
-        mask-size: 50vmax;
-    }
-
-    90% {
-        mask-size: 50vmax;
-    }
-
-    100% {
-        mask-size: 2000vmax;
-    }
-}
-`;
+// Theme switch: the new theme grows as a circle out of the toggle. A rare, chosen action, so a calm ease-out.
+export const themeRevealTiming = {
+    duration: 520,
+    easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+};
 
 // Removes outgoing routes quickly enough to keep wait-mode blank time minimal.
 export const exitTween = {

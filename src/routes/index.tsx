@@ -84,25 +84,25 @@ function HomePage() {
                     <IntroKeyword icon={HardDrivesIcon} index={2} tone="backend">
                         backend
                     </IntroKeyword>{" "}
-                    on demand, with deadlines and{" "}
+                    on demand, with{" "}
                     <SketchMark index={0} kind="underline">
-                        no roadmap
+                        deadlines and no roadmap
                     </SketchMark>
                     , and I write{" "}
                     <Link className="text-link" to="/articles">
                         guides
                     </Link>{" "}
-                    to find out{" "}
-                    <SketchMark index={1} kind="marker">
-                        how much I had wrong
-                    </SketchMark>
-                    .
+                    to find out how much I had wrong.
                 </StaggerReveal.Item>
                 <StaggerReveal.Item
                     as="p"
                     className="mt-4 text-pretty leading-relaxed text-muted"
                 >
-                    Want to work together?{" "}
+                    Want to{" "}
+                    <SketchMark index={1} kind="marker">
+                        work together
+                    </SketchMark>
+                    ?{" "}
                     <a className="text-link" href={`mailto:${site.email}`}>
                         Send an email
                     </a>{" "}

@@ -10,8 +10,8 @@ import {
     snappySpring,
     themeToggleButtonHover,
     themeToggleButtonTap,
+    themeRevealTiming,
     themeToggleIconVariants,
-    themeGifMaskTransitionStyles,
 } from "../lib/motion";
 import { posts } from "../lib/content";
 import { site } from "../lib/site";
@@ -23,22 +23,6 @@ const headerLinks = [
     { to: "/about", label: "About" },
     { to: "/resume", label: "Resume" },
 ] as const;
-
-const themeTransitionStyleId = "theme-gif-mask-transition";
-
-function ensureThemeGifTransitionStyles() {
-    let styleElement = document.getElementById(
-        themeTransitionStyleId,
-    ) as HTMLStyleElement | null;
-
-    if (!styleElement) {
-        styleElement = document.createElement("style");
-        styleElement.id = themeTransitionStyleId;
-        document.head.appendChild(styleElement);
-    }
-
-    styleElement.textContent = themeGifMaskTransitionStyles;
-}
 
 const headerGeometry = {
     identity: {
@@ -116,7 +100,7 @@ function ThemeToggle({
         );
     }, []);
 
-    function toggleTheme() {
+    function toggleTheme(event: React.MouseEvent<HTMLButtonElement>) {
         const nextTheme = theme === "dark" ? "light" : "dark";
         const applyTheme = () => {
             document.documentElement.dataset.theme = nextTheme;
@@ -131,12 +115,34 @@ function ThemeToggle({
             return;
         }
 
-        ensureThemeGifTransitionStyles();
+        // The new theme grows as a circle from the toggle until it covers the farthest corner.
+        const bounds = event.currentTarget.getBoundingClientRect();
+        const x = bounds.left + bounds.width / 2;
+        const y = bounds.top + bounds.height / 2;
+        const radius = Math.hypot(
+            Math.max(x, window.innerWidth - x),
+            Math.max(y, window.innerHeight - y),
+        );
+
         themeTransitionId.current += 1;
         const transitionId = String(themeTransitionId.current);
         document.documentElement.dataset.themeTransition = transitionId;
 
         const transition = document.startViewTransition(applyTheme);
+        void transition.ready.then(() => {
+            document.documentElement.animate(
+                {
+                    clipPath: [
+                        `circle(0px at ${x}px ${y}px)`,
+                        `circle(${radius}px at ${x}px ${y}px)`,
+                    ],
+                },
+                {
+                    ...themeRevealTiming,
+                    pseudoElement: "::view-transition-new(root)",
+                },
+            );
+        });
         void transition.finished.finally(() => {
             if (
                 document.documentElement.dataset.themeTransition ===
