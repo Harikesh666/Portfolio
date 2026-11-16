@@ -1,6 +1,8 @@
 import type { Stone } from "./pond-decor";
 import { segments, type Fish } from "./pond-fish";
 import type { WaterTheme } from "./pond-water";
+import { createFullscreenTriangle, fullscreenVertex, glslNoise, link, uniforms } from "./pond-gl";
+import { createRipples, glslRippleHeight, simScale, type Ripples } from "./pond-ripples";
 
 /**
  * The WebGL2 pond renderer.
@@ -34,10 +36,6 @@ export type GpuPond = Readonly<{
     destroy(): void;
 }>;
 
-/** Simulation texels per CSS pixel: ripples need far fewer texels than pixels. */
-const simScale = 0.36;
-/** Simulation steps per second, independent of frame rate. */
-const simStepsPerSecond = 120;
 /** How far a tilted surface shifts the floor beneath it, in CSS pixels. */
 const refraction = 30;
 /**
@@ -57,39 +55,11 @@ const vertexFloats = 8;
 /** Samples along a ribbon: snout, spine joints, and the tail beyond the root. */
 const tailSamples = 5;
 const samplesPerFish = 1 + segments + tailSamples;
-const maxPushes = 16;
 /** How deep each tail beat dents the surface. A tap is about four times deeper. */
 const wakeStrength = -0.55;
 
 const common = /* glsl */ `
-float hash(vec2 p) {
-    p = fract(p * vec2(127.1, 311.7));
-    p += dot(p, p + 34.53);
-    return fract(p.x * p.y);
-}
-
-float noise(vec2 p) {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    vec2 u = f * f * (3.0 - 2.0 * f);
-    return mix(
-        mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x),
-        mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x),
-        u.y
-    );
-}
-
-float fbm(vec2 p) {
-    float sum = 0.0;
-    float amp = 0.5;
-    for (int i = 0; i < 4; i++) {
-        sum += amp * noise(p);
-        p *= 2.03;
-        amp *= 0.5;
-    }
-    return sum;
-}
-
+${glslNoise}
 vec2 cellPoint(vec2 cell, float t) {
     vec2 seed = vec2(hash(cell), hash(cell + 17.31));
     return 0.5 + 0.42 * sin(t * 0.55 + 6.2831 * seed);
@@ -122,53 +92,6 @@ float caustic(vec2 p, float t) {
 }
 `;
 
-const fullscreenVertex = /* glsl */ `#version 300 es
-in vec2 aPosition;
-void main() {
-    gl_Position = vec4(aPosition, 0.0, 1.0);
-}
-`;
-
-// One step of a damped wave equation on the height field. Velocity follows
-// the Laplacian (how much a texel sits below its neighbours), so a dent
-// spreads outward as a ring. Edges absorb waves instead of reflecting them.
-const simFragment = /* glsl */ `#version 300 es
-precision highp float;
-uniform sampler2D uState;
-uniform vec2 uSize;
-uniform int uPushCount;
-uniform vec4 uPushes[${maxPushes}];
-out vec4 outState;
-
-void main() {
-    ivec2 c = ivec2(gl_FragCoord.xy);
-    ivec2 last = ivec2(uSize) - 1;
-    vec2 here = texelFetch(uState, c, 0).rg;
-    float left = texelFetch(uState, clamp(c - ivec2(1, 0), ivec2(0), last), 0).r;
-    float right = texelFetch(uState, clamp(c + ivec2(1, 0), ivec2(0), last), 0).r;
-    float down = texelFetch(uState, clamp(c - ivec2(0, 1), ivec2(0), last), 0).r;
-    float up = texelFetch(uState, clamp(c + ivec2(0, 1), ivec2(0), last), 0).r;
-
-    float height = here.r;
-    float velocity = here.g;
-    float laplacian = left + right + down + up - 4.0 * height;
-    velocity = (velocity + laplacian * 0.16) * 0.991;
-    // A slow pull back to level, so pushes never pile up into a standing dent.
-    height = (height + velocity) * 0.996;
-
-    vec2 p = gl_FragCoord.xy;
-    for (int i = 0; i < ${maxPushes}; i++) {
-        if (i >= uPushCount) break;
-        float r = length(p - uPushes[i].xy) / uPushes[i].z;
-        if (r < 1.0) height += uPushes[i].w * (0.5 + 0.5 * cos(3.14159265 * r));
-    }
-
-    float edge = min(min(p.x, uSize.x - p.x), min(p.y, uSize.y - p.y));
-    float absorb = mix(0.88, 1.0, smoothstep(0.0, 7.0, edge));
-    outState = vec4(clamp(height * absorb, -3.0, 3.0), velocity * absorb, 0.0, 1.0);
-}
-`;
-
 const waterFragment = /* glsl */ `#version 300 es
 precision highp float;
 uniform sampler2D uState;
@@ -186,11 +109,7 @@ uniform vec2 uStoneMeta[6];
 uniform int uStoneCount;
 out vec4 outColor;
 ${common}
-
-float heightAt(vec2 css) {
-    vec2 uv = vec2(css.x, uCss.y - css.y) * ${simScale.toFixed(3)} / uSimSize;
-    return texture(uState, uv).r;
-}
+${glslRippleHeight}
 
 void main() {
     vec2 css = vec2(gl_FragCoord.x, uCss.y * uDpr - gl_FragCoord.y) / uDpr;
@@ -450,40 +369,6 @@ const palette = {
     ],
 } as const;
 
-function compile(gl: WebGL2RenderingContext, type: number, source: string) {
-    const shader = gl.createShader(type);
-    if (!shader) return null;
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        if (import.meta.env.DEV) console.warn("pond shader:", gl.getShaderInfoLog(shader));
-        gl.deleteShader(shader);
-        return null;
-    }
-    return shader;
-}
-
-function link(gl: WebGL2RenderingContext, vertexSource: string, fragmentSource: string) {
-    const vertex = compile(gl, gl.VERTEX_SHADER, vertexSource);
-    const fragment = compile(gl, gl.FRAGMENT_SHADER, fragmentSource);
-    const program = gl.createProgram();
-    if (!vertex || !fragment || !program) return null;
-    gl.attachShader(program, vertex);
-    gl.attachShader(program, fragment);
-    gl.linkProgram(program);
-    gl.deleteShader(vertex);
-    gl.deleteShader(fragment);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
-        if (import.meta.env.DEV) console.warn("pond program:", gl.getProgramInfoLog(program));
-        return null;
-    }
-    return program;
-}
-
-function uniforms(gl: WebGL2RenderingContext, program: WebGLProgram, names: readonly string[]) {
-    return Object.fromEntries(names.map((name) => [name, gl.getUniformLocation(program, name)]));
-}
-
 export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
     const context = canvas.getContext("webgl2", {
         alpha: false,
@@ -494,14 +379,12 @@ export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
     if (!context) return null;
     const gl: WebGL2RenderingContext = context;
     // Without float render targets the surface stays flat, but everything else still draws.
-    const canSimulate = gl.getExtension("EXT_color_buffer_float") !== null;
-
-    const simProgram = link(gl, fullscreenVertex, simFragment);
+    const simulation = createRipples(gl);
     const waterProgram = link(gl, fullscreenVertex, waterFragment);
     const fishProgram = link(gl, fishVertex, fishFragment);
-    if (!simProgram || !waterProgram || !fishProgram) return null;
+    if (!simulation || !waterProgram || !fishProgram) return null;
+    const ripples: Ripples = simulation;
 
-    const simU = uniforms(gl, simProgram, ["uState", "uSize", "uPushCount", "uPushes"]);
     const waterU = uniforms(gl, waterProgram, [
         "uState", "uSimSize", "uCss", "uDpr", "uTime", "uDeep", "uShallow", "uLight",
         "uLightStrength", "uNight", "uStones", "uStoneMeta", "uStoneCount",
@@ -511,19 +394,7 @@ export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
         "uLight", "uLightStrength", "uNight", "uWater", "uTime", "uShadow",
     ]);
 
-    // A triangle that covers the viewport, for the simulation and water passes.
-    const screenVao = gl.createVertexArray();
-    const screenBuffer = gl.createBuffer();
-    gl.bindVertexArray(screenVao);
-    gl.bindBuffer(gl.ARRAY_BUFFER, screenBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    for (const program of [simProgram, waterProgram]) {
-        const location = gl.getAttribLocation(program, "aPosition");
-        if (location >= 0) {
-            gl.enableVertexAttribArray(location);
-            gl.vertexAttribPointer(location, 2, gl.FLOAT, false, 0, 0);
-        }
-    }
+    const screen = createFullscreenTriangle(gl, [waterProgram]);
 
     // Koi ribbons are rebuilt every frame from the spines.
     const fishVao = gl.createVertexArray();
@@ -542,60 +413,13 @@ export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
     gl.bindVertexArray(null);
     let vertices = new Float32Array(0);
 
-    // Ping-pong state textures for the ripple simulation.
-    type Target = { texture: WebGLTexture; framebuffer: WebGLFramebuffer | null };
-    let targets: Target[] = [];
-    let current = 0;
-    let simWidth = 1;
-    let simHeight = 1;
     let cssWidth = 1;
     let cssHeight = 1;
     let ratio = 1;
-    let stepDebt = 0;
     const lastBeat = new WeakMap<Fish, number>();
-    const pending: Array<[number, number, number, number]> = [];
 
-    function makeTarget(width: number, height: number): Target {
-        const texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA16F, width, height, 0, gl.RGBA, gl.HALF_FLOAT, null);
-        let framebuffer: WebGLFramebuffer | null = null;
-        if (canSimulate) {
-            framebuffer = gl.createFramebuffer();
-            gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-            gl.clearColor(0, 0, 0, 1);
-            gl.clear(gl.COLOR_BUFFER_BIT);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        }
-        return { texture, framebuffer };
-    }
-
-    function disposeTargets() {
-        for (const target of targets) {
-            gl.deleteTexture(target.texture);
-            if (target.framebuffer) gl.deleteFramebuffer(target.framebuffer);
-        }
-        targets = [];
-    }
-
-    function toSim(x: number, y: number): [number, number] {
-        return [x * simScale, (cssHeight - y) * simScale];
-    }
-
-    function stepSimulation(dt: number, fishes: readonly Fish[]) {
-        if (!canSimulate || targets.length < 2) return;
-        stepDebt = Math.min(stepDebt + dt * simStepsPerSecond, 4);
-        const steps = Math.floor(stepDebt);
-        if (steps <= 0) return;
-        stepDebt -= steps;
-
-        // Every beat of a fish's tail drops a small ripple at its shoulders.
-        // The rings it leaves behind as it swims read as its wake.
+    /** Every beat of a fish's tail drops a small ripple at its shoulders; the rings read as its wake. */
+    function dropWakes(fishes: readonly Fish[]) {
         for (const fish of fishes) {
             const beat = Math.floor(fish.phase / Math.PI);
             const previous = lastBeat.get(fish);
@@ -606,30 +430,13 @@ export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
             const side = beat % 2 === 0 ? 1 : -1;
             const shoulder = fish.points[2];
             const offset = fish.length * 0.06 * side;
-            const [x, y] = toSim(
+            ripples.drop(
                 shoulder.x - Math.sin(fish.heading) * offset,
                 shoulder.y + Math.cos(fish.heading) * offset,
+                wakeStrength * effort,
+                2.6,
             );
-            if (pending.length < maxPushes) pending.push([x, y, 2.6, wakeStrength * effort]);
         }
-        gl.useProgram(simProgram);
-        gl.bindVertexArray(screenVao);
-        gl.viewport(0, 0, simWidth, simHeight);
-        gl.uniform2f(simU.uSize, simWidth, simHeight);
-        gl.uniform1i(simU.uState, 0);
-        gl.activeTexture(gl.TEXTURE0);
-        for (let i = 0; i < steps; i++) {
-            // Drops land on the first step only; later steps let them spread.
-            const drops = i === 0 ? pending.splice(0, maxPushes) : [];
-            gl.uniform1i(simU.uPushCount, drops.length);
-            if (drops.length > 0) gl.uniform4fv(simU.uPushes, new Float32Array(drops.flat()));
-            const next = 1 - current;
-            gl.bindFramebuffer(gl.FRAMEBUFFER, targets[next].framebuffer);
-            gl.bindTexture(gl.TEXTURE_2D, targets[current].texture);
-            gl.drawArrays(gl.TRIANGLES, 0, 3);
-            current = next;
-        }
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     }
 
     /** Builds each fish's ribbon: snout, spine joints, then the tail beyond the root. */
@@ -699,14 +506,17 @@ export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
 
     function render(frame: GpuFrame) {
         const { time, dt, light, fishes, stones } = frame;
-        stepSimulation(dt, fishes);
-        const state = targets[current]?.texture ?? null;
+        dropWakes(fishes);
+        ripples.step(dt);
+        const state = ripples.texture();
+        const simWidth = ripples.width();
+        const simHeight = ripples.height();
 
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.viewport(0, 0, canvas.width, canvas.height);
         gl.disable(gl.BLEND);
         gl.useProgram(waterProgram);
-        gl.bindVertexArray(screenVao);
+        gl.bindVertexArray(screen.vao);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, state);
         gl.uniform1i(waterU.uState, 0);
@@ -769,24 +579,15 @@ export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
             cssWidth = width;
             cssHeight = height;
             ratio = pixelRatio;
-            disposeTargets();
-            simWidth = Math.max(8, Math.round(width * simScale));
-            simHeight = Math.max(8, Math.round(height * simScale));
-            targets = [makeTarget(simWidth, simHeight), makeTarget(simWidth, simHeight)];
-            current = 0;
+            ripples.resize(width, height);
         },
-        drop(x, y, strength, radius = 4) {
-            const [sx, sy] = toSim(x, y);
-            if (pending.length < maxPushes) pending.push([sx, sy, radius, strength]);
-        },
+        drop: ripples.drop,
         render,
         destroy() {
-            disposeTargets();
-            gl.deleteBuffer(screenBuffer);
+            ripples.destroy();
+            screen.destroy();
             gl.deleteBuffer(fishBuffer);
-            gl.deleteVertexArray(screenVao);
             gl.deleteVertexArray(fishVao);
-            gl.deleteProgram(simProgram);
             gl.deleteProgram(waterProgram);
             gl.deleteProgram(fishProgram);
         },

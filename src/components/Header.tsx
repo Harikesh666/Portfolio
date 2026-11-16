@@ -122,6 +122,8 @@ function ThemeToggle({
             document.documentElement.dataset.theme = nextTheme;
             window.localStorage.setItem("theme", nextTheme);
             setTheme(nextTheme);
+            // Canvases that only repaint on demand, like the footer water, listen for this.
+            window.dispatchEvent(new Event("themechange"));
         };
 
         if (shouldReduceMotion || !document.startViewTransition) {
@@ -199,7 +201,7 @@ function ThemeToggle({
 
 function IdentityHeader() {
     return (
-        <div className="flex items-center gap-3 px-5 pt-24">
+        <div className="relative flex items-center gap-3 px-5 pt-24">
             <span aria-hidden="true" className="h-10 w-10 shrink-0" />
             <p className="flex min-w-0 flex-col pr-14 font-medium sm:pr-0">
                 <Link
@@ -210,14 +212,18 @@ function IdentityHeader() {
                 </Link>
                 <span className="leading-4 text-muted">Software Engineer</span>
             </p>
-            {/* Phones get the bottom dock instead; mr-12 clears the theme toggle. */}
+            {/*
+              * Phones: the name and links don't fit in one row, so the links sit
+              * in the empty band above it (inside pt-24, no geometry change), with
+              * 40px targets. From sm they join the row; mr-12 clears the toggle.
+              */}
             <nav
                 aria-label="Primary"
-                className="ml-auto mr-12 hidden items-center gap-5 text-[13px] font-medium sm:flex"
+                className="absolute top-4 right-3 flex items-center text-[13px] font-medium sm:static sm:mr-12 sm:ml-auto sm:gap-5"
             >
                 {headerLinks.map((link) => (
                     <Link
-                        className="header-link"
+                        className="header-link inline-flex h-10 items-center px-2 sm:h-auto sm:px-0"
                         key={link.to}
                         to={link.to}
                     >

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 import { useReducedMotion } from "motion/react";
 import type { Pond as PondEngine, PondMode } from "./pond-engine";
+import { readHourOverride } from "./pond-hour";
 
 export type PondLabel = Readonly<{ text: string; className: string }>;
 
@@ -12,13 +13,6 @@ type PondProps = Readonly<{
     caption: ReactNode;
     labels?: ReadonlyArray<PondLabel>;
 }>;
-
-/** `?pond-hour=19.5` previews the garden at another Mumbai hour. */
-function readHourOverride() {
-    const value = new URLSearchParams(window.location.search).get("pond-hour");
-    const hour = value === null ? Number.NaN : Number(value);
-    return Number.isFinite(hour) ? hour : undefined;
-}
 
 /**
  * The shared pond shell: reserves its space, loads the engine after the
