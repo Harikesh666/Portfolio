@@ -1,6 +1,6 @@
 # Harikesh Mishra Portfolio
 
-A server-rendered software-engineer portfolio and long-form React writing site. It uses TanStack Start, React, TypeScript, Tailwind CSS v4, and a Sätteri markdown pipeline.
+A server-rendered software-engineer portfolio and long-form React writing site. It uses TanStack Start, React, TypeScript, Tailwind CSS v4, and a Sätteri MDX pipeline.
 
 ## Development
 
@@ -32,7 +32,7 @@ The home page's GitHub activity graph comes from the `virtual:github-contributio
 
 ## Articles Pipeline
 
-Publishing an article means adding a Markdown file under `src/content/guides/`. Its filename becomes the flat `/articles/<slug>` URL.
+Publishing an article means adding an MDX file (`.mdx`) under `src/content/guides/`. Its filename becomes the flat `/articles/<slug>` URL. Write it as ordinary Markdown; MDX only matters when a guide places an interactive island (see below).
 
 ```yaml
 ---
@@ -52,7 +52,19 @@ publishedAt: "2026-05-01"
 - Series posts use `series` and `order` together instead of `topic`. Add a series definition to `src/lib/content.ts` before assigning its ID in frontmatter.
 - The articles index presents a compact anchor overview, followed by learning paths and authored topic sections; it does not infer taxonomy from guide titles.
 - Article detail pages use the same collection order for previous/next navigation: `order` within a series or topic.
-- `src/lib/content.ts` eagerly imports only frontmatter and lazy-loads rendered Markdown, so guide prose remains in each article chunk. Article-list links prefetch article data on hover or touch, then reuse it on a direct click.
+- `src/lib/content.ts` eagerly imports only frontmatter. `getPost` renders the guide's MDX to an HTML string on the server (`src/lib/guide-render.server.tsx`), so guide prose never enters the client bundle and the article page injects it as static HTML. Article-list links prefetch article data on hover or touch, then reuse it on a direct click.
+
+### Interactive islands
+
+A guide can place an interactive component in its prose, such as `<TimerOrderDemo />` in the event-loop guide. Islands keep the article fast: the prose stays a static HTML string that React never manages, and each island hydrates as its own small React root.
+
+1. Write the component in `src/components/demos/`. It must stand alone: no router context, no children.
+2. Register it in `src/content/islands.ts` with a lazy loader, so guides that do not use it never download its code.
+3. Place it in the guide as a JSX tag, for example `<TimerOrderDemo />`. Props must be plain JSON data (strings, numbers, booleans, arrays, objects); the build fails on functions or children.
+
+On the server, `renderGuideHtml` renders the prose with `renderToStaticMarkup`, then renders each island with `renderToString` inside a `data-island` wrapper that carries its props. In the browser, `useGuideIslands` lazy-loads each island and calls `hydrateRoot` on its wrapper. Using an unregistered component in a guide fails the build.
+
+MDX is stricter than Markdown: a bare `<` or `{` in prose is parsed as JSX or a JavaScript expression. Keep code, tags, and braces inside backticks or fenced blocks.
 
 Sätteri handles GFM, frontmatter, heading IDs, and Expressive Code. H2–H4 headings receive stable IDs for in-article table-of-contents links; fenced blocks use GitHub light/dark syntax themes and include a copy control. Images from `public/diagrams/` are enhanced after hydration into keyboard-accessible `Open full diagram` controls. They open a full-canvas native dialog that keeps the sketch on its white teaching surface. At `xl` and above, up to 34 real H2–H4 anchors populate a fixed Rare UI-inspired right minimap in a 96px aside. Marks begin 32px from the right edge and expand inward from the right. The build-time minimap preserves source order and evenly samples anchors when needed. Major marks follow Rare's 6:34 ratio and scale down proportionally on shorter guides; every other sampled anchor uses the body/short preset. At full density this reproduces Rare's `0, 7, 13, 20, 26, 33` major-mark rhythm. Major marks use Rare proportions, minor marks use muted foreground at 40%, all use 1px strokes and 8px gaps, pointer proximity reaches 40px, and a connected surface label identifies each hovered or keyboard-focused section. A shared pointer pulse lasts 80ms on scroll. Below `xl`, a content-measured text pill stays near 32px tall within the viewport and has a separate invisible 44px trigger target. The same surface expands upward into a content-measured `w-max` squircle menu capped by the viewport and `min(64dvh, 520px)`. The menu uses a 26px open radius, a 98% no-blur surface that preserves Rare's visual separation, the Rare 60%-border token, neutral 30px active rows, a transparent outside layer, and source-like surface, label, and row timing. Long lists cap their stagger at 0.4s. Both views push shareable hash entries, support back/forward section traversal, restore the pre-section scroll position when returning to the hashless entry, and preserve reduced-motion behavior. The adapted component licenses are recorded in `THIRD_PARTY_NOTICES.md`.
 

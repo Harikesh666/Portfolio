@@ -105,8 +105,9 @@ tanstackIntent:
 - Use `pnpm` for all package and script commands. Do not add dependencies unless the task explicitly permits them.
 - This is a TanStack Start application. File routes live in `src/routes`; never edit `src/routeTree.gen.ts` manually.
 - Keep shared metadata and social links in `src/lib/site.ts`. Preserve canonical URLs, JSON-LD, `robots.txt`, `sitemap.xml`, and `public/og.png` unless a task explicitly changes them.
-- Publish articles by adding Markdown with validated frontmatter under `src/content/guides/`. The filename is the flat `/articles/<slug>` route; add any new series ID to `src/lib/content.ts` before using it in frontmatter.
-- `src/lib/content.ts` eagerly imports frontmatter and lazy-loads rendered guide HTML. Preserve that split so the articles index does not import article prose.
+- Publish articles by adding MDX (`.mdx`) with validated frontmatter under `src/content/guides/`. The filename is the flat `/articles/<slug>` route; add any new series ID to `src/lib/content.ts` before using it in frontmatter. Keep `<` and `{` inside backticks or fences, because MDX parses them in prose.
+- `src/lib/content.ts` eagerly imports frontmatter, and `getPost` renders guide MDX to an HTML string on the server via `src/lib/guide-render.server.tsx`. Preserve that split so the articles index does not import article prose and the client bundle never contains it.
+- Interactive components in guides are islands: register them in `src/content/islands.ts`, give them plain-JSON props, and never let React manage the surrounding prose. The article body stays a static HTML string; only islands hydrate, each as its own root (`src/lib/use-guide-islands.tsx`).
 - The visual system is defined in `src/styles.css`: use semantic Tailwind tokens, preserve explicit `data-theme="light"` / `data-theme="dark"` behavior, and keep the narrow single-column layout.
 - Preserve accessibility safeguards: skip link, visible focus styles, reduced-motion handling, `overflow-x: clip`, and `min-width`/`minmax(0, 1fr)` guards where applicable.
 - Fenced code is owned by Sätteri Expressive Code. Keep heading IDs, copy controls, and theme selectors intact; only style inline code locally.
