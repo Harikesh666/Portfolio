@@ -19,7 +19,23 @@ export const headingIds = defineHastPlugin({
             const count = (seen.get(base) ?? 0) + 1;
             seen.set(base, count);
 
-            ctx.setProperty(node, "id", count === 1 ? base : `${base}-${count}`);
+            const id = count === 1 ? base : `${base}-${count}`;
+            ctx.setProperty(node, "id", id);
+
+            // A pointer-only self-link stretched over the heading by CSS.
+            // Hidden from assistive tech and the tab order so heading names
+            // stay clean; the table of contents is the semantic route.
+            ctx.appendChild(node, {
+                type: "element",
+                tagName: "a",
+                properties: {
+                    className: ["heading-anchor"],
+                    href: `#${id}`,
+                    ariaHidden: "true",
+                    tabIndex: -1,
+                },
+                children: [],
+            });
         },
     },
 });

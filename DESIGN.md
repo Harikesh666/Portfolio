@@ -101,15 +101,15 @@ The neutrals are true greyscale at chroma `0`, so terracotta is the only hue and
 **Code:** JetBrains Mono, ui-monospace, monospace
 
 ### Hierarchy
-- **Page Title:** 22px semibold, `-0.02em` tracking (Articles, About, Resume, Contact, Privacy). Article titles are 24px, 26px from `sm`.
+- **Page Title:** 22px semibold, `-0.02em` tracking (Articles, About, Resume, Contact, Privacy). Article titles are 20px semibold with `-0.015em` tracking.
 - **Home Intro:** 16px regular. The `h1` line is Strong Foreground; the paragraphs after it are Muted with Strong Foreground underlined links.
 - **Section Heading:** 16px medium Strong Foreground, sentence case (`SectionHeading`). No uppercase mono labels.
 - **Row Title:** 16px regular Strong Foreground; the description below is 16px regular Muted.
 - **Metadata:** 13px Muted with tabular numerals.
 - **Body:** 16px Inter at 1.65 line height, `-0.006em` tracking.
-- **Guide Prose:** 17px Inter at 1.75 line height.
-- **Guide Chapter:** 20px semibold with `-0.018em` tracking.
-- **Guide Subsection:** 17px semibold with `-0.012em` tracking.
+- **Guide Prose:** 16px Inter at 1.75 line height (28px). Top-level paragraphs are separated by one line (28px), following Emil Kowalski's rhythm.
+- **Guide Chapter:** 18px semibold with `-0.014em` tracking, 56px above and 20px below.
+- **Guide Subsection:** 16px semibold with `-0.01em` tracking, 36px above and 12px below.
 
 **The Reading Rule.** Everything stays near body size. Hierarchy comes from weight, color, and generous spacing (64px between home sections, 128px from `sm`), not from display type.
 
@@ -160,7 +160,7 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 ### Article Content
 - **Structure:** An "Articles" back chip, title, muted metadata, prose, then collection-aware previous/next links. The links follow series or JavaScript topic reading order.
 - **Pager:** Hover rows with a muted "Previous" or "Next" label above the title. Previous stays left and Next stays right in a two-column layout from `sm` upward. The links stack in reading order on narrower screens, and a lone Next link still occupies the right column on wider screens.
-- **Anchors:** H2–H4 headings have stable IDs and a 2rem scroll margin. Table-of-contents activation pushes a shareable same-route hash entry, repeated activation replaces it, back/forward re-traverses headings, and returning to the hashless entry restores the captured pre-click scroll position.
+- **Anchors:** H2–H4 headings have stable IDs and a 2rem scroll margin. `headingIds` also appends an empty `a.heading-anchor` (`aria-hidden`, `tabindex=-1`) that CSS stretches over the heading, so clicking anywhere on a heading links to it. On wide fine-pointer screens a link icon fades into the left gutter on hover. Clicks route through the same navigation as the table of contents; keyboard and screen-reader users keep the table of contents as the semantic route, and heading names stay clean. Table-of-contents activation pushes a shareable same-route hash entry, repeated activation replaces it, back/forward re-traverses headings, and returning to the hashless entry restores the captured pre-click scroll position.
 - **Desktop Table of Contents:** At `xl` and above, the build-time fixed right minimap sits in a 96px aside, with marks beginning 32px from the right edge and expanding inward from the right. It preserves source order and includes up to 34 real H2–H4 anchors, evenly sampling in source order when needed. Major marks follow Rare's 6:34 ratio and scale down proportionally on shorter guides; every other sampled anchor uses the body/short preset. At full density the major marks occupy indices 0, 7, 13, 20, 26, and 33. Minor marks use muted foreground at 40%, and all marks use 1px strokes, 8px gaps, a 40px pointer radius, a connected surface label for hovered or keyboard-focused sections, semantic hash anchors, keyboard focus, Escape behavior, reduced-motion parity, and the retained route-safe lifecycle. A shared 80ms scroll pulse provides the active cue without a persistent read-fill.
 - **Mobile Table of Contents:** Below `xl`, a content-measured text pill stays near 32px tall within the viewport, with a separate invisible 44px trigger target. Opening expands that same surface upward and in place into a content-measured `w-max` menu capped by the viewport and `min(64dvh, 520px)`, with a 26px squircle radius. A 98% surface compensates for the no-blur invariant while Rare's 60%-border token remains. A transparent outside-click layer dismisses it without visible dimming. Neutral 30px semantic anchor rows retain safe-area padding, focus trapping, background inerting, native list momentum, Escape, focus return, optional bounded drag dismissal, and reduced-motion parity. Source-like surface, label, and row timing is retained, with the long-list stagger bounded at 0.4s.
 - **Reading Progress:** A 2px terracotta top hairline uses CSS scroll-driven animation where supported; it is absent for reduced-motion preferences.

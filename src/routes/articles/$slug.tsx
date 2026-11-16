@@ -112,6 +112,26 @@ function PostPage() {
         ? posts.filter((item) => item.series === post.series).length
         : posts.filter((item) => item.topic === post.topic).length;
 
+    // Heading self-links share the TOC's hash-history navigation.
+    function handleHeadingAnchorClick(event: React.MouseEvent<HTMLElement>) {
+        if (
+            event.defaultPrevented ||
+            event.button !== 0 ||
+            event.metaKey ||
+            event.ctrlKey ||
+            event.shiftKey ||
+            event.altKey
+        ) {
+            return;
+        }
+        const anchor = (event.target as Element).closest("a.heading-anchor");
+        const id = anchor?.getAttribute("href")?.slice(1);
+        if (!id) return;
+
+        event.preventDefault();
+        void navigateToTocItem(decodeURIComponent(id));
+    }
+
     return (
         <>
             <div aria-hidden="true" className="reading-progress" />
@@ -130,7 +150,7 @@ function PostPage() {
                         </Link>
 
                         <StaggerReveal className="mt-7">
-                            <StaggerReveal.Headline className="text-pretty text-[1.5rem] font-semibold leading-tight tracking-[-0.022em] text-foreground-strong sm:text-[1.625rem]">
+                            <StaggerReveal.Headline className="text-pretty text-[1.25rem] font-semibold leading-snug tracking-[-0.015em] text-foreground-strong">
                                 {post.title}
                             </StaggerReveal.Headline>
                             <StaggerReveal.Item
@@ -146,8 +166,9 @@ function PostPage() {
                     </header>
 
                     <article
-                        className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:decoration-foreground-strong/30 prose-a:decoration-1 prose-a:underline-offset-[3px] hover:prose-a:decoration-foreground-strong prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-semibold prose-headings:text-foreground-strong prose-h2:text-[1.25rem] prose-h3:text-[1.0625rem] prose-img:rounded-lg prose-li:marker:text-muted prose-li:text-foreground prose-p:text-foreground prose-strong:font-semibold prose-strong:text-foreground-strong prose-code:font-medium prose-code:before:content-none prose-code:after:content-none"
+                        className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:decoration-foreground-strong/30 prose-a:decoration-1 prose-a:underline-offset-[3px] hover:prose-a:decoration-foreground-strong prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-semibold prose-headings:text-foreground-strong prose-h2:mb-5 prose-h2:mt-14 prose-h2:text-[1.125rem] prose-h3:mb-3 prose-h3:mt-9 prose-h3:text-base prose-img:rounded-lg prose-li:marker:text-muted prose-li:text-foreground [&>p]:my-7 prose-p:text-foreground prose-strong:font-semibold prose-strong:text-foreground-strong prose-code:font-medium prose-code:before:content-none prose-code:after:content-none"
                         dangerouslySetInnerHTML={{ __html: post.html }}
+                        onClick={handleHeadingAnchorClick}
                         ref={articleRef}
                     />
                     <DiagramViewer containerRef={articleRef} key={post.slug} />

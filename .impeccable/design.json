@@ -48,11 +48,11 @@
       },
       "guideChapter": {
         "displayName": "Guide Chapter",
-        "purpose": "20px semibold chapter headings that divide the long-form guide into major concepts."
+        "purpose": "18px semibold chapter headings, 56px above, that link to themselves on click."
       },
       "guideSubsection": {
         "displayName": "Guide Subsection",
-        "purpose": "17px semibold subsection headings that sit clearly below chapter headings."
+        "purpose": "16px semibold subsection headings, 36px above, that link to themselves on click."
       }
     },
     "iconographyMeta": {

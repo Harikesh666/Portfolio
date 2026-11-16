@@ -22,6 +22,7 @@
     --code-surface: var(--foreground-strong);
     --code-foreground: var(--surface);
     --graph-0: oklch(0.205 0 0 / 7%);
+    --link-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M6.5 9.5l3-3'/%3E%3Cpath d='M7.25 4.25l1-1a2.47 2.47 0 0 1 3.5 3.5l-1 1'/%3E%3Cpath d='M8.75 11.75l-1 1a2.47 2.47 0 0 1-3.5-3.5l1-1'/%3E%3C/svg%3E");
 }
 
 [data-theme="dark"] {
@@ -125,11 +126,11 @@
         transform: translateY(0);
     }
 
+    /* Size, line height, and heading margins come from the prose utilities
+       on the article element, which sit in a later layer than this one. */
     .guide-content {
         min-width: 0;
         overflow-wrap: break-word;
-        font-size: 1.0625rem;
-        line-height: 1.75;
     }
 
     .guide-content > h1:first-child {
@@ -137,19 +138,52 @@
     }
 
     .guide-content h2 {
-        margin-top: 3rem;
-        letter-spacing: -0.018em;
+        letter-spacing: -0.014em;
         text-wrap: balance;
     }
 
     .guide-content h3 {
-        margin-top: 2rem;
-        letter-spacing: -0.012em;
+        letter-spacing: -0.01em;
         text-wrap: balance;
     }
 
     .guide-content :is(h2, h3, h4) {
+        position: relative;
         scroll-margin-top: 2rem;
+    }
+
+    /* The self-link covers the whole heading so any click links to it. */
+    .guide-content .heading-anchor {
+        position: absolute;
+        inset: 0;
+        text-decoration: none;
+    }
+
+    /* The link icon sits in the left gutter on wide screens and appears
+       only while a fine pointer is over the heading. */
+    .guide-content .heading-anchor::before {
+        content: "";
+        position: absolute;
+        top: calc((1lh - 0.875rem) / 2);
+        left: -1.375rem;
+        display: none;
+        width: 0.875rem;
+        height: 0.875rem;
+        background: var(--muted);
+        -webkit-mask: var(--link-icon) center / contain no-repeat;
+        mask: var(--link-icon) center / contain no-repeat;
+        opacity: 0;
+        transition: opacity 150ms ease;
+    }
+
+    @media (min-width: 640px) and (hover: hover) and (pointer: fine) {
+        .guide-content .heading-anchor::before {
+            display: block;
+        }
+
+        .guide-content :is(h2, h3, h4):hover .heading-anchor::before {
+            opacity: 1;
+        }
     }
 
     .guide-content :not(pre) > code {
