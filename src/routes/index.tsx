@@ -5,6 +5,7 @@ import {
     RocketLaunchIcon,
 } from "@phosphor-icons/react";
 import { IntroKeyword } from "../components/IntroKeyword";
+import { EventLoopPond } from "../components/pond/EventLoopPond";
 import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { homeStructuredData } from "../lib/agent-readiness";
@@ -53,9 +54,12 @@ function HomePage() {
     return (
         <StaggerReveal
             as="main"
-            className="mx-auto w-full max-w-2xl px-5 pb-12 pt-16 sm:pt-32"
+            className="mx-auto w-full max-w-2xl px-5 pb-12 pt-12 sm:pt-16"
             id="main-content"
         >
+            <StaggerReveal.Item className="mb-12 sm:mb-16">
+                <EventLoopPond />
+            </StaggerReveal.Item>
             <header>
                 <StaggerReveal.Headline
                     as="h1"
