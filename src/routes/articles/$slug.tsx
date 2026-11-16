@@ -152,7 +152,7 @@ function PostPage() {
                         </Link>
 
                         <StaggerReveal className="mt-7">
-                            <StaggerReveal.Headline className="text-pretty text-[1.25rem] font-semibold leading-snug tracking-[-0.015em] text-foreground-strong">
+                            <StaggerReveal.Headline className="text-[1.25rem] font-semibold leading-snug tracking-[-0.015em] text-foreground-strong">
                                 {post.title}
                             </StaggerReveal.Headline>
                             <StaggerReveal.Item

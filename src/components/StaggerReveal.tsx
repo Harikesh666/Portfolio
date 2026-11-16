@@ -193,9 +193,10 @@ function StaggerRevealRoot({
                 for (const element of sequence) {
                     if (element.hasAttribute(headlineAttribute)) {
                         const lines = splitHeadlineLines(element);
+                        const lineAnimations: AnimationPlaybackControls[] = [];
 
                         for (const line of lines) {
-                            animations.push(
+                            lineAnimations.push(
                                 animate(
                                     line,
                                     {
@@ -214,6 +215,16 @@ function StaggerRevealRoot({
                             );
                             delay += editorialLineStagger;
                         }
+                        animations.push(...lineAnimations);
+
+                        // The split lines are frozen at the width they were
+                        // measured at. Once they have landed, hand the headline
+                        // back as plain text so it reflows on rotation and resize.
+                        const headlineElement = element;
+                        void Promise.all(lineAnimations).then(() => {
+                            if (isCancelled || !headlineElement.isConnected) return;
+                            headlineElement.textContent = originalText;
+                        });
 
                         if (lines.length > 0) delay += editorialHeadlinePause;
                         continue;
@@ -267,6 +278,11 @@ function StaggerRevealRoot({
     );
 }
 
+/**
+ * Keep headlines on ordinary greedy wrapping (no `text-pretty` or
+ * `text-balance`): the entrance measures lines with words split apart, and
+ * those lines must match the plain text the headline returns to afterwards.
+ */
 function StaggerRevealHeadline({
     as = "h1",
     children,

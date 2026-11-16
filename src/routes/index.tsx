@@ -64,7 +64,7 @@ function HomePage() {
             <header>
                 <StaggerReveal.Headline
                     as="h1"
-                    className="text-pretty leading-relaxed text-foreground-strong"
+                    className="leading-relaxed text-foreground-strong"
                 >
                     {homeIntro}
                 </StaggerReveal.Headline>
