@@ -16,7 +16,7 @@ const night: Omit<Keyframe, "hour"> = {
     deep: [0.05, 0.09, 0.17],
     shallow: [0.09, 0.16, 0.27],
     light: [0.6, 0.7, 0.9],
-    lightStrength: 0.2,
+    lightStrength: 0.13,
     night: 1,
 };
 const dawn: Omit<Keyframe, "hour"> = {
@@ -37,7 +37,7 @@ const dusk: Omit<Keyframe, "hour"> = {
     deep: [0.44, 0.29, 0.42],
     shallow: [0.93, 0.65, 0.46],
     light: [1, 0.89, 0.68],
-    lightStrength: 0.5,
+    lightStrength: 0.38,
     night: 0.3,
 };
 

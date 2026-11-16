@@ -28,8 +28,9 @@ void main() {
 `;
 
 // Caustics without textures: the edges between drifting cells (the gap
-// between the nearest and second-nearest cell point) form a mesh of thin
-// bright lines, and a gentle noise warp bends them like a moving surface.
+// between the nearest and second-nearest cell point) form a mesh of soft
+// bright lines; a noise warp bends them and a slow noise field gathers the
+// light into patches, like sun through a moving surface.
 const fragmentSource = `
 precision mediump float;
 uniform vec2 uResolution;
@@ -83,17 +84,32 @@ float cellEdge(vec2 p, float t) {
 }
 
 float caustic(vec2 p, float t) {
-    vec2 warp = vec2(noise(p * 0.7 + t * 0.12), noise(p * 0.7 - t * 0.1 + 4.0)) * 0.7;
-    return 1.0 - smoothstep(0.0, 0.1, cellEdge(p + warp, t));
+    vec2 warp = vec2(noise(p * 0.6 + t * 0.1), noise(p * 0.6 - t * 0.08 + 4.0)) * 1.15;
+    float edge = cellEdge(p + warp, t);
+    // Wide, soft lines that thin toward their middles, not a crisp grid.
+    return pow(1.0 - smoothstep(0.0, 0.24, edge), 2.2);
 }
 
 void main() {
-    vec2 p = gl_FragCoord.xy / (70.0 * uPixelRatio);
-    float depth = smoothstep(0.0, 1.0, 0.55 + 0.45 * noise(p * 0.35 + uTime * 0.02));
+    vec2 uv = gl_FragCoord.xy / uResolution;
+    vec2 p = gl_FragCoord.xy / (78.0 * uPixelRatio);
+    float depth = smoothstep(0.0, 1.0, 0.5 + 0.5 * noise(p * 0.3 + uTime * 0.015));
     vec3 color = mix(uDeep, uShallow, depth);
-    float light = caustic(p, uTime) * 0.8 + caustic(p * 1.9 + 4.1, uTime * 1.15) * 0.35;
+
+    // Light gathers in drifting patches instead of covering the floor evenly.
+    float patch = smoothstep(0.2, 0.85, noise(p * 0.22 + vec2(uTime * 0.025, -uTime * 0.018)));
+    float light = caustic(p, uTime) * (0.35 + 0.65 * patch);
+    light += caustic(p * 1.85 + 4.1, uTime * 1.1) * 0.22 * patch;
     color = mix(color, uLight, clamp(light * uLightStrength, 0.0, 1.0));
-    float grain = (hash(gl_FragCoord.xy + fract(uTime) * 61.0) - 0.5) * 0.035;
+
+    // A faint sandy floor and darker, deeper edges.
+    float sand = noise(gl_FragCoord.xy / (2.2 * uPixelRatio)) - 0.5;
+    color += sand * 0.025;
+    vec2 fromEdge = min(uv, 1.0 - uv);
+    float rim = smoothstep(0.0, 0.32, min(fromEdge.x * 1.4, fromEdge.y * 2.2));
+    color *= mix(0.78, 1.0, rim);
+
+    float grain = (hash(gl_FragCoord.xy + fract(uTime) * 61.0) - 0.5) * 0.03;
     gl_FragColor = vec4(color + grain, 1.0);
 }
 `;
