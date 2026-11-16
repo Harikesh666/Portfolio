@@ -1,4 +1,10 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import {
+    BookOpenTextIcon,
+    HardDrivesIcon,
+    RocketLaunchIcon,
+} from "@phosphor-icons/react";
+import { IntroKeyword } from "../components/IntroKeyword";
 import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { homeStructuredData } from "../lib/agent-readiness";
@@ -59,11 +65,21 @@ function HomePage() {
                 </StaggerReveal.Headline>
                 <StaggerReveal.Item
                     as="p"
-                    className="mt-4 text-pretty leading-relaxed text-muted"
+                    className="intro-keywords mt-4 text-pretty leading-relaxed text-muted"
                 >
-                    Mostly I like shipping software and learning things I
-                    don't know yet. I learned backend on demand, with deadlines
-                    and no roadmap, and I write{" "}
+                    Mostly I like{" "}
+                    <IntroKeyword icon={RocketLaunchIcon} index={0} tone="ship">
+                        shipping software
+                    </IntroKeyword>{" "}
+                    and{" "}
+                    <IntroKeyword icon={BookOpenTextIcon} index={1} tone="learn">
+                        learning things
+                    </IntroKeyword>{" "}
+                    I don't know yet. I learned{" "}
+                    <IntroKeyword icon={HardDrivesIcon} index={2} tone="backend">
+                        backend
+                    </IntroKeyword>{" "}
+                    on demand, with deadlines and no roadmap, and I write{" "}
                     <Link className="text-link" to="/articles">
                         guides
                     </Link>{" "}

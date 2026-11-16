@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { LocalTime } from "./LocalTime";
 import { SectionHeading } from "./SectionHeading";
 import { site } from "../lib/site";
 
@@ -64,8 +65,12 @@ export default function Footer() {
                         </Link>
                     ))}
                 </nav>
-                <span>
-                    © {new Date().getFullYear()} {site.name}
+                <span className="flex flex-wrap items-baseline gap-x-2">
+                    <LocalTime />
+                    <span aria-hidden="true">·</span>
+                    <span>
+                        © {new Date().getFullYear()} {site.name}
+                    </span>
                 </span>
             </div>
         </footer>

@@ -22,6 +22,10 @@
     --code-surface: var(--foreground-strong);
     --code-foreground: var(--surface);
     --graph-0: oklch(0.205 0 0 / 7%);
+    /* Home intro keyword hues: tuned for 4.5:1 text contrast on the surface. */
+    --keyword-ship: oklch(0.52 0.17 255);
+    --keyword-learn: oklch(0.52 0.19 345);
+    --keyword-backend: oklch(0.5 0.13 150);
     --link-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round'%3E%3Cpath d='M6.5 9.5l3-3'/%3E%3Cpath d='M7.25 4.25l1-1a2.47 2.47 0 0 1 3.5 3.5l-1 1'/%3E%3Cpath d='M8.75 11.75l-1 1a2.47 2.47 0 0 1-3.5-3.5l1-1'/%3E%3C/svg%3E");
 }
 
@@ -41,6 +45,9 @@
     --code-surface: oklch(0.2 0 0);
     --code-foreground: var(--foreground-strong);
     --graph-0: oklch(0.97 0 0 / 8%);
+    --keyword-ship: oklch(0.75 0.13 255);
+    --keyword-learn: oklch(0.76 0.14 345);
+    --keyword-backend: oklch(0.77 0.14 150);
 }
 
 @theme inline {
@@ -360,6 +367,68 @@
 
         .chip-link:active {
             transform: scale(0.97);
+        }
+    }
+
+    /* Home intro keywords: strong text at rest, their own hue while the
+       pointer or focus is inside the paragraph. Colour changes are kept
+       under reduced motion; only the icon's lift is removed. */
+    .intro-keyword {
+        color: var(--foreground-strong);
+        transition: color 220ms ease;
+        transition-delay: calc(var(--keyword-index, 0) * 45ms);
+    }
+
+    .intro-keyword[data-tone="ship"] {
+        --keyword-tone: var(--keyword-ship);
+    }
+
+    .intro-keyword[data-tone="learn"] {
+        --keyword-tone: var(--keyword-learn);
+    }
+
+    .intro-keyword[data-tone="backend"] {
+        --keyword-tone: var(--keyword-backend);
+    }
+
+    .intro-keyword__icon {
+        display: inline-block;
+        width: 0.95em;
+        height: 0.95em;
+        margin-inline-start: 0.2em;
+        vertical-align: -0.12em;
+        color: var(--muted);
+        opacity: 0.55;
+        transition:
+            color 220ms ease,
+            opacity 220ms ease,
+            transform 260ms var(--ease-out);
+        transition-delay: inherit;
+    }
+
+    .intro-keywords:focus-within .intro-keyword {
+        color: var(--keyword-tone);
+    }
+
+    .intro-keywords:focus-within .intro-keyword__icon {
+        color: var(--keyword-tone);
+        opacity: 1;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .intro-keywords:hover .intro-keyword {
+            color: var(--keyword-tone);
+        }
+
+        .intro-keywords:hover .intro-keyword__icon {
+            color: var(--keyword-tone);
+            opacity: 1;
+        }
+    }
+
+    @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+        .intro-keywords:hover .intro-keyword__icon {
+            transform: translateY(-1px) scale(1.12) rotate(-6deg);
         }
     }
 

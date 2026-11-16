@@ -88,7 +88,7 @@ The neutrals are true greyscale at chroma `0`, so terracotta is the only hue and
 - **Hover** (`oklch(0.205 0 0)`): hover-row, chip, and inline-code surface.
 - **TOC Track** (`oklch(0.53 0 0)`): the floating rail's readable inactive state.
 
-**The Neutral Rule.** Neutrals stay at chroma `0`. The contribution graph uses five opacity steps of Strong Foreground rather than a green ramp.
+**The Neutral Rule.** Neutrals stay at chroma `0`. The contribution graph uses five opacity steps of Strong Foreground rather than a green ramp. The one sanctioned exception is the home intro keywords: three hue tokens (`--keyword-ship` blue, `--keyword-learn` magenta, `--keyword-backend` green), each tuned to at least 5.5:1 contrast in light and 8.6:1 in dark, appearing only while the pointer or focus is inside that paragraph.
 
 ### Accent
 - **Terracotta** (`oklch(0.51 0.13 32)` light; `oklch(0.72 0.13 32)` dark): focus rings, text selection, and the reading-progress line.
@@ -136,12 +136,12 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 
 ### Home
 
-- **Hero:** One positioning line as the semantic `h1`, then a Muted paragraph that links to the guides, then "Want to work together?" with inline Email, GitHub, and LinkedIn links. No chips or buttons.
+- **Hero:** One positioning line as the semantic `h1`, then a Muted paragraph that links to the guides, then "Want to work together?" with inline Email, GitHub, and LinkedIn links. No chips or buttons. In the second paragraph, "shipping software", "learning things" and "backend" are `IntroKeyword`s: Strong Foreground at rest with a faint Phosphor icon (rocket, book, drive). While a fine pointer hovers the paragraph or focus is inside it, each warms to its hue left to right (220ms color, 45ms stagger) and its icon lifts and tilts slightly (260ms on `--ease-out`). Reduced motion keeps the colour change and drops the lift. Touch screens keep the resting state.
 - **Writing:** The six newest authored guides as hover rows (title over description), then an "All N guides" row.
 - **Work:** One hover row per role: company and dates on the first line, role below. Rows link to the Resume, which holds outcomes and project detail.
 - **GitHub activity (About page):** A 53-week contribution grid (26 weeks below `sm`) from `virtual:github-contributions`, which fetches `github.com/users/<name>/contributions` at build time and caches it for 12 hours in `node_modules/.cache`. The section renders nothing when no data is available.
 - **Stack:** A ruled definition list in Prasanjit's craft-row style: group name on the left in Strong Foreground, comma-separated technologies on the right in Muted.
-- **Footer:** An "Elsewhere" heading, one line of copy, Email · GitHub · LinkedIn · RSS links, then the site nav and copyright above a hairline.
+- **Footer:** An "Elsewhere" heading, one line of copy, Email · GitHub · LinkedIn · RSS links, then the site nav, local time ("Mumbai 8:45 pm IST") and copyright above a hairline. `LocalTime` reads the clock through `useSyncExternalStore` with a null server snapshot, so prerendered HTML carries no time and hydration always matches. It updates on minute boundaries inside a reserved 11ch slot, so the footer never shifts.
 - **Trust Pages:** About, Contact, and Privacy use the same narrow document shell, restrained page-title scale, section labels, plain links, and prose rhythm as Resume. They add no cards, forms, or decorative treatment; credibility comes from specific, consistent information.
 - **About:** The home hero carries one paragraph of it with a link to the full About page.
 - **Articles:** Home shows `authoredPosts` only. The `react-internals` series is excluded because it is not Harikesh's writing and must never stand in for it on the home page.
