@@ -34,7 +34,7 @@ function guideToc(): Plugin {
         enforce: "post",
         async transform(code, id) {
             const filename = id.replace(/\?.*$/, "");
-            if (!filename.endsWith(".md")) return null;
+            if (!filename.endsWith(".mdx")) return null;
 
             const source = await readFile(filename, "utf8");
             return {

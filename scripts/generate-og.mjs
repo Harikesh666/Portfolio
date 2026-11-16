@@ -70,7 +70,7 @@ async function findMarkdownFiles(directory) {
             const entryPath = path.join(directory, entry.name);
             return entry.isDirectory()
                 ? findMarkdownFiles(entryPath)
-                : entry.isFile() && entry.name.endsWith(".md")
+                : entry.isFile() && entry.name.endsWith(".mdx")
                   ? [entryPath]
                   : [];
         }),
@@ -309,7 +309,7 @@ async function main() {
             return {
                 ...metadata,
                 path: markdownPath,
-                slug: path.basename(markdownPath, ".md"),
+                slug: path.basename(markdownPath, ".mdx"),
             };
         }),
     );

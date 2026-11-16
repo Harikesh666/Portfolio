@@ -153,7 +153,7 @@ A deliberate thematic break.
         "map-filter-reduce-transform-select-combine",
     ])("preserves all prose, code, and heading anchors in %s", async (slug) => {
         const source = await readFile(
-            new URL(`../content/guides/${slug}.md`, import.meta.url),
+            new URL(`../content/guides/${slug}.mdx`, import.meta.url),
             "utf8",
         );
         const original = await render(source, false);

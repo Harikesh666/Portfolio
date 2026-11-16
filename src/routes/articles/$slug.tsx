@@ -12,6 +12,7 @@ import { getPost } from "../../lib/content.functions";
 import { absoluteUrl, site } from "../../lib/site";
 import { desktopQuery } from "../../lib/toc";
 import { useMediaQuery } from "../../lib/use-media-query";
+import { useGuideIslands } from "../../lib/use-guide-islands";
 import { useTocNavigation } from "../../lib/use-toc-navigation";
 
 export const Route = createFileRoute("/articles/$slug")({
@@ -107,6 +108,7 @@ function PostPage() {
     const post = Route.useLoaderData();
     const articleRef = useRef<HTMLElement>(null);
     const navigateToTocItem = useTocNavigation(articleRef);
+    useGuideIslands(articleRef, post.slug);
     const { previous, next } = getPostNeighbors(post);
     const collectionPostCount = post.series
         ? posts.filter((item) => item.series === post.series).length

@@ -59,7 +59,7 @@ type PostRecord = PostSummary & {
 };
 
 const meta = import.meta.glob<Record<string, unknown>>(
-    "../content/guides/**/*.md",
+    "../content/guides/**/*.mdx",
     { import: "frontmatter", eager: true },
 );
 
@@ -89,11 +89,11 @@ function isTopicId(value: string): value is TopicId {
 
 function getSlug(path: string) {
     const filename = path.split("/").at(-1);
-    if (!filename?.endsWith(".md")) {
+    if (!filename?.endsWith(".mdx")) {
         throw new Error(`Invalid content filename: ${path}`);
     }
 
-    return filename.slice(0, -3);
+    return filename.slice(0, -4);
 }
 
 function toPost(
