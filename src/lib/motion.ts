@@ -228,6 +228,8 @@ export const pageEnterStagger = 0.05;
 export const editorialLineStagger = 0.06;
 // Carries supporting hero elements forward without stretching the sequence.
 export const editorialFollowerStagger = 0.05;
+// Caps follower delays so long below-the-fold lists never stretch the entrance.
+export const editorialFollowerMaxDelay = 0.6;
 // Gives the headline a deliberate handoff before supporting content begins.
 export const editorialHeadlinePause = 0.18;
 export const editorialLineTransformFrom = "translateY(0.4em)";

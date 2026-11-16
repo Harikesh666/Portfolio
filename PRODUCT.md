@@ -48,7 +48,7 @@ Article context and exercises retain italics without quotation bars or generated
 4. Make the best next action obvious: contacting Harikesh and entering the writing should always feel effortless.
 5. Treat discoverability as quality: fast rendering, semantic structure, metadata, and structured data are part of the product.
 6. Keep the interface quiet: a narrow reading column, direct navigation, and dark mode should remove friction rather than add personality for its own sake.
-7. Spend motion deliberately: first loads and article destinations may materialize as one fast shell-level gesture, the Home and Articles heroes share the same editorial entrance and remain their routes' sole entrance owners, home content and complete article bodies stay stationary, list rows show a soft hover surface without moving, simple portfolio destinations should swap without fading through a blank frame, and the article table of contents may retain richer spatial context and reading progress.
+7. Spend motion deliberately: first loads and article destinations may materialize as one fast shell-level gesture, the Home and Articles heroes share the same editorial entrance and remain their routes' sole entrance owners, Home's sections follow its hero as one short capped cascade, complete article bodies stay stationary, rows and chips scale slightly on press, list rows show a soft hover surface without moving, simple portfolio destinations should swap without fading through a blank frame, and the article table of contents may retain richer spatial context and reading progress.
 
 ## Article Discovery
 

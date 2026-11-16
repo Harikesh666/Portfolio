@@ -4,6 +4,8 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 :root {
+    /* Strong ease-out for press feedback and hover surfaces. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
     --surface: oklch(0.994 0 0);
     --foreground: oklch(0.42 0 0);
     --foreground-strong: oklch(0.205 0 0);
@@ -288,7 +290,9 @@
         margin-inline: -1rem;
         border-radius: 0.375rem;
         padding: 0.75rem 1rem;
-        transition: background-color 150ms ease;
+        transition:
+            background-color 150ms ease,
+            transform 160ms var(--ease-out);
     }
 
     .hover-row:focus-visible {
@@ -309,7 +313,20 @@
         line-height: 1;
         transition:
             background-color 150ms ease,
-            border-color 150ms ease;
+            border-color 150ms ease,
+            transform 160ms var(--ease-out);
+    }
+
+    /* Press feedback: wide rows scale less than compact chips so the
+       visible movement stays similar. */
+    @media (prefers-reduced-motion: no-preference) {
+        .hover-row:active {
+            transform: scale(0.985);
+        }
+
+        .chip-link:active {
+            transform: scale(0.97);
+        }
     }
 
     .text-link {

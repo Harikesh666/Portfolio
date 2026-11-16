@@ -45,11 +45,12 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
     return (
-        <main
-            id="main-content"
+        <StaggerReveal
+            as="main"
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-16 sm:pt-32"
+            id="main-content"
         >
-            <StaggerReveal as="header">
+            <header>
                 <StaggerReveal.Headline
                     as="h1"
                     className="text-pretty leading-relaxed text-foreground-strong"
@@ -96,13 +97,15 @@ function HomePage() {
                     </a>
                     .
                 </StaggerReveal.Item>
-            </StaggerReveal>
+            </header>
 
             <section aria-labelledby="work-heading" className={sectionClassName}>
-                <SectionHeading id="work-heading">Work</SectionHeading>
+                <StaggerReveal.Item>
+                    <SectionHeading id="work-heading">Work</SectionHeading>
+                </StaggerReveal.Item>
                 <ul className={listClassName}>
                     {resumeExperience.map((experience) => (
-                        <li key={experience.company}>
+                        <StaggerReveal.Item as="li" key={experience.company}>
                             <Link className="hover-row" to="/resume">
                                 <span className="flex items-baseline justify-between gap-4">
                                     <span className="min-w-0 text-foreground-strong">
@@ -116,7 +119,7 @@ function HomePage() {
                                     {experience.role}
                                 </span>
                             </Link>
-                        </li>
+                        </StaggerReveal.Item>
                     ))}
                 </ul>
             </section>
@@ -125,10 +128,12 @@ function HomePage() {
                 aria-labelledby="writing-heading"
                 className={sectionClassName}
             >
-                <SectionHeading id="writing-heading">Writing</SectionHeading>
+                <StaggerReveal.Item>
+                    <SectionHeading id="writing-heading">Writing</SectionHeading>
+                </StaggerReveal.Item>
                 <ul className={listClassName}>
                     {latestPosts.map((post) => (
-                        <li key={post.slug}>
+                        <StaggerReveal.Item as="li" key={post.slug}>
                             <Link
                                 className="hover-row"
                                 params={{ slug: post.slug }}
@@ -141,9 +146,9 @@ function HomePage() {
                                     {post.description}
                                 </span>
                             </Link>
-                        </li>
+                        </StaggerReveal.Item>
                     ))}
-                    <li>
+                    <StaggerReveal.Item as="li">
                         <Link className="hover-row" to="/articles">
                             <span className="block text-foreground-strong">
                                 All {authoredPosts.length} guides
@@ -152,28 +157,34 @@ function HomePage() {
                                 JavaScript, runtimes, and React internals.
                             </span>
                         </Link>
-                    </li>
+                    </StaggerReveal.Item>
                 </ul>
             </section>
 
             <section aria-labelledby="stack-heading" className={sectionClassName}>
-                <SectionHeading id="stack-heading">Stack</SectionHeading>
-                <dl className="mt-4 divide-y divide-divider border-y border-divider">
-                    {stackGroups.map((group) => (
-                        <div
-                            className="flex flex-col gap-0.5 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
-                            key={group.label}
-                        >
-                            <dt className="shrink-0 text-foreground-strong">
-                                {group.label}
-                            </dt>
-                            <dd className="text-muted sm:text-right">
-                                {group.items.map((item) => item.name).join(", ")}
-                            </dd>
-                        </div>
-                    ))}
-                </dl>
+                <StaggerReveal.Item>
+                    <SectionHeading id="stack-heading">Stack</SectionHeading>
+                </StaggerReveal.Item>
+                <StaggerReveal.Item>
+                    <dl className="mt-4 divide-y divide-divider border-y border-divider">
+                        {stackGroups.map((group) => (
+                            <div
+                                className="flex flex-col gap-0.5 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
+                                key={group.label}
+                            >
+                                <dt className="shrink-0 text-foreground-strong">
+                                    {group.label}
+                                </dt>
+                                <dd className="text-muted sm:text-right">
+                                    {group.items
+                                        .map((item) => item.name)
+                                        .join(", ")}
+                                </dd>
+                            </div>
+                        ))}
+                    </dl>
+                </StaggerReveal.Item>
             </section>
-        </main>
+        </StaggerReveal>
     );
 }

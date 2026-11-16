@@ -36,14 +36,21 @@ function ensureThemeGifTransitionStyles() {
 
 const headerGeometry = {
     identity: {
+        avatarSize: 40, // h-10 → 40px, the height of the leading-6 name plus leading-4 role
+        avatarY: 96, // pt-24 → 96px
         height: 136, // pt-24 + leading-6 name + leading-4 role → 96 + 24 + 16 = 136px
-        toggleY: 86, // name line center (96 + 12) minus half the h-11 target (22) → 86px
+        toggleY: 94, // identity row center (96 + 20) minus half the h-11 target (22) → 94px
     },
     breadcrumb: {
+        avatarSize: 24, // h-6 → 24px
+        avatarY: 26, // py-4 (16px) + centered within h-11 ((44px - 24px) / 2) → 26px
         height: 76, // py-4 + h-11 + py-4 → 76px
         toggleY: 16, // py-4 → 16px
     },
 } as const;
+
+const avatarBreadcrumbScale =
+    headerGeometry.breadcrumb.avatarSize / headerGeometry.identity.avatarSize;
 
 function getHeaderPost(pathname: string) {
     const slug = pathname.match(/^\/articles\/([^/]+)\/?$/)?.[1];
@@ -186,8 +193,9 @@ function ThemeToggle({
 
 function IdentityHeader() {
     return (
-        <div className="px-5 pt-24">
-            <p className="flex flex-col pr-14 font-medium">
+        <div className="flex items-center gap-3 px-5 pt-24">
+            <span aria-hidden="true" className="h-10 w-10 shrink-0" />
+            <p className="flex min-w-0 flex-col pr-14 font-medium">
                 <Link
                     className="w-fit leading-6 text-foreground-strong"
                     to="/"
@@ -203,9 +211,7 @@ function IdentityHeader() {
 function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
     return (
         <div className="flex min-w-0 items-center gap-2 px-5 py-4 text-sm">
-            <Link aria-label="Home" className="shrink-0 rounded-full" to="/">
-                <Avatar size={24} />
-            </Link>
+            <span aria-hidden="true" className="h-6 w-6 shrink-0" />
             <Link
                 className="hidden shrink-0 font-medium text-foreground-strong hover:text-muted sm:inline"
                 to="/"
@@ -227,6 +233,40 @@ function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
             <span className="min-w-0 truncate text-muted">{postTitle}</span>
             <span aria-hidden="true" className="ml-auto h-11 w-13 shrink-0" />
         </div>
+    );
+}
+
+function SharedAvatar({
+    mode,
+    shouldReduceMotion,
+}: Readonly<{
+    mode: HeaderMode;
+    shouldReduceMotion: boolean;
+}>) {
+    const scale = mode === "breadcrumb" ? avatarBreadcrumbScale : 1;
+
+    return (
+        <motion.div
+            animate={{
+                scale,
+                y: headerGeometry[mode].avatarY,
+            }}
+            className="absolute z-10"
+            initial={false}
+            style={{
+                top: 0,
+                left: 20,
+                width: headerGeometry.identity.avatarSize,
+                height: headerGeometry.identity.avatarSize,
+                borderRadius: 9999,
+                transformOrigin: "top left",
+            }}
+            transition={shouldReduceMotion ? { duration: 0 } : headerMorphTween}
+        >
+            <Link aria-label="Home" className="block h-full w-full rounded-full" to="/">
+                <Avatar size={headerGeometry.identity.avatarSize} />
+            </Link>
+        </motion.div>
     );
 }
 
@@ -276,6 +316,10 @@ export default function Header() {
                         )}
                     </motion.div>
                 </AnimatePresence>
+                <SharedAvatar
+                    mode={mode}
+                    shouldReduceMotion={shouldReduceMotion}
+                />
                 <ThemeToggle
                     mode={mode}
                     shouldReduceMotion={shouldReduceMotion}

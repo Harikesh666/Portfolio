@@ -12,6 +12,7 @@ import {
 import {
     editorialBlurFrom,
     editorialBlurTo,
+    editorialFollowerMaxDelay,
     editorialFollowerStagger,
     editorialFollowerTransformFrom,
     editorialFollowerTransformTo,
@@ -29,7 +30,7 @@ const lineClass = "editorial-stagger-line";
 const wordClass = "editorial-stagger-word";
 
 type StaggerRevealProps = Readonly<{
-    as?: "div" | "header" | "section";
+    as?: "div" | "header" | "main" | "section";
     children: ReactNode;
     className?: string;
     id?: string;
@@ -43,11 +44,28 @@ type StaggerRevealHeadlineProps = Readonly<{
 }>;
 
 type StaggerRevealItemProps = Readonly<{
-    as?: "div" | "p";
+    as?: "div" | "li" | "p";
     children: ReactNode;
     className?: string;
     id?: string;
 }>;
+
+type EditorialTransition =
+    | typeof editorialFollowerTransition
+    | typeof editorialLineTransition;
+
+/**
+ * Applies a stagger delay to every property. A value-specific transition
+ * such as `opacity` does not inherit the top-level `delay`, so without this
+ * an element would fade in at once and only slide up later.
+ */
+function withDelay(transition: EditorialTransition, delay: number) {
+    return {
+        ...transition,
+        delay,
+        opacity: { ...transition.opacity, delay },
+    };
+}
 
 function createSplitSpan(className: string) {
     const span = document.createElement("span");
@@ -191,7 +209,7 @@ function StaggerRevealRoot({
                                             editorialBlurTo,
                                         ],
                                     },
-                                    { ...editorialLineTransition, delay },
+                                    withDelay(editorialLineTransition, delay),
                                 ),
                             );
                             delay += editorialLineStagger;
@@ -211,7 +229,10 @@ function StaggerRevealRoot({
                                     editorialFollowerTransformTo,
                                 ],
                             },
-                            { ...editorialFollowerTransition, delay },
+                            withDelay(
+                                editorialFollowerTransition,
+                                Math.min(delay, editorialFollowerMaxDelay),
+                            ),
                         ),
                     );
                     delay += editorialFollowerStagger;
