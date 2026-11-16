@@ -16,9 +16,6 @@ import {
 import { posts } from "../lib/content";
 import { site } from "../lib/site";
 
-const navLinkClassName =
-    "nav-link inline-flex h-7 items-center rounded-full px-3 text-muted hover:text-foreground-strong data-[status=active]:bg-hover data-[status=active]:text-foreground-strong";
-
 type HeaderMode = "breadcrumb" | "identity";
 
 const themeTransitionStyleId = "theme-gif-mask-transition";
@@ -39,21 +36,14 @@ function ensureThemeGifTransitionStyles() {
 
 const headerGeometry = {
     identity: {
-        avatarSize: 44, // h-11 → 44px
-        avatarY: 48, // pt-12 → 48px
-        height: 160, // pt-12 + h-11 + mt-6 + h-9 + pb-2 → 48 + 44 + 24 + 36 + 8 = 160px
-        toggleY: 48, // pt-12 → 48px, aligned with the h-11 identity row
+        height: 136, // pt-24 + leading-6 name + leading-4 role → 96 + 24 + 16 = 136px
+        toggleY: 86, // name line center (96 + 12) minus half the h-11 target (22) → 86px
     },
     breadcrumb: {
-        avatarSize: 24, // h-6 → 24px
-        avatarY: 26, // py-4 (16px) + centered within h-11 ((44px - 24px) / 2) → 26px
         height: 76, // py-4 + h-11 + py-4 → 76px
         toggleY: 16, // py-4 → 16px
     },
 } as const;
-
-const avatarBreadcrumbScale =
-    headerGeometry.breadcrumb.avatarSize / headerGeometry.identity.avatarSize;
 
 function getHeaderPost(pathname: string) {
     const slug = pathname.match(/^\/articles\/([^/]+)\/?$/)?.[1];
@@ -196,43 +186,16 @@ function ThemeToggle({
 
 function IdentityHeader() {
     return (
-        <div className="flex flex-col px-5 pb-2 pt-12">
-            <div className="flex h-11 items-center gap-3">
-                <span aria-hidden="true" className="h-11 w-11 shrink-0" />
-                <p className="flex min-w-0 flex-col leading-5">
-                    <Link
-                        className="truncate text-[15px] font-medium text-foreground-strong"
-                        to="/"
-                    >
-                        {site.name}
-                    </Link>
-                    <span className="truncate text-sm text-muted">
-                        Software Engineer · Mumbai
-                    </span>
-                </p>
-                <span aria-hidden="true" className="ml-auto h-11 w-11 shrink-0" />
-            </div>
-            <nav
-                aria-label="Main navigation"
-                className="mt-6 flex h-9 w-fit items-center gap-0.5 whitespace-nowrap rounded-full border border-divider p-1 text-[13px] font-medium"
-            >
+        <div className="px-5 pt-24">
+            <p className="flex flex-col pr-14 font-medium">
                 <Link
-                    activeOptions={{ exact: true }}
-                    className={navLinkClassName}
+                    className="w-fit leading-6 text-foreground-strong"
                     to="/"
                 >
-                    Home
+                    {site.name}
                 </Link>
-                <Link className={navLinkClassName} to="/articles">
-                    Articles
-                </Link>
-                <Link className={navLinkClassName} to="/about">
-                    About
-                </Link>
-                <Link className={navLinkClassName} to="/resume">
-                    Resume
-                </Link>
-            </nav>
+                <span className="leading-4 text-muted">Software Engineer</span>
+            </p>
         </div>
     );
 }
@@ -240,7 +203,9 @@ function IdentityHeader() {
 function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
     return (
         <div className="flex min-w-0 items-center gap-2 px-5 py-4 text-sm">
-            <span aria-hidden="true" className="h-6 w-6 shrink-0" />
+            <Link aria-label="Home" className="shrink-0 rounded-full" to="/">
+                <Avatar size={24} />
+            </Link>
             <Link
                 className="hidden shrink-0 font-medium text-foreground-strong hover:text-muted sm:inline"
                 to="/"
@@ -262,40 +227,6 @@ function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
             <span className="min-w-0 truncate text-muted">{postTitle}</span>
             <span aria-hidden="true" className="ml-auto h-11 w-13 shrink-0" />
         </div>
-    );
-}
-
-function SharedAvatar({
-    mode,
-    shouldReduceMotion,
-}: Readonly<{
-    mode: HeaderMode;
-    shouldReduceMotion: boolean;
-}>) {
-    const scale = mode === "breadcrumb" ? avatarBreadcrumbScale : 1;
-
-    return (
-        <motion.div
-            animate={{
-                scale,
-                y: headerGeometry[mode].avatarY,
-            }}
-            className="absolute z-10"
-            initial={false}
-            style={{
-                top: 0,
-                left: 20,
-                width: headerGeometry.identity.avatarSize,
-                height: headerGeometry.identity.avatarSize,
-                borderRadius: 9999,
-                transformOrigin: "top left",
-            }}
-            transition={shouldReduceMotion ? { duration: 0 } : headerMorphTween}
-        >
-            <Link aria-label="Home" className="block h-full w-full" to="/">
-                <Avatar size={headerGeometry.identity.avatarSize} />
-            </Link>
-        </motion.div>
     );
 }
 
@@ -345,10 +276,6 @@ export default function Header() {
                         )}
                     </motion.div>
                 </AnimatePresence>
-                <SharedAvatar
-                    mode={mode}
-                    shouldReduceMotion={shouldReduceMotion}
-                />
                 <ThemeToggle
                     mode={mode}
                     shouldReduceMotion={shouldReduceMotion}

@@ -55,7 +55,7 @@ components:
 
 The portfolio is a minimal, proof-led introduction to a software engineer and a home for deep technical writing. The interface behaves like a dependable reading surface: one narrow column, direct navigation, generous spacing, and evidence before ornament.
 
-The system is a hybrid. Type, spacing, and lists follow the quiet text-first school: everything near body size, hierarchy from weight and color, large gaps between sections, and rows that show a soft surface on hover. A small set of showcase elements sits on top: an avatar identity with a pill nav, contact chips, two featured diagram tiles, a GitHub contribution graph, and icon stack chips.
+Home follows the text-first school of Emil Kowalski's and Prasanjit Dey's sites: everything at body size, hierarchy from weight and color, 128px between sections, and rows that show a soft surface on hover. The one richer element, the GitHub contribution graph, lives on About.
 
 It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes quickly; fellow engineers can settle into substantial articles without visual noise.
 
@@ -68,7 +68,7 @@ It is rigorous, pragmatic, and candid. Recruiters can scan tangible outcomes qui
 
 ## 2. Colors
 
-The neutrals are true greyscale at chroma `0`. Stack-chip brand icons are the only other hue. All components consume semantic variables so light and dark modes switch together.
+The neutrals are true greyscale at chroma `0`, so terracotta is the only hue and it appears only on interaction state. All components consume semantic variables so light and dark modes switch together.
 
 ### Light Theme
 - **Surface** (`oklch(0.994 0 0)`): reading background.
@@ -76,7 +76,7 @@ The neutrals are true greyscale at chroma `0`. Stack-chip brand icons are the on
 - **Strong Foreground** (`oklch(0.205 0 0)`): titles, headings, and key navigation.
 - **Muted** (`oklch(0.53 0 0)`): descriptions, metadata, and secondary context.
 - **Divider** (`oklch(0.92 0 0)`): hairline borders and the rare rule.
-- **Hover** (`oklch(0.965 0 0)`): hover-row, chip, active nav, and inline-code surface.
+- **Hover** (`oklch(0.965 0 0)`): hover-row, chip, and inline-code surface.
 - **TOC Track** (`oklch(0.62 0 0)`): the floating rail's readable inactive state.
 
 ### Dark Theme
@@ -85,7 +85,7 @@ The neutrals are true greyscale at chroma `0`. Stack-chip brand icons are the on
 - **Strong Foreground** (`oklch(0.97 0 0)`): titles, headings, and key navigation.
 - **Muted** (`oklch(0.63 0 0)`): descriptions, metadata, and secondary context.
 - **Divider** (`oklch(0.27 0 0)`): quiet structural separation.
-- **Hover** (`oklch(0.205 0 0)`): hover-row, chip, active nav, and inline-code surface.
+- **Hover** (`oklch(0.205 0 0)`): hover-row, chip, and inline-code surface.
 - **TOC Track** (`oklch(0.53 0 0)`): the floating rail's readable inactive state.
 
 **The Neutral Rule.** Neutrals stay at chroma `0`. The contribution graph uses five opacity steps of Strong Foreground rather than a green ramp.
@@ -102,16 +102,16 @@ The neutrals are true greyscale at chroma `0`. Stack-chip brand icons are the on
 
 ### Hierarchy
 - **Page Title:** 22px semibold, `-0.02em` tracking (Articles, About, Resume, Contact, Privacy). Article titles are 24px, 26px from `sm`.
-- **Home Intro:** 17px regular Strong Foreground; the follow-up paragraph is 16px Foreground.
-- **Section Heading:** 15px medium Strong Foreground, sentence case (`SectionHeading`). No uppercase mono labels.
-- **Row Title:** 16px medium Strong Foreground; the description below is 14px Muted.
+- **Home Intro:** 16px regular. The `h1` line is Strong Foreground; the paragraphs after it are Muted with Strong Foreground underlined links.
+- **Section Heading:** 16px medium Strong Foreground, sentence case (`SectionHeading`). No uppercase mono labels.
+- **Row Title:** 16px regular Strong Foreground; the description below is 16px regular Muted.
 - **Metadata:** 13px Muted with tabular numerals.
 - **Body:** 16px Inter at 1.65 line height, `-0.006em` tracking.
 - **Guide Prose:** 17px Inter at 1.75 line height.
 - **Guide Chapter:** 20px semibold with `-0.018em` tracking.
 - **Guide Subsection:** 17px semibold with `-0.012em` tracking.
 
-**The Reading Rule.** Everything stays near body size. Hierarchy comes from weight, color, and generous spacing (64px between home sections, 96px from `sm`), not from display type.
+**The Reading Rule.** Everything stays near body size. Hierarchy comes from weight, color, and generous spacing (64px between home sections, 128px from `sm`), not from display type.
 
 Build-time presentation gives introductory context and exercises explicit roles with italic body text and 1.6em group margins, without quotation bars or generated quotes. Actual quotations retain italics and semantic markup, but left borders are removed from every article blockquote. Rules immediately before chapter headings are omitted; other thematic breaks remain. Structural labels become authored headings at the appropriate depth, using the existing type scale and preserving wording.
 
@@ -121,26 +121,27 @@ Build-time presentation gives introductory context and exercises explicit roles 
 
 Explicit output and ASCII-diagram fences use Expressive Code's native titles, without restyling its internals. Tables retain their semantic table layout inside a keyboard-focusable scroll region, with restrained rules and preserved column alignment. Standalone images use figures with authored captions in 14px muted text at 1.6 leading. Local PNG dimensions reserve the image's aspect ratio before loading. These treatments preserve the existing reading type scale and italic notes.
 
-The system is flat. Whitespace establishes priority and hairline borders frame the few surfaces that need edges: chips, the pill nav, featured diagram tiles, and code frames. There are no shadows, gradients, or glass effects. Expressive Code frames use a 12px radius and `frameBoxShadowCssValue: none` through `styleOverrides` in `vite.config.ts`.
+The system is flat. Whitespace establishes priority and hairline borders frame the few surfaces that need edges: the back and download chips, the Stack list, and code frames. There are no shadows, gradients, or glass effects. Expressive Code frames use a 12px radius and `frameBoxShadowCssValue: none` through `styleOverrides` in `vite.config.ts`.
 
 Code is rendered by Expressive Code with the Pierre light and dark syntax themes (`@pierre/theme`, wired in `vite.config.ts`). Fenced blocks include a copy control and respond to the page's `data-theme` value. Inline code is a compact neutral pill with a hairline border and no generated backticks.
 
 ## 5. Components
 
 ### Navigation
-- **Shape:** A 44px avatar beside a two-line identity (15px medium name, 14px muted "Software Engineer · Mumbai"), the theme toggle on the right of that row, then a rounded pill nav (Home, Articles, About, Resume) whose active item fills with the Hover surface. Geometry constants in `Header.tsx`: identity height 160px, avatar and toggle at y 48px.
+- **Shape:** Identity mode is only the name (16px medium, Strong Foreground) over the role (16px medium, Muted, 16px leading), 96px from the top, with the theme toggle on the right. There is no header nav and no avatar on identity pages. Article pages swap to a breadcrumb with an inline 24px avatar. Geometry constants in `Header.tsx`: identity height 136px with the toggle at y 86px; breadcrumb height 76px with the toggle at y 16px.
+- **Site navigation:** Lives in the footer (Home, Articles, About, Resume, Contact, Privacy). The name links home and the article breadcrumb links to Articles.
 - **Resume Asset:** Resume links use a content-hashed public URL while downloads preserve the clean `Harikesh_Mishra_Resume.pdf` filename.
 - **Theme Control:** Minimum 44px target; persists explicit `light` or `dark` preference in local storage.
 - **Focus:** 3px terracotta outline with 3px offset.
 
 ### Home
 
-- **Hero:** One positioning line rendered as the semantic `h1`, then a first-person paragraph with inline links to the guides and About, then contact chips with Phosphor icons (Email me, GitHub, LinkedIn, Resume). The role and city live in the header identity.
-- **Writing:** Two featured guide tiles (the guides with hand-drawn diagrams) in a two-column grid: a white bordered 12px tile containing the diagram, with title and description below the tile. Then the next four authored guides as hover rows, then an "All N guides" chip.
-- **Work:** Hover-row disclosures showing company, dates, role, and outcome. The role's stack moves inside the disclosure.
-- **GitHub activity:** A 53-week contribution grid (26 weeks below `sm`) from `virtual:github-contributions`, which fetches `github.com/users/<name>/contributions` at build time and caches it for 12 hours in `node_modules/.cache`. The section renders nothing when no data is available.
-- **Stack:** Grouped icon chips with 8px radius and Inter labels.
-- **Footer:** An "Elsewhere" heading, one line of copy, Email · GitHub · LinkedIn · RSS links, then Contact, Privacy, and copyright above a hairline.
+- **Hero:** One positioning line as the semantic `h1`, then a Muted paragraph that links to the guides, then "Want to work together?" with inline Email, GitHub, and LinkedIn links. No chips or buttons.
+- **Writing:** The six newest authored guides as hover rows (title over description), then an "All N guides" row.
+- **Work:** One hover row per role: company and dates on the first line, role below. Rows link to the Resume, which holds outcomes and project detail.
+- **GitHub activity (About page):** A 53-week contribution grid (26 weeks below `sm`) from `virtual:github-contributions`, which fetches `github.com/users/<name>/contributions` at build time and caches it for 12 hours in `node_modules/.cache`. The section renders nothing when no data is available.
+- **Stack:** A ruled definition list in Prasanjit's craft-row style: group name on the left in Strong Foreground, comma-separated technologies on the right in Muted.
+- **Footer:** An "Elsewhere" heading, one line of copy, Email · GitHub · LinkedIn · RSS links, then the site nav and copyright above a hairline.
 - **Trust Pages:** About, Contact, and Privacy use the same narrow document shell, restrained page-title scale, section labels, plain links, and prose rhythm as Resume. They add no cards, forms, or decorative treatment; credibility comes from specific, consistent information.
 - **About:** The home hero carries one paragraph of it with a link to the full About page.
 - **Articles:** Home shows `authoredPosts` only. The `react-internals` series is excluded because it is not Harikesh's writing and must never stand in for it on the home page.
@@ -154,7 +155,7 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 
 ### Article List Item
 - **Structure:** A muted two-digit index column, then title, description, and date or reading time. No rules between rows.
-- **Behavior:** On desktop pointer devices, hovering shows a 12px-radius Hover surface behind the whole row (`.hover-row`, 150ms background-color). Nothing translates or dims.
+- **Behavior:** On desktop pointer devices, hovering shows a 6px-radius Hover surface behind the whole row (`.hover-row`: 12px by 16px padding with a matching negative inline margin, 150ms background-color). Nothing translates or dims.
 
 ### Article Content
 - **Structure:** An "Articles" back chip, title, muted metadata, prose, then collection-aware previous/next links. The links follow series or JavaScript topic reading order.
@@ -169,7 +170,7 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 
 ### Motion
 - **Route and entry:** Navigated route wrappers become visible immediately after the outgoing 90ms exit so the page hero is the sole entrance owner. A pre-paint JavaScript marker hides only unprepared stagger roots, preventing SSR content from flashing before hydration while leaving the content visible when JavaScript is unavailable. Editorial heroes wait for loaded fonts and follow document order: optional eyebrow copy enters from 14px below with opacity and no blur, the headline splits into rendered lines and reveals from `0.4em` below with a 4px one-shot blur on a 320ms visual spring with `0.1` bounce and strong ease-out opacity, then supporting metadata and actions use the same 14px opacity-and-transform follower entrance on a 240ms visual spring with `0.1` bounce and strong ease-out opacity. Lines stagger by 60ms, pause for 180ms, and followers stagger by 50ms. Home and Articles both use this choreography while preserving their existing scale and spacing. The home introduction is the visual headline; Resume, Articles, and article titles remain the anchors on their routes. Same-path hash changes never remount the route boundary. The exiting desktop table of contents becomes inert and `display: none` immediately, then disposes after route commit.
-- **Header continuity:** Article navigation transforms one persistent avatar and theme control between fixed identity and breadcrumb geometry over 300ms on the route curve; no layout projection or runtime measurement participates. Non-shared navigation and breadcrumb content crossfade, focus remains on the persistent theme control, and identity-to-identity navigation does not retrigger the header.
+- **Header continuity:** The theme control is the one persistent header element; it moves between identity and breadcrumb positions over 300ms on the route curve with no layout projection or runtime measurement. Identity and breadcrumb content, including the breadcrumb avatar, crossfade. Focus remains on the theme control, and identity-to-identity navigation does not retrigger the header.
 - **Signature interaction:** The responsive table of contents receives the motion budget through Rare-style pointer-near dash magnification and an 80ms shared scroll pulse, plus mobile same-surface expansion. The mobile outside-click layer remains transparent; optional bounded drag is secondary to the menu’s content-measured morph. Keyboard, Escape, focus return, and reduced-motion paths stay direct and complete.
 - **Restraint:** Repeated motion is limited to transforms and opacity; scale is reserved for small page-entry blocks, the Home and Articles routes remain stationary below their heroes, and complete article bodies never animate during scroll. Home skills, work history, and article previews render immediately. Article-list focus is opacity-only, restores the active row in 140ms, and never translates content. The editorial hero's 4px blur is an explicit exception authorized only for headline lines during their one-shot mount entrance; supporting labels, descriptions, metadata, and actions travel 14px with opacity and no blur. The exception does not apply to article prose or route-sized trees. `prefers-reduced-motion: reduce` renders heroes immediately, snaps the header layout, removes entrance transforms, and keeps simple destinations instant.
 
@@ -185,7 +186,7 @@ Code is rendered by Expressive Code with the Pierre light and dark syntax themes
 
 ### Don't:
 - **Don't** reintroduce a serif display system, oversized clamp-based headings, or magazine layouts.
-- **Don't** add a second accent color, gradients, glass, or shadows. Image tiles are limited to featured content with a real image (today, the two diagram guides).
+- **Don't** add a second accent color, gradients, glass, shadows, or image tiles to the home page.
 - **Don't** bring back uppercase mono section labels or terracotta link underlines.
 - **Don't** hardcode Markdown post metadata in route components.
 - **Don't** override Expressive Code fenced-block styles with legacy `pre` rules.

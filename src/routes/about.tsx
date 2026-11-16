@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { ContributionGraph } from "../components/ContributionGraph";
 import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
 import { StaggerReveal } from "../components/StaggerReveal";
@@ -183,6 +184,12 @@ function AboutPage() {
                             </Link>{" "}
                             has the full list and what I built with it.
                         </p>
+                    </AboutSection>
+                </Reveal>
+
+                <Reveal>
+                    <AboutSection title="GitHub activity">
+                        <ContributionGraph />
                     </AboutSection>
                 </Reveal>
 

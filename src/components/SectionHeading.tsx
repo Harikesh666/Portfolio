@@ -10,7 +10,7 @@ export function SectionHeading({ as = "h2", children, id }: SectionHeadingProps)
 
     return (
         <Heading
-            className="scroll-mt-8 text-[15px] font-medium text-foreground-strong"
+            className="scroll-mt-8 font-medium text-foreground-strong"
             id={id}
         >
             {children}

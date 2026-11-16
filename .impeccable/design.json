@@ -164,7 +164,7 @@
   ],
   "narrative": {
     "northStar": "The Quiet Engineering Notebook",
-    "overview": "A narrow, theme-aware portfolio and writing surface: text-first type and spacing with a few showcase elements (avatar identity, pill nav, contact chips, featured diagram tiles, contribution graph, stack chips).",
+    "overview": "A narrow, theme-aware portfolio and writing surface in the text-first style: name and role header, body-size lists, generous spacing, and hover rows. The GitHub contribution graph lives on About.",
     "keyCharacteristics": [
       "Single-column",
       "Body-size hierarchy",

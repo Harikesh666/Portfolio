@@ -285,26 +285,14 @@
        margin lets the surface extend past the text column without moving it. */
     .hover-row {
         display: block;
-        margin-inline: -0.75rem;
-        border-radius: 0.75rem;
-        padding: 0.625rem 0.75rem;
+        margin-inline: -1rem;
+        border-radius: 0.375rem;
+        padding: 0.75rem 1rem;
         transition: background-color 150ms ease;
     }
 
     .hover-row:focus-visible {
         outline-offset: 0;
-    }
-
-    .nav-link {
-        transition:
-            color 150ms ease,
-            background-color 150ms ease;
-    }
-
-    /* Tile images are small, so a hover scale stays inside the
-       one-viewport transform budget. */
-    .tile-image {
-        transition: transform 300ms cubic-bezier(0.23, 1, 0.32, 1);
     }
 
     .chip-link {
@@ -359,54 +347,13 @@
         background: var(--foreground-strong);
     }
 
-    .stack-rule {
-        height: 1px;
-        flex: 1;
-        background: var(--divider);
-    }
 
-    .stack-item {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        border: 1px solid var(--divider);
-        border-radius: 0.5rem;
-        padding: 0.4rem 0.65rem;
-        color: var(--foreground-strong);
-        font-size: 0.8125rem;
-        font-weight: 500;
-        line-height: 1;
-        transition:
-            border-color 180ms ease,
-            opacity 180ms ease,
-            transform 180ms ease;
-    }
 
-    .stack-item__icon {
-        width: 1rem;
-        height: 1rem;
-        flex-shrink: 0;
-        background-color: var(--stack-color, currentColor);
-        -webkit-mask-position: center;
-        -webkit-mask-repeat: no-repeat;
-        -webkit-mask-size: contain;
-        mask-position: center;
-        mask-repeat: no-repeat;
-        mask-size: contain;
-        transition: transform 180ms ease;
-    }
 
     @media (min-width: 640px) and (hover: hover) and (pointer: fine) {
-        .stack-groups:has(.stack-item:hover) .stack-item:not(:hover) {
-            opacity: 0.4;
-        }
 
         .hover-row:hover {
             background: var(--hover);
-        }
-
-        .group:hover .tile-image {
-            transform: scale(1.03);
         }
 
         .chip-link:hover {
@@ -414,18 +361,7 @@
             background: var(--hover);
         }
 
-        .stack-item:hover {
-            border-color: color-mix(
-                in oklab,
-                var(--stack-color, var(--accent)) 60%,
-                var(--divider)
-            );
-            transform: translateY(-1px);
-        }
 
-        .stack-item:hover .stack-item__icon {
-            transform: scale(1.14);
-        }
 
         .diagram-trigger:hover .diagram-trigger__action {
             color: var(--foreground-strong);

@@ -56,7 +56,7 @@ The articles index behaves as a small technical library rather than a chronologi
 
 ## Home Composition
 
-The home page states what Harikesh builds, then says in his own words why he builds it, then shows the evidence. The hero folds in one paragraph of About with a link to the full page, followed by contact chips. Writing comes first among the evidence: two featured diagram guides as image tiles, then the latest authored guides, newest first, so publishing surfaces new work automatically. Work rows carry their own outcomes so proof is visible before any disclosure is opened. A GitHub contribution graph and the grouped stack follow, so visitors can see what he works with without a skills list detached from the work.
+The home page follows the quiet text-first pattern: a name and role header, a short first-person introduction with inline contact links, then Work, Writing, and Stack as plain lists at body size. Work rows name the company, role, and dates and link to the Resume for outcomes. Writing shows only guides Harikesh wrote, newest first, so publishing surfaces new work automatically. Stack is a short ruled list so visitors can see what he works with. The GitHub contribution graph lives on About, and site navigation lives in the footer.
 
 ## Syndication
 
