@@ -26,6 +26,9 @@
     --keyword-ship: oklch(0.52 0.17 255);
     --keyword-learn: oklch(0.52 0.19 345);
     --keyword-backend: oklch(0.5 0.13 150);
+    /* Sketch marks in the prose: a graphite pencil and a soft highlighter. */
+    --sketch-ink: oklch(0.42 0.02 60 / 72%);
+    --sketch-marker: oklch(0.91 0.13 95 / 60%);
     /* Event-loop pond: CSS water shown until WebGL draws, matching the shader. */
     --pond-shallow: rgb(158 191 186);
     --pond-deep: rgb(102 143 140);
@@ -52,6 +55,8 @@
     --keyword-ship: oklch(0.75 0.13 255);
     --keyword-learn: oklch(0.76 0.14 345);
     --keyword-backend: oklch(0.77 0.14 150);
+    --sketch-ink: oklch(0.8 0.02 60 / 62%);
+    --sketch-marker: oklch(0.74 0.13 78 / 26%);
     --pond-shallow: rgb(28 59 61);
     --pond-deep: rgb(13 31 33);
     --pond-label: rgb(190 235 230 / 70%);
@@ -396,6 +401,61 @@
 
     .intro-keyword[data-tone="backend"] {
         --keyword-tone: var(--keyword-backend);
+    }
+
+    /*
+     * Pencil marks on a few words. The stroke is an SVG stretched to the words
+     * and revealed once, left to right, with a clip-path wipe like a pen moving
+     * across the page. The insets overflow vertically so thick strokes and
+     * round caps are never cut off.
+     */
+    .sketch-mark {
+        position: relative;
+        isolation: isolate;
+        white-space: nowrap;
+    }
+
+    .sketch-mark__stroke {
+        position: absolute;
+        overflow: visible;
+        pointer-events: none;
+        clip-path: inset(-60% 100% -60% -6%);
+    }
+
+    .sketch-mark[data-drawn] .sketch-mark__stroke {
+        clip-path: inset(-60% -6% -60% -6%);
+    }
+
+    .sketch-mark[data-kind="underline"] .sketch-mark__stroke {
+        right: -0.05em;
+        bottom: -0.34em;
+        left: -0.05em;
+        width: calc(100% + 0.1em);
+        height: 0.5em;
+        color: var(--sketch-ink);
+    }
+
+    .sketch-mark[data-kind="marker"] .sketch-mark__stroke {
+        z-index: -1;
+        top: 0.08em;
+        right: -0.18em;
+        bottom: 0;
+        left: -0.18em;
+        width: calc(100% + 0.36em);
+        height: calc(100% - 0.08em);
+        color: var(--sketch-marker);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .sketch-mark__stroke {
+            transition: clip-path 560ms cubic-bezier(0.65, 0, 0.35, 1);
+            /* After the home entrance settles; each later mark a beat behind. */
+            transition-delay: calc(300ms + var(--sketch-index, 0) * 420ms);
+        }
+
+        .sketch-mark[data-kind="marker"] .sketch-mark__stroke {
+            transition-duration: 680ms;
+        }
     }
 
     .intro-keyword__icon {

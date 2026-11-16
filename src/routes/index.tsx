@@ -5,6 +5,7 @@ import {
     RocketLaunchIcon,
 } from "@phosphor-icons/react";
 import { IntroKeyword } from "../components/IntroKeyword";
+import { SketchMark } from "../components/SketchMark";
 import { MumbaiPond } from "../components/pond/MumbaiPond";
 import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
@@ -83,11 +84,19 @@ function HomePage() {
                     <IntroKeyword icon={HardDrivesIcon} index={2} tone="backend">
                         backend
                     </IntroKeyword>{" "}
-                    on demand, with deadlines and no roadmap, and I write{" "}
+                    on demand, with deadlines and{" "}
+                    <SketchMark index={0} kind="underline">
+                        no roadmap
+                    </SketchMark>
+                    , and I write{" "}
                     <Link className="text-link" to="/articles">
                         guides
                     </Link>{" "}
-                    to find out how much I had wrong.
+                    to find out{" "}
+                    <SketchMark index={1} kind="marker">
+                        how much I had wrong
+                    </SketchMark>
+                    .
                 </StaggerReveal.Item>
                 <StaggerReveal.Item
                     as="p"

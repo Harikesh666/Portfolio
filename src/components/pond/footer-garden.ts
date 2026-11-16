@@ -33,10 +33,7 @@ uniform float uDpr;
 uniform vec2 uTile;
 uniform vec4 uBrush;
 uniform float uGrow;
-uniform vec3 uShallow;
-uniform vec3 uLight;
-uniform float uNight;
-uniform float uFloor;
+uniform float uBrightness;
 out vec4 outColor;
 ${glslNoise}
 ${glslRippleHeight}
@@ -81,9 +78,9 @@ void main() {
     color *= 1.0 - 0.24 * (reach < 1.0 ? pow(1.0 - reach, 2.0) : 0.0) * step(0.01, uBrush.w);
 
     // Lit for the Mumbai hour: as bright as the water, tinted by the light, cool at night.
-    float ambient = clamp(dot(uShallow, vec3(0.333)) * 1.45, uFloor, 1.0);
-    color = mix(color, color * uLight, 0.35) * ambient;
-    color = mix(color, color * vec3(0.78, 0.86, 1.12), uNight * 0.4);
+    // The photo keeps its own colours at every hour (pink stays pink); the
+    // dark theme and night only dim it a little.
+    color *= uBrightness;
     outColor = vec4(color * alpha, alpha);
 }
 `;
@@ -133,7 +130,7 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
     const ripples: Ripples = simulation;
     const u = uniforms(gl, program, [
         "uImage", "uState", "uSimSize", "uCss", "uDpr", "uTile", "uBrush", "uGrow",
-        "uShallow", "uLight", "uNight", "uFloor",
+        "uBrightness",
     ]);
     const screen = createFullscreenTriangle(gl, [program]);
     const imageTexture = gl.createTexture();
@@ -197,12 +194,7 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
         gl.uniform2f(u.uTile, (imageSize.width / imageSize.height) * tileHeight, tileHeight);
         gl.uniform4f(u.uBrush, brush.x, brush.y, brushRadius, brush.strength * brushPush);
         gl.uniform1f(u.uGrow, grow);
-        gl.uniform3fv(u.uShallow, light.shallow);
-        gl.uniform3fv(u.uLight, light.light);
-        gl.uniform1f(u.uNight, light.night);
-        // Night and the dark theme dim the garden, but it always stays legible:
-        // moonlit on a dark page, dusk-dim on a light one, never a murky band.
-        gl.uniform1f(u.uFloor, dark ? 0.62 : 0.66);
+        gl.uniform1f(u.uBrightness, (dark ? 0.86 : 1) * (1 - 0.1 * light.night));
         gl.drawArrays(gl.TRIANGLES, 0, 3);
     }
 
