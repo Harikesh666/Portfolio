@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import type { Plugin } from "vite";
-import { readFile } from "node:fs/promises";
-import { relative } from "node:path";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { dirname, relative } from "node:path";
 
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 
@@ -19,6 +19,11 @@ import {
     extractMinimapItems,
     extractTocItems,
 } from "./src/lib/content-headings.ts";
+import {
+    parseContributionCalendar,
+    type ContributionCalendar,
+} from "./src/lib/github-contributions.ts";
+import { site } from "./src/lib/site.ts";
 import { nitro } from "nitro/vite";
 import pierreDark from "@pierre/theme/pierre-dark";
 import pierreLight from "@pierre/theme/pierre-light";
@@ -36,6 +41,76 @@ function guideToc(): Plugin {
                 code: `${code}\nexport const toc = ${JSON.stringify(extractTocItems(source))};\nexport const minimap = ${JSON.stringify(extractMinimapItems(source))};`,
                 map: null,
             };
+        },
+    };
+}
+
+const contributionsCacheFile = "node_modules/.cache/github-contributions.json";
+const contributionsMaxAgeMs = 12 * 60 * 60 * 1000;
+
+type CachedContributions = {
+    fetchedAt: number;
+    calendar: ContributionCalendar | null;
+};
+
+async function readCachedContributions() {
+    try {
+        return JSON.parse(
+            await readFile(contributionsCacheFile, "utf8"),
+        ) as CachedContributions;
+    } catch {
+        return undefined;
+    }
+}
+
+async function loadContributions(username: string) {
+    const cached = await readCachedContributions();
+    if (cached && Date.now() - cached.fetchedAt < contributionsMaxAgeMs) {
+        return cached.calendar;
+    }
+
+    try {
+        const response = await fetch(
+            `https://github.com/users/${username}/contributions`,
+            { signal: AbortSignal.timeout(10_000) },
+        );
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const calendar = parseContributionCalendar(await response.text());
+        await mkdir(dirname(contributionsCacheFile), { recursive: true });
+        await writeFile(
+            contributionsCacheFile,
+            JSON.stringify({ fetchedAt: Date.now(), calendar }),
+        );
+        return calendar;
+    } catch (error) {
+        console.warn(
+            `[github-contributions] using ${cached ? "stale cache" : "no graph"}: ${String(error)}`,
+        );
+        return cached?.calendar ?? null;
+    }
+}
+
+/**
+ * Exposes the public GitHub contribution calendar as
+ * `virtual:github-contributions`, resolved once per build so prerendered
+ * HTML and hydration read identical data.
+ */
+function githubContributions(): Plugin {
+    const virtualId = "virtual:github-contributions";
+    const resolvedId = `\0${virtualId}`;
+    const username = new URL(site.socials.github).pathname.replaceAll("/", "");
+    let calendar: Promise<ContributionCalendar | null> | undefined;
+
+    return {
+        name: "github-contributions",
+        resolveId(id) {
+            return id === virtualId ? resolvedId : null;
+        },
+        async load(id) {
+            if (id !== resolvedId) return null;
+            calendar ??= loadContributions(username);
+            return `export default ${JSON.stringify(await calendar)};`;
         },
     };
 }
@@ -105,6 +180,7 @@ const config = defineConfig({
                 ],
         }),
         guideToc(),
+        githubContributions(),
     ],
 });
 

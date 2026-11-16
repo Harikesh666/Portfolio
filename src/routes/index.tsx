@@ -1,6 +1,15 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { CaretDownIcon } from "@phosphor-icons/react";
+import {
+    ArrowUpRightIcon,
+    CaretDownIcon,
+    EnvelopeSimpleIcon,
+    FileTextIcon,
+    GithubLogoIcon,
+    LinkedinLogoIcon,
+} from "@phosphor-icons/react";
 import { useState } from "react";
+import { ContributionGraph } from "../components/ContributionGraph";
+import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { homeStructuredData } from "../lib/agent-readiness";
 import { authoredPosts } from "../lib/content";
@@ -14,6 +23,32 @@ const homeUrl = absoluteUrl();
 const homeImage = absoluteUrl("/og.png");
 const homeIntro =
     "I'm a software engineer. I specialize in backend work, and I ship full-stack applications when that's what the work needs.";
+
+/** Guides with a hand-drawn diagram, shown as image tiles above the list. */
+const featuredGuides = [
+    {
+        slug: "how-javascript-keeps-track-of-running-code",
+        image: "/diagrams/execution-context.png",
+        width: 1273,
+        height: 629,
+    },
+    {
+        slug: "asynchronous-javascript-event-loop",
+        image: "/diagrams/event-loop-timer-ready.png",
+        width: 2008,
+        height: 1003,
+    },
+] as const;
+
+const featuredPosts = featuredGuides.flatMap((guide) => {
+    const post = authoredPosts.find((entry) => entry.slug === guide.slug);
+    return post ? [{ ...guide, post }] : [];
+});
+const latestPosts = authoredPosts
+    .filter((post) => !featuredPosts.some((entry) => entry.slug === post.slug))
+    .slice(0, 4);
+
+const sectionClassName = "mt-16 sm:mt-24";
 
 export const Route = createFileRoute("/")({
     head: () => ({
@@ -48,108 +83,169 @@ function HomePage() {
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10"
         >
             <StaggerReveal as="header">
-                <StaggerReveal.Item
-                    as="p"
-                    className="font-mono text-[13px] font-medium tracking-[-0.005em] text-muted"
-                >
-                    Software Engineer, Mumbai
-                </StaggerReveal.Item>
                 <StaggerReveal.Headline
                     as="h1"
-                    className="mt-7 text-pretty leading-relaxed text-foreground"
+                    className="text-pretty text-[17px] leading-relaxed text-foreground-strong"
                 >
                     {homeIntro}
                 </StaggerReveal.Headline>
                 <StaggerReveal.Item
                     as="p"
-                    className="mt-5 flex flex-wrap items-center gap-x-2 font-mono text-sm text-foreground"
+                    className="mt-4 text-pretty leading-relaxed text-foreground"
                 >
-                    <a
-                        className="underline decoration-accent underline-offset-4 hover:text-accent"
-                        href={`mailto:${site.email}`}
-                    >
-                        Email
+                    Mostly I like shipping software and learning things I
+                    don't know yet. I learned backend on demand, with deadlines
+                    and no roadmap, and I write{" "}
+                    <Link className="text-link" to="/articles">
+                        guides
+                    </Link>{" "}
+                    to find out how much I had wrong.{" "}
+                    <Link className="text-link" to="/about">
+                        More about me
+                    </Link>
+                    .
+                </StaggerReveal.Item>
+                <StaggerReveal.Item
+                    as="div"
+                    className="mt-6 flex flex-wrap items-center gap-2"
+                >
+                    <a className="chip-link" href={`mailto:${site.email}`}>
+                        <EnvelopeSimpleIcon aria-hidden="true" size={15} />
+                        Email me
                     </a>
-                    <span aria-hidden="true">·</span>
                     <a
-                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        className="chip-link"
                         href={site.socials.github}
-                        target="_blank"
                         rel="noreferrer"
+                        target="_blank"
                     >
+                        <GithubLogoIcon aria-hidden="true" size={15} />
                         GitHub
                     </a>
-                    <span aria-hidden="true">·</span>
                     <a
-                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        className="chip-link"
                         href={site.socials.linkedin}
-                        target="_blank"
                         rel="noreferrer"
+                        target="_blank"
                     >
+                        <LinkedinLogoIcon aria-hidden="true" size={15} />
                         LinkedIn
                     </a>
-                    <span aria-hidden="true">·</span>
                     <a
-                        className="underline decoration-accent underline-offset-4 hover:text-accent"
+                        className="chip-link"
                         href={site.resumePdfPath}
-                        target="_blank"
                         rel="noreferrer"
+                        target="_blank"
                     >
+                        <FileTextIcon aria-hidden="true" size={15} />
                         Resume
                     </a>
                 </StaggerReveal.Item>
             </StaggerReveal>
-            <section aria-labelledby="about-heading" className="mt-14">
-                <h2
-                    className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
-                    id="about-heading"
+
+            <section
+                aria-labelledby="writing-heading"
+                className={sectionClassName}
+            >
+                <SectionHeading id="writing-heading">Writing</SectionHeading>
+                <ul
+                    className="mt-5 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2"
+                    role="list"
                 >
-                    About
-                </h2>
-                <div className="mt-4 space-y-4 text-foreground">
-                    <p>
-                        Mostly I like shipping software and learning things I
-                        don't know yet. I learned backend on demand, with
-                        deadlines and no roadmap, and I write here to find out
-                        how much I had wrong.
-                    </p>
-                </div>
-                <Link
-                    className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
-                    to="/about"
-                >
-                    More about me →
+                    {featuredPosts.map(({ height, image, post, width }) => (
+                        <li className="min-w-0" key={post.slug}>
+                            <Link
+                                className="group block rounded-xl"
+                                params={{ slug: post.slug }}
+                                to="/articles/$slug"
+                            >
+                                <span className="block overflow-hidden rounded-xl border border-divider bg-white p-4">
+                                    <img
+                                        alt=""
+                                        className="tile-image aspect-[16/10] w-full object-contain"
+                                        decoding="async"
+                                        height={height}
+                                        loading="lazy"
+                                        src={image}
+                                        width={width}
+                                    />
+                                </span>
+                                <span className="mt-3 block font-medium leading-snug text-foreground-strong">
+                                    {post.title}
+                                </span>
+                                <span className="mt-1 block text-sm leading-normal text-muted">
+                                    {post.description}
+                                </span>
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+                <ol className="mt-6">
+                    {latestPosts.map((post) => (
+                        <li key={post.slug}>
+                            <Link
+                                className="hover-row"
+                                params={{ slug: post.slug }}
+                                to="/articles/$slug"
+                            >
+                                <span className="flex items-baseline justify-between gap-4">
+                                    <span className="min-w-0 font-medium leading-snug text-foreground-strong">
+                                        {post.title}
+                                    </span>
+                                    <span className="hidden shrink-0 text-[13px] tabular-nums text-muted sm:inline">
+                                        {post.readTime}
+                                    </span>
+                                </span>
+                                <span className="mt-0.5 block text-sm leading-normal text-muted">
+                                    {post.description}
+                                </span>
+                            </Link>
+                        </li>
+                    ))}
+                </ol>
+                <Link className="chip-link mt-6" to="/articles">
+                    All {authoredPosts.length} guides
+                    <ArrowUpRightIcon aria-hidden="true" size={13} />
                 </Link>
             </section>
 
-            <section id="work" className="mt-14">
-                <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
-                    Work
-                </h2>
-                <div className="mt-4 border-t border-divider">
+            <section
+                aria-labelledby="work-heading"
+                className={sectionClassName}
+                id="work"
+            >
+                <SectionHeading id="work-heading">Work</SectionHeading>
+                <div className="mt-4">
                     {resumeExperience.map((experience) => (
-                        <article
-                            className="border-b border-divider py-5"
-                            key={experience.company}
-                        >
+                        <article key={experience.company}>
                             <WorkExperience experience={experience} />
                         </article>
                     ))}
                 </div>
             </section>
 
-            <section aria-labelledby="stack-heading" className="mt-14">
-                <h2
-                    className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted"
-                    id="stack-heading"
-                >
-                    Stack
-                </h2>
-                <div className="stack-groups mt-5 space-y-6">
+            <section
+                aria-labelledby="activity-heading"
+                className={sectionClassName}
+            >
+                <SectionHeading id="activity-heading">
+                    GitHub activity
+                </SectionHeading>
+                <div className="mt-5">
+                    <ContributionGraph />
+                </div>
+            </section>
+
+            <section
+                aria-labelledby="stack-heading"
+                className={sectionClassName}
+            >
+                <SectionHeading id="stack-heading">Stack</SectionHeading>
+                <div className="stack-groups mt-5 space-y-5">
                     {stackGroups.map((group) => (
                         <div key={group.label}>
                             <p className="flex items-center gap-3">
-                                <span className="shrink-0 font-mono text-[11px] font-medium uppercase tracking-widest text-muted">
+                                <span className="shrink-0 text-[13px] text-muted">
                                     {group.label}
                                 </span>
                                 <span
@@ -188,47 +284,9 @@ function HomePage() {
                         </div>
                     ))}
                 </div>
-                <Link
-                    className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
-                    to="/resume"
-                >
-                    Full stack and what I built with it →
-                </Link>
-            </section>
-
-            <section className="mt-14">
-                <h2 className="font-mono text-[12px] font-medium uppercase tracking-widest text-muted">
-                    Articles
-                </h2>
-                <ol className="mt-4 border-t border-divider">
-                    {authoredPosts.slice(0, 3).map((post) => (
-                        <li className="border-b border-divider" key={post.slug}>
-                            <Link
-                                className="group block py-5"
-                                to="/articles/$slug"
-                                params={{ slug: post.slug }}
-                            >
-                                <span className="font-mono text-sm text-accent">
-                                    {post.category}
-                                </span>
-                                <span className="mt-1 block text-[17px] font-semibold leading-snug text-foreground-strong group-hover:text-accent">
-                                    {post.title}
-                                </span>
-                                <span className="mt-1 block text-sm text-muted">
-                                    {post.description}
-                                </span>
-                                <span className="mt-2 block text-sm text-muted">
-                                    {post.date} · {post.readTime}
-                                </span>
-                            </Link>
-                        </li>
-                    ))}
-                </ol>
-                <Link
-                    className="mt-5 inline-block font-mono text-sm underline decoration-accent underline-offset-4 hover:text-accent"
-                    to="/articles"
-                >
-                    View all articles →
+                <Link className="chip-link mt-6" to="/resume">
+                    What I built with it
+                    <ArrowUpRightIcon aria-hidden="true" size={13} />
                 </Link>
             </section>
         </main>
@@ -249,43 +307,46 @@ function WorkExperience({
                 <button
                     aria-controls={detailsId}
                     aria-expanded={isExpanded}
-                    className="group flex w-full flex-col gap-1 text-left sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
+                    className="hover-row group w-[calc(100%+1.5rem)] text-left"
                     onClick={() => setIsExpanded((value) => !value)}
                     type="button"
                 >
-                    <span className="font-semibold text-foreground-strong">
-                        {experience.role}, {experience.company}
+                    <span className="flex items-baseline justify-between gap-4">
+                        <span className="min-w-0 font-medium leading-snug text-foreground-strong">
+                            {experience.company}
+                        </span>
+                        <span className="flex shrink-0 items-center gap-2 text-[13px] tabular-nums text-muted">
+                            {experience.dates}
+                            <CaretDownIcon
+                                aria-hidden="true"
+                                className={`size-3.5 text-muted group-hover:text-foreground-strong ${
+                                    isExpanded ? "rotate-180" : "rotate-0"
+                                }`}
+                                style={{ transition: workDisclosureTransition }}
+                            />
+                        </span>
                     </span>
-                    <span className="flex w-full items-center justify-between gap-2.5 font-mono text-sm text-muted sm:w-auto sm:shrink-0 sm:justify-start">
-                        {experience.dates}
-                        <CaretDownIcon
-                            aria-hidden="true"
-                            className={`size-3.5 text-muted group-hover:text-foreground-strong ${
-                                isExpanded ? "rotate-180" : "rotate-0"
-                            }`}
-                            style={{ transition: workDisclosureTransition }}
-                        />
+                    <span className="mt-0.5 block text-sm font-normal text-muted">
+                        {experience.role}
                     </span>
+                    {experience.outcome && (
+                        <span className="mt-2 block text-sm font-normal leading-normal text-foreground">
+                            {experience.outcome}
+                        </span>
+                    )}
                 </button>
             </h3>
 
-            {experience.outcome && (
-                <p className="mt-2 text-sm text-foreground">
-                    {experience.outcome}
-                </p>
-            )}
-
-            {experience.stack && (
-                <p className="mt-2 font-mono text-[12px] text-muted">
-                    {experience.stack.join(" · ")}
-                </p>
-            )}
-
             {isExpanded && (
                 <div
-                    className="mt-4 border-l border-divider pl-4"
+                    className="mb-4 mt-2 border-l border-divider pl-4"
                     id={detailsId}
                 >
+                    {experience.stack && (
+                        <p className="mb-4 text-[13px] text-muted">
+                            {experience.stack.join(" · ")}
+                        </p>
+                    )}
                     {experience.projects?.map((project, index) => (
                         <section
                             className={index === 0 ? "" : "mt-5"}

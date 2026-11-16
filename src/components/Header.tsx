@@ -17,7 +17,7 @@ import { posts } from "../lib/content";
 import { site } from "../lib/site";
 
 const navLinkClassName =
-    "py-1 text-muted hover:text-foreground-strong data-[status=active]:font-semibold data-[status=active]:text-foreground-strong";
+    "nav-link inline-flex h-7 items-center rounded-full px-3 text-muted hover:text-foreground-strong data-[status=active]:bg-hover data-[status=active]:text-foreground-strong";
 
 type HeaderMode = "breadcrumb" | "identity";
 
@@ -40,9 +40,9 @@ function ensureThemeGifTransitionStyles() {
 const headerGeometry = {
     identity: {
         avatarSize: 44, // h-11 → 44px
-        avatarY: 32, // pt-8 → 32px
-        height: 188, // pt-8 + h-11 + mt-4 + leading-9 + mt-2 + h-11 + pb-2 → 188px
-        toggleY: 136, // 188px header - pb-2 (8px) - h-11 (44px) → 136px
+        avatarY: 48, // pt-12 → 48px
+        height: 160, // pt-12 + h-11 + mt-6 + h-9 + pb-2 → 48 + 44 + 24 + 36 + 8 = 160px
+        toggleY: 48, // pt-12 → 48px, aligned with the h-11 identity row
     },
     breadcrumb: {
         avatarSize: 24, // h-6 → 24px
@@ -145,7 +145,7 @@ function ThemeToggle({
     return (
         <motion.button
             animate={{ y: headerGeometry[mode].toggleY }}
-            className="absolute z-10 inline-flex min-h-11 min-w-11 items-center justify-center text-foreground-strong hover:text-accent"
+            className="absolute z-10 inline-flex min-h-11 min-w-11 items-center justify-center text-muted hover:text-foreground-strong"
             initial={false}
             style={{ top: 0, right: 20 }}
             type="button"
@@ -196,19 +196,25 @@ function ThemeToggle({
 
 function IdentityHeader() {
     return (
-        <div className="flex flex-col px-5 pb-2 pt-8">
-            <span aria-hidden="true" className="h-11 w-11" />
-            <p className="mt-4 leading-9">
-                <Link
-                    className="text-[1.4rem] font-semibold tracking-[-0.025em] text-foreground-strong"
-                    to="/"
-                >
-                    {site.name}
-                </Link>
-            </p>
+        <div className="flex flex-col px-5 pb-2 pt-12">
+            <div className="flex h-11 items-center gap-3">
+                <span aria-hidden="true" className="h-11 w-11 shrink-0" />
+                <p className="flex min-w-0 flex-col leading-5">
+                    <Link
+                        className="truncate text-[15px] font-medium text-foreground-strong"
+                        to="/"
+                    >
+                        {site.name}
+                    </Link>
+                    <span className="truncate text-sm text-muted">
+                        Software Engineer · Mumbai
+                    </span>
+                </p>
+                <span aria-hidden="true" className="ml-auto h-11 w-11 shrink-0" />
+            </div>
             <nav
                 aria-label="Main navigation"
-                className="mt-2 flex items-center gap-5 whitespace-nowrap text-sm"
+                className="mt-6 flex h-9 w-fit items-center gap-0.5 whitespace-nowrap rounded-full border border-divider p-1 text-[13px] font-medium"
             >
                 <Link
                     activeOptions={{ exact: true }}
@@ -217,16 +223,15 @@ function IdentityHeader() {
                 >
                     Home
                 </Link>
-                <Link className={navLinkClassName} to="/about">
-                    About
-                </Link>
                 <Link className={navLinkClassName} to="/articles">
                     Articles
+                </Link>
+                <Link className={navLinkClassName} to="/about">
+                    About
                 </Link>
                 <Link className={navLinkClassName} to="/resume">
                     Resume
                 </Link>
-                <span aria-hidden="true" className="ml-auto h-11 w-11" />
             </nav>
         </div>
     );
@@ -237,7 +242,7 @@ function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
         <div className="flex min-w-0 items-center gap-2 px-5 py-4 text-sm">
             <span aria-hidden="true" className="h-6 w-6 shrink-0" />
             <Link
-                className="hidden shrink-0 font-medium text-foreground-strong hover:text-accent sm:inline"
+                className="hidden shrink-0 font-medium text-foreground-strong hover:text-muted sm:inline"
                 to="/"
             >
                 {site.name}
@@ -246,7 +251,7 @@ function BreadcrumbHeader({ postTitle }: Readonly<{ postTitle: string }>) {
                 /
             </span>
             <Link
-                className="shrink-0 font-medium text-foreground-strong hover:text-accent"
+                className="shrink-0 font-medium text-foreground-strong hover:text-muted"
                 to="/articles"
             >
                 Articles
