@@ -439,6 +439,101 @@
         }
     }
 
+    /* Stack chips: grey icons that take their brand colour while the row is
+       hovered, left to right. Touch screens show the colours at rest. */
+    .stack-chip {
+        display: inline-flex;
+        height: 1.875rem;
+        align-items: center;
+        gap: 0.45rem;
+        border: 1px solid var(--divider);
+        border-radius: 9999px;
+        padding: 0 0.7rem 0 0.55rem;
+        color: var(--foreground-strong);
+        font-size: 0.8125rem;
+        font-weight: 500;
+        line-height: 1;
+        transition:
+            background-color 150ms ease,
+            border-color 150ms ease;
+    }
+
+    .stack-chip__icon {
+        width: 0.95rem;
+        height: 0.95rem;
+        flex-shrink: 0;
+        background-color: var(--muted);
+        -webkit-mask-position: center;
+        -webkit-mask-repeat: no-repeat;
+        -webkit-mask-size: contain;
+        mask-position: center;
+        mask-repeat: no-repeat;
+        mask-size: contain;
+        transition: background-color 220ms ease;
+        transition-delay: calc(var(--chip-index, 0) * 35ms);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .stack-row:hover .stack-chip__icon {
+            background-color: var(--brand);
+        }
+
+        .stack-chip:hover {
+            border-color: color-mix(in oklab, var(--brand) 45%, var(--divider));
+            background: var(--hover);
+        }
+    }
+
+    @media (hover: none) {
+        .stack-chip__icon {
+            background-color: var(--brand);
+        }
+    }
+
+    .header-link {
+        color: var(--muted);
+        transition: color 150ms ease;
+    }
+
+    .header-link:hover,
+    .header-link[data-status="active"] {
+        color: var(--foreground-strong);
+    }
+
+    /* Phone navigation: a pill fixed within thumb reach. Solid, not blurred. */
+    .mobile-dock {
+        position: fixed;
+        z-index: 40;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 0.75rem);
+        left: 50%;
+        display: flex;
+        gap: 0.125rem;
+        transform: translateX(-50%);
+        border: 1px solid var(--divider);
+        border-radius: 9999px;
+        background: color-mix(in oklab, var(--surface) 94%, transparent);
+        padding: 0.25rem;
+        font-size: 0.8125rem;
+        font-weight: 500;
+    }
+
+    .mobile-dock__link {
+        display: inline-flex;
+        height: 2.5rem;
+        align-items: center;
+        border-radius: 9999px;
+        padding: 0 0.875rem;
+        color: var(--muted);
+        transition:
+            color 150ms ease,
+            background-color 150ms ease;
+    }
+
+    .mobile-dock__link[data-status="active"] {
+        background: var(--hover);
+        color: var(--foreground-strong);
+    }
+
     .event-loop-pond {
         background: linear-gradient(160deg, var(--pond-shallow), var(--pond-deep));
         touch-action: manipulation;

@@ -21,7 +21,7 @@ const siteLinks = [
 
 export default function Footer() {
     return (
-        <footer className="mx-auto mt-16 w-full max-w-2xl px-5 pb-10 sm:mt-32">
+        <footer className="mx-auto mt-16 w-full max-w-2xl px-5 pb-28 sm:mt-32 sm:pb-10">
             <SectionHeading>Elsewhere</SectionHeading>
             <p className="mt-1 text-muted">
                 Interested in working together? Reach me on any of these.

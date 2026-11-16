@@ -5,7 +5,7 @@ import {
     RocketLaunchIcon,
 } from "@phosphor-icons/react";
 import { IntroKeyword } from "../components/IntroKeyword";
-import { EventLoopPond } from "../components/pond/EventLoopPond";
+import { MumbaiPond } from "../components/pond/MumbaiPond";
 import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { homeStructuredData } from "../lib/agent-readiness";
@@ -58,7 +58,7 @@ function HomePage() {
             id="main-content"
         >
             <StaggerReveal.Item className="mb-12 sm:mb-16">
-                <EventLoopPond />
+                <MumbaiPond />
             </StaggerReveal.Item>
             <header>
                 <StaggerReveal.Headline
@@ -185,25 +185,42 @@ function HomePage() {
                 <StaggerReveal.Item>
                     <SectionHeading id="stack-heading">Stack</SectionHeading>
                 </StaggerReveal.Item>
-                <StaggerReveal.Item>
-                    <dl className="mt-4 divide-y divide-divider border-y border-divider">
-                        {stackGroups.map((group) => (
-                            <div
-                                className="flex flex-col gap-0.5 py-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6"
-                                key={group.label}
-                            >
-                                <dt className="shrink-0 text-foreground-strong">
-                                    {group.label}
-                                </dt>
-                                <dd className="text-muted sm:text-right">
-                                    {group.items
-                                        .map((item) => item.name)
-                                        .join(", ")}
-                                </dd>
-                            </div>
-                        ))}
-                    </dl>
-                </StaggerReveal.Item>
+                <dl className="mt-4 divide-y divide-divider border-y border-divider">
+                    {stackGroups.map((group) => (
+                        <StaggerReveal.Item
+                            className="stack-row grid gap-2.5 py-4 sm:grid-cols-[8.5rem_minmax(0,1fr)] sm:items-center sm:gap-6"
+                            key={group.label}
+                        >
+                            <dt className="text-sm text-muted">{group.label}</dt>
+                            <dd className="flex flex-wrap gap-2">
+                                {group.items.map((item, index) => (
+                                    <span
+                                        className="stack-chip"
+                                        key={item.name}
+                                        style={
+                                            {
+                                                "--brand": item.color === "currentColor" ? "var(--foreground-strong)" : item.color,
+                                                "--chip-index": index,
+                                            } as React.CSSProperties
+                                        }
+                                    >
+                                        {item.icon && (
+                                            <span
+                                                aria-hidden="true"
+                                                className="stack-chip__icon"
+                                                style={{
+                                                    maskImage: `url(${item.icon})`,
+                                                    WebkitMaskImage: `url(${item.icon})`,
+                                                }}
+                                            />
+                                        )}
+                                        {item.name}
+                                    </span>
+                                ))}
+                            </dd>
+                        </StaggerReveal.Item>
+                    ))}
+                </dl>
             </section>
         </StaggerReveal>
     );

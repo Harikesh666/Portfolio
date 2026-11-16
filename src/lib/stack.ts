@@ -86,6 +86,11 @@ export const stackGroups: ReadonlyArray<StackGroup> = [
                 color: "#FF9900",
                 icon: "/icons/skills/amazonaws.svg",
             },
+            {
+                name: "GCP",
+                color: "#4285F4",
+                icon: "/icons/skills/cloud.svg",
+            },
         ],
     },
 ];

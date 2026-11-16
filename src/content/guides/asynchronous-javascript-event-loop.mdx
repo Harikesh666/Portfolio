@@ -370,6 +370,8 @@ If every microtask keeps creating another microtask, the queue may never become 
 
 High priority does not mean free. A mountain of tiny microtasks can still bury the page.
 
+<EventLoopPond />
+
 ## setTimeout and fetch: who runs first?
 
 Consider a timer and a network request in the same script:

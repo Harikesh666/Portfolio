@@ -54,9 +54,9 @@ publishedAt: "2026-05-01"
 - Article detail pages use the same collection order for previous/next navigation: `order` within a series or topic.
 - `src/lib/content.ts` eagerly imports only frontmatter. `getPost` renders the guide's MDX to an HTML string on the server (`src/lib/guide-render.server.tsx`), so guide prose never enters the client bundle and the article page injects it as static HTML. Article-list links prefetch article data on hover or touch, then reuse it on a direct click.
 
-### Event-loop pond
+### Ponds
 
-The home page opens with `EventLoopPond` (`src/components/pond/`), a small generative scene that acts out the JavaScript event loop. `pond-scheduler.ts` holds the queue rules and their tests; `pond-water.ts` is the WebGL caustics shader; `pond-engine.ts` simulates and draws the fish. The engine is a lazy chunk loaded after the browser is idle, pauses off-screen and in background tabs, and respects reduced motion by starting paused. No dependencies are involved.
+`src/components/pond/` holds one engine with two modes. The home page uses `MumbaiPond` (garden mode): koi in water lit by the current hour in Mumbai (`pond-daylight.ts`), which gather near the pointer and come to food on tap. The event-loop guide uses `EventLoopPond` as an island: koi act out the task queue, microtasks and the call stack (`pond-scheduler.ts`). `pond-water.ts` is the WebGL caustics shader and `pond-engine.ts` simulates and draws the fish. The engine is a lazy chunk loaded after the browser is idle, pauses off-screen and in background tabs, and starts paused under reduced motion. Add `?pond-hour=18.5` to the home URL to preview another hour. No dependencies are involved.
 
 ### Interactive islands
 

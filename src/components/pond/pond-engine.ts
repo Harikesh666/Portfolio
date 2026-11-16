@@ -1,3 +1,4 @@
+import { daylightAt, mumbaiHour, type Daylight } from "./pond-daylight";
 import { EventLoopModel, type Job } from "./pond-scheduler";
 import { createWater, waterThemes, type Water } from "./pond-water";
 
@@ -23,6 +24,14 @@ type Fish = {
 };
 
 type Ripple = { x: number; y: number; age: number };
+type Pellet = { x: number; y: number; age: number };
+
+/**
+ * "event-loop" acts out the task queue and call stack for the guide.
+ * "garden" is the home pond: Mumbai daylight, wandering koi that gather
+ * near the pointer and come to food when tapped.
+ */
+export type PondMode = "event-loop" | "garden";
 
 /** Joints along each fish's spine; the body bends between them. */
 const segments = 10;
@@ -50,6 +59,19 @@ const personalSpace = 0.75;
 const separationStrength = 38;
 /** The longest step the simulation takes, so a stalled frame never teleports fish. */
 const maxStepSeconds = 0.05;
+/** Koi in the garden pond. */
+const gardenFishCount = 6;
+/** Fish notice the pointer within this many pixels and gather around it. */
+const pointerReach = 170;
+/** Fish notice food within this many pixels. */
+const foodReach = 240;
+/** Food pellets dropped per tap, and how long uneaten food lasts, in seconds. */
+const pelletsPerTap = 4;
+const pelletLifetime = 7;
+/** At full night the koi slow to this share of their daytime pace. */
+const nightPace = 0.6;
+/** How often the garden re-reads the Mumbai clock, in seconds. */
+const daylightRefreshSeconds = 20;
 /** Fish canvas resolution cap; the water renders at a lower cap to spare the GPU. */
 const fishPixelRatioCap = 2;
 const waterPixelRatioCap = 1.5;
@@ -324,11 +346,17 @@ function drawGuides(context: CanvasRenderingContext2D, layout: Layout, ink: stri
 export type Pond = Readonly<{
     resize(): void;
     setActive(active: boolean): void;
-    addTask(x: number, y: number): void;
+    /** A tap: queues a timer in event-loop mode, drops food in the garden. */
+    poke(x: number, y: number): void;
+    /** Pointer position over the pond, or null when it leaves. */
+    setPointer(point: { x: number; y: number } | null): void;
     destroy(): void;
 }>;
 
 type PondOptions = Readonly<{
+    mode: PondMode;
+    /** Fixes the garden's hour (0 to 24) instead of reading the Mumbai clock. */
+    hourOverride?: number;
     container: HTMLElement;
     waterCanvas: HTMLCanvasElement;
     fishCanvas: HTMLCanvasElement;
@@ -342,7 +370,12 @@ type PondOptions = Readonly<{
 }>;
 
 export function createPond(options: PondOptions): Pond {
-    const { container, waterCanvas, fishCanvas, reducedMotion, isDark } = options;
+    const { mode, hourOverride, container, waterCanvas, fishCanvas, reducedMotion, isDark } = options;
+    const isGarden = mode === "garden";
+    const pellets: Pellet[] = [];
+    let pointer: Vec | null = null;
+    let daylightHour = hourOverride ?? mumbaiHour();
+    let daylightAge = 0;
     const water: Water | null = createWater(waterCanvas);
     const context = fishCanvas.getContext("2d");
     const model = new EventLoopModel();
@@ -358,10 +391,11 @@ export function createPond(options: PondOptions): Pond {
     let isActive = false;
 
     const fishLength = () => fishLengthFor(height);
-    const randomFreePoint = (): Vec => ({
-        x: random(layout.free.x0, layout.free.x1),
-        y: random(layout.free.y0, layout.free.y1),
-    });
+    const randomFreePoint = (): Vec =>
+        isGarden
+            ? { x: random(width * 0.1, width * 0.9), y: random(height * 0.2, height * 0.8) }
+            : { x: random(layout.free.x0, layout.free.x1), y: random(layout.free.y0, layout.free.y1) };
+    const daylight = (): Daylight => daylightAt(daylightHour, isDark());
 
     function addFish(kind: Job["kind"], at: Vec, heading = random(-Math.PI, Math.PI)) {
         const job: Job = { id: nextId++, kind };
@@ -423,7 +457,72 @@ export function createPond(options: PondOptions): Pond {
         }
     }
 
+    function gardenStep(dt: number) {
+        daylightAge += dt;
+        if (hourOverride === undefined && daylightAge > daylightRefreshSeconds) {
+            daylightAge = 0;
+            daylightHour = mumbaiHour();
+        }
+        const pace = 1 - daylight().night * (1 - nightPace);
+
+        for (const fish of fishes) {
+            const head = fish.points[0];
+            let nearest: Pellet | undefined;
+            let nearestDistance = Infinity;
+            for (const pellet of pellets) {
+                const distance = Math.hypot(pellet.x - head.x, pellet.y - head.y);
+                if (distance < nearestDistance) {
+                    nearest = pellet;
+                    nearestDistance = distance;
+                }
+            }
+
+            if (nearest && nearestDistance < foodReach) {
+                steer(fish, nearest, taskSpeed * 1.15 * pace, dt);
+                if (nearestDistance < fish.length * 0.2) {
+                    pellets.splice(pellets.indexOf(nearest), 1);
+                    ripples.push({ x: nearest.x, y: nearest.y, age: 0.55 });
+                }
+                continue;
+            }
+
+            if (pointer && Math.hypot(pointer.x - head.x, pointer.y - head.y) < pointerReach) {
+                // Each fish takes its own spot on a ring, so they gather instead of piling up.
+                const angle = fish.job.id * 2.39996 + time * 0.25;
+                const ring = fish.length * 0.65;
+                steer(
+                    fish,
+                    { x: pointer.x + Math.cos(angle) * ring, y: pointer.y + Math.sin(angle) * ring },
+                    taskSpeed * 0.9 * pace,
+                    dt,
+                );
+                continue;
+            }
+
+            if (Math.hypot(fish.target.x - head.x, fish.target.y - head.y) < 14) {
+                fish.target = randomFreePoint();
+            }
+            steer(fish, fish.target, taskSpeed * 0.55 * pace, dt);
+        }
+
+        for (let i = pellets.length - 1; i >= 0; i--) {
+            pellets[i].age += dt;
+            pellets[i].y += dt * 1.5;
+            if (pellets[i].age > pelletLifetime) pellets.splice(i, 1);
+        }
+    }
+
     function step(dt: number) {
+        if (isGarden) {
+            time += dt;
+            gardenStep(dt);
+            separate(dt);
+            for (let i = ripples.length - 1; i >= 0; i--) {
+                ripples[i].age += dt * 1.1;
+                if (ripples[i].age >= 1) ripples.splice(i, 1);
+            }
+            return;
+        }
         time += dt;
         if (!model.running) {
             const job = model.next();
@@ -501,17 +600,55 @@ export function createPond(options: PondOptions): Pond {
         }
     }
 
+    function drawMoon(night: number) {
+        if (!context || night < 0.05) return;
+        const x = width * 0.82;
+        const y = height * 0.3;
+        const radius = height * 0.14;
+        const glow = context.createRadialGradient(x, y, 0, x, y, radius * 2.4);
+        glow.addColorStop(0, `rgba(235, 242, 255, ${0.34 * night})`);
+        glow.addColorStop(0.35, `rgba(220, 232, 255, ${0.12 * night})`);
+        glow.addColorStop(1, "rgba(220, 232, 255, 0)");
+        context.fillStyle = glow;
+        context.fillRect(x - radius * 2.4, y - radius * 2.4, radius * 4.8, radius * 4.8);
+        // The reflection breaks into short wavering streaks below the moon.
+        context.strokeStyle = `rgba(240, 246, 255, ${0.28 * night})`;
+        context.lineWidth = 1.5;
+        for (let i = 0; i < 5; i++) {
+            const streakY = y + radius * (0.9 + i * 0.42);
+            const sway = Math.sin(time * 1.3 + i * 1.7) * radius * 0.25;
+            const half = radius * (0.7 - i * 0.1);
+            context.beginPath();
+            context.moveTo(x - half + sway, streakY);
+            context.lineTo(x + half + sway, streakY);
+            context.stroke();
+        }
+    }
+
     function draw() {
         const dark = isDark();
-        water?.render(time, waterThemes[dark ? "dark" : "light"]);
+        const light = isGarden ? daylight() : undefined;
+        water?.render(time, light ?? waterThemes[dark ? "dark" : "light"]);
         if (!context) return;
 
         const ratio = Math.min(fishPixelRatioCap, window.devicePixelRatio || 1);
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
         context.clearRect(0, 0, width, height);
-        drawGuides(context, layout, dark ? "rgba(170, 225, 220, 0.32)" : "rgba(255, 255, 255, 0.7)");
+        if (light) {
+            drawMoon(light.night);
+        } else {
+            drawGuides(context, layout, dark ? "rgba(170, 225, 220, 0.32)" : "rgba(255, 255, 255, 0.7)");
+        }
 
-        const shadow = dark ? "rgba(0, 0, 0, 0.32)" : "rgba(20, 50, 48, 0.16)";
+        for (const pellet of pellets) {
+            const fade = Math.min(1, (pelletLifetime - pellet.age) / 1.5);
+            context.fillStyle = `rgba(255, 236, 196, ${0.9 * fade})`;
+            context.beginPath();
+            context.arc(pellet.x, pellet.y, 2.2, 0, Math.PI * 2);
+            context.fill();
+        }
+
+        const shadow = dark || (light && light.night > 0.5) ? "rgba(0, 0, 0, 0.3)" : "rgba(20, 50, 48, 0.16)";
         for (const fish of [...fishes].sort((a, b) => a.points[0].y - b.points[0].y)) {
             drawFish(context, fish, shadow);
         }
@@ -554,7 +691,8 @@ export function createPond(options: PondOptions): Pond {
         water?.resize(waterCanvas.width, waterCanvas.height, waterRatio);
 
         if (fishes.length === 0) {
-            for (let i = 0; i < taskFishCount; i++) addFish("task", randomFreePoint());
+            const count = isGarden ? gardenFishCount : taskFishCount;
+            for (let i = 0; i < count; i++) addFish("task", randomFreePoint());
             // Start mid-story, with a queue and a running task, not a blank pond.
             advance(reducedMotion ? 9 : 4);
         } else if (previous.stack.x > 1) {
@@ -583,6 +721,15 @@ export function createPond(options: PondOptions): Pond {
         }
     }
 
+    function feed(x: number, y: number) {
+        ripples.push({ x, y, age: 0 });
+        for (let i = 0; i < pelletsPerTap; i++) {
+            pellets.push({ x: x + random(-14, 14), y: y + random(-10, 10), age: 0 });
+        }
+        if (reducedMotion && !isActive) advance(3);
+        if (!isActive) draw();
+    }
+
     function addTask(x: number, y: number) {
         ripples.push({ x, y, age: 0 });
         const taskFish = fishes.filter((f) => f.job.kind === "task");
@@ -602,7 +749,13 @@ export function createPond(options: PondOptions): Pond {
     return {
         resize,
         setActive,
-        addTask,
+        poke(x, y) {
+            if (isGarden) feed(x, y);
+            else addTask(x, y);
+        },
+        setPointer(point) {
+            pointer = point;
+        },
         destroy() {
             setActive(false);
             water?.destroy();

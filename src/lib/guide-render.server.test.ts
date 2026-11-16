@@ -18,14 +18,18 @@ describe("renderGuideHtml", () => {
         const document = parse(html);
         const islands = document.querySelectorAll("[data-island]");
 
-        expect(islands).toHaveLength(1);
-        expect(islands[0].getAttribute("data-island")).toBe("TimerOrderDemo");
+        expect([...islands].map((island) => island.getAttribute("data-island"))).toEqual([
+            "TimerOrderDemo",
+            "EventLoopPond",
+        ]);
         expect(JSON.parse(islands[0].getAttribute("data-island-props") ?? "")).toEqual({});
         expect(islands[0].querySelector("button")?.textContent).toBe("Run");
+        expect(islands[1].querySelectorAll("canvas")).toHaveLength(2);
         expect(html).not.toContain("data-island-index");
         expect(document.querySelectorAll("h2 a.heading-anchor").length).toBeGreaterThan(0);
         expect(document.querySelector('link[rel="preload"]')).toBeNull();
-    });
+        // The first render cold-compiles the guide and its island modules.
+    }, 30_000);
 
     it("leaves guides without islands as plain prose", async () => {
         const html = await renderGuideHtml(

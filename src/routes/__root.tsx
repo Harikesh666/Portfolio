@@ -24,6 +24,7 @@ import {
 import Footer from "../components/Footer";
 import { FloatingTocProvider } from "../components/TocRegistry";
 import Header, { getHeaderHeight } from "../components/Header";
+import { MobileDock } from "../components/MobileDock";
 import {
     exitTween,
     instantRouteTween,
@@ -145,6 +146,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 <FloatingTocProvider>
                     <RouteTransition>{children}</RouteTransition>
                 </FloatingTocProvider>
+                {/* Outside the animated route tree, so fixed positioning holds. */}
+                <MobileDock />
                 <Scripts />
             </body>
         </html>

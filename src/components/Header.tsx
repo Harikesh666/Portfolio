@@ -18,6 +18,12 @@ import { site } from "../lib/site";
 
 type HeaderMode = "breadcrumb" | "identity";
 
+const headerLinks = [
+    { to: "/articles", label: "Articles" },
+    { to: "/about", label: "About" },
+    { to: "/resume", label: "Resume" },
+] as const;
+
 const themeTransitionStyleId = "theme-gif-mask-transition";
 
 function ensureThemeGifTransitionStyles() {
@@ -195,7 +201,7 @@ function IdentityHeader() {
     return (
         <div className="flex items-center gap-3 px-5 pt-24">
             <span aria-hidden="true" className="h-10 w-10 shrink-0" />
-            <p className="flex min-w-0 flex-col pr-14 font-medium">
+            <p className="flex min-w-0 flex-col pr-14 font-medium sm:pr-0">
                 <Link
                     className="w-fit leading-6 text-foreground-strong"
                     to="/"
@@ -204,6 +210,21 @@ function IdentityHeader() {
                 </Link>
                 <span className="leading-4 text-muted">Software Engineer</span>
             </p>
+            {/* Phones get the bottom dock instead; mr-12 clears the theme toggle. */}
+            <nav
+                aria-label="Primary"
+                className="ml-auto mr-12 hidden items-center gap-5 text-[13px] font-medium sm:flex"
+            >
+                {headerLinks.map((link) => (
+                    <Link
+                        className="header-link"
+                        key={link.to}
+                        to={link.to}
+                    >
+                        {link.label}
+                    </Link>
+                ))}
+            </nav>
         </div>
     );
 }

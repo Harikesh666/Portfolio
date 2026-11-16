@@ -12,6 +12,10 @@ type IslandLoader = () => Promise<ComponentType<IslandProps>>;
  * so guides without a given island never download its code.
  */
 export const islands = {
+    EventLoopPond: () =>
+        import("../components/pond/EventLoopPond").then(
+            (module) => module.EventLoopPond as ComponentType<IslandProps>,
+        ),
     TimerOrderDemo: () =>
         import("../components/demos/TimerOrderDemo").then(
             (module) => module.TimerOrderDemo as ComponentType<IslandProps>,
