@@ -29,15 +29,7 @@ There might be a company where you work as a developer and write some code. This
 
 What happens when we try to run the program depends on the type of ecosystem. For example, C++ code will be compiled to create an executable binary, which we then run. For JavaScript, there will be a JavaScript engine handling it.
 
-```text
-Program on disk
-       │
-       ▼
-Start execution
-       │
-       ▼
-Running process
-```
+<GuideFigure figure="process-start" />
 
 With some mechanism, we will try to run the program. What actually happens is that it becomes something called a process.
 
@@ -109,10 +101,7 @@ What if we were to design it?
 
 One way to do it is this: suppose we have to run 3 processes. You start executing process p1 at t=0 and keep executing it until it finishes. Then you move on to p2 and so on. This is a FIFO structure in the sense that we complete the instructions of a process.
 
-```text
-Time ─────────────────────────────►
-CPU: [ P1 until finished ][ P2 ][ P3 ]
-```
+<GuideFigure figure="process-fifo" />
 
 But this is problematic. Why?
 
@@ -134,11 +123,7 @@ How about we allocate some milliseconds to process 1, then do a context switch (
 
 Within a complete time frame of 1 second, you divide the time into smaller time frames. You execute each process for a certain amount of time before moving on to the next one.
 
-```text
-Time ─────────────────────────────►
-CPU: [ P1 ][ P2 ][ P3 ][ P1 ][ P2 ]
-       execute       then resume
-```
+<GuideFigure figure="process-time-slices" />
 
 This sharing of CPU time uses context switching. At each switch, the OS saves the outgoing execution state and restores the incoming one.
 
@@ -192,12 +177,7 @@ A server is a process running on a machine that can accept a request from a clie
 
 The Facebook app on the phone will be the client. From there, we will communicate with machines owned by Facebook where some processes are running. They process the request and give a response.
 
-```text
-Phone app ──┐
-Browser ────┼── requests ──► Server process
-Other app ──┘                    │
-                                 └── responses
-```
+<GuideFigure figure="process-clients-server" />
 
 Whenever a client raises a request, how does the server handle it? There can be millions of clients making this request. Will it do it one by one? No.
 
@@ -273,15 +253,7 @@ If function f1 is running on t1 and the same function f1 is running on t2, their
 
 ## Threads or Processes for Requests
 
-```text
-Process address space
-├── Shared code, globals, and heap
-├── Thread T1 stack
-└── Thread T2 stack
-
-T1: its own execution position and register state
-T2: its own execution position and register state
-```
+<GuideFigure figure="process-address-space" />
 
 Now, let's go back to our server. We wanted to handle many requests without paying the cost of a whole new process each time.
 

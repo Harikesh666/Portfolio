@@ -1097,6 +1097,7 @@
     .el-start {
         position: absolute;
         inset: 0;
+        cursor: pointer;
         display: inline-flex;
         width: max-content;
         height: max-content;
@@ -1178,6 +1179,626 @@
         }
     }
 
+    /*
+     * Guide figures (GuideFigure): the guides' text diagrams redrawn in the
+     * event-loop figures' language. Hairline boxes on the dot grid; at rest
+     * (the overview) every part reads at full strength. A step lights its
+     * parts in the step's tone (Strong, terracotta or blue) and dims the
+     * rest to 38%; lit wires go solid, flow, and carry a pulse. Text is
+     * mono, sized for a 360-unit drawing capped at 30rem wide.
+     */
+    .gf-stage {
+        display: flex;
+        justify-content: center;
+        border-bottom: 1px solid var(--divider);
+        padding: 18px 14px;
+        background-color: var(--surface);
+        background-image: radial-gradient(color-mix(in oklab, var(--muted) 24%, transparent) 0.6px, transparent 0.8px);
+        background-size: 11px 11px;
+    }
+
+    .gf-flow {
+        --tone: var(--foreground-strong);
+        display: block;
+        width: 100%;
+        max-width: 30rem;
+        height: auto;
+        overflow: visible;
+        font-family: var(--font-mono);
+    }
+
+    .gf-flow [data-tone="accent"],
+    .gf-flow[data-tone="accent"] {
+        --tone: var(--accent);
+    }
+
+    .gf-flow [data-tone="task"],
+    .gf-flow[data-tone="task"] {
+        --tone: var(--scene-task);
+    }
+
+    .gf-flow [data-tone="strong"] {
+        --tone: var(--foreground-strong);
+    }
+
+    .gf-node,
+    .gf-group,
+    .gf-wire {
+        transition: opacity 220ms ease;
+    }
+
+    .gf-node rect {
+        fill: var(--surface);
+        stroke: color-mix(in oklab, var(--muted) 60%, transparent);
+        stroke-width: 0.8;
+        transition:
+            fill 220ms ease,
+            stroke 220ms ease;
+    }
+
+    .gf-node[data-variant="ghost"] rect {
+        fill: transparent;
+        stroke-dasharray: 2.5 2.5;
+    }
+
+    .gf-node[data-variant="readout"] rect {
+        fill: color-mix(in oklab, var(--foreground-strong) 4%, var(--surface));
+        stroke-dasharray: 1 2;
+    }
+
+    .gf-node__label {
+        font-size: 9px;
+        fill: var(--foreground-strong);
+    }
+
+    .gf-node__sub {
+        font-size: 7.4px;
+        fill: var(--muted);
+    }
+
+    .gf-node[data-state="on"] rect {
+        fill: color-mix(in oklab, var(--tone) 9%, var(--surface));
+        stroke: var(--tone);
+        stroke-width: 1.1;
+    }
+
+    .gf-node[data-state="on"] .gf-node__sub {
+        fill: var(--foreground);
+    }
+
+    .gf-node[data-state="off"],
+    .gf-group[data-state="off"] {
+        opacity: 0.38;
+    }
+
+    .gf-group rect {
+        fill: transparent;
+        stroke: color-mix(in oklab, var(--muted) 45%, transparent);
+        stroke-width: 0.8;
+        transition:
+            fill 220ms ease,
+            stroke 220ms ease;
+    }
+
+    .gf-group line {
+        stroke: color-mix(in oklab, var(--muted) 28%, transparent);
+        stroke-width: 0.6;
+    }
+
+    .gf-group[data-state="on"] rect {
+        fill: color-mix(in oklab, var(--tone) 5%, transparent);
+        stroke: var(--tone);
+    }
+
+    .gf-group__label {
+        font-size: 6.6px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        fill: var(--muted);
+    }
+
+    .gf-wire path {
+        fill: none;
+        stroke: color-mix(in oklab, var(--muted) 60%, transparent);
+        stroke-width: 0.8;
+        transition: stroke 200ms ease;
+    }
+
+    .gf-arrow {
+        fill: none;
+        stroke: color-mix(in oklab, var(--muted) 80%, transparent);
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-width: 1;
+    }
+
+    .gf-wire[data-state="off"] {
+        opacity: 0.32;
+    }
+
+    .gf-wire[data-state="on"] path {
+        stroke: var(--tone);
+        stroke-dasharray: 3 2;
+        stroke-width: 1.1;
+    }
+
+    .gf-wire__label {
+        font-size: 6.8px;
+        fill: var(--muted);
+    }
+
+    .gf-wire[data-state="on"] .gf-wire__label {
+        fill: var(--foreground-strong);
+    }
+
+    .gf-pulse {
+        fill: var(--tone);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .gf-wire[data-state="on"] path {
+            animation: el-wire-flow 600ms linear infinite;
+        }
+    }
+
+    /* Parser: the source line, the scanner's cursor, token chips, the tree. */
+    .gf-source {
+        font-size: 13px;
+        fill: var(--foreground-strong);
+    }
+
+    .gf-cursor {
+        fill: color-mix(in oklab, var(--scene-task) 16%, transparent);
+        stroke: var(--scene-task);
+        stroke-width: 0.8;
+        transition: transform 320ms var(--ease-out);
+    }
+
+    .gf-chip {
+        --tone: var(--scene-task);
+        transition: opacity 260ms ease;
+    }
+
+    @starting-style {
+        .gf-chip,
+        .gf-tree {
+            opacity: 0;
+        }
+    }
+
+    .gf-chip rect {
+        fill: color-mix(in oklab, var(--tone) 10%, var(--surface));
+        stroke: color-mix(in oklab, var(--tone) 55%, transparent);
+        stroke-width: 0.8;
+    }
+
+    .gf-chip__text {
+        font-size: 9.5px;
+        fill: var(--tone);
+    }
+
+    .gf-chip__kind {
+        font-size: 6.2px;
+        fill: var(--muted);
+    }
+
+    .gf-tree {
+        transition: opacity 300ms ease;
+    }
+
+    .gf-tree rect {
+        fill: color-mix(in oklab, var(--accent) 8%, var(--surface));
+        stroke: color-mix(in oklab, var(--accent) 60%, transparent);
+        stroke-width: 0.8;
+    }
+
+    .gf-tree__label {
+        font-size: 9px;
+        fill: var(--foreground-strong);
+    }
+
+    .gf-tree__edge {
+        fill: none;
+        stroke: color-mix(in oklab, var(--accent) 60%, transparent);
+        stroke-width: 0.8;
+    }
+
+    /* Heap: objects glide between generations as collections run. */
+    .gf-object {
+        transition:
+            transform 640ms var(--ease-out),
+            opacity 300ms ease;
+    }
+
+    .gf-object rect {
+        fill: color-mix(in oklab, var(--scene-task) 10%, var(--surface));
+        stroke: color-mix(in oklab, var(--scene-task) 60%, transparent);
+        stroke-width: 0.9;
+        transition:
+            fill 220ms ease,
+            stroke 220ms ease;
+    }
+
+    .gf-object[data-at="old"] rect {
+        fill: color-mix(in oklab, var(--foreground-strong) 8%, var(--surface));
+        stroke: var(--foreground-strong);
+    }
+
+    .gf-object__label {
+        font-size: 11px;
+        fill: var(--foreground-strong);
+    }
+
+    .gf-object__age {
+        fill: var(--muted);
+    }
+
+    .gf-object[data-dead] rect {
+        fill: transparent;
+        stroke: var(--accent);
+        stroke-dasharray: 2 2;
+    }
+
+    .gf-object[data-dead] .gf-object__label {
+        fill: var(--accent);
+    }
+
+    .gf-object[data-at="reclaimed"] {
+        opacity: 0.4;
+    }
+
+    .gf-object[data-at="reclaimed"] rect {
+        fill: transparent;
+        stroke: var(--muted);
+        stroke-dasharray: 2 2;
+    }
+
+    .gf-object[data-at="reclaimed"] .gf-object__label {
+        fill: var(--muted);
+    }
+
+    /* Scheduler: the CPU track, one lane per process, and a playhead. */
+    .gf-schedule__track {
+        fill: transparent;
+        stroke: color-mix(in oklab, var(--muted) 45%, transparent);
+        stroke-dasharray: 2 2;
+        stroke-width: 0.7;
+    }
+
+    .gf-slice,
+    .gf-schedule__run {
+        transition: opacity 240ms ease;
+    }
+
+    @starting-style {
+        .gf-slice,
+        .gf-schedule__run {
+            opacity: 0;
+        }
+    }
+
+    .gf-slice rect {
+        fill: color-mix(in oklab, var(--tone) 14%, var(--surface));
+        stroke: var(--tone);
+        stroke-width: 0.8;
+    }
+
+    .gf-slice text {
+        font-size: 7.4px;
+        fill: var(--tone);
+    }
+
+    .gf-slice__switch {
+        stroke: var(--muted);
+        stroke-dasharray: 1.5 1.5;
+        stroke-width: 0.6;
+    }
+
+    .gf-schedule__lane {
+        stroke: var(--divider);
+        stroke-width: 0.6;
+    }
+
+    .gf-schedule__run[data-state="running"] {
+        fill: var(--tone);
+    }
+
+    .gf-schedule__run[data-state="waiting"] {
+        fill: color-mix(in oklab, var(--muted) 45%, transparent);
+    }
+
+    .gf-schedule__first {
+        font-size: 6.6px;
+        fill: var(--muted);
+    }
+
+    .gf-schedule__head {
+        stroke: color-mix(in oklab, var(--muted) 60%, transparent);
+        stroke-width: 0.6;
+    }
+
+    .gf-code {
+        font-family: var(--font-mono);
+        font-size: 0.9em;
+        color: var(--foreground-strong);
+    }
+
+    .gf-count {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Journey: a numbered rail of stages beside what the code looks like at the current one. */
+    .gf-journey {
+        display: grid;
+        width: 100%;
+        max-width: 36rem;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 14px;
+    }
+
+    @media (min-width: 40rem) {
+        .gf-journey {
+            grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+            align-items: start;
+        }
+    }
+
+    .gf-journey__rail {
+        display: grid;
+        gap: 4px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .gf-journey__stage {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-radius: 6px;
+        padding: 4px 6px;
+        font-size: 13px;
+        line-height: 1.35;
+        color: var(--foreground-strong);
+        transition:
+            opacity 220ms ease,
+            background-color 220ms ease;
+    }
+
+    .gf-journey__stage[data-state="off"] {
+        opacity: 0.45;
+    }
+
+    .gf-journey__stage[data-state="on"] {
+        background: color-mix(in oklab, var(--scene-task) 9%, transparent);
+    }
+
+    .gf-journey__dot {
+        display: inline-flex;
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid color-mix(in oklab, var(--muted) 60%, transparent);
+        border-radius: 9999px;
+        background: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--muted);
+    }
+
+    .gf-journey__stage[data-state="on"] .gf-journey__dot {
+        border-color: var(--scene-task);
+        background: var(--scene-task);
+        color: var(--surface);
+    }
+
+    .gf-journey__stage[data-state="done"] .gf-journey__dot {
+        border-color: var(--scene-task);
+        color: var(--scene-task);
+    }
+
+    .gf-artifact {
+        min-width: 0;
+        min-height: 10.5rem;
+        overflow: hidden;
+        border: 1px solid var(--divider);
+        border-radius: 8px;
+        background: var(--surface);
+        transition: opacity 240ms ease;
+    }
+
+    @starting-style {
+        .gf-artifact {
+            opacity: 0;
+        }
+    }
+
+    .gf-artifact__bar {
+        border-bottom: 1px solid var(--divider);
+        padding: 5px 10px;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--muted);
+    }
+
+    .gf-artifact__code {
+        display: grid;
+        margin: 0;
+        overflow-x: auto;
+        padding: 8px 10px;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        line-height: 1.6;
+        color: var(--foreground-strong);
+        white-space: pre;
+        scrollbar-width: none;
+    }
+
+    .gf-artifact__code i {
+        margin-left: 0.75rem;
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        font-style: normal;
+        color: var(--muted);
+    }
+
+    .gf-artifact__code--tree {
+        border-top: 1px solid var(--divider);
+        color: var(--foreground);
+    }
+
+    .gf-artifact__tokens {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        padding: 10px;
+    }
+
+    .gf-artifact__token {
+        border: 1px solid color-mix(in oklab, var(--scene-task) 45%, transparent);
+        border-radius: 4px;
+        padding: 0 0.35rem;
+        background: var(--scene-task-soft);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--scene-task);
+    }
+
+    .gf-artifact__facts {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 10px;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+    }
+
+    .gf-artifact__facts dt {
+        font-size: 10px;
+        color: var(--muted);
+    }
+
+    .gf-artifact__facts dd {
+        margin: 0;
+        color: var(--foreground-strong);
+    }
+
+    /* Call stack: frames stacked bottom up, the newest on top. */
+    .gf-stack {
+        width: 100%;
+        max-width: 18rem;
+    }
+
+    .gf-stack__label {
+        margin-bottom: 6px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+    }
+
+    .gf-stack__frames {
+        display: flex;
+        min-height: 10rem;
+        flex-direction: column;
+        justify-content: flex-end;
+        gap: 6px;
+        margin: 0;
+        border: 1px dashed color-mix(in oklab, var(--muted) 45%, transparent);
+        border-radius: 8px;
+        padding: 8px;
+        list-style: none;
+    }
+
+    .gf-frame {
+        display: grid;
+        gap: 1px;
+        border: 1px solid color-mix(in oklab, var(--muted) 55%, transparent);
+        border-radius: 6px;
+        padding: 6px 10px;
+        background: var(--surface);
+        font-family: var(--font-mono);
+        font-size: 12px;
+        transition:
+            opacity 260ms ease,
+            translate 320ms var(--ease-out),
+            border-color 220ms ease,
+            background-color 220ms ease;
+    }
+
+    @starting-style {
+        .gf-frame {
+            opacity: 0;
+            translate: 0 -6px;
+        }
+    }
+
+    .gf-frame[data-top] {
+        border-color: var(--foreground-strong);
+        background: color-mix(in oklab, var(--foreground-strong) 6%, var(--surface));
+    }
+
+    .gf-frame__name {
+        color: var(--foreground-strong);
+    }
+
+    .gf-frame__locals {
+        font-size: 10.5px;
+        color: var(--muted);
+    }
+
+    .gf-frame__returns {
+        font-size: 10.5px;
+        color: var(--accent);
+    }
+
+    .gf-console {
+        height: auto;
+        min-height: 3rem;
+    }
+
+    /* Phones draw the 360-unit figures at about one pixel per unit, so their text steps up. */
+    @media (max-width: 39.99rem) {
+        .gf-stage {
+            padding-inline: 8px;
+        }
+
+        .gf-node__label,
+        .gf-tree__label {
+            font-size: 9.6px;
+        }
+
+        .gf-node__sub,
+        .gf-wire__label {
+            font-size: 8px;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .gf-node rect,
+        .gf-node,
+        .gf-group,
+        .gf-wire,
+        .gf-cursor,
+        .gf-chip,
+        .gf-tree,
+        .gf-object,
+        .gf-slice,
+        .gf-schedule__run,
+        .gf-journey__stage,
+        .gf-artifact,
+        .gf-frame {
+            transition: none;
+        }
+    }
+
     /* Compare toggle in the code bar: var | let. */
     .el-toggle {
         display: inline-flex;
@@ -1189,6 +1810,7 @@
 
     .el-toggle__option {
         border-radius: 3px;
+        cursor: pointer;
         padding: 1px 0.6rem;
         font-family: var(--font-mono);
         font-size: 11px;
@@ -1404,6 +2026,7 @@
         display: inline-flex;
         height: 2rem;
         align-items: center;
+        cursor: pointer;
         border: 1px solid var(--divider);
         border-radius: 5px;
         padding: 0 0.7rem;
@@ -1457,7 +2080,8 @@
         color: var(--surface);
     }
 
-    .el-button--primary:hover {
+    /* Matches the specificity of `.el-button:hover:not(:disabled)`, which would otherwise repaint it pale. */
+    .el-button--primary:hover:not(:disabled) {
         background: color-mix(in oklab, var(--foreground-strong) 88%, var(--surface));
     }
 

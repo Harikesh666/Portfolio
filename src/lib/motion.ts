@@ -10,6 +10,12 @@ export const pageEase = [0.16, 1, 0.3, 1] as const;
 // Guide preview scenes: one event every 1.1s in the hover card, long enough to read its caption.
 export const guidePreviewBeatMs = 1100;
 
+// Guide figures (GuideFigure): one step per 2.2s when playing, long enough to read a two-line caption.
+export const guideFigureBeatMs = 2200;
+
+// A pulse runs the length of a lit wire in 1.4s, then repeats while the step is shown.
+export const guideFigurePulseMs = 1400;
+
 // The event-loop figure in the guide: one event per 1.3s at 1x, slow enough to read the caption and follow the code.
 export const eventLoopBeatMs = 1300;
 

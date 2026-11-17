@@ -20,6 +20,10 @@ export const islands = {
         import("../components/event-loop/EventLoopFigure").then(
             (module) => module.EventLoopFigure as ComponentType<IslandProps>,
         ),
+    GuideFigure: () =>
+        import("../components/guide-figures/GuideFigure").then(
+            (module) => module.GuideFigure as ComponentType<IslandProps>,
+        ),
     TimerOrderDemo: () =>
         import("../components/demos/TimerOrderDemo").then(
             (module) => module.TimerOrderDemo as ComponentType<IslandProps>,

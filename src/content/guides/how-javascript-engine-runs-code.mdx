@@ -120,17 +120,7 @@ and produce behavior that the processor can execute while preserving the rules o
 
 At a high level, the journey looks like this:
 
-```text
-Source code
-    ↓
-Tokens and syntax structures
-    ↓
-Bytecode or another internal representation
-    ↓
-Execution and runtime feedback
-    ↓
-Specialized machine code for useful hot paths
-```
+<GuideFigure figure="engine-journey" />
 
 Those two terms deserve a translation. **Bytecode** is a compact set of engine-specific instructions that an interpreter can execute. **Machine code** goes one level lower: it contains processor-specific instructions that the CPU can execute directly.
 
@@ -166,11 +156,7 @@ The parser checks whether those tokens form valid JavaScript syntax and builds a
 
 This representation is commonly described as an **abstract syntax tree**, or AST. Conceptually, the statement above contains:
 
-```text
-Variable declaration
-└── Binding: answer
-    └── Initial value: 7
-```
+<GuideFigure figure="engine-parser" />
 
 The AST describes structure rather than formatting. Extra spaces and many source-level details no longer matter.
 
@@ -318,11 +304,7 @@ console.log(area(4, 5));
 
 The broad call sequence is:
 
-```text
-Global script
-└── area(4, 5)
-    └── multiply(4, 5)
-```
+<GuideFigure figure="engine-call-stack" />
 
 Calling `area` creates an execution context and places it on the stack. Calling `multiply` places another context above it. When `multiply` returns, its context leaves the stack. Then `area` returns and its context leaves too.
 

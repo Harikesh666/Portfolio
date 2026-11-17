@@ -60,16 +60,7 @@ C++ source code can be cross-platform, but a compiled C++ executable is generall
 
 Technologies like Java, Python, JavaScript, and Node.js make it easier to run the same source code on different platforms. However, the corresponding JVM, interpreter, runtime, or executable still has to be built for each platform. How these technologies achieve cross-platform compatibility differs from one another.
 
-```text
-                         same app.js
-                             │
-          ┌──────────────────┼──────────────────┐
-          ▼                  ▼                  ▼
-   Node.js for Windows  Node.js for macOS  Node.js for Linux
-          │                  │                  │
-          ▼                  ▼                  ▼
-   Windows + target CPU  macOS + target CPU  Linux + target CPU
-```
+<GuideFigure figure="v8-portability" />
 
 ## Internals of Node
 
@@ -81,18 +72,7 @@ But how is access to these capabilities provided?
 
 The Node ecosystem internally has all of these capabilities, but the code we write gets access to many interesting functions like setTimeout. What Node does is expose this set of functions to the JavaScript layer. This JavaScript layer sometimes has the whole implementation in itself and sometimes interacts with the C++ layer. The Node.js core contains both JavaScript and native code. Some functionality is implemented in JavaScript, while other functionality is implemented using C++ bindings and native libraries.
 
-```text
-Your JavaScript
-      │
-      ▼
-Node.js APIs ─────► native bindings ─────► operating system
-      │                    │
-      ├────► V8            └────► libuv
-      │      executes             event loop, threads,
-      │      JavaScript           files, sockets, timers
-      ▼
-Application result
-```
+<GuideFigure figure="v8-node-layers" />
 
 ### Timer Behavior
 
@@ -123,15 +103,7 @@ They communicate similarly to how two processes communicate with each other.
 - Inter-process communication: we do not use it, as the processes can be on different machines because we deploy the server and client differently.
 - Networking communication
 
-```text
-Browser process                              Node.js process
-┌──────────────────────┐                    ┌──────────────────────┐
-│ Browser APIs and UI  │                    │ Node.js server APIs  │
-│ JavaScript engine    │ ── HTTP request ─► │ V8 and libuv         │
-│ fetch()              │ ◄─ HTTP response ─ │ http server          │
-└──────────────────────┘                    └──────────────────────┘
-         client                                      server
-```
+<GuideFigure figure="v8-client-server" />
 
 ## Internals of V8
 
@@ -162,15 +134,7 @@ There are a lot of components in the V8 engine, and together, they make it possi
 
 Parsing is a very common step in programming languages. In V8, the process starts with a scanner. The scanner reads the source code and converts it into tokens. The parser then takes those tokens and creates something called an AST, or abstract syntax tree.
 
-```text
-JavaScript source
-       │
-       ▼
-    Scanner ─────► tokens ─────► Parser
-                                      │
-                                      ▼
-                            Abstract Syntax Tree
-```
+<GuideFigure figure="v8-parser" />
 
 It takes `let x = 1;`.
 
@@ -206,26 +170,7 @@ The optimization is based on information collected during previous executions of
 
 Depending on the code and the available feedback, V8 may move the function through different execution tiers. Sparkplug can quickly generate baseline machine code, Maglev can apply mid-tier optimizations, and TurboFan can produce more heavily optimized machine code for hot code.
 
-```text
-JavaScript source
-       │
-       ▼
-      AST
-       │
-       ▼
-Ignition bytecode ─────► Ignition interpreter
-       │
-       ├───────────────► Sparkplug baseline machine code
-       │
-       ├───────────────► Maglev optimized machine code
-       │
-       └───────────────► TurboFan optimized machine code
-                              │
-                       assumption fails
-                              │
-                              ▼
-                         deoptimization
-```
+<GuideFigure figure="v8-tiers" />
 
 ```js
 function f({name= ""}) {}
@@ -237,20 +182,7 @@ However, a call site does not always have only one shape or type representation.
 
 If a new object breaks an assumption used by the optimized machine code, V8 may deoptimize the function. It can then resume execution in a less optimized tier, collect more feedback, and possibly optimize the function again later.
 
-```text
-repeated object shapes
-          │
-          ▼
-   runtime feedback ─────► specialized machine code
-                                   │
-                         new shape breaks a guard
-                                   │
-                                   ▼
-                              deoptimize
-                                   │
-                                   ▼
-                    collect feedback and try again
-```
+<GuideFigure figure="v8-shape-feedback" />
 
 Why can JavaScript be harder to optimize than C++?
 
@@ -283,22 +215,7 @@ Orinoco is the codename for V8's garbage-collection project. It is not one singl
 
 At a high level, V8 uses a generational heap. It contains a young generation and an old generation, along with some additional specialized memory spaces.
 
-```text
-                         new object
-                             │
-                             ▼
-                    young generation
-                    (minor collection)
-                     │             │
-          unreachable│             │survives collections
-                     ▼             ▼
-                 reclaimed    old generation
-                              (major collection)
-                                      │
-                           unreachable│
-                                      ▼
-                                  reclaimed
-```
+<GuideFigure figure="v8-heap" />
 
 Newly created heap objects normally begin in the young generation. Many objects become unreachable shortly after they are created, so the young generation is collected frequently.
 
