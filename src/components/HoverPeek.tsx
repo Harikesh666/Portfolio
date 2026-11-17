@@ -11,8 +11,14 @@ import { createPortal } from "react-dom";
 
 type HoverPeekProps = Readonly<{
     children: ReactNode;
-    /** What the card shows. It repeats or previews information, so it is hidden from assistive tech. */
-    peek: ReactNode;
+    /**
+     * What the card shows. It previews information, so it is hidden from
+     * assistive tech. Pass a function to know whether the card is open, e.g.
+     * to run an animation only while it can be seen.
+     */
+    peek: ReactNode | ((isOpen: boolean) => ReactNode);
+    /** Extra classes for the card itself, e.g. a wider preview layout. */
+    cardClassName?: string;
     /** `span` wraps inline text; `div` with `className="contents"` wraps a block row without adding a box. */
     as?: "div" | "span";
     className?: string;
@@ -30,7 +36,7 @@ const viewportMargin = 8;
  * transformed ancestors (the entrance animations) cannot offset its fixed
  * position. Styling and timing live in `styles.css` (`.hover-peek`).
  */
-export function HoverPeek({ as = "span", children, className, peek }: HoverPeekProps) {
+export function HoverPeek({ as = "span", cardClassName, children, className, peek }: HoverPeekProps) {
     const [isMounted, setIsMounted] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -99,11 +105,11 @@ export function HoverPeek({ as = "span", children, className, peek }: HoverPeekP
                 createPortal(
                     <div
                         aria-hidden="true"
-                        className="hover-peek"
+                        className={cardClassName ? `hover-peek ${cardClassName}` : "hover-peek"}
                         data-open={isOpen ? "" : undefined}
                         ref={cardRef}
                     >
-                        {peek}
+                        {typeof peek === "function" ? peek(isOpen) : peek}
                     </div>,
                     document.body,
                 )}

@@ -1,6 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { SectionHeading } from "../../components/SectionHeading";
 import { StaggerReveal } from "../../components/StaggerReveal";
+import { GuidePreview } from "../../components/guide-previews";
 import {
     posts,
     seriesIndex,
@@ -160,6 +161,7 @@ function ArticleList(props: ArticleListProps) {
         <ol className="dim-siblings mt-4">
             {postList.map((post) => (
                 <li key={post.slug}>
+                    <GuidePreview slug={post.slug}>
                     <Link
                         className="hover-row flex gap-3"
                         to="/articles/$slug"
@@ -186,6 +188,7 @@ function ArticleList(props: ArticleListProps) {
                             </span>
                         </span>
                     </Link>
+                    </GuidePreview>
                 </li>
             ))}
         </ol>

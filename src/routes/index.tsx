@@ -6,6 +6,7 @@ import {
     RocketLaunchIcon,
 } from "@phosphor-icons/react";
 import { AvailabilityStatus } from "../components/AvailabilityStatus";
+import { GuidePreview } from "../components/guide-previews";
 import { IntroKeyword } from "../components/IntroKeyword";
 import { SketchMark } from "../components/SketchMark";
 import { MumbaiPond } from "../components/pond/MumbaiPond";
@@ -169,18 +170,20 @@ function HomePage() {
                 <ul className={listClassName}>
                     {latestPosts.map((post) => (
                         <StaggerReveal.Item as="li" key={post.slug}>
-                            <Link
-                                className="hover-row"
-                                params={{ slug: post.slug }}
-                                to="/articles/$slug"
-                            >
-                                <span className="block text-foreground-strong">
-                                    {post.title}
-                                </span>
-                                <span className="block text-muted">
-                                    {post.description}
-                                </span>
-                            </Link>
+                            <GuidePreview slug={post.slug}>
+                                <Link
+                                    className="hover-row"
+                                    params={{ slug: post.slug }}
+                                    to="/articles/$slug"
+                                >
+                                    <span className="block text-foreground-strong">
+                                        {post.title}
+                                    </span>
+                                    <span className="block text-muted">
+                                        {post.description}
+                                    </span>
+                                </Link>
+                            </GuidePreview>
                         </StaggerReveal.Item>
                     ))}
                     <StaggerReveal.Item as="li">

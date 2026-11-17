@@ -640,6 +640,198 @@
             transform 200ms var(--ease-out) 60ms;
     }
 
+    /*
+     * Guide preview scenes: a wider card with no padding, holding a live
+     * diagram (stage) above a one-line caption.
+     */
+    .hover-peek--scene {
+        width: 18rem;
+        max-width: calc(100vw - 1rem);
+        overflow: hidden;
+        padding: 0;
+    }
+
+    /*
+     * Event-loop scene (EventLoopPreview). Geometry in CSS pixels on a
+     * 288 x 150 stage: web APIs at left, microtasks over the task queue in
+     * the middle, the call stack tall at right. The zone that matters in the
+     * current beat goes solid and its label brightens. Tokens glide between
+     * zones (450ms ease-out), pop off the stack by rising and fading (ease-in,
+     * faster), and new tokens grow in from 85%.
+     */
+    .loop-scene {
+        width: 18rem;
+    }
+
+    .loop-scene__stage {
+        position: relative;
+        height: 150px;
+        border-bottom: 1px solid var(--divider);
+        background: color-mix(in oklab, var(--hover) 60%, var(--surface));
+    }
+
+    .loop-scene__zone {
+        position: absolute;
+        border: 1px dashed color-mix(in oklab, var(--muted) 45%, transparent);
+        border-radius: 8px;
+        transition:
+            border-color 200ms ease,
+            background-color 200ms ease;
+    }
+
+    .loop-scene__zone[data-zone="api"] {
+        top: 46px;
+        left: 6px;
+        width: 70px;
+        height: 58px;
+    }
+
+    .loop-scene__zone[data-zone="micro"] {
+        top: 8px;
+        left: 88px;
+        width: 112px;
+        height: 58px;
+    }
+
+    .loop-scene__zone[data-zone="task"] {
+        top: 84px;
+        left: 88px;
+        width: 112px;
+        height: 58px;
+    }
+
+    .loop-scene__zone[data-zone="stack"] {
+        top: 8px;
+        left: 212px;
+        width: 70px;
+        height: 134px;
+    }
+
+    .loop-scene__zone[data-focus] {
+        border-style: solid;
+        border-color: color-mix(in oklab, var(--muted) 70%, transparent);
+        background: var(--surface);
+    }
+
+    .loop-scene__label {
+        position: absolute;
+        top: 5px;
+        left: 7px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9.5px;
+        line-height: 1.2;
+        color: var(--muted);
+        transition: color 200ms ease;
+    }
+
+    .loop-scene__zone[data-focus] .loop-scene__label {
+        color: var(--foreground-strong);
+    }
+
+    .loop-scene__timer {
+        position: absolute;
+        right: 8px;
+        bottom: 9px;
+        left: 8px;
+        height: 3px;
+        overflow: hidden;
+        border-radius: 9999px;
+        background: var(--divider);
+    }
+
+    .loop-scene__timer::after {
+        position: absolute;
+        inset: 0;
+        background: var(--muted);
+        content: "";
+        transform-origin: left;
+        animation: loop-timer 1400ms linear both;
+    }
+
+    .loop-scene__loop {
+        position: absolute;
+        top: 68px;
+        left: 137px;
+        width: 14px;
+        height: 14px;
+        color: var(--muted);
+        transition: rotate 500ms var(--ease-out);
+    }
+
+    .loop-scene__token {
+        position: absolute;
+        top: 0;
+        left: 0;
+        display: flex;
+        width: 58px;
+        height: 18px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: 9999px;
+        font-family: var(--font-mono, ui-monospace, monospace);
+        font-size: 9.5px;
+        line-height: 1;
+        transition:
+            translate 450ms var(--ease-out),
+            opacity 300ms ease,
+            scale 300ms var(--ease-out);
+    }
+
+    @starting-style {
+        .loop-scene__token {
+            opacity: 0;
+            scale: 0.85;
+        }
+    }
+
+    .loop-scene__token[data-kind="sync"] {
+        background: var(--foreground-strong);
+        color: var(--surface);
+    }
+
+    .loop-scene__token[data-kind="micro"] {
+        border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+        background: var(--accent-soft);
+        color: var(--accent);
+    }
+
+    .loop-scene__token[data-kind="task"] {
+        border-color: color-mix(in oklab, var(--muted) 60%, transparent);
+        background: var(--surface);
+        color: var(--foreground-strong);
+    }
+
+    .loop-scene__token[data-gone] {
+        opacity: 0;
+        transition:
+            translate 300ms ease-in,
+            opacity 260ms ease-in;
+    }
+
+    .loop-scene__caption {
+        min-height: calc(2 * 1.4em + 19px);
+        padding: 9px 12px 10px;
+        font-size: 12px;
+        line-height: 1.4;
+        color: var(--foreground);
+        transition: opacity 200ms ease;
+    }
+
+    @starting-style {
+        .loop-scene__caption {
+            opacity: 0;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .loop-scene__token,
+        .loop-scene__loop,
+        .loop-scene__caption {
+            transition: none;
+        }
+    }
+
     .hover-peek__label {
         display: block;
         font-size: 12px;
@@ -1464,5 +1656,16 @@ html[data-theme-transition]::view-transition-new(root) {
     100% {
         --palette-fade-top: 28px;
         --palette-fade-bottom: 0px;
+    }
+}
+
+/* The event-loop scene's timer fills once over one beat (guidePreviewBeatMs). */
+@keyframes loop-timer {
+    from {
+        transform: scaleX(0);
+    }
+
+    to {
+        transform: scaleX(1);
     }
 }

@@ -7,6 +7,9 @@ export const snappySpring = {
 
 export const pageEase = [0.16, 1, 0.3, 1] as const;
 
+// Guide preview scenes: one beat of the story every 1.4s, long enough to read its caption.
+export const guidePreviewBeatMs = 1400;
+
 export const tocLayerEase = [0.65, 0, 0.35, 1] as const;
 export const tocLabelEase = [0.22, 1, 0.36, 1] as const;
 
