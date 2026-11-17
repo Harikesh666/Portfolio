@@ -2,7 +2,7 @@
 
 ## Rare UI
 
-The article table-of-contents interactions adapt the Proximity Sidebar and Scroll Progress components from [Rare UI](https://github.com/swamimalode07/rare-ui).
+The article table-of-contents interactions adapt the Hook Sidebar (desktop), Proximity Sidebar and Scroll Progress components from [Rare UI](https://github.com/swamimalode07/rare-ui).
 
 MIT License
 

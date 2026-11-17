@@ -16,36 +16,23 @@ export const eventLoopBeatMs = 1300;
 export const tocLayerEase = [0.65, 0, 0.35, 1] as const;
 export const tocLabelEase = [0.22, 1, 0.36, 1] as const;
 
-// Tracks pointer proximity with Rare UI's original restrained dash spring.
-export const tocProximitySpring = {
+// Desktop hook sidebar: the dashed rail and its hook travel to a row on Rare UI's spring.
+export const tocHookSpring = {
     type: "spring" as const,
-    stiffness: 320,
+    stiffness: 420,
     damping: 34,
     mass: 0.7,
 };
 
-// Brings the desktop TOC section label inward from the right rail.
-export const tocRailLabelSpring = {
-    type: "spring" as const,
-    visualDuration: 0.18,
-    bounce: 0.08,
-};
-
-// Defines the desktop TOC label's small, projection-free hover states.
-export const tocRailLabelVariants = {
-    hidden: { opacity: 0, x: 6 },
-    visible: { opacity: 1, x: 0 },
-};
-
-// Removes desktop TOC label motion when reduced motion is requested.
-export const tocRailLabelInstantTween = {
-    duration: 0,
-};
-
-// Highlights the active desktop TOC rail without changing its geometry.
-export const tocRailActiveTween = {
-    duration: 0.15,
+// Desktop hook sidebar: a rail fades in or out when it gains or loses a row.
+export const tocHookFadeTween = {
+    duration: 0.2,
     ease: tocLabelEase,
+};
+
+// Removes the desktop hook sidebar's motion under reduced motion.
+export const tocHookInstantTween = {
+    duration: 0,
 };
 
 // Morphs the mobile TOC pill into its bounded section menu.
@@ -66,9 +53,6 @@ export const tocLabelCrossfadeTween = {
     duration: 0.22,
     ease: tocLabelEase,
 };
-
-// Holds the shared desktop TOC pointer over the active dash during scroll.
-export const tocActivePulseResetDelay = 80;
 
 // Settles the directional active-section stretch without overshooting its row.
 export const stretchSpring = {
@@ -112,12 +96,6 @@ export const exitTween = {
 // Swaps simple routes without crossing a zero-opacity frame.
 export const instantRouteTween = {
     duration: 0,
-};
-
-// Fades a vacated TOC hover row without delaying the next hover target.
-export const hoverExitTween = {
-    duration: 0.12,
-    ease: "easeIn" as const,
 };
 
 // Fades the reduced-motion sheet without positional movement.

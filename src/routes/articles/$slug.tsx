@@ -220,7 +220,7 @@ function PostPage() {
             {isDesktop === true && (
                 <FloatingToc
                     containerRef={articleRef}
-                    items={post.minimap}
+                    items={post.toc}
                     key={post.slug}
                     onNavigate={navigateToTocItem}
                     slug={post.slug}

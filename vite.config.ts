@@ -16,7 +16,6 @@ import { createGuideCodeBlock } from "./src/lib/guide-code.ts";
 import { guideTables } from "./src/lib/guide-tables.ts";
 import { guideFigures } from "./src/lib/guide-figures.ts";
 import {
-    extractMinimapItems,
     extractTocItems,
 } from "./src/lib/content-headings.ts";
 import {
@@ -38,7 +37,7 @@ function guideToc(): Plugin {
 
             const source = await readFile(filename, "utf8");
             return {
-                code: `${code}\nexport const toc = ${JSON.stringify(extractTocItems(source))};\nexport const minimap = ${JSON.stringify(extractMinimapItems(source))};`,
+                code: `${code}\nexport const toc = ${JSON.stringify(extractTocItems(source))};`,
                 map: null,
             };
         },
