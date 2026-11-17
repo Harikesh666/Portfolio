@@ -640,7 +640,7 @@
     /* A full-bleed strip of petals on moss closing the page. Its ragged top edge and grow-in come from the shader. */
     .footer-garden {
         width: 100vw;
-        height: 5.5rem;
+        height: 4.675rem; /* 15% under the original 5.5rem */
         margin-top: 2.5rem;
         margin-left: calc(50% - 50vw);
         opacity: 0;
@@ -659,7 +659,7 @@
 
     @media (min-width: 40rem) {
         .footer-garden {
-            height: 8rem;
+            height: 6.8rem; /* 15% under the original 8rem */
         }
     }
 
