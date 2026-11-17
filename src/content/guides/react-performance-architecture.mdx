@@ -46,25 +46,7 @@ Sections that need nothing past basic React say so.
 
 Here is the spine:
 
-```
-   Two axes: rendering too much, or shipping too much   (1)
-            │
-   What causes a re-render (and the myth that misleads)  (2)
-            │
-   Renders are usually cheap; expensive work is the cost (3)   ◀── the reframe that prevents wasted effort
-            │
-   MEASURE FIRST: the Profiler                           (4)   ◀── the cardinal rule
-            │
-   The bailout, memo boundaries, and why memo fails       (5, 6)
-            │
-   Memoization, the Compiler, and composition instead     (7, 8)
-            │
-   Keys, Context cost, concurrency                         (9, 10, 11)
-            │
-   Virtualization (render less), splitting and bundles (ship less)  (12, 13, 14)
-            │
-   A methodology, then debugging                            (15, 16)
-```
+<GuideSpine steps={[{"title": "Two axes: rendering too much, or shipping too much", "sections": [1]}, {"title": "What causes a re-render (and the myth that misleads)", "sections": [2]}, {"title": "Renders are usually cheap; expensive work is the cost", "sections": [3], "note": "the reframe that prevents wasted effort"}, {"title": "MEASURE FIRST: the Profiler", "sections": [4], "note": "the cardinal rule"}, {"title": "The bailout, memo boundaries, and why memo fails", "sections": [5, 6]}, {"title": "Memoization, the Compiler, and composition instead", "sections": [7, 8]}, {"title": "Keys, Context cost, concurrency", "sections": [9, 10, 11]}, {"title": "Virtualization (render less), splitting and bundles (ship less)", "sections": [12, 13, 14]}, {"title": "A methodology, then debugging", "sections": [15, 16]}]} />
 
 You do not need to finish this guide to benefit from it.
 

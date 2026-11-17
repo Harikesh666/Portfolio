@@ -70,26 +70,7 @@ There is no rush.
 1. **Run the experiments.** Each section ends with a short **"Try it."** A bug you have personally caused and watched happen is a bug you will never ship. Reading about it is worth maybe a tenth as much. Keep a throwaway React project open (a Vite scratch app, or any sandbox) and actually reproduce each one. It takes two minutes and it is the difference between knowing this and forgetting it.
 2. **Trust the order.** The sections build on each other. If something feels arbitrary, the reason is almost always in an earlier section, so go back rather than push forward. Here is the build order, so you can see why:
 
-```text role="diagram"
-   What problem are we even solving?            (1)
-            │
-   What are the things we're moving around?     (2, 3, 4)
-            │
-   The diff: how React decides what changed      (5, 6)   ◀── most everyday bugs live here
-            │
-   Fiber: the data structure that makes it      (7, 8)
-   pausable
-            │
-   The two phases + the loop                     (9, 10)
-            │
-   Doing it without freezing the page            (11, 12) ◀── the "concurrent" stuff
-            │
-   How your hooks and state actually work        (13, 14)
-            │
-   Suspense, StrictMode, and the 2026 features   (15, 16, 17)
-            │
-   Debugging like you understand all this        (18, 19)
-```
+<GuideSpine steps={[{"title": "What problem are we even solving?", "sections": [1]}, {"title": "What are the things we're moving around?", "sections": [2, 3, 4]}, {"title": "The diff: how React decides what changed", "sections": [5, 6], "note": "most everyday bugs live here"}, {"title": "Fiber: the data structure that makes it pausable", "sections": [7, 8]}, {"title": "The two phases + the loop", "sections": [9, 10]}, {"title": "Doing it without freezing the page", "sections": [11, 12], "note": "the \"concurrent\" stuff"}, {"title": "How your hooks and state actually work", "sections": [13, 14]}, {"title": "Suspense, StrictMode, and the 2026 features", "sections": [15, 16, 17]}, {"title": "Debugging like you understand all this", "sections": [18, 19]}]} />
 
 Each section also opens with a one-line **Prereqs** note: the earlier sections it leans on (here, and occasionally another guide in the series) plus any outside knowledge worth having first.
 
@@ -240,12 +221,7 @@ Their state lives on the fiber, React's internal record of "this element, at thi
 
 The chain of meaning, which is worth memorizing:
 
-```
-You write a component (recipe)
-  → it returns elements (descriptions)
-    → React reconciles those elements against the existing fibers (the live instances + state)
-      → React mutates host nodes (the real DOM)
-```
+<GuideFigure figure="react-elements-to-dom" />
 
 When someone says "the component re-rendered," what physically happened is: React called your function again, got fresh element objects, and reconciled them against fibers that already exist.
 
@@ -336,12 +312,7 @@ It is completely ignorant of the DOM.
 
 The renderer supplies a set of "here is how you actually make and change a node on my platform" functions, the **host config**, such as:
 
-```
-createInstance(type, props)         // 'div' → a real <div>
-createTextInstance(text)            // a text node
-appendChild / insertBefore / removeChild   // structural changes
-commitUpdate(instance, ...)         // apply a computed prop change to a node
-```
+<GuideFigure figure="react-host-config" />
 
 There are renderers for the DOM, React Native, canvas, the terminal, PDFs, and test environments.
 
@@ -638,13 +609,7 @@ Every fiber points to its twin in the other tree via `alternate`.
 
 When React works on an update, it clones or reuses fibers from current into WIP, applies changes there, and leaves current untouched.
 
-```
-            FiberRoot
-                │  current
-                ▼
-   [ current tree ]  ◀── alternate ──▶  [ work-in-progress tree ]
-   (on screen, safe)                    (being built, disposable)
-```
+<GuideFigure figure="react-double-buffer" />
 
 This is exactly why an interrupted render is safe: all the half-finished work is in the WIP tree, and the on-screen current tree is never touched during rendering.
 
@@ -1021,10 +986,7 @@ A function component's state lives on the fiber's `memoizedState` field, which (
 
 So `useState`, `useState`, `useEffect` builds:
 
-```
-fiber.memoizedState
-   → [hook #1: useState] → [hook #2: useState] → [hook #3: useEffect] → null
-```
+<GuideFigure figure="react-hook-list" />
 
 #### Why order is sacred
 

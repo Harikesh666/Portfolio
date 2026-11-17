@@ -44,19 +44,7 @@ Sections that need nothing past basic React and promises say so.
 1. **Run the experiments.** Each section ends with a short **"Try it."** Suspense is best learned by making something genuinely async (a cached promise, a lazy import, a Suspense-integrated query) and watching fallbacks appear, throttle, and get suppressed by transitions.
 2. **Trust the order.** The sections build one picture: what suspending is, the shared mechanism, how to suspend, how the retry works, placement and nesting, the sibling and throttling behaviors, the all-important transition interaction, the error-boundary pairing, and the experimental and SSR edges. Here is the spine:
 
-```
-   Suspending = throwing a promise; the boundary shows a fallback   (1, 2)
-            │
-   How you suspend (use, lazy, libraries) and how the retry recovers  (3, 4)
-            │
-   Placement, nesting, sibling pre-warming, throttling                (5, 6, 7, 8)
-            │
-   Transitions stop fallbacks from hiding revealed content            (9)   ◀── the key practical behavior
-            │
-   Pairing with error boundaries; experimental + SSR edges            (10, 11, 12)
-            │
-   Debugging, the source                                               (13, 14)
-```
+<GuideSpine steps={[{"title": "Suspending = throwing a promise; the boundary shows a fallback", "sections": [1, 2]}, {"title": "How you suspend (use, lazy, libraries) and how the retry recovers", "sections": [3, 4]}, {"title": "Placement, nesting, sibling pre-warming, throttling", "sections": [5, 6, 7, 8]}, {"title": "Transitions stop fallbacks from hiding revealed content", "sections": [9], "note": "the key practical behavior"}, {"title": "Pairing with error boundaries; experimental + SSR edges", "sections": [10, 11, 12]}, {"title": "Debugging, the source", "sections": [13, 14]}]} />
 
 You do not need to finish this guide to benefit from it.
 

@@ -44,25 +44,7 @@ Sections that need nothing past basic React and the DOM say so.
 1. **Run the experiments.** Each section ends with a short **"Try it."** Keep a Vite scratch app open and the browser DevTools handy. Several of these are best understood by inspecting the real DOM (and noticing what listeners are and are not there) while events fire.
 2. **Trust the order.** The sections build one picture, in order: why the system exists, what a synthetic event is, how delegation and the root container work, how an event dispatches by walking the fiber tree, how propagation and `stopPropagation` behave, how events set update priority and batch, and where the system meets portals and native listeners. Here is the spine:
 
-```
-   Why React intercepts events at all                 (1)
-            │
-   The synthetic event wrapper                          (2)
-            │
-   Delegation: one listener, not thousands              (3)
-            │
-   Where the listener lives: the root container         (4)
-            │
-   Dispatch: native event to your handler               (5)   ◀── the core path
-            │
-   Capture and bubble by walking the fiber tree         (6)   ◀── the key internals idea
-            │
-   stopPropagation, priority, batching                   (7, 8, 9)
-            │
-   Where it gets surprising: portals, native listeners   (10, 11)
-            │
-   Gotchas, debugging, the source                         (12, 13, 14)
-```
+<GuideSpine steps={[{"title": "Why React intercepts events at all", "sections": [1]}, {"title": "The synthetic event wrapper", "sections": [2]}, {"title": "Delegation: one listener, not thousands", "sections": [3]}, {"title": "Where the listener lives: the root container", "sections": [4]}, {"title": "Dispatch: native event to your handler", "sections": [5], "note": "the core path"}, {"title": "Capture and bubble by walking the fiber tree", "sections": [6], "note": "the key internals idea"}, {"title": "stopPropagation, priority, batching", "sections": [7, 8, 9]}, {"title": "Where it gets surprising: portals, native listeners", "sections": [10, 11]}, {"title": "Gotchas, debugging, the source", "sections": [12, 13, 14]}]} />
 
 You do not need to finish this guide to benefit from it.
 

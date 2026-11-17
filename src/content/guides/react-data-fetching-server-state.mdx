@@ -46,24 +46,7 @@ Sections that need nothing past basic React say so.
 1. **Run the experiments.** Each section ends with a short **"Try it."** Install TanStack Query in a Vite scratch app, open the Devtools panel, and watch the cache entries change state as you interact. The caching behavior has to be seen in the Devtools to become real.
 2. **Trust the order.** The sections build one model, in order: server state is a cache, the manual approach reinvents that cache badly, the cache is addressed by keys, it has a status model and a freshness policy (`staleTime`) and a retention policy (`gcTime`), it deduplicates and shares, it refetches in the background, you gate it with `enabled`, you write to it with mutations and keep it honest with invalidation and optimistic updates, you page and prefetch, you integrate it with Suspense, and underneath it is an external store. Here is the spine:
 
-```
-   Server state is a cache, not state            (1)
-            │
-   The manual approach reinvents the cache badly  (2)
-            │
-   The cache is a key-value store (query keys)     (3)
-            │
-   Its status model (two axes) and freshness:      (4, 5)
-   staleTime = stale-while-revalidate              ◀── the central mechanism
-            │
-   Retention (gcTime), dedup, background refetch    (6, 7, 8)
-            │
-   Gating (enabled), writing (mutations, optimistic) (9, 10, 11)
-            │
-   Pagination and prefetch, Suspense, the engine     (12, 13, 14)
-            │
-   Pitfalls, then debugging                          (15, 16)
-```
+<GuideSpine steps={[{"title": "Server state is a cache, not state", "sections": [1]}, {"title": "The manual approach reinvents the cache badly", "sections": [2]}, {"title": "The cache is a key-value store (query keys)", "sections": [3]}, {"title": "Its status model (two axes) and freshness: staleTime = stale-while-revalidate", "sections": [4, 5], "note": "the central mechanism"}, {"title": "Retention (gcTime), dedup, background refetch", "sections": [6, 7, 8]}, {"title": "Gating (enabled), writing (mutations, optimistic)", "sections": [9, 10, 11]}, {"title": "Pagination and prefetch, Suspense, the engine", "sections": [12, 13, 14]}, {"title": "Pitfalls, then debugging", "sections": [15, 16]}]} />
 
 You do not need to finish this guide to benefit from it.
 

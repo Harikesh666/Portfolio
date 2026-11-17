@@ -46,21 +46,7 @@ Sections that need nothing past basic React and JavaScript say so.
 1. **Run the experiments.** Each section ends with a short **"Try it."** Error handling is best learned by deliberately throwing: make a component crash, watch the blast radius with and without a boundary, and watch what a boundary refuses to catch.
 2. **Trust the order.** The sections build one picture: why the default is to crash, what a boundary is, how the unwind works, the catch-and-don't-catch boundary, recovery, the React 19 additions, and the shared machinery with Suspense. Here is the spine:
 
-```
-   Default: an uncaught render error crashes the whole app   (1, 2)
-            │
-   The boundary API and why it is a class                     (3, 4)
-            │
-   The unwind-to-boundary mechanism                            (5)   ◀── the core internals
-            │
-   What it catches and what it does not (and why)              (6, 7)
-            │
-   Recovery, the React 19 root options                         (8, 9)
-            │
-   The same machinery powers Suspense                          (10)  ◀── sets up the Suspense guide
-            │
-   Resilience architecture, SSR, debugging, source             (11, 12, 13, 14)
-```
+<GuideSpine steps={[{"title": "Default: an uncaught render error crashes the whole app", "sections": [1, 2]}, {"title": "The boundary API and why it is a class", "sections": [3, 4]}, {"title": "The unwind-to-boundary mechanism", "sections": [5], "note": "the core internals"}, {"title": "What it catches and what it does not (and why)", "sections": [6, 7]}, {"title": "Recovery, the React 19 root options", "sections": [8, 9]}, {"title": "The same machinery powers Suspense", "sections": [10], "note": "sets up the Suspense guide"}, {"title": "Resilience architecture, SSR, debugging, source", "sections": [11, 12, 13, 14]}]} />
 
 You do not need to finish this guide to benefit from it.
 

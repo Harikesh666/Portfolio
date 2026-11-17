@@ -1,6 +1,8 @@
 import type { ComponentType } from "react";
+import { ArrayFigure, arraySpecs, ThreeOperationsFigure, UsersChainFigure } from "./data";
 import { CallStackFigure, JourneyFigure } from "./engine";
 import { ParseFigure } from "./parse";
+import { DoubleBufferFigure, ElementsToDomFigure, HookListFigure, HostConfigFigure } from "./react";
 import {
     BindingFanFigure,
     EnvironmentAnatomyFigure,
@@ -9,6 +11,16 @@ import {
     scopeSpecs,
     TdzFigure,
 } from "./scope";
+import {
+    CallbackQueueFigure,
+    ConcurrencyLoopFigure,
+    countdownStack,
+    ExecutionContextFigure,
+    firstSecondStack,
+    MemoryPhaseFigure,
+    StackFigure,
+    WithLoggingFigure,
+} from "./running";
 import { AddressSpaceFigure, ClientsServerFigure, ProgramToProcessFigure, SchedulerFigure } from "./processing";
 import {
     ClientServerFigure,
@@ -55,6 +67,25 @@ const figures = {
     "loop-var-binding": () => <BindingFanFigure kind="var" />,
     "loop-let-bindings": () => <BindingFanFigure kind="let" />,
     "loop-close-bindings": () => <BindingFanFigure kind="close" />,
+    "loop-callback-queue": CallbackQueueFigure,
+    "ctx-anatomy": ExecutionContextFigure,
+    "ctx-memory": MemoryPhaseFigure,
+    "ctx-stack-0": () => <StackFigure at={0} spec={firstSecondStack} />,
+    "ctx-stack-1": () => <StackFigure at={1} spec={firstSecondStack} />,
+    "ctx-stack-2": () => <StackFigure at={2} spec={firstSecondStack} />,
+    "ctx-stack-3": () => <StackFigure at={3} spec={firstSecondStack} />,
+    "ctx-countdown": () => <StackFigure spec={countdownStack} />,
+    "concurrency-loop": ConcurrencyLoopFigure,
+    "hof-with-logging": WithLoggingFigure,
+    "map-double": () => <ArrayFigure spec={arraySpecs["map-double"]} />,
+    "map-positions": () => <ArrayFigure spec={arraySpecs["map-positions"]} />,
+    "filter-four": () => <ArrayFigure spec={arraySpecs["filter-four"]} />,
+    "users-chain": UsersChainFigure,
+    "three-operations": ThreeOperationsFigure,
+    "react-elements-to-dom": ElementsToDomFigure,
+    "react-host-config": HostConfigFigure,
+    "react-double-buffer": DoubleBufferFigure,
+    "react-hook-list": HookListFigure,
 } satisfies Record<string, ComponentType>;
 
 export type GuideFigureName = keyof typeof figures;

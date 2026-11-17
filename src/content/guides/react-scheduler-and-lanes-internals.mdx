@@ -44,23 +44,7 @@ Sections that need nothing past basic React say so.
 1. **Run the experiments.** Each section ends with a short **"Try it."** Some of these are best seen in the browser's Performance panel (watching the main thread yield in roughly 5ms slices) rather than in the React DevTools, because this is about timing and the main thread.
 2. **Trust the order.** The sections build one picture, in order: the two problems, the scheduler that solves "when," the lanes that solve "which," how lanes are assigned and chosen, and how starvation, consistency, and the concurrent features fall out. Here is the spine:
 
-```
-   Two problems: WHEN to work, and WHICH work first      (1)
-            │
-   Cooperative scheduling: slice work, yield to browser   (2)
-            │
-   The scheduler: a priority queue + time slicing         (3, 4)   ◀── solves WHEN
-            │
-   Lanes: a bitmask of priorities                          (5, 6)   ◀── solves WHICH
-            │
-   Assign a lane, choose lanes to render                   (7, 8)
-            │
-   Starvation (expiration) and consistency (entanglement)  (9, 10)
-            │
-   How it powers batching and the concurrent features       (11)
-            │
-   Two priority systems, debugging, the source              (12, 13, 14)
-```
+<GuideSpine steps={[{"title": "Two problems: WHEN to work, and WHICH work first", "sections": [1]}, {"title": "Cooperative scheduling: slice work, yield to browser", "sections": [2]}, {"title": "The scheduler: a priority queue + time slicing", "sections": [3, 4], "note": "solves WHEN"}, {"title": "Lanes: a bitmask of priorities", "sections": [5, 6], "note": "solves WHICH"}, {"title": "Assign a lane, choose lanes to render", "sections": [7, 8]}, {"title": "Starvation (expiration) and consistency (entanglement)", "sections": [9, 10]}, {"title": "How it powers batching and the concurrent features", "sections": [11]}, {"title": "Two priority systems, debugging, the source", "sections": [12, 13, 14]}]} />
 
 You do not need to finish this guide to benefit from it.
 

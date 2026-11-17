@@ -24,6 +24,10 @@ export const islands = {
         import("../components/guide-figures/GuideFigure").then(
             (module) => module.GuideFigure as ComponentType<IslandProps>,
         ),
+    GuideSpine: () =>
+        import("../components/guide-figures/GuideSpine").then(
+            (module) => module.GuideSpine as ComponentType<IslandProps>,
+        ),
     TimerOrderDemo: () =>
         import("../components/demos/TimerOrderDemo").then(
             (module) => module.TimerOrderDemo as ComponentType<IslandProps>,

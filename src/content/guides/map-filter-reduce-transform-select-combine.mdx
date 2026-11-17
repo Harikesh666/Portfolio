@@ -65,13 +65,7 @@ Output:
 
 For `numbers.map(double)`, JavaScript broadly does this:
 
-```text
-double(5) → 10
-double(1) → 2
-double(3) → 6
-double(2) → 4
-double(6) → 12
-```
+<GuideFigure figure="map-double" />
 
 Every returned value takes the corresponding position in the new array.
 
@@ -109,9 +103,7 @@ The real `map` has more behavior than this teaching version. It works with array
 
 Still, the simple version reveals the important relationship:
 
-```text
-one input element → one callback result → one output position
-```
+<GuideFigure figure="map-positions" />
 
 ## Map does not directly change the original array
 
@@ -232,13 +224,7 @@ console.log(largeNumbers); // [5, 6]
 
 Notice what `filter` returns. It returns the original values that passed the test, not the Boolean results from the callback.
 
-```text
-isGreaterThanFour(5) → true  → keep 5
-isGreaterThanFour(1) → false → skip 1
-isGreaterThanFour(3) → false → skip 3
-isGreaterThanFour(2) → false → skip 2
-isGreaterThanFour(6) → true  → keep 6
-```
+<GuideFigure figure="filter-four" />
 
 ## How filter works
 
@@ -526,11 +512,7 @@ console.log(youngUserNames); // ["akshay", "deepika"]
 
 Read it from left to right:
 
-```text
-users
-→ keep users younger than 30
-→ take each remaining first name
-```
+<GuideFigure figure="users-chain" />
 
 This creates an intermediate filtered array before `map` creates the final array. For ordinary application data, that clear expression is often worth more than avoiding one temporary array.
 
@@ -655,11 +637,7 @@ This creates an unused result array. If you only want to perform an action for e
 
 The easiest memory trick is still the simplest:
 
-```text
-map    → What should each element become?
-filter → Which elements should stay?
-reduce → What should all elements become together?
-```
+<GuideFigure figure="three-operations" />
 
 ## Try it yourself
 

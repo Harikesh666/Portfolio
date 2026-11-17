@@ -59,23 +59,7 @@ The sections build one picture, in order: why RSC exists, the two-worlds model, 
 
 Here is the spine:
 
-```
-   Why RSC exists                          (1)
-            │
-   The model: two worlds, one tree          (2)
-            │
-   The two kinds of component               (3, 4)   ◀── Server vs Client
-            │
-   The boundary: what can cross it          (5)      ◀── the children trick lives here
-            │
-   The wire format: the RSC payload          (6)
-            │
-   Meeting SSR and hydration                 (7)
-            │
-   Server Functions (writing back)           (8)
-            │
-   Back to the rendering engine, pitfalls    (9, 10)
-```
+<GuideSpine steps={[{"title": "Why RSC exists", "sections": [1]}, {"title": "The model: two worlds, one tree", "sections": [2]}, {"title": "The two kinds of component", "sections": [3, 4], "note": "Server vs Client"}, {"title": "The boundary: what can cross it", "sections": [5], "note": "the children trick lives here"}, {"title": "The wire format: the RSC payload", "sections": [6]}, {"title": "Meeting SSR and hydration", "sections": [7]}, {"title": "Server Functions (writing back)", "sections": [8]}, {"title": "Back to the rendering engine, pitfalls", "sections": [9, 10]}]} />
 
 Each section also opens with a one-line **Prereqs** note: the earlier sections it leans on (here or in the rendering guide) plus any outside knowledge worth having first.
 

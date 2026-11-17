@@ -70,7 +70,8 @@ export type Stepper = ReturnType<typeof useStepper>;
  * on a dot grid, a caption for the current step, optional panels, then
  * monospace controls and a figcaption. ← → step and Space plays. It pauses
  * when scrolled out of view. `description` is the diagram as text for
- * screen readers, since the drawing itself is hidden from them.
+ * screen readers, since the drawing itself is hidden from them. Without a
+ * stepper it is a still: a snapshot that a guide's own steps narrate.
  */
 export function FigureFrame({
     stage,
@@ -83,18 +84,18 @@ export function FigureFrame({
 }: Readonly<{
     stage: ReactNode;
     caption: ReactNode;
-    stepper: Stepper;
+    stepper?: Stepper;
     figcaption: string;
     description: readonly string[];
     panels?: ReactNode;
     tools?: ReactNode;
 }>) {
     const figureRef = useRef<HTMLElement>(null);
-    const { dispatch, index, count, isPlaying } = stepper;
+    const dispatch = stepper?.dispatch;
 
     useEffect(() => {
         const figure = figureRef.current;
-        if (!figure) return;
+        if (!figure || !dispatch) return;
         const observer = new IntersectionObserver(([entry]) => {
             if (!entry.isIntersecting) dispatch("pause");
         });
@@ -103,6 +104,7 @@ export function FigureFrame({
     }, [dispatch]);
 
     function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+        if (!dispatch) return;
         if (event.key === "ArrowRight") dispatch("step");
         else if (event.key === "ArrowLeft") dispatch("back");
         else if (event.key === " " && !(event.target instanceof HTMLButtonElement)) dispatch("toggle");
@@ -113,49 +115,11 @@ export function FigureFrame({
     return (
         <figure className="el-figure gf-figure not-prose" onKeyDown={handleKeyDown} ref={figureRef}>
             <div className="gf-stage">{stage}</div>
-            <p aria-live={isPlaying ? "off" : "polite"} className="el-caption">
+            <p aria-live={stepper?.isPlaying ? "off" : "polite"} className="el-caption">
                 {caption}
             </p>
             {panels}
-            <div className="el-controls">
-                <div className="el-controls__group">
-                    <button
-                        aria-keyshortcuts="Space"
-                        className="el-button el-button--primary"
-                        onClick={() => dispatch("toggle")}
-                        type="button"
-                    >
-                        {isPlaying ? "Pause" : index >= count - 1 ? "Replay" : "Play"}
-                    </button>
-                    <button
-                        aria-keyshortcuts="ArrowLeft"
-                        aria-label="Step back"
-                        className="el-button"
-                        disabled={index < 0}
-                        onClick={() => dispatch("back")}
-                        type="button"
-                    >
-                        ‹ Back
-                    </button>
-                    <button
-                        aria-keyshortcuts="ArrowRight"
-                        aria-label="Step forward"
-                        className="el-button"
-                        disabled={index >= count - 1}
-                        onClick={() => dispatch("step")}
-                        type="button"
-                    >
-                        Step ›
-                    </button>
-                    <button className="el-button" disabled={index < 0} onClick={() => dispatch("restart")} type="button">
-                        Overview
-                    </button>
-                </div>
-                {tools}
-                <p className="gf-count">
-                    {index < 0 ? "overview" : `${index + 1} / ${count}`}
-                </p>
-            </div>
+            {stepper && <Controls stepper={stepper} tools={tools} />}
             <figcaption className="el-figcaption">{figcaption}</figcaption>
             <ul className="sr-only">
                 {description.map((line) => (
@@ -164,6 +128,51 @@ export function FigureFrame({
             </ul>
         </figure>
     );
+}
+
+function Controls({ stepper, tools }: Readonly<{ stepper: Stepper; tools?: ReactNode }>) {
+    const { dispatch, index, count, isPlaying } = stepper;
+    return (
+        <div className="el-controls">
+            <div className="el-controls__group">
+                <button
+                    aria-keyshortcuts="Space"
+                    className="el-button el-button--primary"
+                    onClick={() => dispatch("toggle")}
+                    type="button"
+                >
+                    {isPlaying ? "Pause" : index >= count - 1 ? "Replay" : "Play"}
+                </button>
+                <button
+                    aria-keyshortcuts="ArrowLeft"
+                    aria-label="Step back"
+                    className="el-button"
+                    disabled={index < 0}
+                    onClick={() => dispatch("back")}
+                    type="button"
+                >
+                    ‹ Back
+                </button>
+                <button
+                    aria-keyshortcuts="ArrowRight"
+                    aria-label="Step forward"
+                    className="el-button"
+                    disabled={index >= count - 1}
+                    onClick={() => dispatch("step")}
+                    type="button"
+                >
+                    Step ›
+                </button>
+                <button className="el-button" disabled={index < 0} onClick={() => dispatch("restart")} type="button">
+                    Overview
+                </button>
+            </div>
+            {tools}
+            <p className="gf-count">
+                {index < 0 ? "overview" : `${index + 1} / ${count}`}
+            </p>
+        </div>
+);
 }
 
 export type FlowNode = Readonly<{
@@ -186,6 +195,8 @@ export type FlowWire = Readonly<{
     id: string;
     d: string;
     tone?: Tone;
+    /** Arrowheads at both ends, for a two-way link. */
+    both?: boolean;
     label?: Readonly<{ text: string; x: number; y: number; anchor?: "start" | "middle" | "end" }>;
 }>;
 
@@ -225,7 +236,7 @@ export function Flow({
                 const on = lit?.wires.includes(wire.id) ?? false;
                 return (
                     <g className="gf-wire" data-state={state(on)} data-tone={wire.tone} key={wire.id}>
-                        <path d={wire.d} markerEnd="url(#gf-arrow)" />
+                        <path d={wire.d} markerEnd="url(#gf-arrow)" markerStart={wire.both ? "url(#gf-arrow)" : undefined} />
                         {wire.label && (
                             <text className="gf-wire__label" textAnchor={wire.label.anchor ?? "middle"} x={wire.label.x} y={wire.label.y}>
                                 {wire.label.text}

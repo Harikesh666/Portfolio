@@ -46,25 +46,7 @@ Sections that need nothing past basic React say so.
 1. **Run the experiments.** Each section ends with a short **"Try it."** Keep a throwaway React project open (a Vite scratch app, or any sandbox) and actually reproduce each one. The re-render behavior of Context, especially, has to be watched in the Profiler to be believed.
 2. **Trust the order.** The sections build a single argument, in order: keep state low, lift only when forced, do not store what you can derive, consolidate complex transitions in a reducer, reach for Context only as a transport, understand why Context cannot scale to large or fast-changing global state, and only then reach for an external store, all while keeping server state in its own world. Here is the spine:
 
-```
-   The real question: where does state live, and who owns it?   (1)
-            │
-   Keep it low (colocation), lift only when forced              (2, 3)
-            │
-   Store the minimum: derive the rest, structure it well        (4, 5)
-            │
-   Consolidate complex transitions (reducers, state machines)   (6)
-            │
-   Sharing without drilling: Context as a transport             (7, 8)
-            │
-   Why Context re-renders too much, and how far you can push it  (9, 10, 11) ◀── the deep middle
-            │
-   Stepping outside React: external stores and their archetypes  (12, 13)
-            │
-   The distinction that reorganizes everything: server state     (14)
-            │
-   A decision framework, then debugging                          (15, 16)
-```
+<GuideSpine steps={[{"title": "The real question: where does state live, and who owns it?", "sections": [1]}, {"title": "Keep it low (colocation), lift only when forced", "sections": [2, 3]}, {"title": "Store the minimum: derive the rest, structure it well", "sections": [4, 5]}, {"title": "Consolidate complex transitions (reducers, state machines)", "sections": [6]}, {"title": "Sharing without drilling: Context as a transport", "sections": [7, 8]}, {"title": "Why Context re-renders too much, and how far you can push it", "sections": [9, 10, 11], "note": "the deep middle"}, {"title": "Stepping outside React: external stores and their archetypes", "sections": [12, 13]}, {"title": "The distinction that reorganizes everything: server state", "sections": [14]}, {"title": "A decision framework, then debugging", "sections": [15, 16]}]} />
 
 You do not need to finish this guide to benefit from it.
 

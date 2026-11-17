@@ -36,11 +36,7 @@ An execution context has two primary components in the usual beginner-friendly m
 1. The **variable environment**, also called the memory component
 2. The **thread of execution**, also called the code component
 
-```text
-Execution context
-├── Variable environment: variables and functions
-└── Thread of execution: code running line by line
-```
+<GuideFigure figure="ctx-anatomy" />
 
 These two components answer two different questions:
 
@@ -69,10 +65,7 @@ Before JavaScript executes the statements, it prepares the declarations it will 
 
 For this code, the simplified picture is:
 
-```text
-score  → undefined
-double → function
-```
+<GuideFigure figure="ctx-memory" />
 
 The important detail is that different declarations are prepared differently:
 
@@ -239,13 +232,7 @@ Let’s follow the calls.
 
 JavaScript begins with the script’s execution context:
 
-```text
-Top
-┌─────────────────┐
-│ Script          │
-└─────────────────┘
-Bottom
-```
+<GuideFigure figure="ctx-stack-0" />
 
 The declarations for `first` and `second` are prepared. Then JavaScript reaches `first()`.
 
@@ -253,15 +240,7 @@ The declarations for `first` and `second` are prepared. Then JavaScript reaches 
 
 A new execution context for `first` is created and pushed onto the stack:
 
-```text
-Top
-┌─────────────────┐
-│ first()         │
-├─────────────────┤
-│ Script          │
-└─────────────────┘
-Bottom
-```
+<GuideFigure figure="ctx-stack-1" />
 
 `first` logs:
 
@@ -275,17 +254,7 @@ Then it reaches `second()`.
 
 JavaScript creates another execution context and pushes it on top:
 
-```text
-Top
-┌─────────────────┐
-│ second()        │
-├─────────────────┤
-│ first()         │
-├─────────────────┤
-│ Script          │
-└─────────────────┘
-Bottom
-```
+<GuideFigure figure="ctx-stack-2" />
 
 `first` has not disappeared. It is waiting underneath `second`.
 
@@ -301,15 +270,7 @@ It has no more work to do, so it completes.
 
 The execution context for `second` is popped from the stack:
 
-```text
-Top
-┌─────────────────┐
-│ first()         │
-├─────────────────┤
-│ Script          │
-└─────────────────┘
-Bottom
-```
+<GuideFigure figure="ctx-stack-3" />
 
 JavaScript returns to the exact point after the `second()` call. Now `first` can run:
 
@@ -469,12 +430,7 @@ countdown(3);
 
 Each call gets its own execution context:
 
-```text
-countdown(3)
-countdown(3) → countdown(2)
-countdown(3) → countdown(2) → countdown(1)
-countdown(3) → countdown(2) → countdown(1) → countdown(0)
-```
+<GuideFigure figure="ctx-countdown" />
 
 Once the base case returns, the calls leave in reverse order.
 

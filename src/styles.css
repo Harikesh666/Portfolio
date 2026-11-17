@@ -1809,6 +1809,11 @@
         grid-template-columns: minmax(0, 1fr);
     }
 
+    .el-figure__panels.gf-panels--single > * + * {
+        border-top: 1px solid var(--divider);
+        border-left: 0;
+    }
+
     .gf-env rect {
         fill: var(--surface);
         stroke: color-mix(in oklab, var(--muted) 55%, transparent);
@@ -1984,6 +1989,209 @@
         .gf-slot__value,
         .gf-fan__env,
         .gf-fan__callback {
+            transition: none;
+        }
+    }
+
+    /* Array figures: input cells, the callback pill, result cells filling in. */
+    .gf-cell rect {
+        fill: var(--surface);
+        stroke: color-mix(in oklab, var(--muted) 60%, transparent);
+        stroke-width: 0.8;
+        transition:
+            fill 220ms ease,
+            stroke 220ms ease;
+    }
+
+    .gf-cell text {
+        font-size: 9.6px;
+        fill: var(--foreground-strong);
+    }
+
+    .gf-cell[data-state="on"] rect {
+        fill: color-mix(in oklab, var(--accent) 12%, var(--surface));
+        stroke: var(--accent);
+        stroke-width: 1.1;
+    }
+
+    .gf-cell[data-state="skip"] {
+        opacity: 0.4;
+    }
+
+    .gf-cell[data-state="skip"] rect {
+        stroke-dasharray: 2 2;
+    }
+
+    .gf-cell--out {
+        transition: opacity 260ms ease;
+    }
+
+    @starting-style {
+        .gf-cell--out {
+            opacity: 0;
+        }
+    }
+
+    .gf-cell--out rect {
+        fill: color-mix(in oklab, var(--scene-task) 9%, var(--surface));
+        stroke: color-mix(in oklab, var(--scene-task) 55%, transparent);
+    }
+
+    .gf-cell__index {
+        font-size: 6.6px !important;
+        fill: var(--muted) !important;
+    }
+
+    .gf-cell__empty {
+        fill: transparent;
+        stroke: color-mix(in oklab, var(--muted) 40%, transparent);
+        stroke-dasharray: 2 2;
+        stroke-width: 0.7;
+    }
+
+    /* Stack figures: "top" and "bottom" marks around the frames. */
+    .gf-stack__label {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .gf-stack__label span {
+        letter-spacing: 0.06em;
+        opacity: 0.8;
+    }
+
+    .gf-stack__label--bottom {
+        margin: 6px 0 0;
+        justify-content: flex-end;
+    }
+
+    .gf-stack__empty {
+        margin: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .gf-cell rect,
+        .gf-cell--out {
+            transition: none;
+        }
+    }
+
+    /*
+     * Guide spine (GuideSpine): a React guide's roadmap as a rail. Each stop
+     * has a dot, its title, the section numbers (buttons that jump to the
+     * heading) and, for the key stops, the guide's note in terracotta.
+     */
+    .gf-spine__stops {
+        position: relative;
+        display: grid;
+        gap: 2px;
+        margin: 0;
+        padding: 16px 14px 14px;
+        list-style: none;
+        background-color: var(--surface);
+        background-image: radial-gradient(color-mix(in oklab, var(--muted) 24%, transparent) 0.6px, transparent 0.8px);
+        background-size: 11px 11px;
+        border-bottom: 1px solid var(--divider);
+    }
+
+    .gf-spine__stop {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1rem minmax(0, 1fr) auto;
+        align-items: start;
+        gap: 2px 10px;
+        padding: 5px 0;
+    }
+
+    /* The rail: a hairline joining each dot to the next. */
+    .gf-spine__stop:not(:last-child)::after {
+        position: absolute;
+        top: 1.15rem;
+        bottom: -0.55rem;
+        left: calc(0.5rem - 0.5px);
+        width: 1px;
+        background: color-mix(in oklab, var(--muted) 45%, transparent);
+        content: "";
+    }
+
+    .gf-spine__dot {
+        width: 9px;
+        height: 9px;
+        margin: 0.4rem auto 0;
+        border: 1px solid color-mix(in oklab, var(--muted) 70%, transparent);
+        border-radius: 9999px;
+        background: var(--surface);
+    }
+
+    .gf-spine__stop[data-key] .gf-spine__dot {
+        border-color: var(--accent);
+        background: var(--accent);
+    }
+
+    .gf-spine__title {
+        font-size: 14px;
+        line-height: 1.45;
+        color: var(--foreground-strong);
+        text-wrap: pretty;
+    }
+
+    .gf-spine__sections {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 4px;
+    }
+
+    .gf-spine__section {
+        min-width: 1.6rem;
+        height: 1.5rem;
+        border: 1px solid var(--divider);
+        border-radius: 4px;
+        padding: 0 0.3rem;
+        background: var(--surface);
+        cursor: pointer;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+        font-variant-numeric: tabular-nums;
+        transition:
+            color 150ms ease,
+            border-color 150ms ease;
+    }
+
+    .gf-spine__section:hover {
+        border-color: var(--foreground-strong);
+        color: var(--foreground-strong);
+    }
+
+    .gf-spine__section:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+    }
+
+    @media (pointer: coarse) {
+        .gf-spine__section {
+            min-width: 2.25rem;
+            height: 2.25rem;
+        }
+    }
+
+    .gf-spine__note {
+        grid-column: 2 / -1;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--accent);
+    }
+
+    .gf-spine__note::before {
+        content: "← ";
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .gf-spine__section {
             transition: none;
         }
     }

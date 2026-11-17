@@ -203,9 +203,7 @@ The complete timing problem deserves its own walkthrough, so I covered it separa
 
 Beginner explanations usually draw one box called the **callback queue**:
 
-```text
-Browser API → Callback queue → Call stack
-```
+<GuideFigure figure="loop-callback-queue" />
 
 That picture is useful. Timer callbacks and many event callbacks do wait as queued tasks before they execute.
 

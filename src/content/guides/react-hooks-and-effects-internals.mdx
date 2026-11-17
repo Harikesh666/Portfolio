@@ -56,27 +56,7 @@ There is no rush.
 1. **Run the experiments.** Each section ends with a short **"Try it."** A bug you have personally caused and watched happen is a bug you will never ship. Keep a throwaway React project open (a Vite scratch app, or any sandbox) and actually reproduce each one.
 2. **Trust the order.** The sections build on each other. The single most important idea in this whole guide is in Section 2 (every render is a snapshot), and almost every later section is a consequence of it. Here is the build order:
 
-```
-   Why the rules of hooks exist at all          (1)
-            │
-   THE mental model: a render is a snapshot      (2)   ◀── everything below is a consequence
-            │
-   The bug that model creates                    (3)
-            │
-   How state actually updates (the queue)        (4, 5)
-            │
-   Effects as synchronization, not lifecycle     (6)   ◀── the reframe that fixes most effect bugs
-            │
-   The dependency array + referential stability  (7, 8) ◀── most everyday effect bugs live here
-            │
-   Cleanup, and effect timing around paint       (9, 10)
-            │
-   The non-reactive escape hatch                  (11)
-            │
-   Memoization, refs, and custom hooks            (12, 13, 14)
-            │
-   The modern hook surface, then debugging        (15, 16, 17)
-```
+<GuideSpine steps={[{"title": "Why the rules of hooks exist at all", "sections": [1]}, {"title": "THE mental model: a render is a snapshot", "sections": [2], "note": "everything below is a consequence"}, {"title": "The bug that model creates", "sections": [3]}, {"title": "How state actually updates (the queue)", "sections": [4, 5]}, {"title": "Effects as synchronization, not lifecycle", "sections": [6], "note": "the reframe that fixes most effect bugs"}, {"title": "The dependency array + referential stability", "sections": [7, 8], "note": "most everyday effect bugs live here"}, {"title": "Cleanup, and effect timing around paint", "sections": [9, 10]}, {"title": "The non-reactive escape hatch", "sections": [11]}, {"title": "Memoization, refs, and custom hooks", "sections": [12, 13, 14]}, {"title": "The modern hook surface, then debugging", "sections": [15, 16, 17]}]} />
 
 Each section also opens with a one-line **Prereqs** note: the earlier sections or outside concepts worth having in hand before you read that section's deep part.
 
