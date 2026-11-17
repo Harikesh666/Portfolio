@@ -16,6 +16,10 @@ export const islands = {
         import("../components/pond/EventLoopPond").then(
             (module) => module.EventLoopPond as ComponentType<IslandProps>,
         ),
+    EventLoopFigure: () =>
+        import("../components/event-loop/EventLoopFigure").then(
+            (module) => module.EventLoopFigure as ComponentType<IslandProps>,
+        ),
     TimerOrderDemo: () =>
         import("../components/demos/TimerOrderDemo").then(
             (module) => module.TimerOrderDemo as ComponentType<IslandProps>,

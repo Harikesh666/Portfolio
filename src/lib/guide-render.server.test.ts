@@ -20,11 +20,16 @@ describe("renderGuideHtml", () => {
 
         expect([...islands].map((island) => island.getAttribute("data-island"))).toEqual([
             "TimerOrderDemo",
+            "EventLoopFigure",
             "EventLoopPond",
         ]);
         expect(JSON.parse(islands[0].getAttribute("data-island-props") ?? "")).toEqual({});
         expect(islands[0].querySelector("button")?.textContent).toBe("Run");
-        expect(islands[1].querySelectorAll("canvas")).toHaveLength(2);
+        // The figure prerenders its diagram, the guide's source and a start button.
+        expect(islands[1].querySelector("svg.el-diagram")).not.toBeNull();
+        expect(islands[1].querySelectorAll(".el-code__line")).toHaveLength(11);
+        expect(islands[1].querySelector(".el-start")?.textContent).toContain("Run the example");
+        expect(islands[2].querySelectorAll("canvas")).toHaveLength(2);
         expect(html).not.toContain("data-island-index");
         expect(document.querySelectorAll("h2 a.heading-anchor").length).toBeGreaterThan(0);
         expect(document.querySelector('link[rel="preload"]')).toBeNull();

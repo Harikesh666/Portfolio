@@ -26,7 +26,7 @@ export function GuidePreview({ children, slug }: Readonly<{ children: ReactNode;
             cardClassName="hover-peek--scene"
             className="contents"
             peek={(isOpen) => (
-                <Suspense fallback={<div className="loop-scene" />}>
+                <Suspense fallback={<div className="el-card" />}>
                     {/* Remount on each open so the story always starts from the top. */}
                     <Scene isRunning={isOpen} key={String(isOpen)} />
                 </Suspense>
