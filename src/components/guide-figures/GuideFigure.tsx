@@ -1,6 +1,23 @@
 import type { ComponentType } from "react";
 import { ArrayFigure, arraySpecs, ThreeOperationsFigure, UsersChainFigure } from "./data";
 import { CallStackFigure, JourneyFigure } from "./engine";
+import {
+    CallbackTimingFigure,
+    ChildrenSlotFigure,
+    ContextValueFigure,
+    DeclarationVsExpressionFigure,
+    DelegationFigure,
+    DetachedThisFigure,
+    HoistingFigure,
+    LanesInterruptFigure,
+    MemoBailoutFigure,
+    PyramidFigure,
+    RenderSnapshotFigure,
+    StaleWhileRevalidateFigure,
+    TransitionFallbackFigure,
+    TypeNeededFigure,
+    UnwindFigure,
+} from "./more";
 import { ParseFigure } from "./parse";
 import { DoubleBufferFigure, ElementsToDomFigure, HookListFigure, HostConfigFigure } from "./react";
 import {
@@ -86,6 +103,21 @@ const figures = {
     "react-host-config": HostConfigFigure,
     "react-double-buffer": DoubleBufferFigure,
     "react-hook-list": HookListFigure,
+    "js-callback-timing": CallbackTimingFigure,
+    "js-pyramid": PyramidFigure,
+    "js-detached-this": DetachedThisFigure,
+    "js-declaration-vs-expression": DeclarationVsExpressionFigure,
+    "js-hoisting": HoistingFigure,
+    "js-type-needed": TypeNeededFigure,
+    "react-stale-while-revalidate": StaleWhileRevalidateFigure,
+    "react-unwind": UnwindFigure,
+    "react-delegation": DelegationFigure,
+    "react-render-snapshot": RenderSnapshotFigure,
+    "react-memo-bailout": MemoBailoutFigure,
+    "react-lanes-interrupt": LanesInterruptFigure,
+    "react-children-slot": ChildrenSlotFigure,
+    "react-context-value": ContextValueFigure,
+    "react-transition-fallback": TransitionFallbackFigure,
 } satisfies Record<string, ComponentType>;
 
 export type GuideFigureName = keyof typeof figures;

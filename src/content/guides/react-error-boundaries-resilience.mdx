@@ -430,6 +430,8 @@ When rendering a fiber means calling a component function (or a class's render),
 
 4. **If no boundary is found, the error is uncaught.** If the unwind reaches the _root_ without finding any error boundary, there is nothing to handle the error, so React falls back to the drastic default from Section 2: it unmounts the entire tree (and, in React 19, reports the error to `window.reportError` and to `onUncaughtError` if provided, Section 9). This is why an unguarded throw blanks the whole app: the unwind walked all the way to the root and found no boundary, so the whole tree comes down.
 
+<GuideFigure figure="react-unwind" />
+
 A few details that sharpen the model.
 
 The boundary that catches is the _nearest_ one _above_ the throwing component, because the unwind walks up and stops at the first handler it finds.

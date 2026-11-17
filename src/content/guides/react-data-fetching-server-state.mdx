@@ -470,6 +470,8 @@ The user sees data immediately and watches it quietly update, instead of seeing 
 
 That "instant, then fresh" feel is the defining experience of a good server-state setup, and it is entirely a consequence of serving stale and revalidating.
 
+<GuideFigure figure="react-stale-while-revalidate" />
+
 `staleTime` is the dividing line between "fresh" and "stale," and it is the knob that controls the whole behavior:
 
 - A query's data is **fresh** for `staleTime` milliseconds after it was fetched. While fresh, the data is served from cache and **no refetch happens**, even on triggers like remount or refocus. Fresh data is trusted as-is.

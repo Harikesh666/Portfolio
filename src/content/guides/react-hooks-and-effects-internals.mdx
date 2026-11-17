@@ -271,6 +271,8 @@ The new render reads the updated value out of the queue and hands you a new cons
 
 Your old closures are untouched, because they belong to a render that already happened.
 
+<GuideFigure figure="react-render-snapshot" />
+
 There is a deliberate design choice hiding here.
 
 React could have made `count` a live, mutable thing you read at any moment.

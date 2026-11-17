@@ -133,6 +133,8 @@ The real points are:
 - It is initialized to `undefined` during declaration instantiation.
 - The initializer assignment happens when execution reaches `var score = 10`.
 
+<GuideFigure figure="js-hoisting" />
+
 This also explains why checking an early `var` value does not throw an undeclared-variable error. The binding is declared; it just does not contain the later value yet.
 
 ## let and const exist early but remain uninitialized

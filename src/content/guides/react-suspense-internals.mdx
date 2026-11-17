@@ -881,6 +881,8 @@ That is an additional layer on top of the fallback-avoidance described here.
 
 The core behavior to learn is that transitions keep revealed content visible instead of flashing a fallback.
 
+<GuideFigure figure="react-transition-fallback" />
+
 ### Try it
 
 > Build a master-detail view: a list, and a detail panel that suspends on the selected item's data. First, _without_ a transition, click between items and watch the detail panel flash its fallback (the previous detail disappears, spinner, new detail) on every click. Then wrap the selection update in `startTransition` (or drive the detail with a `useDeferredValue` of the selected id) and click between items again: the previous detail stays visible until the new one is ready, with no fallback flash, and `isPending` lets you dim it meanwhile. Feeling that difference is the single most valuable Suspense lesson.

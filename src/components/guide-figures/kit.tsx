@@ -143,7 +143,9 @@ export function FigureFrame({
             </p>
             {panels}
             {stepper && <Controls stepper={stepper} tools={tools} />}
-            <figcaption className="el-figcaption">{figcaption}</figcaption>
+            <figcaption className="el-figcaption">
+                <Note>{figcaption}</Note>
+            </figcaption>
             <ul className="sr-only">
                 {description.map((line) => (
                     <li key={line}>{line}</li>

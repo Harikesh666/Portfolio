@@ -27,6 +27,21 @@ const previews: Partial<Record<string, Preview>> = {
     "higher-order-functions-stop-rewriting-the-loop": { figure: "hof-with-logging" },
     "map-filter-reduce-transform-select-combine": { figure: "filter-four" },
     "react-rendering-reconciliation-internals": { figure: "react-double-buffer" },
+    "callback-functions-javascript-calls-you-back": { figure: "js-callback-timing" },
+    "callback-hell-pyramid-of-doom": { figure: "js-pyramid" },
+    "global-scope-and-this-call-site": { figure: "js-detached-this" },
+    "javascript-functions-values-with-behavior": { figure: "js-declaration-vs-expression" },
+    "javascript-hoisting-does-not-move-code": { figure: "js-hoisting" },
+    "javascript-type-conversion-and-coercion": { figure: "js-type-needed" },
+    "react-data-fetching-server-state": { figure: "react-stale-while-revalidate" },
+    "react-error-boundaries-resilience": { figure: "react-unwind" },
+    "react-event-system-internals": { figure: "react-delegation" },
+    "react-hooks-and-effects-internals": { figure: "react-render-snapshot" },
+    "react-performance-architecture": { figure: "react-memo-bailout" },
+    "react-scheduler-and-lanes-internals": { figure: "react-lanes-interrupt" },
+    "react-server-components-internals": { figure: "react-children-slot" },
+    "react-state-management-architecture": { figure: "react-context-value" },
+    "react-suspense-internals": { figure: "react-transition-fallback" },
 };
 
 /**

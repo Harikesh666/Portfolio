@@ -912,6 +912,8 @@ So the size and heterogeneity of a context's value is itself a re-render hazard,
 
 The fixes for both are in the next section.
 
+<GuideFigure figure="react-context-value" />
+
 ### Try it
 
 > Build a Provider with an inline object value and three consumers, one reading each field, each logging its renders and wrapped in `React.memo`. Change one field and watch all three re-render despite the memo. Then change something unrelated in the Provider's parent and watch them all re-render again (the identity bug). Seeing the memo get bypassed is the moment context propagation becomes real.

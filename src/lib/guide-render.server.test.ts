@@ -38,13 +38,16 @@ describe("renderGuideHtml", () => {
         // The first render cold-compiles the guide and its island modules.
     }, 30_000);
 
-    it("leaves guides without islands as plain prose", async () => {
+    it("keeps the prose around an island as plain HTML", async () => {
         const html = await renderGuideHtml(
             "../content/guides/javascript-type-conversion-and-coercion.mdx",
         );
+        const document = parse(html);
 
-        expect(html).not.toContain("data-island");
-        expect(parse(html).querySelector("h2")).not.toBeNull();
+        expect(document.querySelectorAll("[data-island]")).toHaveLength(1);
+        expect(document.querySelector("[data-island] svg.gf-flow")).not.toBeNull();
+        expect(html).not.toContain("data-island-index");
+        expect(document.querySelector("h2")).not.toBeNull();
     });
 
     it("rejects unknown guide paths", async () => {

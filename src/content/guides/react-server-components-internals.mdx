@@ -471,6 +471,8 @@ The boundary is still strictly one-directional.
 
 The server is handing content down, not the client reaching up.
 
+<GuideFigure figure="react-children-slot" />
+
 ### Try it
 
 > Pass a plain object from a Server Component to a Client Component as a prop: it works. Now try to pass an inline function like `onSomething={() => ...}`: read the serialization error. Then restructure so the function is defined _inside_ the client component instead. Separately, build the children pattern above and confirm the server content renders inside the client wrapper.

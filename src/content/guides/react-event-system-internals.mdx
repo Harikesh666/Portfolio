@@ -487,6 +487,8 @@ But React makes it _behave_ as if every element along the path had its own liste
 
 So `onClick` on a deep button works exactly as if the button had a real click listener, even though it does not, because React reconstructs the path and finds the handler by tree traversal.
 
+<GuideFigure figure="react-delegation" />
+
 Every behavior in the rest of the guide is a consequence of this reconstruction: propagation order (Section 6) is the order React walks and fires the collected handlers.
 
 `stopPropagation` (Section 7) is React stopping its own walk.

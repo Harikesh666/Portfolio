@@ -480,6 +480,8 @@ That failure mode is so common and so important that it gets its own section nex
 
 But the mechanism to hold here is clean: `React.memo` is a boundary that compares props by `Object.is` and skips the subtree when they are all equal.
 
+<GuideFigure figure="react-memo-bailout" />
+
 ### Try it
 
 > Build a parent that re-renders on a counter and a memoized child receiving a single primitive prop that does _not_ change. Confirm in the Profiler that the child bails out (does not render) when the counter changes. Then change the child's prop along with the counter and watch it render. You are watching the props comparison decide whether the bailout fires.

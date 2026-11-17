@@ -751,6 +751,8 @@ The interruptibility from Section 2 (the work loop yielding via `shouldYield`) i
 
 So `getNextLanes` is the "which work first" decision made concrete: highest-priority pending lanes, plus expired ones, plus entangled ones, producing the `renderLanes` for this pass, and re-evaluated at each scheduling decision so that urgent work can preempt less urgent work in progress.
 
+<GuideFigure figure="react-lanes-interrupt" />
+
 ### Try it
 
 > Reason through the typeahead case in lane terms: while a transition (transition lane) is rendering the results, you type again, scheduling a new urgent input update (`SyncLane`). On the next scheduling pass, `getNextLanes` sees `SyncLane` pending and selects it over the transition lanes, so React handles the keystroke first and the in-progress transition render is restarted. Tracing this in lanes is understanding how concurrency actually preempts.
