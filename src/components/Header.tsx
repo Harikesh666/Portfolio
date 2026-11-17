@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MoonIcon, SunIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, MoonIcon, SunIcon } from "@phosphor-icons/react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
@@ -13,7 +13,7 @@ import {
     themeRevealTiming,
     themeToggleIconVariants,
 } from "../lib/motion";
-import { themeToggleRequestEvent } from "../lib/command-palette";
+import { openCommandPaletteEvent, themeToggleRequestEvent } from "../lib/command-palette";
 import { posts } from "../lib/content";
 import { site } from "../lib/site";
 
@@ -240,9 +240,9 @@ function IdentityHeader() {
                 <span className="leading-4 text-muted">Software Engineer</span>
             </p>
             {/*
-              * Phones: the name and links don't fit in one row, so the links and the
-              * theme toggle share the empty band above it (inside pt-24, no geometry
-              * change) as one bar, with 44px targets. right-16 clears the toggle
+              * Phones: the name and links don't fit in one row, so the links, the
+              * search button and the theme toggle share the empty band above it
+              * (inside pt-24, no geometry change) as one bar, with 44px targets. right-16 clears the toggle
               * (right 20px + 44px). From sm the links join the row; mr-12 clears it.
               */}
             <nav
@@ -258,6 +258,15 @@ function IdentityHeader() {
                         {link.label}
                     </Link>
                 ))}
+                <button
+                    aria-label="Search the site"
+                    className="header-link inline-flex h-11 w-10 items-center justify-center sm:-mx-1 sm:h-7 sm:w-7"
+                    onClick={() => window.dispatchEvent(new Event(openCommandPaletteEvent))}
+                    title="Search (press /)"
+                    type="button"
+                >
+                    <MagnifyingGlassIcon aria-hidden="true" size={16} />
+                </button>
             </nav>
         </div>
     );

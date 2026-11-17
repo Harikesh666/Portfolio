@@ -25,10 +25,10 @@ const groupOrder: readonly CommandGroup[] = ["Pages", "Actions", "Guides"];
  * contain it, then items that only match elsewhere. An empty query keeps the
  * original order. Groups always appear Pages, Actions, Guides.
  */
-export function filterCommands<Action>(
-    items: readonly CommandItem<Action>[],
+export function filterCommands<Item extends CommandItem<unknown>>(
+    items: readonly Item[],
     query: string,
-): CommandItem<Action>[] {
+): Item[] {
     const needle = query.trim().toLowerCase();
     const words = needle.split(/\s+/).filter(Boolean);
 

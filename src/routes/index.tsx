@@ -6,7 +6,6 @@ import {
     RocketLaunchIcon,
 } from "@phosphor-icons/react";
 import { AvailabilityStatus } from "../components/AvailabilityStatus";
-import { HoverPeek } from "../components/HoverPeek";
 import { IntroKeyword } from "../components/IntroKeyword";
 import { SketchMark } from "../components/SketchMark";
 import { MumbaiPond } from "../components/pond/MumbaiPond";
@@ -14,7 +13,7 @@ import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { homeStructuredData } from "../lib/agent-readiness";
 import { authoredPosts } from "../lib/content";
-import { resumeExperience, type ResumeExperience } from "../lib/resume";
+import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 import { stackGroups } from "../lib/stack";
 
@@ -96,11 +95,9 @@ function HomePage() {
                         deadlines and no roadmap
                     </SketchMark>
                     , and I write{" "}
-                    <HoverPeek peek={<LatestGuidesPeek />}>
-                        <Link className="text-link" to="/articles">
-                            guides
-                        </Link>
-                    </HoverPeek>{" "}
+                    <Link className="text-link" to="/articles">
+                        guides
+                    </Link>{" "}
                     to find out how much I had wrong.
                 </StaggerReveal.Item>
                 <StaggerReveal.Item
@@ -144,11 +141,6 @@ function HomePage() {
                 <ul className={listClassName}>
                     {resumeExperience.map((experience) => (
                         <StaggerReveal.Item as="li" key={experience.company}>
-                            <HoverPeek
-                                as="div"
-                                className="contents"
-                                peek={<WorkPeek experience={experience} />}
-                            >
                             <Link className="hover-row" to="/resume">
                                 <span className="flex items-baseline justify-between gap-4">
                                     <span className="min-w-0 text-foreground-strong">
@@ -162,7 +154,6 @@ function HomePage() {
                                     {experience.role}
                                 </span>
                             </Link>
-                            </HoverPeek>
                         </StaggerReveal.Item>
                     ))}
                 </ul>
@@ -253,39 +244,5 @@ function HomePage() {
                 </dl>
             </section>
         </StaggerReveal>
-    );
-}
-
-/** Hover card on "guides": the three newest titles, so the link previews where it goes. */
-function LatestGuidesPeek() {
-    return (
-        <>
-            <span className="hover-peek__label">Latest guides</span>
-            <span className="mt-1.5 flex flex-col gap-1">
-                {authoredPosts.slice(0, 3).map((post) => (
-                    <span className="text-foreground-strong" key={post.slug}>
-                        {post.title}
-                    </span>
-                ))}
-            </span>
-        </>
-    );
-}
-
-/** Hover card on a work row: what the role delivered, then the stack, from `resume.ts`. */
-function WorkPeek({ experience }: Readonly<{ experience: ResumeExperience }>) {
-    return (
-        <>
-            {experience.outcome && (
-                <span className="block text-foreground-strong">
-                    {experience.outcome}
-                </span>
-            )}
-            {experience.stack && (
-                <span className="mt-1.5 block text-muted">
-                    {experience.stack.slice(0, 5).join(" · ")}
-                </span>
-            )}
-        </>
     );
 }
