@@ -1,42 +1,23 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type KeyboardEvent } from "react";
 import { useReducedMotion } from "motion/react";
-import {
-    eventLoopExample,
-    eventLoopExampleSource,
-    type JobKind,
-    type SimState,
-} from "../../lib/event-loop-sim";
+import type { JobKind, SimState } from "../../lib/event-loop-sim";
 import { eventLoopBeatMs } from "../../lib/motion";
 import { activeLine, describeEvent } from "./captions";
 import { EventLoopDiagram } from "./EventLoopDiagram";
+import { figureExamples, isFigureExampleName, type FigureExample } from "./examples";
 import { useEventLoopPlayer, type PlayerSpeed } from "./use-event-loop-player";
 
-/** Which callback a source line belongs to, so its lines tint while that exact callback runs. */
-const lineOwner: Record<number, { label: string; kind: JobKind }> = {
-    2: { label: "timerCallback", kind: "task" },
-    3: { label: "timerCallback", kind: "task" },
-    4: { label: "timerCallback", kind: "task" },
-    6: { label: "promiseCallback", kind: "micro" },
-    7: { label: "promiseCallback", kind: "micro" },
-    8: { label: "promiseCallback", kind: "micro" },
-};
-/** Function names in the source, coloured like their pills. */
-const namedSpans: readonly { name: string; kind: JobKind }[] = [
-    { name: "timerCallback", kind: "task" },
-    { name: "promiseCallback", kind: "micro" },
-];
-
-function SourceLine({ text }: Readonly<{ text: string }>) {
-    const named = namedSpans.find((span) => text.includes(span.name));
+function SourceLine({ text, names }: Readonly<{ text: string; names: FigureExample["names"] }>) {
+    const named = names.find((span) => text.includes(span.name));
     if (!named) return <>{text || " "}</>;
-    const [before, after] = text.split(named.name);
+    const index = text.indexOf(named.name);
     return (
         <>
-            {before}
+            {text.slice(0, index)}
             <span className="el-code__name" data-kind={named.kind}>
                 {named.name}
             </span>
-            {after}
+            {text.slice(index + named.name.length)}
         </>
     );
 }
@@ -90,30 +71,31 @@ function Timeline({ state }: Readonly<{ state: SimState }>) {
 }
 
 /**
- * The guide's interactive event-loop figure. It runs the guide's own
- * example through a small simulator, one visible event per beat: the line
- * being executed lights up in the code, the diagram moves the work, the
- * console prints, and a timeline records what held the stack. Readers can
- * play, pause, step, change speed, restart, and add a timer or a microtask
- * of their own. It waits for the reader to start it and pauses when it
- * scrolls out of view. Styling lives in `styles.css` (`.el-figure`).
+ * A guide's interactive event-loop figure. It runs one of the guide's own
+ * examples (`figureExamples`) through a small simulator, one tick per beat:
+ * the line being executed lights up in the code, the diagram carries the
+ * work along its wires, the console prints with a timestamp, and a trace
+ * records what held the stack. Readers can play, pause, step forward and
+ * back (or use ← → and Space), change speed, restart, and add a timer or a
+ * microtask of their own. It waits for the reader to start it and pauses
+ * when it scrolls out of view. Styling lives in `styles.css` (`.el-figure`).
  */
-export function EventLoopFigure() {
+export function EventLoopFigure({ example: exampleName }: Readonly<{ example?: unknown }>) {
+    const example: FigureExample = figureExamples[isFigureExampleName(exampleName) ? exampleName : "tasks-and-microtasks"];
     const shouldReduceMotion = useReducedMotion() ?? false;
-    const { sim, isPlaying, hasStarted, speed, dispatch } = useEventLoopPlayer({
-        program: eventLoopExample,
+    const { sim, isPlaying, hasStarted, speed, canGoBack, dispatch } = useEventLoopPlayer({
+        program: example.program,
+        options: example.simOptions,
         beatMs: eventLoopBeatMs,
     });
     const figureRef = useRef<HTMLElement>(null);
+    const consoleRef = useRef<HTMLOListElement>(null);
     const line = activeLine(sim);
     const runningLabel = sim.stack.at(-1)?.label;
-    const consoleRef = useRef<HTMLOListElement>(null);
-
-    // Keep the newest console line in view as the log grows.
-    useEffect(() => {
-        const list = consoleRef.current;
-        if (list) list.scrollTop = list.scrollHeight;
-    }, [sim.log.length]);
+    // Timer examples stamp simulated seconds; the others stamp the tick.
+    const stamp = (tick: number, time: number) =>
+        example.secondsPerTick ? `${time * example.secondsPerTick}s` : `t${String(tick).padStart(2, "0")}`;
+    const captionOptions = { secondsPerTick: example.secondsPerTick };
 
     // Pause when the figure leaves the screen; the reader resumes it.
     useEffect(() => {
@@ -126,43 +108,64 @@ export function EventLoopFigure() {
         return () => observer.disconnect();
     }, [dispatch]);
 
+    // Keep the newest console line in view as the log grows.
+    useEffect(() => {
+        const list = consoleRef.current;
+        if (list) list.scrollTop = list.scrollHeight;
+    }, [sim.log.length]);
+
+    function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
+        if (event.key === "ArrowRight") dispatch({ type: "step" });
+        else if (event.key === "ArrowLeft") dispatch({ type: "back" });
+        else if (event.key === " " && !(event.target instanceof HTMLButtonElement)) dispatch({ type: "toggle" });
+        else return;
+        event.preventDefault();
+    }
+
     return (
-        <figure className="el-figure not-prose" ref={figureRef}>
-            <div className="el-figure__stage">
-                <EventLoopDiagram animate={!shouldReduceMotion} state={sim} />
+        <figure className="el-figure not-prose" onKeyDown={handleKeyDown} ref={figureRef}>
+            <div className="el-figure__stage" data-idle={hasStarted ? undefined : ""}>
+                <EventLoopDiagram
+                    animate={!shouldReduceMotion}
+                    readout={example.secondsPerTick ? `T = ${stamp(sim.tick, sim.time)}` : undefined}
+                    state={sim}
+                />
                 {!hasStarted && (
                     <button className="el-start" onClick={() => dispatch({ type: "play" })} type="button">
                         <span aria-hidden="true" className="el-start__icon">▶</span>
-                        Run the example
+                        {example.startLabel}
                     </button>
                 )}
             </div>
 
             <p aria-live={isPlaying ? "off" : "polite"} className="el-caption">
-                {describeEvent(sim)}
+                {describeEvent(sim, captionOptions)}
             </p>
 
             <div className="el-figure__panels">
                 <div className="el-code">
                     <div className="el-panel__bar">
-                        <span>main.js</span>
+                        <span>{example.fileName}</span>
                     </div>
                     <ol className="el-code__lines">
-                        {eventLoopExampleSource.map((text, index) => (
-                            <li
-                                className="el-code__line"
-                                data-active={line === index ? "" : undefined}
-                                data-kind={lineOwner[index]?.kind ?? "script"}
-                                data-owner-running={lineOwner[index]?.label === runningLabel ? "" : undefined}
-                                // The source is a fixed listing, so the line number is its identity.
-                                key={index}
-                            >
-                                <span className="el-code__number">{index + 1}</span>
-                                <span className="el-code__text">
-                                    <SourceLine text={text} />
-                                </span>
-                            </li>
-                        ))}
+                        {example.source.map((text, index) => {
+                            const owner = example.lineOwners[index];
+                            return (
+                                <li
+                                    className="el-code__line"
+                                    data-active={line === index ? "" : undefined}
+                                    data-kind={owner?.kind ?? "script"}
+                                    data-owner-running={owner && owner.label === runningLabel ? "" : undefined}
+                                    // The source is a fixed listing, so the line number is its identity.
+                                    key={index}
+                                >
+                                    <span className="el-code__number">{index + 1}</span>
+                                    <span className="el-code__text">
+                                        <SourceLine names={example.names} text={text} />
+                                    </span>
+                                </li>
+                            );
+                        })}
                     </ol>
                 </div>
                 <div className="el-side">
@@ -172,9 +175,10 @@ export function EventLoopFigure() {
                         </div>
                         <ol className="el-console__lines" ref={consoleRef}>
                             {sim.log.map((entry, index) => (
-                                // The log only grows, so position is a stable key.
+                                // The log only grows (Back rewinds the whole list), so position is a stable key.
                                 <li className="el-console__line" data-kind={entry.kind} key={index}>
-                                    <span aria-hidden="true">›</span> {entry.text}
+                                    <span className="el-console__stamp">{stamp(entry.tick, entry.time)}</span>
+                                    {entry.text}
                                 </li>
                             ))}
                         </ol>
@@ -191,14 +195,31 @@ export function EventLoopFigure() {
             <div className="el-controls">
                 <div className="el-controls__group">
                     <button
+                        aria-keyshortcuts="Space"
                         className="el-button el-button--primary"
-                        onClick={() => dispatch({ type: isPlaying ? "pause" : "play" })}
+                        onClick={() => dispatch({ type: "toggle" })}
                         type="button"
                     >
                         {isPlaying ? "Pause" : "Play"}
                     </button>
-                    <button className="el-button" onClick={() => dispatch({ type: "step" })} type="button">
-                        Step
+                    <button
+                        aria-keyshortcuts="ArrowLeft"
+                        aria-label="Step back"
+                        className="el-button"
+                        disabled={!canGoBack}
+                        onClick={() => dispatch({ type: "back" })}
+                        type="button"
+                    >
+                        ‹ Back
+                    </button>
+                    <button
+                        aria-keyshortcuts="ArrowRight"
+                        aria-label="Step forward"
+                        className="el-button"
+                        onClick={() => dispatch({ type: "step" })}
+                        type="button"
+                    >
+                        Step ›
                     </button>
                     <button className="el-button" onClick={() => dispatch({ type: "restart" })} type="button">
                         Restart ↺
@@ -225,10 +246,12 @@ export function EventLoopFigure() {
                         + microtask
                     </button>
                 </div>
+                <p aria-hidden="true" className="el-keys">
+                    <kbd>←</kbd>
+                    <kbd>→</kbd> step · <kbd>space</kbd> play
+                </p>
             </div>
-            <figcaption className="el-figcaption">
-                The example above, run one event at a time. Add a timer or a microtask while it runs to see where each one waits.
-            </figcaption>
+            <figcaption className="el-figcaption">{example.figcaption}</figcaption>
         </figure>
     );
 }
