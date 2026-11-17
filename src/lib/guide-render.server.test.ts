@@ -38,7 +38,7 @@ describe("renderGuideHtml", () => {
 
     it("leaves guides without islands as plain prose", async () => {
         const html = await renderGuideHtml(
-            "../content/guides/closures-function-backpack.mdx",
+            "../content/guides/javascript-type-conversion-and-coercion.mdx",
         );
 
         expect(html).not.toContain("data-island");
