@@ -475,7 +475,7 @@ export function createPond(options: PondOptions): Pond {
         }
 
         // Night and the dark theme dim everything on this layer, never the empty water.
-        const dim = light ? Math.max(0.4 * light.night, dark ? 0.3 * (1 - light.night) : 0) : 0;
+        const dim = light ? Math.max(0.24 * light.night, dark ? 0.16 * (1 - light.night) : 0) : 0;
         if (dim > 0.02) {
             context.globalCompositeOperation = "source-atop";
             context.fillStyle = `rgba(8, 16, 38, ${dim})`;

@@ -13,10 +13,10 @@ type Keyframe = Readonly<{
 }>;
 
 const night: Omit<Keyframe, "hour"> = {
-    deep: [0.05, 0.09, 0.17],
-    shallow: [0.09, 0.16, 0.27],
-    light: [0.6, 0.7, 0.9],
-    lightStrength: 0.13,
+    deep: [0.08, 0.14, 0.25],
+    shallow: [0.15, 0.25, 0.39],
+    light: [0.62, 0.72, 0.92],
+    lightStrength: 0.18,
     night: 1,
 };
 const dawn: Omit<Keyframe, "hour"> = {
@@ -27,8 +27,8 @@ const dawn: Omit<Keyframe, "hour"> = {
     night: 0.2,
 };
 const day: Omit<Keyframe, "hour"> = {
-    deep: [0.4, 0.56, 0.55],
-    shallow: [0.62, 0.75, 0.73],
+    deep: [0.36, 0.58, 0.56],
+    shallow: [0.6, 0.79, 0.76],
     light: [0.97, 1, 0.98],
     lightStrength: 0.42,
     night: 0,
@@ -77,14 +77,14 @@ export function daylightAt(hour: number, isDarkTheme: boolean): Daylight {
     const deep = mixRgb(from.deep, to.deep, eased);
     const shallow = mixRgb(from.shallow, to.shallow, eased);
     const nightness = mix(from.night, to.night, eased);
-    // Dark theme: dim daylight colours, leave night (already dark) alone.
-    const dim = isDarkTheme ? mix(0.42, 1, nightness) : 1;
+    // Dark theme: soften daylight so it never glares, but keep it clearly day; leave night alone.
+    const dim = isDarkTheme ? mix(0.66, 1, nightness) : 1;
 
     return {
         deep: [deep[0] * dim, deep[1] * dim, deep[2] * dim],
         shallow: [shallow[0] * dim, shallow[1] * dim, shallow[2] * dim],
         light: mixRgb(from.light, to.light, eased),
-        lightStrength: mix(from.lightStrength, to.lightStrength, eased) * (isDarkTheme ? 0.75 : 1),
+        lightStrength: mix(from.lightStrength, to.lightStrength, eased) * (isDarkTheme ? 0.85 : 1),
         night: nightness,
     };
 }

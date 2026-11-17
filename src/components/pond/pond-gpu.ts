@@ -185,7 +185,7 @@ void main() {
 
     vec2 uv = css / uCss;
     vec2 fromEdge = min(uv, 1.0 - uv);
-    color *= mix(0.78, 1.0, smoothstep(0.0, 0.32, min(fromEdge.x * 1.4, fromEdge.y * 2.2)));
+    color *= mix(0.86, 1.0, smoothstep(0.0, 0.32, min(fromEdge.x * 1.4, fromEdge.y * 2.2)));
     color += (hash(gl_FragCoord.xy + fract(uTime) * 61.0) - 0.5) * 0.03;
     outColor = vec4(color, 1.0);
 }
@@ -342,7 +342,7 @@ void main() {
     color += uLight * caustic(vCss / 78.0, uTime) * uLightStrength * 0.32 * body;
     // As bright as the water around it: the dark theme dims daylight, night dims the rest.
     float daylight = clamp(dot(uWater, vec3(0.333)) / 0.7, 0.5, 1.0);
-    color *= mix(daylight, 1.0, uNight) * mix(1.0, 0.5, uNight);
+    color *= mix(daylight, 1.0, uNight) * mix(1.0, 0.7, uNight);
     color = mix(color, color * vec3(0.76, 0.86, 1.1), uNight * 0.5);
     outColor = vec4(color, a * alpha);
 }
