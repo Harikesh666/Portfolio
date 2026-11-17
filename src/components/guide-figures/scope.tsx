@@ -746,10 +746,10 @@ export function TdzFigure() {
 
 export function ErrorKindsFigure() {
     const nodes: FlowNode[] = [
-        { id: "code", x: 8, y: 52, w: 156, h: 40, label: "which error?", sub: ["each step tries a snippet"] },
-        { id: "syntax", x: 200, y: 8, w: 152, h: 38, label: "SyntaxError", sub: ["the declaration", "arrangement is invalid"], tone: "accent" },
-        { id: "reference", x: 200, y: 53, w: 152, h: 38, label: "ReferenceError", sub: ["the name cannot be", "accessed here"], tone: "accent" },
-        { id: "type", x: 200, y: 98, w: 152, h: 38, label: "TypeError", sub: ["the attempted operation", "is not allowed"], tone: "accent" },
+        { id: "code", x: 8, y: 50, w: 156, h: 44, label: "which error?", sub: ["each step tries a snippet"] },
+        { id: "syntax", x: 200, y: 4, w: 152, h: 42, label: "SyntaxError", sub: ["the declaration", "arrangement is invalid"], tone: "accent" },
+        { id: "reference", x: 200, y: 51, w: 152, h: 42, label: "ReferenceError", sub: ["the name cannot be", "accessed here"], tone: "accent" },
+        { id: "type", x: 200, y: 98, w: 152, h: 42, label: "TypeError", sub: ["the attempted operation", "is not allowed"], tone: "accent" },
     ];
     const wires: FlowWire[] = [
         { id: "to-syntax", d: "M164 66 H174 Q182 66 182 58 V35 Q182 27 190 27 H198", tone: "accent" },

@@ -72,7 +72,8 @@ const captions: Record<Mode, readonly string[]> = {
 };
 
 const tones: Record<Pid, string> = { P1: "strong", P2: "task", P3: "accent" };
-const unit = 30;
+// Ten units of 25 end at x 294, clear of the "first ran" labels on the right.
+const unit = 25;
 const left = 44;
 
 function SchedulerBody({ mode, onMode }: Readonly<{ mode: Mode; onMode: (mode: Mode) => void }>) {

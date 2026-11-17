@@ -16,6 +16,7 @@ import {
 import { openCommandPaletteEvent, themeToggleRequestEvent } from "../lib/command-palette";
 import { posts } from "../lib/content";
 import { site } from "../lib/site";
+import { syncThemeColor } from "../lib/theme-color";
 
 type HeaderMode = "breadcrumb" | "identity";
 
@@ -109,11 +110,10 @@ function ThemeToggle({
     const iconDirection = theme === "dark" ? 1 : -1;
 
     useEffect(() => {
-        setTheme(
-            document.documentElement.dataset.theme === "dark"
-                ? "dark"
-                : "light",
-        );
+        const current = document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+        setTheme(current);
+        // The status bar follows the saved theme, not only the phone's own setting.
+        syncThemeColor(current);
     }, []);
 
     // The command palette's "Switch theme" asks for the same toggle, reveal included.
@@ -126,6 +126,7 @@ function ThemeToggle({
         const nextTheme = theme === "dark" ? "light" : "dark";
         const applyTheme = () => {
             document.documentElement.dataset.theme = nextTheme;
+            syncThemeColor(nextTheme);
             window.localStorage.setItem("theme", nextTheme);
             setTheme(nextTheme);
             // Canvases that only repaint on demand, like the footer water, listen for this.

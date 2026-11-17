@@ -521,6 +521,8 @@ Think of it as a description, streamed in pieces, that contains:
 
 The browser receives this payload and reconstructs the React element tree from it.
 
+<GuideFigure figure="rs-payload" />
+
 Where the payload has plain rendered output, the browser just uses it.
 
 Where the payload has a module reference to a client component, the browser loads that component's code (which was shipped because of its `"use client"` marker) and renders it with the provided props, making it interactive.
@@ -597,6 +599,8 @@ The defining facts to hold onto:
 This is also where Suspense and streaming from the rendering guide reconnect: because both the HTML and the RSC payload are streamed, a slow Server Component (say one awaiting a slow query) can be wrapped in `<Suspense>`, letting the rest of the page stream and appear while that one part fills in when its data is ready.
 
 The server-side reveal-batching refinement mentioned in the rendering guide is part of making these streamed reveals feel calm rather than janky.
+
+<GuideFigure figure="rs-first-load" />
 
 ### Try it
 

@@ -650,6 +650,8 @@ If it is stale, the _first_ subscriber to trigger a revalidation starts one requ
 
 So you never get redundant simultaneous fetches for one key, regardless of how many components ask or how they are arranged in the tree.
 
+<GuideFigure figure="df-dedupe" />
+
 Step back and notice that this is the external-store model from the State guide (Section 12) specialized for server data.
 
 There, the problem was that Context re-renders every consumer because it has no slice-level subscription (the selectivity gap, Section 11 of that guide), and the solution was a store outside the tree that components subscribe to by slice.
@@ -1052,6 +1054,8 @@ v5 also offers a simpler optimistic pattern for cases where you do not need to w
 This avoids the cache-surgery recipe above when the optimistic state only needs to appear in one place.
 
 Reach for the full `onMutate` recipe when the optimistic change must be visible everywhere the query is read.
+
+<GuideFigure figure="df-optimistic" />
 
 Reach for the `variables` approach when it is local to the component firing the mutation.
 

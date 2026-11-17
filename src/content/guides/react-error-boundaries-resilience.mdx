@@ -305,6 +305,8 @@ You can technically do logging in `getDerivedStateFromError` in some React versi
 
 Keeping "fallback = `getDerivedStateFromError` (pure, render phase), and logging = `componentDidCatch` (side effect, commit phase)" straight is what makes a boundary both correct and well-behaved.
 
+<GuideFigure figure="eb-two-methods" />
+
 A note that connects to later sections: the `error` these receive is whatever was thrown, and React 19's root options (Section 9) receive the same `error` and an `errorInfo` with the same `componentStack`, so the shape is consistent whether you handle an error at a boundary or at the root.
 
 ### Try it
@@ -619,6 +621,8 @@ This works because setting the error state causes a re-render, and `if (error) t
 
 You have converted an async error into a render error so the boundary can handle it.
 
+<GuideFigure figure="eb-forwarding" />
+
 - **Use `react-error-boundary`'s `showBoundary`.** The cleaner version of the same idea: the library provides `const { showBoundary } = useErrorBoundary()`, and calling `showBoundary(error)` from a handler or async callback imperatively triggers the nearest `react-error-boundary` boundary to show its fallback for that error. Internally it does the set-state-and-throw dance for you, so you get a clean imperative API:
 
     ```jsx
@@ -746,6 +750,8 @@ So the recovery model is: the boundary stays on its fallback until reset.
 Reset by clearing error state (manually, via `resetKeys`, or via remount), and always pair a reset with a change in conditions, because resetting into the identical failure is the loop you must avoid.
 
 Designing recovery is really designing _what change_ makes a retry worthwhile, and tying the reset to that change.
+
+<GuideFigure figure="eb-reset" />
 
 ### Try it
 

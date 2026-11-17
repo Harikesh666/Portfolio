@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useReducedMotion } from "motion/react";
 import type { JobKind, SimState } from "../../lib/event-loop-sim";
 import { eventLoopBeatMs } from "../../lib/motion";
+import { useFigureVisibility } from "../../lib/use-figure-visibility";
 import { BindingsPanel } from "./BindingsPanel";
 import { activeLine, describeEvent } from "./captions";
 import { EventLoopDiagram } from "./EventLoopDiagram";
@@ -132,15 +133,8 @@ function FigureBody({
     const captionOptions = { secondsPerTick: example.secondsPerTick };
 
     // Pause when the figure leaves the screen; the reader resumes it.
-    useEffect(() => {
-        const figure = figureRef.current;
-        if (!figure) return;
-        const observer = new IntersectionObserver(([entry]) => {
-            if (!entry.isIntersecting) dispatch({ type: "pause" });
-        });
-        observer.observe(figure);
-        return () => observer.disconnect();
-    }, [dispatch]);
+    const pause = useCallback(() => dispatch({ type: "pause" }), [dispatch]);
+    const isOnScreen = useFigureVisibility(figureRef, pause);
 
     // After a switch, focus stays on the toggle the reader pressed.
     useEffect(() => {
@@ -162,7 +156,12 @@ function FigureBody({
     }
 
     return (
-        <figure className="el-figure not-prose" onKeyDown={handleKeyDown} ref={figureRef}>
+        <figure
+            className="el-figure not-prose"
+            data-offscreen={isOnScreen ? undefined : ""}
+            onKeyDown={handleKeyDown}
+            ref={figureRef}
+        >
             <div className="el-figure__stage" data-idle={hasStarted ? undefined : ""}>
                 <EventLoopDiagram
                     animate={!shouldReduceMotion}

@@ -40,6 +40,7 @@ import {
     routePageEnterTween,
 } from "../lib/motion";
 import { absoluteUrl, site } from "../lib/site";
+import { themeColors } from "../lib/theme-color";
 
 import appCss from "../styles.css?url";
 
@@ -129,12 +130,12 @@ function RootDocument({ children }: { children: React.ReactNode }) {
                 />
                 <meta
                     name="theme-color"
-                    content="#fdfdfd"
+                    content={themeColors.light}
                     media="(prefers-color-scheme: light)"
                 />
                 <meta
                     name="theme-color"
-                    content="#0a0a0a"
+                    content={themeColors.dark}
                     media="(prefers-color-scheme: dark)"
                 />
                 <HeadContent />

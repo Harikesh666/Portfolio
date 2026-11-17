@@ -609,6 +609,8 @@ In day-to-day code you mostly use the bubble phase (`onClick`, `onChange`), and 
 
 Knowing both phases exist, and that React reproduces them by walking the fiber tree, is what lets you reason about ordering precisely instead of by trial and error.
 
+<GuideFigure figure="ev-phases" />
+
 ### Try it
 
 > Nest three components around a button, and on each put both an `onClick` and an `onClickCapture` that log their name and phase. Click the button and watch the order: capture handlers fire outermost-to-button, then bubble handlers fire button-to-outermost. That sequence is React firing the handlers it collected by walking the fiber path, in the two phases.
@@ -904,6 +906,8 @@ Without the event system, a `setState` would have no event-derived priority and 
 
 With it, every interaction produces a clean, single, appropriately-urgent render.
 
+<GuideFigure figure="ev-batching" />
+
 A note on the history, because it explains advice you may have seen.
 
 Before React 18, this automatic batching happened _only_ inside React event handlers.
@@ -1001,6 +1005,8 @@ The rule is Section 6: React events propagate along the fiber tree.
 Portals are just the situation where the fiber tree and the DOM tree visibly differ, so the rule becomes observable.
 
 Hold "React propagation follows the component tree you wrote" and portal event behavior is predictable rather than surprising.
+
+<GuideFigure figure="ev-portal" />
 
 ### Try it
 

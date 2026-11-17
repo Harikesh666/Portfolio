@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useReducer, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useReducer, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { useReducedMotion } from "motion/react";
 import { guideFigureBeatMs, guideFigurePreviewBeatMs, guideFigurePulseMs } from "../../lib/motion";
+import { useFigureVisibility } from "../../lib/use-figure-visibility";
 
 /**
  * Set by a guide's hover card. Inside it, a figure shows only its drawing
@@ -8,6 +9,12 @@ import { guideFigureBeatMs, guideFigurePreviewBeatMs, guideFigurePulseMs } from 
  * motion is allowed); otherwise it holds the overview.
  */
 export const FigurePreview = createContext<Readonly<{ playing: boolean }> | null>(null);
+
+/**
+ * Whether a figure's lit wires may move: only while it plays and is on
+ * screen. Stepped by hand or scrolled away, a figure holds still.
+ */
+const FigureMotion = createContext(false);
 
 /** One colour per role, shared with the event-loop figures: Strong, terracotta, blue. */
 export type Tone = "strong" | "accent" | "task";
@@ -107,24 +114,21 @@ export function FigureFrame({
     const preview = useContext(FigurePreview);
     const dispatch = stepper?.dispatch;
 
-    useEffect(() => {
-        const figure = figureRef.current;
-        if (!figure || !dispatch) return;
-        const observer = new IntersectionObserver(([entry]) => {
-            if (!entry.isIntersecting) dispatch("pause");
-        });
-        observer.observe(figure);
-        return () => observer.disconnect();
-    }, [dispatch]);
+    const pause = useCallback(() => dispatch?.("pause"), [dispatch]);
+    const isOnScreen = useFigureVisibility(figureRef, pause);
 
     if (preview) {
         return (
-            <div className="el-card gf-card">
-                <div className="gf-stage">{stage}</div>
-                <p className="el-card__caption">{caption}</p>
-            </div>
+            <FigureMotion.Provider value={preview.playing}>
+                <div className="el-card gf-card" data-motion={preview.playing ? "on" : undefined}>
+                    <div className="gf-stage">{stage}</div>
+                    <p className="el-card__caption">{caption}</p>
+                </div>
+            </FigureMotion.Provider>
         );
     }
+
+    const isMoving = Boolean(stepper?.isPlaying) && isOnScreen;
 
     function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
         if (!dispatch) return;
@@ -136,8 +140,16 @@ export function FigureFrame({
     }
 
     return (
-        <figure className="el-figure gf-figure not-prose" onKeyDown={handleKeyDown} ref={figureRef}>
-            <div className="gf-stage">{stage}</div>
+        <figure
+            className="el-figure gf-figure not-prose"
+            data-motion={isMoving ? "on" : undefined}
+            data-offscreen={isOnScreen ? undefined : ""}
+            onKeyDown={handleKeyDown}
+            ref={figureRef}
+        >
+            <div className="gf-stage">
+                <FigureMotion.Provider value={isMoving}>{stage}</FigureMotion.Provider>
+            </div>
             <p aria-live={stepper?.isPlaying ? "off" : "polite"} className="el-caption">
                 {caption}
             </p>
@@ -225,6 +237,14 @@ export type FlowWire = Readonly<{
     label?: Readonly<{ text: string; x: number; y: number; anchor?: "start" | "middle" | "end" }>;
 }>;
 
+/** Distance between a node's title baseline and each subtitle baseline. */
+const lineGap = 11.5;
+
+/** The title baseline that centres the title and its subtitle lines as one block. */
+function labelBaseline(node: FlowNode) {
+    return node.y + node.h / 2 + 3.2 - ((node.sub?.length ?? 0) * lineGap) / 2;
+}
+
 /** Which nodes and wires a step lights. Null is the overview: everything at rest, nothing dimmed. */
 export type Lit = Readonly<{ nodes: readonly string[]; wires: readonly string[]; tone?: Tone }> | null;
 
@@ -248,7 +268,8 @@ export function Flow({
     lit: Lit;
     children?: ReactNode;
 }>) {
-    const animate = !(useReducedMotion() ?? false);
+    const isMoving = useContext(FigureMotion);
+    const animate = !(useReducedMotion() ?? false) && isMoving;
     const state = (on: boolean) => (lit === null ? undefined : on ? "on" : "off");
     return (
         <svg aria-hidden="true" className="gf-flow" data-tone={lit?.tone ?? "strong"} viewBox={`0 0 ${width} ${height}`}>
@@ -293,12 +314,7 @@ export function Flow({
                     key={node.id}
                 >
                     <rect height={node.h} rx="5" width={node.w} x={node.x} y={node.y} />
-                    <text
-                        className="gf-node__label"
-                        textAnchor="middle"
-                        x={node.x + node.w / 2}
-                        y={node.y + node.h / 2 + 3.4 - ((node.sub?.length ?? 0) * 9) / 2}
-                    >
+                    <text className="gf-node__label" textAnchor="middle" x={node.x + node.w / 2} y={labelBaseline(node)}>
                         {node.label}
                     </text>
                     {node.sub?.map((line, index) => (
@@ -307,7 +323,7 @@ export function Flow({
                             key={line}
                             textAnchor="middle"
                             x={node.x + node.w / 2}
-                            y={node.y + node.h / 2 + 3.4 - ((node.sub?.length ?? 0) * 9) / 2 + 10 * (index + 1)}
+                            y={labelBaseline(node) + lineGap * (index + 1)}
                         >
                             {line}
                         </text>

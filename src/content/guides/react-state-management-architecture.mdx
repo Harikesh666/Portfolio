@@ -264,6 +264,8 @@ Lift to the nearest common ancestor and the re-render covers exactly that subtre
 
 Lift higher "to be safe" and you have enlarged the blast radius for no benefit, re-rendering components that have nothing to do with this state.
 
+<GuideFigure figure="sm-lift" />
+
 "As high as necessary, no higher" is the same discipline as colocation, applied in the other direction.
 
 Now the costs, stated honestly because they are what later sections exist to address:
@@ -1171,6 +1173,8 @@ So updating `store.cart` does not re-render a component whose selector reads `st
 This gives you fine-grained, roughly constant-time invalidation: a change re-renders only the components whose selected slice changed, no matter how many total consumers the store has.
 
 That is the property Context cannot provide and the reason large or fast-changing global state belongs in a store.
+
+<GuideFigure figure="sm-store" />
 
 The bridge to React has to be done carefully, and this is where `useSyncExternalStore` comes in (Hooks guide, Section 15).
 

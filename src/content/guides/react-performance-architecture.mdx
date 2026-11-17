@@ -876,6 +876,8 @@ Get these right and list updates are correct and cheap.
 
 Get them wrong and you pay in both wasted DOM work and state bugs.
 
+<GuideFigure figure="pf-keys" />
+
 #### Using a key deliberately to remount
 
 The flip side is a tool: because changing a component's key makes React treat it as a different element and remount it (destroying the old instance and its state, mounting fresh), you can _intentionally_ reset a component's state by changing its key.
@@ -1058,6 +1060,8 @@ React renders the expensive results update at lower priority, and if the user ty
 `isPending` is true while the transition is rendering, so you can show a subtle "updating" indicator.
 
 The net effect: typing stays responsive even though filtering is expensive, because the expensive part no longer blocks the urgent part.
+
+<GuideFigure figure="pf-transition" />
 
 #### `useDeferredValue`
 

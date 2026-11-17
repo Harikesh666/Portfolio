@@ -207,6 +207,8 @@ Things worth actually knowing about this object:
 - **The JSX transform since React 17** emits calls to `jsx()` from `react/jsx-runtime`, which is why you no longer need `React` in scope just to write JSX.
 - **`ref` is a normal prop in React 19.** You no longer need `forwardRef` to pass a ref through a function component for new code.
 
+<GuideFigure figure="rr-element-object" />
+
 A **component** is the recipe (`f` in `UI = f(state)`).
 
 The same recipe gets instantiated in many places.
@@ -465,6 +467,8 @@ Index keys are fine in exactly one case: the list is fully static (never reorder
 
 Otherwise use a stable id from the data.
 
+<GuideFigure figure="rr-keys" />
+
 #### The flip side: changing a key on purpose to reset state
 
 Because a changed key makes React treat the element as new (unmount old, mount fresh), you can deliberately reset a component:
@@ -565,6 +569,8 @@ The two fields that make React fast at scale are `childLanes` and `subtreeFlags`
 Both are summaries: "is there any work below me?" and "are there any effects below me?" Each can be checked with a single bitwise operation, so React can skip an entire subtree of any size in O(1) instead of walking into it to discover there was nothing to do.
 
 In a typical update most of the tree is untouched, and these summaries are how React proves that cheaply.
+
+<GuideFigure figure="rr-fiber-fields" />
 
 ### Try it
 
@@ -680,6 +686,8 @@ Once the WIP tree is built, React applies it to the DOM in one synchronous, unin
 
 After commit and paint, React flushes **passive effects** (`useEffect` setup, plus the previous render's `useEffect` cleanup) asynchronously, so they do not delay the user seeing the update.
 
+<GuideFigure figure="rr-commit-phases" />
+
 The practical timing table:
 
 | Hook              | Cleanup runs                      | Setup runs                      | Blocks paint? |
@@ -780,6 +788,8 @@ Then it moves to the sibling (descending into it), or returns to the parent.
 Trace it and it is just depth-first traversal: down to first child, across siblings, back up.
 
 The difference from old React is that it is an explicit loop over heap objects (`child`/`sibling`/`return` pointers), not recursion, which is precisely why it can pause between any two steps.
+
+<GuideFigure figure="rr-work-loop" />
 
 ### Try it
 

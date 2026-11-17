@@ -384,6 +384,8 @@ So the scheduler sets up a `MessageChannel` once, and its loop (`performWorkUnti
 
 So the work proceeds in roughly 5-millisecond slices with browser turns in between, and `MessageChannel` is what makes each yield both correctly-timed (after paint, because it is a macrotask) and prompt (no 4ms clamp).
 
+<GuideFigure figure="sc-slices" />
+
 If `MessageChannel` is unavailable in some environment, the scheduler falls back to `setTimeout`, accepting the clamp.
 
 The other half is **`shouldYield`** (`shouldYieldToHost` in the source), the function React's render work loop calls between units of work to decide whether to keep going or stop and yield.
@@ -817,6 +819,8 @@ So a transition that would normally be interruptible and deferrable becomes, onc
 
 This bounds the delay any update can experience: a lane is deferred only until its expiration time, never forever.
 
+<GuideFigure figure="sc-starvation" />
+
 This is, conceptually, the same mechanism as the scheduler's timeout-based ordering (Section 3), applied at the lane level.
 
 There, each scheduler task got an expiration time from its priority, and the min-heap meant that as time passed, even a low-priority task eventually became the soonest-expiring and ran.
@@ -900,6 +904,8 @@ _Entanglement_ is React's mechanism to prevent that.
 To entangle two lanes is to declare "if either of these lanes is rendered, the other must be rendered in the same batch." React maintains an `entangledLanes` set (and per-lane entanglement information) on the root, and when `getNextLanes` (Section 8) selects a lane that is entangled with others, it includes all the entangled lanes in the `renderLanes` for that pass.
 
 So entangled lanes always render together, never split across passes, which guarantees that the related updates are applied atomically from the user's perspective.
+
+<GuideFigure figure="sc-entangle" />
 
 React entangles lanes in several specific situations where splitting would break consistency:
 

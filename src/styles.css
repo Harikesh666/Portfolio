@@ -96,11 +96,25 @@
         min-height: 100%;
         background: var(--surface);
         scrollbar-gutter: stable;
+        /* Every control draws its own press state, so the browser's grey tap flash goes. */
+        -webkit-tap-highlight-color: transparent;
+        /* No font inflation when a phone turns to landscape. */
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    /* Controls fire on tap at once: they never double-tap-zoom, so the browser need not wait. */
+    a,
+    button,
+    summary,
+    [role="button"] {
+        touch-action: manipulation;
     }
 
     body {
         min-width: 320px;
         min-height: 100vh;
+        min-height: 100svh;
         overflow-x: clip;
         background: var(--surface);
         color: var(--foreground);
@@ -342,6 +356,7 @@
         width: auto;
         max-width: 100%;
         max-height: calc(100vh - 7rem);
+        max-height: calc(100dvh - 7rem);
         margin: 0 auto;
         object-fit: contain;
     }
@@ -417,8 +432,10 @@
         transition: color 200ms ease;
     }
 
-    .toc-hook__row:hover {
-        color: var(--foreground);
+    @media (hover: hover) and (pointer: fine) {
+        .toc-hook__row:hover {
+            color: var(--foreground);
+        }
     }
 
     .toc-hook__row[data-active] {
@@ -1127,7 +1144,7 @@
         color: var(--surface);
     }
 
-    @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    @media (prefers-reduced-motion: no-preference) {
         .el-start:active {
             transform: scale(0.97);
         }
@@ -1335,10 +1352,18 @@
         fill: var(--tone);
     }
 
+    /* Lit wires flow only while the figure plays; stepped by hand they hold still. */
     @media (prefers-reduced-motion: no-preference) {
-        .gf-wire[data-state="on"] path {
+        [data-motion="on"] .gf-wire[data-state="on"] path {
             animation: el-wire-flow 600ms linear infinite;
         }
+    }
+
+    /* A figure scrolled out of view stops every decorative animation. */
+    .el-figure[data-offscreen] *,
+    .el-figure[data-offscreen] *::before,
+    .el-figure[data-offscreen] *::after {
+        animation-play-state: paused !important;
     }
 
     /* Parser: the source line, the scanner's cursor, token chips, the tree. */
@@ -2162,9 +2187,11 @@
             border-color 150ms ease;
     }
 
-    .gf-spine__section:hover {
-        border-color: var(--foreground-strong);
-        color: var(--foreground-strong);
+    @media (hover: hover) and (pointer: fine) {
+        .gf-spine__section:hover {
+            border-color: var(--foreground-strong);
+            color: var(--foreground-strong);
+        }
     }
 
     .gf-spine__section:focus-visible {
@@ -2174,8 +2201,8 @@
 
     @media (pointer: coarse) {
         .gf-spine__section {
-            min-width: 2.25rem;
-            height: 2.25rem;
+            min-width: 2.75rem;
+            height: 2.75rem;
         }
     }
 
@@ -2210,6 +2237,283 @@
         min-height: 12.5rem;
     }
 
+    /*
+     * Tree figures: one box per component. Its state decides the drawing:
+     * renders in blue, skipped dashed and faint, suspended or fallback in
+     * terracotta, a boundary double-lined, server terracotta, client blue.
+     * A lit edge joins two components that both took part in the step.
+     */
+    .gf-tree-edge {
+        fill: none;
+        stroke: color-mix(in oklab, var(--muted) 55%, transparent);
+        stroke-width: 0.8;
+        transition: stroke 220ms ease;
+    }
+
+    .gf-tree-edge[data-lit] {
+        stroke: var(--scene-task);
+        stroke-width: 1.1;
+    }
+
+    .gf-tnode {
+        --tone: var(--foreground-strong);
+        transition: opacity 220ms ease;
+    }
+
+    .gf-tnode rect {
+        fill: var(--surface);
+        stroke: color-mix(in oklab, var(--muted) 60%, transparent);
+        stroke-width: 0.8;
+        transition:
+            fill 220ms ease,
+            stroke 220ms ease;
+    }
+
+    .gf-tnode[data-state="renders"],
+    .gf-tnode[data-state="client"] {
+        --tone: var(--scene-task);
+    }
+
+    .gf-tnode[data-state="suspended"],
+    .gf-tnode[data-state="fallback"],
+    .gf-tnode[data-state="error"],
+    .gf-tnode[data-state="server"] {
+        --tone: var(--accent);
+    }
+
+    .gf-tnode:not([data-state="idle"], [data-state="skipped"]) rect {
+        fill: color-mix(in oklab, var(--tone) 10%, var(--surface));
+        stroke: var(--tone);
+        stroke-width: 1.1;
+    }
+
+    .gf-tnode[data-state="suspended"] rect {
+        stroke-dasharray: 3 2;
+    }
+
+    .gf-tnode[data-state="error"] rect {
+        fill: color-mix(in oklab, var(--accent) 18%, var(--surface));
+    }
+
+    .gf-tnode[data-state="boundary"] rect {
+        fill: var(--surface);
+        stroke: var(--foreground-strong);
+        stroke-width: 2;
+    }
+
+    .gf-tnode[data-state="skipped"] {
+        opacity: 0.45;
+    }
+
+    .gf-tnode[data-state="skipped"] rect {
+        stroke-dasharray: 2 2;
+    }
+
+    .gf-legend {
+        opacity: 1 !important;
+    }
+
+    /* Timeline figures: a lane per kind of work, blocks of time, markers and a playhead. */
+    .gf-timeline__track {
+        stroke: var(--divider);
+        stroke-width: 0.6;
+    }
+
+    .gf-timeline__marker {
+        stroke: color-mix(in oklab, var(--accent) 70%, transparent);
+        stroke-dasharray: 2 2;
+        stroke-width: 0.8;
+    }
+
+    .gf-timeline__head {
+        stroke: color-mix(in oklab, var(--muted) 70%, transparent);
+        stroke-width: 0.7;
+    }
+
+    .gf-tblock {
+        --tone: var(--scene-task);
+        transition: opacity 260ms ease;
+    }
+
+    @starting-style {
+        .gf-tblock {
+            opacity: 0;
+        }
+    }
+
+    .gf-tblock[data-tone="accent"] {
+        --tone: var(--accent);
+    }
+
+    .gf-tblock[data-tone="strong"] {
+        --tone: var(--foreground-strong);
+    }
+
+    .gf-tblock[data-tone="muted"] {
+        --tone: var(--muted);
+    }
+
+    .gf-tblock rect {
+        fill: color-mix(in oklab, var(--tone) 16%, var(--surface));
+        stroke: var(--tone);
+        stroke-width: 0.8;
+    }
+
+    .gf-tblock text {
+        font-size: 7.4px;
+        fill: var(--foreground-strong);
+    }
+
+    /* Keyed lists: each identity keeps one colour, so you can see what moved with what. */
+    .gf-lcell {
+        --tone: var(--scene-task);
+        transition: opacity 260ms ease;
+    }
+
+    .gf-lcell[data-identity="1"] {
+        --tone: var(--accent);
+    }
+
+    .gf-lcell[data-identity="2"] {
+        --tone: var(--foreground-strong);
+    }
+
+    .gf-lcell[data-identity="3"] {
+        --tone: oklch(0.62 0.13 150);
+    }
+
+    .gf-lcell rect {
+        fill: color-mix(in oklab, var(--tone) 11%, var(--surface));
+        stroke: var(--tone);
+        stroke-width: 1;
+    }
+
+    .gf-lcell[data-wrong] rect {
+        stroke: var(--accent);
+        stroke-dasharray: 3 2;
+        stroke-width: 1.4;
+    }
+
+    .gf-list__link {
+        fill: none;
+        stroke: color-mix(in oklab, var(--muted) 70%, transparent);
+        stroke-dasharray: 2.5 2;
+        stroke-width: 0.9;
+    }
+
+    /* Bits: a cell per bit, filled when on. */
+    .gf-bit {
+        --tone: var(--scene-task);
+    }
+
+    .gf-bit[data-tone="accent"] {
+        --tone: var(--accent);
+    }
+
+    .gf-bit[data-tone="strong"] {
+        --tone: var(--foreground-strong);
+    }
+
+    .gf-bit rect {
+        fill: var(--surface);
+        stroke: color-mix(in oklab, var(--muted) 55%, transparent);
+        stroke-width: 0.8;
+        transition:
+            fill 220ms ease,
+            stroke 220ms ease;
+    }
+
+    .gf-bit text {
+        font-size: 9px;
+        fill: var(--muted);
+    }
+
+    .gf-bit[data-on] rect {
+        fill: color-mix(in oklab, var(--tone) 18%, var(--surface));
+        stroke: var(--tone);
+        stroke-width: 1.1;
+    }
+
+    .gf-bit[data-on] text {
+        fill: var(--tone);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .gf-tree-edge,
+        .gf-tnode,
+        .gf-tnode rect,
+        .gf-tblock,
+        .gf-lcell,
+        .gf-bit rect {
+            transition: none;
+        }
+    }
+
+    /* Structure figures: an object as a card of fields; pointer fields get arrows to what they point at. */
+    .gf-struct__object {
+        --tone: var(--scene-task);
+        transition: opacity 220ms ease;
+    }
+
+    .gf-struct__object[data-tone="accent"] {
+        --tone: var(--accent);
+    }
+
+    .gf-struct__object > rect {
+        fill: var(--surface);
+        stroke: color-mix(in oklab, var(--muted) 60%, transparent);
+        stroke-width: 0.8;
+    }
+
+    .gf-struct__object[data-state="on"] > rect {
+        stroke: var(--tone);
+        stroke-width: 1.1;
+    }
+
+    .gf-struct__object[data-state="off"] {
+        opacity: 0.55;
+    }
+
+    .gf-struct__object > line {
+        stroke: color-mix(in oklab, var(--muted) 28%, transparent);
+        stroke-width: 0.6;
+    }
+
+    .gf-struct__title {
+        font-size: 7.6px;
+        fill: var(--foreground-strong);
+    }
+
+    .gf-struct__field rect {
+        fill: transparent;
+        transition: fill 200ms ease;
+    }
+
+    .gf-struct__field[data-on] rect {
+        fill: color-mix(in oklab, var(--tone) 14%, transparent);
+    }
+
+    .gf-struct__name {
+        font-size: 8px;
+        fill: var(--foreground-strong);
+    }
+
+    .gf-struct__group {
+        font-size: 6px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        fill: var(--muted);
+    }
+
+    .gf-struct__value {
+        font-size: 6.8px;
+        fill: var(--muted);
+    }
+
+    .gf-struct__field[data-on] .gf-struct__value {
+        fill: var(--tone);
+    }
+
     /* Compare toggle in the code bar: var | let. */
     .el-toggle {
         display: inline-flex;
@@ -2231,8 +2535,10 @@
             color 150ms ease;
     }
 
-    .el-toggle__option:hover {
-        color: var(--foreground-strong);
+    @media (hover: hover) and (pointer: fine) {
+        .el-toggle__option:hover {
+            color: var(--foreground-strong);
+        }
     }
 
     .el-toggle__option[aria-pressed="true"] {
@@ -2451,8 +2757,10 @@
             transform 120ms var(--ease-out);
     }
 
-    .el-button:hover:not(:disabled) {
-        background: var(--hover);
+    @media (hover: hover) and (pointer: fine) {
+        .el-button:hover:not(:disabled) {
+            background: var(--hover);
+        }
     }
 
     .el-button:disabled {
@@ -2491,9 +2799,11 @@
         color: var(--surface);
     }
 
-    /* Matches the specificity of `.el-button:hover:not(:disabled)`, which would otherwise repaint it pale. */
-    .el-button--primary:hover:not(:disabled) {
-        background: color-mix(in oklab, var(--foreground-strong) 88%, var(--surface));
+    @media (hover: hover) and (pointer: fine) {
+        /* Matches the specificity of `.el-button:hover:not(:disabled)`, which would otherwise repaint it pale. */
+        .el-button--primary:hover:not(:disabled) {
+            background: color-mix(in oklab, var(--foreground-strong) 88%, var(--surface));
+        }
     }
 
     .el-button[data-kind="micro"] {
@@ -2538,10 +2848,36 @@
         }
     }
 
-    @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-        .el-button:active {
+    /*
+     * Figure controls answer the moment a finger lands, on every pointer:
+     * the fill darkens at once, and the button shrinks a touch when motion
+     * is welcome. Their labels are controls, not text to select.
+     */
+    .el-button:active:not(:disabled),
+    .el-toggle__option:active,
+    .gf-spine__section:active {
+        background: var(--hover);
+        transition-duration: 0ms;
+    }
+
+    .el-button--primary:active:not(:disabled) {
+        background: color-mix(in oklab, var(--foreground-strong) 80%, var(--surface));
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .el-button:active:not(:disabled),
+        .gf-spine__section:active {
             transform: scale(0.97);
         }
+    }
+
+    .el-button,
+    .el-start,
+    .el-toggle__option,
+    .gf-spine__section {
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-touch-callout: none;
     }
 
     .el-figcaption {
@@ -2996,9 +3332,14 @@
         transition: color 150ms ease;
     }
 
-    .header-link:hover,
     .header-link[data-status="active"] {
         color: var(--foreground-strong);
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .header-link:hover {
+            color: var(--foreground-strong);
+        }
     }
 
     .event-loop-pond {
@@ -3145,8 +3486,10 @@
         transition: text-decoration-color 150ms ease;
     }
 
-    .text-link:hover {
-        text-decoration-color: var(--foreground-strong);
+    @media (hover: hover) and (pointer: fine) {
+        .text-link:hover {
+            text-decoration-color: var(--foreground-strong);
+        }
     }
 
     .contribution-cell {

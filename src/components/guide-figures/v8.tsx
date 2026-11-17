@@ -234,7 +234,7 @@ export function ShapeFeedbackFigure() {
     const wires: FlowWire[] = [
         { id: "shapes-feedback", d: "M83 44 V74" },
         { id: "feedback-code", d: "M158 94 H194" },
-        { id: "guard", d: "M274 112 V160", label: { text: "new shape breaks a guard", x: 280, y: 140, anchor: "start" }, tone: "accent" },
+        { id: "guard", d: "M274 112 V160", label: { text: "new shape breaks a guard", x: 268, y: 140, anchor: "end" }, tone: "accent" },
         { id: "deopt-retry", d: "M274 192 V214" },
         { id: "loop", d: "M196 231 H89 Q83 231 83 225 V114" },
     ];

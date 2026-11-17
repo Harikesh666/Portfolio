@@ -428,6 +428,8 @@ So the answer to "how does the content appear on its own" is: React subscribed t
 
 The automaticity that feels magical is React listening to the promise and re-rendering when it resolves, all wired up by the act of throwing the promise in the first place.
 
+<GuideFigure figure="su-ping" />
+
 ### Try it
 
 > Suspend a component on a deliberately slow (say, two-second) cached promise, and add a `console.log` in the component body. Watch it log once (suspends), show the fallback, and then log _again_ about two seconds later (the retry, after the promise resolved), this time rendering the content. Seeing the second render fire on its own when the promise resolves is the retry mechanism, visible.
@@ -614,6 +616,8 @@ So nested boundaries express a _progressive reveal_: each boundary reveals its l
 
 The mechanism is just Section 2's "unwind to the nearest boundary" applied at each level of nesting: a suspension is caught by the nearest enclosing boundary, so deeper suspensions are caught deeper, producing the staged reveal.
 
+<GuideFigure figure="su-nesting" />
+
 ### Try it
 
 > Nest two boundaries as in the example, with the outer content on a fast (half-second) promise and the inner content on a slow (two-second) promise. Watch the reveal sequence: outer skeleton, then the outer content with the inner skeleton inside it, then the inner content. Then make the outer data slower than the inner and observe that the inner cannot reveal until the outer does (because the inner does not render until its parent renders). Seeing the staged reveal follow the nesting is the lesson.
@@ -772,6 +776,8 @@ The client-side throttling described here is the part relevant to ordinary Suspe
 So fallback throttling is React deliberately _not_ showing every fallback the instant it could and _not_ revealing every boundary the instant it resolves, in order to avoid flashing and popcorn.
 
 It trades a little latency for smoothness, it is built in, and it explains both the "missing" fallbacks (fast content, flash suppressed) and the smoother-than-expected multi-region reveals (coordinated reveals).
+
+<GuideFigure figure="su-throttle" />
 
 ### Try it
 

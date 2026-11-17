@@ -54,7 +54,7 @@ export function HostConfigFigure() {
     const calls = [
         { id: "create", label: "createInstance(type, props)", sub: "'div' → a real <div>" },
         { id: "text", label: "createTextInstance(text)", sub: "a text node" },
-        { id: "structure", label: "appendChild / insertBefore / removeChild", sub: "structural changes" },
+        { id: "structure", label: "appendChild, insertBefore", sub: "and removeChild: structure" },
         { id: "update", label: "commitUpdate(instance, ...)", sub: "apply a computed prop change" },
     ];
     const nodes: FlowNode[] = [
@@ -117,7 +117,7 @@ export function DoubleBufferFigure() {
         {
             caption: "An update starts. React clones or reuses fibers into the work-in-progress tree through `alternate`, and applies changes there.",
             lit: { nodes: ["current", "wip"], wires: ["alternate"], tone: "accent" },
-            patch: { wip: { sub: ["being built, can be incomplete"] } },
+            patch: { wip: { sub: ["can be incomplete"] } },
         },
         {
             caption: "If the render is interrupted, nothing on screen was touched. All the half-finished work sits in the disposable tree.",

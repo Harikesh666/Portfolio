@@ -139,6 +139,8 @@ React never sees your variable names.
 
 It only sees order.
 
+<GuideFigure figure="hk-hook-nodes" />
+
 Now the two rules fall out:
 
 #### Rule one: call hooks in the same order on every render
@@ -484,6 +486,8 @@ function handleClick() {
 ```
 
 Each updater receives the running result of the previous one, so they compose to `3`.
+
+<GuideFigure figure="hk-updater-fold" />
 
 The rule of thumb that falls out: if your next state depends on the previous state, use the updater form, because the value form is reading a snapshot that may already be stale within the same handler.
 
@@ -1003,6 +1007,8 @@ The leak and the double-fire are the same bug: a setup without its paired cleanu
 
 Thinking "this render's effect cleans up the previous render's effect" makes the correct code obvious, because you write the cleanup that exactly undoes the setup sitting two lines above it.
 
+<GuideFigure figure="hk-cleanup" />
+
 **The fetch race**, which is the same idea applied to async work:
 
 ```js
@@ -1111,6 +1117,8 @@ The user sees the intermediate frame: a flash.
 Move the measure-and-reposition into `useLayoutEffect` and it happens in step 2, before any paint, so the user only ever sees the corrected position.
 
 There is no intermediate frame to flash.
+
+<GuideFigure figure="hk-layout-effect" />
 
 The genuine use cases for `useLayoutEffect` are narrow and they all share a shape: you must read the laid-out DOM (a measurement) or mutate it (set a scroll position, position an overlay) _and have that reflected in the same paint the user first sees_.
 

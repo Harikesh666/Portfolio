@@ -299,7 +299,7 @@ export function StaleWhileRevalidateFigure() {
         { id: "ask", d: "M50 48 V98", label: { text: "ask", x: 44, y: 76, anchor: "end" } },
         { id: "serve", d: "M98 98 V50", label: { text: "serve now", x: 104, y: 76, anchor: "start" } },
         { id: "check", d: "M140 128 H218" },
-        { id: "refetch", d: "M300 100 V50", tone: "accent", label: { text: "refetch (stale only)", x: 306, y: 78, anchor: "start" } },
+        { id: "refetch", d: "M300 100 V50", tone: "accent", label: { text: "refetch (stale only)", x: 294, y: 82, anchor: "end" } },
         { id: "fresh", d: "M220 40 H176 Q170 40 170 46 V106 Q170 112 164 112 H142", label: { text: "fresh data", x: 176, y: 62, anchor: "start" } },
     ];
     const steps: FlowStep[] = [
@@ -409,7 +409,7 @@ export function DelegationFigure() {
         node("root", 8, 8, 120, 40, "root container", "one React listener", "task"),
         node("btn", 8, 150, 120, 40, "button", "native click target"),
         node("fiber", 232, 8, 120, 40, "target fiber", "found from the node"),
-        node("up", 232, 80, 120, 40, "parent fibers", "walk toward root", "accent"),
+        node("up", 232, 78, 120, 44, "parent fibers", "walk toward root", "accent"),
         node("synth", 232, 150, 120, 40, "SyntheticEvent", "wraps the native one", "task"),
         node("handler", 98, 214, 164, 30, "your handleClick", undefined, "task"),
     ];
@@ -433,7 +433,7 @@ export function DelegationFigure() {
         {
             caption: "React walks up the fiber tree from the target, collecting every matching `onClick` and `onClickCapture` along the way, in tree order.",
             lit: { nodes: ["fiber", "up"], wires: ["walk"], tone: "accent" },
-            patch: subs({ up: "collect onClick, onClickCapture" }),
+            patch: subs({ up: ["collect onClick", "and onClickCapture"] }),
         },
         {
             caption: "React wraps the native event in a `SyntheticEvent` and calls the collected handlers in order. Capture handlers go first, then bubble handlers.",
@@ -804,7 +804,7 @@ export function TransitionFallbackFigure() {
         {
             caption: "Results, then spinner, then new results. That flash over content the user was already viewing is jarring.",
             lit: { nodes: ["new"], wires: ["to-new"], tone: "task" },
-            patch: subs({ click: "plain update", old: "hidden", fallback: "flashed", new: "swapped in when resolved" }),
+            patch: subs({ click: "plain update", old: "hidden", fallback: "flashed", new: "swapped in later" }),
         },
         {
             caption: "Now the same update is wrapped in `startTransition`. It gets a transition lane: a low-priority, interruptible lane.",
