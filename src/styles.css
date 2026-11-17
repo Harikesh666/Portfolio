@@ -28,7 +28,7 @@
     --keyword-backend: oklch(0.5 0.13 150);
     /* Sketch marks in the prose: a graphite pencil and a soft highlighter. */
     --sketch-ink: oklch(0.42 0.02 60 / 72%);
-    --sketch-marker: oklch(0.91 0.13 95 / 60%);
+    --sketch-marker: oklch(0.9 0.15 95 / 75%);
     color-scheme: light;
     --status-open: oklch(0.62 0.16 150);
     --peek-shadow: 0 10px 28px oklch(0 0 0 / 10%), 0 1px 3px oklch(0 0 0 / 8%);
@@ -59,7 +59,7 @@
     --keyword-learn: oklch(0.76 0.14 345);
     --keyword-backend: oklch(0.77 0.14 150);
     --sketch-ink: oklch(0.8 0.02 60 / 62%);
-    --sketch-marker: oklch(0.74 0.13 78 / 26%);
+    --sketch-marker: oklch(0.8 0.16 86 / 50%);
     color-scheme: dark;
     --status-open: oklch(0.74 0.17 150);
     --peek-shadow: 0 12px 32px oklch(0 0 0 / 45%), 0 1px 3px oklch(0 0 0 / 30%);
@@ -451,6 +451,11 @@
         width: calc(100% + 0.1em);
         height: 0.5em;
         color: var(--sketch-ink);
+    }
+
+    /* Words under the highlighter read as ink, so they keep contrast on the brighter swipe. */
+    .sketch-mark[data-kind="marker"] {
+        color: var(--foreground-strong);
     }
 
     .sketch-mark[data-kind="marker"] .sketch-mark__stroke {
