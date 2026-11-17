@@ -463,6 +463,92 @@
         }
     }
 
+    /*
+     * About: "How I got here" as milestones on a hairline rail. Each step has
+     * a hollow dot on its label line and a rail segment down to the next dot;
+     * the last step (where things stand now) gets a filled dot and no segment.
+     * Geometry: rail at 5px inside a 24px gutter; 11px dot centred on the
+     * 20px label line.
+     */
+    .journey {
+        padding-left: 1.5rem;
+        list-style: none;
+    }
+
+    .journey__step {
+        position: relative;
+    }
+
+    .journey__step + .journey__step {
+        margin-top: 2rem;
+    }
+
+    .journey__step::before {
+        position: absolute;
+        top: 4.5px;
+        left: -1.5rem;
+        width: 11px;
+        height: 11px;
+        border: 1px solid var(--muted);
+        border-radius: 9999px;
+        background: var(--surface);
+        content: "";
+    }
+
+    .journey__step:last-child::before {
+        border-color: var(--foreground-strong);
+        background: var(--foreground-strong);
+    }
+
+    .journey__step:not(:last-child)::after {
+        position: absolute;
+        top: 19.5px;
+        bottom: calc(-2rem - 4.5px);
+        left: calc(-1.5rem + 5px);
+        width: 1px;
+        background: var(--divider);
+        content: "";
+    }
+
+    .journey__label {
+        font-size: 13px;
+        line-height: 20px;
+        color: var(--muted);
+    }
+
+    /* About: one quoted line, set apart from the prose with a hanging quote mark. */
+    .pull-quote {
+        margin-block: 0.5rem;
+        padding-left: 1.5rem;
+    }
+
+    .pull-quote blockquote p {
+        position: relative;
+        font-size: 1.25rem;
+        line-height: 1.45;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        color: var(--foreground-strong);
+        text-wrap: balance;
+    }
+
+    .pull-quote blockquote p::before {
+        position: absolute;
+        left: -0.6em;
+        color: var(--muted);
+        content: "\201C";
+    }
+
+    .pull-quote blockquote p::after {
+        content: "\201D";
+    }
+
+    .pull-quote figcaption {
+        margin-top: 0.5rem;
+        font-size: 13px;
+        color: var(--muted);
+    }
+
     .intro-keyword__icon {
         display: inline-block;
         width: 0.95em;

@@ -4,7 +4,6 @@ import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { absoluteUrl, site } from "../lib/site";
-import { stackGroups } from "../lib/stack";
 
 const aboutTitle = `About - ${site.name}`;
 const aboutDescription =
@@ -12,10 +11,43 @@ const aboutDescription =
 const aboutUrl = absoluteUrl("/about");
 const aboutImage = absoluteUrl("/og.png");
 
-const stack = stackGroups.map((group) => ({
-    label: group.label,
-    value: group.items.map((item) => item.name).join(", "),
-}));
+/*
+ * "How I got here" as milestones. The prose is unchanged; each step just
+ * gains a label saying when it happened. The last step is where things stand
+ * now, so its dot is filled.
+ */
+const journey = [
+    {
+        when: "Apr 2025",
+        title: "Internship, Rabs Net Solutions",
+        paragraphs: [
+            "I started out wanting to do frontend, React mostly. During my internship I kept getting handed backend work in Node. I took it because the experience was there, and because saying no to an opportunity simply because I was unprepared seemed worse than being unprepared.",
+            "It was overwhelming. I did not have solid footing in frontend yet, let alone backend. There was rarely a point where I felt ready before the work arrived. I learned to start anyway.",
+        ],
+    },
+    {
+        when: "Aug 2025",
+        title: "First full-time job, EduvanceAI",
+        paragraphs: [
+            "My first full-time job followed the same pattern. Just as I had begun to think Node might be the right fit for me, I was told I'd be working in Python instead. Cloud work came with it, unexpectedly, and I was glad for that.",
+        ],
+    },
+    {
+        when: "A few months in",
+        title: "Choosing the stack",
+        paragraphs: [
+            "After a couple of months, my managers gave me the freedom to choose the stack for POCs I owned end to end. I came back to Node, this time because I wanted to rather than because it had been handed to me. It stuck.",
+        ],
+    },
+    {
+        when: "Now",
+        title: "The AI layer",
+        paragraphs: [
+            "By then, colleagues around me were building with generative AI and RAG while I worked on the backend underneath it. I had touched the AI layer a few times, just enough to know I didn't understand it properly.",
+            "Eventually, touching it stopped being enough. I wanted to know what was actually happening.",
+        ],
+    },
+] as const;
 
 export const Route = createFileRoute("/about")({
     head: () => ({
@@ -67,45 +99,23 @@ function AboutPage() {
 
                 <Reveal>
                     <AboutSection title="How I got here">
-                        <p>
-                            I started out wanting to do frontend, React mostly.
-                            During my internship I kept getting handed backend
-                            work in Node. I took it because the experience was
-                            there, and because saying no to an opportunity
-                            simply because I was unprepared seemed worse than
-                            being unprepared.
-                        </p>
-                        <p>
-                            It was overwhelming. I did not have solid footing in
-                            frontend yet, let alone backend. There was rarely a
-                            point where I felt ready before the work arrived. I
-                            learned to start anyway.
-                        </p>
-                        <p>
-                            My first full-time job followed the same pattern.
-                            Just as I had begun to think Node might be the right
-                            fit for me, I was told I'd be working in Python
-                            instead. Cloud work came with it, unexpectedly, and I
-                            was glad for that.
-                        </p>
-                        <p>
-                            After a couple of months, my managers gave me the
-                            freedom to choose the stack for POCs I owned end to
-                            end. I came back to Node, this time because I wanted
-                            to rather than because it had been handed to me. It
-                            stuck.
-                        </p>
-                        <p>
-                            By then, colleagues around me were building with
-                            generative AI and RAG while I worked on the backend
-                            underneath it. I had touched the AI layer a few
-                            times, just enough to know I didn't understand it
-                            properly.
-                        </p>
-                        <p>
-                            Eventually, touching it stopped being enough. I
-                            wanted to know what was actually happening.
-                        </p>
+                        <ol className="journey">
+                            {journey.map((step) => (
+                                <li className="journey__step" key={step.when}>
+                                    <p className="journey__label">
+                                        <span className="tabular-nums text-foreground-strong">
+                                            {step.when}
+                                        </span>{" "}
+                                        · {step.title}
+                                    </p>
+                                    <div className="mt-2 space-y-4">
+                                        {step.paragraphs.map((paragraph) => (
+                                            <p key={paragraph}>{paragraph}</p>
+                                        ))}
+                                    </div>
+                                </li>
+                            ))}
+                        </ol>
                     </AboutSection>
                 </Reveal>
 
@@ -141,12 +151,17 @@ function AboutPage() {
                         <p>
                             I'm fascinated by the work of Matteo Collina, DHH,
                             and Mitchell Hashimoto, to name a few. A line of
-                            Hashimoto's I keep coming back to is that{" "}
-                            <i>
-                                "The pursuit of excellence does not need
-                                justification."
-                            </i>
+                            Hashimoto's I keep coming back to:
                         </p>
+                        <figure className="pull-quote">
+                            <blockquote>
+                                <p>
+                                    The pursuit of excellence does not need
+                                    justification.
+                                </p>
+                            </blockquote>
+                            <figcaption>Mitchell Hashimoto</figcaption>
+                        </figure>
                         <p>
                             I am nowhere close to their level, and I know that.
                             But I like having people to look up to. I like the
@@ -157,35 +172,6 @@ function AboutPage() {
                     </AboutSection>
                 </Reveal>
 
-                <Reveal>
-                    <AboutSection title="What I work with">
-                        <dl className="space-y-2 text-sm">
-                            {stack.map((row) => (
-                                <div
-                                    className="sm:flex sm:gap-3"
-                                    key={row.label}
-                                >
-                                    <dt className="shrink-0 text-[13px] text-muted sm:w-32">
-                                        {row.label}
-                                    </dt>
-                                    <dd className="text-foreground">
-                                        {row.value}
-                                    </dd>
-                                </div>
-                            ))}
-                        </dl>
-                        <p className="text-sm text-muted">
-                            The{" "}
-                            <Link
-                                className="text-link"
-                                to="/resume"
-                            >
-                                resume
-                            </Link>{" "}
-                            has the full list and what I built with it.
-                        </p>
-                    </AboutSection>
-                </Reveal>
 
                 <Reveal>
                     <AboutSection title="GitHub activity">
@@ -194,43 +180,13 @@ function AboutPage() {
                 </Reveal>
 
                 <Reveal>
-                    <AboutSection title="Elsewhere">
-                        <p className="flex flex-wrap items-center gap-x-2 text-sm">
-                            <a
-                                className="text-link"
-                                href={`mailto:${site.email}`}
-                            >
-                                Email
-                            </a>
-                            <span aria-hidden="true">·</span>
-                            <a
-                                className="text-link"
-                                href={site.socials.github}
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                GitHub
-                            </a>
-                            <span aria-hidden="true">·</span>
-                            <a
-                                className="text-link"
-                                href={site.socials.linkedin}
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                LinkedIn
-                            </a>
-                            <span aria-hidden="true">·</span>
-                            <a
-                                className="text-link"
-                                href={site.resumePdfPath}
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                Resume PDF
-                            </a>
-                        </p>
-                    </AboutSection>
+                    <p className="mt-12 text-foreground">
+                        The{" "}
+                        <Link className="text-link" to="/resume">
+                            resume
+                        </Link>{" "}
+                        has what I've built and the tools I built it with.
+                    </p>
                 </Reveal>
             </PageEnter>
         </main>
