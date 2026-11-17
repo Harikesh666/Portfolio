@@ -147,7 +147,12 @@ function PostPage() {
                             className="chip-link"
                             to="/articles"
                         >
-                            <ArrowUUpLeftIcon aria-hidden="true" size={14} />
+                            <ArrowUUpLeftIcon
+                                aria-hidden="true"
+                                className="nudge-arrow"
+                                data-direction="left"
+                                size={14}
+                            />
                             Articles
                         </Link>
 

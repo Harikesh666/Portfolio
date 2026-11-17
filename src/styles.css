@@ -29,6 +29,8 @@
     /* Sketch marks in the prose: a graphite pencil and a soft highlighter. */
     --sketch-ink: oklch(0.42 0.02 60 / 72%);
     --sketch-marker: oklch(0.91 0.13 95 / 60%);
+    --status-open: oklch(0.62 0.16 150);
+    --peek-shadow: 0 10px 28px oklch(0 0 0 / 10%), 0 1px 3px oklch(0 0 0 / 8%);
     /* Event-loop pond: CSS water shown until WebGL draws, matching the shader. */
     --pond-shallow: rgb(158 191 186);
     --pond-deep: rgb(102 143 140);
@@ -57,6 +59,8 @@
     --keyword-backend: oklch(0.77 0.14 150);
     --sketch-ink: oklch(0.8 0.02 60 / 62%);
     --sketch-marker: oklch(0.74 0.13 78 / 26%);
+    --status-open: oklch(0.74 0.17 150);
+    --peek-shadow: 0 12px 32px oklch(0 0 0 / 45%), 0 1px 3px oklch(0 0 0 / 30%);
     --pond-shallow: rgb(28 59 61);
     --pond-deep: rgb(13 31 33);
     --pond-label: rgb(190 235 230 / 70%);
@@ -203,6 +207,13 @@
         .guide-content :is(h2, h3, h4):hover .heading-anchor::before {
             opacity: 1;
         }
+    }
+
+    /* Emphasis switches to a serif italic inside the sans prose, so it reads as voice, not volume. */
+    .guide-content :is(em, i) {
+        font-family: ui-serif, Georgia, "Times New Roman", serif;
+        font-size: 1.05em;
+        letter-spacing: 0;
     }
 
     .guide-content :not(pre) > code {
@@ -548,6 +559,295 @@
         margin-top: 0.5rem;
         font-size: 13px;
         color: var(--muted);
+    }
+
+    /*
+     * Availability line (Home, Resume): a green dot with one soft ring that
+     * swells and fades every 2.4s, like a status light. Reduced motion keeps
+     * the dot and drops the ring.
+     */
+    .availability {
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        column-gap: 0.5rem;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--muted);
+    }
+
+    .availability__dot {
+        position: relative;
+        width: 7px;
+        height: 7px;
+        flex-shrink: 0;
+        border-radius: 9999px;
+        background: var(--status-open);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .availability__dot::after {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: var(--status-open);
+            content: "";
+            animation: availability-ring 2.4s var(--ease-out) infinite;
+        }
+    }
+
+    /*
+     * Hover preview card (HoverPeek). Enters a beat after the pointer arrives
+     * (60ms) so a quick pass across the page does not flash cards, growing
+     * from 96% at its top-left corner, nearest the cursor. The exit is faster
+     * and eases in. Position is a translate written by the component.
+     */
+    .hover-peek {
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 60;
+        max-width: min(17.5rem, calc(100vw - 1rem));
+        border: 1px solid var(--divider);
+        border-radius: 0.75rem;
+        padding: 0.625rem 0.75rem;
+        background: var(--surface);
+        box-shadow: var(--peek-shadow);
+        font-size: 13px;
+        line-height: 1.45;
+        color: var(--foreground);
+        pointer-events: none;
+        opacity: 0;
+        transform: scale(0.96);
+        transform-origin: top left;
+        transition:
+            opacity 110ms ease-in,
+            transform 110ms ease-in;
+    }
+
+    .hover-peek[data-open] {
+        opacity: 1;
+        transform: none;
+        transition:
+            opacity 160ms var(--ease-out) 60ms,
+            transform 200ms var(--ease-out) 60ms;
+    }
+
+    .hover-peek__label {
+        display: block;
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    /* Arrows step toward where they point when their link is hovered. */
+    .nudge-arrow {
+        flex-shrink: 0;
+        color: var(--muted);
+        transition: translate 160ms var(--ease-out);
+    }
+
+    @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+        :is(a, button):hover .nudge-arrow[data-direction="up-right"] {
+            translate: 2px -2px;
+        }
+
+        :is(a, button):hover .nudge-arrow[data-direction="right"] {
+            translate: 3px 0;
+        }
+
+        :is(a, button):hover .nudge-arrow[data-direction="left"] {
+            translate: -3px 0;
+        }
+    }
+
+    /*
+     * Lists of rows: hovering one fades its siblings to 45%, so the eye stays
+     * on the row under the pointer. Fine pointers only; touch never sees it.
+     */
+    @media (hover: hover) and (pointer: fine) {
+        .dim-siblings .hover-row {
+            transition:
+                background-color 150ms ease,
+                transform 160ms var(--ease-out),
+                opacity 150ms var(--ease-out);
+        }
+
+        .dim-siblings:has(.hover-row:hover) .hover-row:not(:hover) {
+            opacity: 0.45;
+        }
+    }
+
+    .palette-hint {
+        display: none;
+        min-width: 1.25rem;
+        border: 1px solid var(--divider);
+        border-radius: 0.25rem;
+        padding: 0 0.3rem;
+        font-family: inherit;
+        font-size: 11px;
+        line-height: 1.4;
+        text-align: center;
+    }
+
+    @media (hover: hover) and (pointer: fine) {
+        .palette-hint {
+            display: inline-block;
+        }
+    }
+
+    /*
+     * Command palette (native dialog). Opens from 8px lower at 98% scale on a
+     * fast ease-out and closes faster with an ease-in; display and overlay
+     * transition discretely so the exit can play. Reduced motion fades only.
+     */
+    .command-palette {
+        width: min(36rem, calc(100vw - 2rem));
+        max-width: none;
+        max-height: min(60vh, 32rem);
+        margin: 14vh auto auto;
+        border: 1px solid var(--divider);
+        border-radius: 0.875rem;
+        padding: 0;
+        background: var(--surface);
+        box-shadow: var(--peek-shadow);
+        color: var(--foreground);
+        opacity: 0;
+        transform: translateY(8px) scale(0.98);
+        transition:
+            opacity 120ms ease-in,
+            transform 120ms ease-in,
+            overlay 120ms ease-in allow-discrete,
+            display 120ms ease-in allow-discrete;
+    }
+
+    .command-palette[open] {
+        opacity: 1;
+        transform: none;
+        transition:
+            opacity 160ms var(--ease-out),
+            transform 200ms var(--ease-out),
+            overlay 200ms var(--ease-out) allow-discrete,
+            display 200ms var(--ease-out) allow-discrete;
+    }
+
+    @starting-style {
+        .command-palette[open] {
+            opacity: 0;
+            transform: translateY(8px) scale(0.98);
+        }
+    }
+
+    .command-palette::backdrop {
+        background: oklch(0 0 0 / 0%);
+        transition:
+            background-color 160ms var(--ease-out),
+            overlay 160ms allow-discrete,
+            display 160ms allow-discrete;
+    }
+
+    .command-palette[open]::backdrop {
+        background: oklch(0 0 0 / 28%);
+    }
+
+    @starting-style {
+        .command-palette[open]::backdrop {
+            background: oklch(0 0 0 / 0%);
+        }
+    }
+
+    .command-palette__panel {
+        display: flex;
+        max-height: inherit;
+        flex-direction: column;
+    }
+
+    .command-palette__field {
+        display: flex;
+        align-items: center;
+        gap: 0.625rem;
+        border-bottom: 1px solid var(--divider);
+        padding: 0 1rem;
+        color: var(--muted);
+    }
+
+    .command-palette__input {
+        min-width: 0;
+        flex: 1;
+        height: 3rem;
+        border: 0;
+        background: transparent;
+        font-size: 16px;
+        color: var(--foreground-strong);
+        outline: none;
+    }
+
+    .command-palette__input::placeholder {
+        color: var(--muted);
+    }
+
+    .command-palette__kbd {
+        border: 1px solid var(--divider);
+        border-radius: 0.25rem;
+        padding: 0 0.35rem;
+        font-family: inherit;
+        font-size: 11px;
+    }
+
+    .command-palette__list {
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 0.375rem;
+        scroll-padding-block: 0.375rem;
+    }
+
+    .command-palette__group {
+        padding: 0.625rem 0.625rem 0.25rem;
+        font-size: 12px;
+        color: var(--muted);
+    }
+
+    .command-palette__option {
+        display: flex;
+        min-height: 2.75rem;
+        flex-direction: column;
+        justify-content: center;
+        border-radius: 0.5rem;
+        padding: 0.375rem 0.625rem;
+        cursor: pointer;
+    }
+
+    .command-palette__option[data-active] {
+        background: var(--hover);
+    }
+
+    .command-palette__title {
+        font-size: 14px;
+        line-height: 1.35;
+        color: var(--foreground-strong);
+    }
+
+    .command-palette__hint {
+        overflow: hidden;
+        font-size: 12.5px;
+        line-height: 1.4;
+        color: var(--muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .command-palette__empty {
+        padding: 1.25rem 1rem;
+        font-size: 14px;
+        color: var(--muted);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .hover-peek,
+        .hover-peek[data-open],
+        .command-palette,
+        .command-palette[open] {
+            transform: none;
+        }
     }
 
     .intro-keyword__icon {
@@ -1000,4 +1300,17 @@ html[data-theme-transition]::view-transition-new(root) {
         display: none !important;
     }
 
+}
+
+@keyframes availability-ring {
+    0% {
+        transform: scale(1);
+        opacity: 0.55;
+    }
+
+    80%,
+    100% {
+        transform: scale(2.8);
+        opacity: 0;
+    }
 }

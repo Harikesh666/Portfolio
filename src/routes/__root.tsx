@@ -21,6 +21,7 @@ import {
     usePresenceData,
     useReducedMotion,
 } from "motion/react";
+import { CommandPalette } from "../components/CommandPalette";
 import Footer from "../components/Footer";
 import { FloatingTocProvider } from "../components/TocRegistry";
 import Header, { getHeaderHeight } from "../components/Header";
@@ -396,6 +397,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                     <motion.div variants={routeBlockVariants}>
                         <Footer />
                     </motion.div>
+                    <CommandPalette />
                     {pathname.startsWith("/articles/") ? (
                         <Suspense fallback={null}>
                             <LazyFloatingTocHost

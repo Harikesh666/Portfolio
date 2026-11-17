@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { ArrowUpRightIcon } from "@phosphor-icons/react";
+import { openCommandPaletteEvent } from "../lib/command-palette";
 import { LocalTime } from "./LocalTime";
 import { FooterGarden } from "./pond/FooterGarden";
 import { SectionHeading } from "./SectionHeading";
@@ -42,13 +44,21 @@ export default function Footer() {
                             </span>
                         )}
                         <a
-                            className="text-link"
+                            className="inline-flex items-center gap-0.5 text-link"
                             href={item.href}
                             {...(item.external
                                 ? { rel: "noreferrer", target: "_blank" }
                                 : {})}
                         >
                             {item.label}
+                            {item.external && (
+                                <ArrowUpRightIcon
+                                    aria-hidden="true"
+                                    className="nudge-arrow"
+                                    data-direction="up-right"
+                                    size={11}
+                                />
+                            )}
                         </a>
                     </li>
                 ))}
@@ -68,6 +78,14 @@ export default function Footer() {
                             {link.label}
                         </Link>
                     ))}
+                    <button
+                        className="inline-flex items-center gap-1.5 hover:text-foreground-strong"
+                        onClick={() => window.dispatchEvent(new Event(openCommandPaletteEvent))}
+                        type="button"
+                    >
+                        Search
+                        <kbd className="palette-hint">/</kbd>
+                    </button>
                 </nav>
                 <span className="flex flex-wrap items-baseline gap-x-2">
                     <LocalTime />

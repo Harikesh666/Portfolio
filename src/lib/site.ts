@@ -6,6 +6,8 @@ export const site = {
     resumePdfPath: "/Harikesh_Mishra_Resume_55904f69.pdf",
     resumePdfDownloadName: "Harikesh_Mishra_Resume.pdf",
     url: "https://www.harikesh.xyz",
+    /** The status line on Home and Resume. Edit this one string when it changes. */
+    availability: "Open to Node.js backend roles",
     description:
         "Harikesh Mishra is a software engineer who builds resilient React and backend systems, solves production problems, and writes about how modern software works.",
     socials: {

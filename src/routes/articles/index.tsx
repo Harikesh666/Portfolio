@@ -126,7 +126,7 @@ function ArticleBrowse() {
     return (
         <nav aria-labelledby="browse-writing-heading" className="mt-12">
             <SectionHeading id="browse-writing-heading">Browse</SectionHeading>
-            <ul className="mt-3">
+            <ul className="dim-siblings mt-3">
                 {entries.map((entry) => (
                     <li key={entry.href}>
                         <a
@@ -157,7 +157,7 @@ function ArticleList(props: ArticleListProps) {
     const postList = props.posts;
 
     return (
-        <ol className="mt-4">
+        <ol className="dim-siblings mt-4">
             {postList.map((post) => (
                 <li key={post.slug}>
                     <Link

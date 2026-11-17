@@ -13,6 +13,7 @@ import {
     themeRevealTiming,
     themeToggleIconVariants,
 } from "../lib/motion";
+import { themeToggleRequestEvent } from "../lib/command-palette";
 import { posts } from "../lib/content";
 import { site } from "../lib/site";
 
@@ -104,6 +105,7 @@ function ThemeToggle({
 }: Readonly<{ mode: HeaderMode; shouldReduceMotion: boolean }>) {
     const [theme, setTheme] = useState<"light" | "dark">("light");
     const themeTransitionId = useRef(0);
+    const buttonRef = useRef<HTMLButtonElement>(null);
     const iconDirection = theme === "dark" ? 1 : -1;
 
     useEffect(() => {
@@ -114,7 +116,13 @@ function ThemeToggle({
         );
     }, []);
 
-    function toggleTheme(event: React.MouseEvent<HTMLButtonElement>) {
+    // The command palette's "Switch theme" asks for the same toggle, reveal included.
+    useEffect(() => {
+        window.addEventListener(themeToggleRequestEvent, toggleTheme);
+        return () => window.removeEventListener(themeToggleRequestEvent, toggleTheme);
+    });
+
+    function toggleTheme() {
         const nextTheme = theme === "dark" ? "light" : "dark";
         const applyTheme = () => {
             document.documentElement.dataset.theme = nextTheme;
@@ -130,7 +138,7 @@ function ThemeToggle({
         }
 
         // The new theme grows as a circle from the toggle until it covers the farthest corner.
-        const bounds = event.currentTarget.getBoundingClientRect();
+        const bounds = buttonRef.current?.getBoundingClientRect() ?? new DOMRect(window.innerWidth, 0, 0, 0);
         const x = bounds.left + bounds.width / 2;
         const y = bounds.top + bounds.height / 2;
         const radius = Math.hypot(
@@ -179,6 +187,7 @@ function ThemeToggle({
             aria-label="Toggle theme"
             aria-pressed={theme === "dark"}
             onClick={toggleTheme}
+            ref={buttonRef}
             whileHover={shouldReduceMotion ? undefined : themeToggleButtonHover}
             whileTap={shouldReduceMotion ? undefined : themeToggleButtonTap}
             transition={shouldReduceMotion ? { duration: 0 } : snappySpring}

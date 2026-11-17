@@ -1,9 +1,12 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import {
+    ArrowRightIcon,
     BookOpenTextIcon,
     HardDrivesIcon,
     RocketLaunchIcon,
 } from "@phosphor-icons/react";
+import { AvailabilityStatus } from "../components/AvailabilityStatus";
+import { HoverPeek } from "../components/HoverPeek";
 import { IntroKeyword } from "../components/IntroKeyword";
 import { SketchMark } from "../components/SketchMark";
 import { MumbaiPond } from "../components/pond/MumbaiPond";
@@ -11,7 +14,7 @@ import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { homeStructuredData } from "../lib/agent-readiness";
 import { authoredPosts } from "../lib/content";
-import { resumeExperience } from "../lib/resume";
+import { resumeExperience, type ResumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 import { stackGroups } from "../lib/stack";
 
@@ -23,7 +26,8 @@ const homeIntro =
 
 const latestPosts = authoredPosts.slice(0, 6);
 const sectionClassName = "mt-16 sm:mt-32";
-const listClassName = "mt-4 -mb-3 flex flex-col gap-1";
+// dim-siblings: hovering one row fades the others (fine pointers only, see styles.css).
+const listClassName = "dim-siblings mt-4 -mb-3 flex flex-col gap-1";
 
 export const Route = createFileRoute("/")({
     head: () => ({
@@ -62,6 +66,9 @@ function HomePage() {
                 <MumbaiPond />
             </StaggerReveal.Item>
             <header>
+                <StaggerReveal.Item as="p" className="mb-4">
+                    <AvailabilityStatus />
+                </StaggerReveal.Item>
                 <StaggerReveal.Headline
                     as="h1"
                     className="leading-relaxed text-foreground-strong"
@@ -89,9 +96,11 @@ function HomePage() {
                         deadlines and no roadmap
                     </SketchMark>
                     , and I write{" "}
-                    <Link className="text-link" to="/articles">
-                        guides
-                    </Link>{" "}
+                    <HoverPeek peek={<LatestGuidesPeek />}>
+                        <Link className="text-link" to="/articles">
+                            guides
+                        </Link>
+                    </HoverPeek>{" "}
                     to find out how much I had wrong.
                 </StaggerReveal.Item>
                 <StaggerReveal.Item
@@ -135,6 +144,11 @@ function HomePage() {
                 <ul className={listClassName}>
                     {resumeExperience.map((experience) => (
                         <StaggerReveal.Item as="li" key={experience.company}>
+                            <HoverPeek
+                                as="div"
+                                className="contents"
+                                peek={<WorkPeek experience={experience} />}
+                            >
                             <Link className="hover-row" to="/resume">
                                 <span className="flex items-baseline justify-between gap-4">
                                     <span className="min-w-0 text-foreground-strong">
@@ -148,6 +162,7 @@ function HomePage() {
                                     {experience.role}
                                 </span>
                             </Link>
+                            </HoverPeek>
                         </StaggerReveal.Item>
                     ))}
                 </ul>
@@ -179,8 +194,14 @@ function HomePage() {
                     ))}
                     <StaggerReveal.Item as="li">
                         <Link className="hover-row" to="/articles">
-                            <span className="block text-foreground-strong">
+                            <span className="flex items-center gap-1.5 text-foreground-strong">
                                 All {authoredPosts.length} guides
+                                <ArrowRightIcon
+                                    aria-hidden="true"
+                                    className="nudge-arrow"
+                                    data-direction="right"
+                                    size={14}
+                                />
                             </span>
                             <span className="block text-muted">
                                 JavaScript, runtimes, and React internals.
@@ -232,5 +253,39 @@ function HomePage() {
                 </dl>
             </section>
         </StaggerReveal>
+    );
+}
+
+/** Hover card on "guides": the three newest titles, so the link previews where it goes. */
+function LatestGuidesPeek() {
+    return (
+        <>
+            <span className="hover-peek__label">Latest guides</span>
+            <span className="mt-1.5 flex flex-col gap-1">
+                {authoredPosts.slice(0, 3).map((post) => (
+                    <span className="text-foreground-strong" key={post.slug}>
+                        {post.title}
+                    </span>
+                ))}
+            </span>
+        </>
+    );
+}
+
+/** Hover card on a work row: what the role delivered, then the stack, from `resume.ts`. */
+function WorkPeek({ experience }: Readonly<{ experience: ResumeExperience }>) {
+    return (
+        <>
+            {experience.outcome && (
+                <span className="block text-foreground-strong">
+                    {experience.outcome}
+                </span>
+            )}
+            {experience.stack && (
+                <span className="mt-1.5 block text-muted">
+                    {experience.stack.slice(0, 5).join(" · ")}
+                </span>
+            )}
+        </>
     );
 }

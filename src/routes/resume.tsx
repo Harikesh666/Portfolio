@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
-import { DownloadSimpleIcon } from "@phosphor-icons/react";
+import { ArrowUpRightIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
+import { AvailabilityStatus } from "../components/AvailabilityStatus";
 import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
 import { StaggerReveal } from "../components/StaggerReveal";
@@ -79,6 +80,9 @@ function ResumePage() {
                     <StaggerReveal.Headline className="text-[1.375rem] font-semibold leading-tight tracking-[-0.02em] text-foreground-strong">
                         Harikesh Mishra
                     </StaggerReveal.Headline>
+                    <StaggerReveal.Item as="p" className="mt-2">
+                        <AvailabilityStatus />
+                    </StaggerReveal.Item>
                     <StaggerReveal.Item
                         as="p"
                         className="mt-2 flex flex-wrap items-center gap-x-2 text-sm text-muted"
@@ -138,12 +142,18 @@ function ResumePage() {
                             Download PDF
                         </motion.a>
                         <a
-                            className="text-sm text-link"
+                            className="inline-flex items-center gap-1 text-sm text-link"
                             href={site.resumePdfPath}
                             target="_blank"
                             rel="noreferrer"
                         >
                             Open in new tab
+                            <ArrowUpRightIcon
+                                aria-hidden="true"
+                                className="nudge-arrow"
+                                data-direction="up-right"
+                                size={12}
+                            />
                         </a>
                     </StaggerReveal.Item>
                     <StaggerReveal.Item className="mt-10">
