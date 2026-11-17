@@ -37,7 +37,23 @@ function taskWait(job: Job, state: SimState, options: CaptionOptions): ReactNode
     const asked = job.delay * options.secondsPerTick;
     const waited = (state.time - job.scheduledAt) * options.secondsPerTick;
     if (waited <= asked) return null;
-    return ` It asked for ${asked} seconds and starts after ${waited}.`;
+    return ` It asked for ${duration(job.delay, options)} and starts after ${waited}.`;
+}
+
+/** Code words inside a guide's note, set in mono; callback names take their pill colour. */
+const noteToken = /(callback \d+|setTimeout|i\+\+|\d <= 5|\b(?:var|let|i|x|Namaste)\b)/;
+
+function renderNote(note: string): ReactNode {
+    return note.split(noteToken).map((part, index) => {
+        if (index % 2 === 0) return part;
+        // The note is fixed text, so a token's position is its identity.
+        if (part.startsWith("callback")) return <JobName key={index} kind="task">{part}</JobName>;
+        return (
+            <span className="el-name" key={index}>
+                {part}
+            </span>
+        );
+    });
 }
 
 /** One plain sentence (two at most) for what just happened. */
@@ -48,10 +64,25 @@ export function describeEvent(state: SimState, options: CaptionOptions = {}): Re
             return "The script starts. It runs as one task, top to bottom.";
         case "exec": {
             const instruction = event.instruction;
+            if (instruction.note) {
+                return (
+                    <>
+                        {renderNote(instruction.note)}
+                        {arrivalNote(state)}
+                    </>
+                );
+            }
+            if (instruction.op === "bind" || instruction.op === "set") {
+                return (
+                    <>
+                        <span className="el-name">{instruction.name}</span> is now {instruction.value}.{arrivalNote(state)}
+                    </>
+                );
+            }
             if (instruction.op === "log") {
                 return (
                     <>
-                        <JobName kind={event.job.kind}>{event.job.label}</JobName> logs “{instruction.text}”.
+                        <JobName kind={event.job.kind}>{event.job.label}</JobName> logs “{state.log.at(-1)?.text}”.
                         {arrivalNote(state)}
                     </>
                 );
@@ -93,6 +124,14 @@ export function describeEvent(state: SimState, options: CaptionOptions = {}): Re
                 </>
             );
         case "return":
+            if (event.job.kind === "script" && state.envs.length > 0) {
+                return (
+                    <>
+                        <span className="el-name">{event.job.label}</span> returns and leaves the call stack. The bindings its
+                        callbacks close over stay reachable.{arrivalNote(state)}
+                    </>
+                );
+            }
             if (event.job.kind === "script") return <>The script ends. The call stack is empty.{arrivalNote(state)}</>;
             return (
                 <>

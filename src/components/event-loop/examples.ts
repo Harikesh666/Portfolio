@@ -3,6 +3,10 @@ import {
     blockedTimerExampleSource,
     eventLoopExample,
     eventLoopExampleSource,
+    letLoopExample,
+    letLoopExampleSource,
+    varLoopExample,
+    varLoopExampleSource,
     type CallbackSpec,
     type JobKind,
     type SimOptions,
@@ -13,7 +17,13 @@ export type FigureExample = Readonly<{
     program: CallbackSpec;
     source: readonly string[];
     fileName: string;
-    /** Which callback each source line belongs to, so its lines tint while that callback runs. */
+    /** The example's name on a compare toggle, like "var" or "let". */
+    toggleLabel?: string;
+    /** What the panel under the console shows: the trace of what held the stack, or the scopes and their bindings. */
+    panel?: "trace" | "bindings";
+    /** Whether readers may add their own timers and microtasks. */
+    injectable?: boolean;
+    /** Which callback each source line belongs to (by label prefix), so its lines tint while that callback runs. */
     lineOwners: Readonly<Record<number, Readonly<{ label: string; kind: JobKind }>>>;
     /** Function names in the source, coloured like their pills. */
     names: readonly Readonly<{ name: string; kind: JobKind }>[];
@@ -61,6 +71,38 @@ export const figureExamples = {
         isKeyMoment: (state) => state.event.type === "busy" && state.tasks.length > 0,
         figcaption:
             "The example above with one step standing for one second. The timer finishes at five seconds, but its callback waits for the loop.",
+    },
+    "var-loop": {
+        program: varLoopExample,
+        source: varLoopExampleSource,
+        fileName: "loop.js",
+        toggleLabel: "var",
+        panel: "bindings",
+        injectable: false,
+        lineOwners: owned([2, 3, 4], "callback", "task"),
+        names: [],
+        simOptions: { stepCost: 0 },
+        secondsPerTick: 1,
+        startLabel: "Run the var loop",
+        isKeyMoment: (state) => state.event.type === "exec" && state.event.job.kind === "task",
+        figcaption:
+            "Example 3 with one step standing for one second. Watch the bindings panel: five callbacks, one i binding. Switch to let to compare.",
+    },
+    "let-loop": {
+        program: letLoopExample,
+        source: letLoopExampleSource,
+        fileName: "loop.js",
+        toggleLabel: "let",
+        panel: "bindings",
+        injectable: false,
+        lineOwners: owned([2, 3, 4], "callback", "task"),
+        names: [],
+        simOptions: { stepCost: 0 },
+        secondsPerTick: 1,
+        startLabel: "Run the let loop",
+        isKeyMoment: (state) => state.event.type === "exec" && state.event.job.kind === "task",
+        figcaption:
+            "Example 4 with one step standing for one second. Each iteration gets its own i binding, and each callback reads its own. Switch to var to compare.",
     },
 } as const satisfies Record<string, FigureExample>;
 

@@ -309,6 +309,8 @@ When the first callback runs, its `i` binding contains `1`. The second callback 
 
 This is why changing `var` to `let` fixes the loop. It changes the binding structure, not the speed of the timers and not the nature of closures.
 
+<EventLoopFigure example="var-loop" compare="let-loop" />
+
 ## Example 5: A helper function gives var a fresh binding
 
 What if we must use `var`? A helper function can create a fresh binding for each iteration:

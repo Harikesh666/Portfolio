@@ -908,6 +908,18 @@
         stroke-dasharray: 2 1.5;
     }
 
+    /* Queues show two pills; the rest wait out of sight behind the header's "+N more". */
+    .el-pill[data-hidden] {
+        opacity: 0;
+    }
+
+    .el-zone__more {
+        font-family: var(--font-mono);
+        font-size: 6.4px;
+        fill: var(--muted);
+        font-variant-numeric: tabular-nums;
+    }
+
     .el-pill[data-gone] {
         opacity: 0;
         transition:
@@ -1163,6 +1175,173 @@
     @starting-style {
         .el-console__line {
             opacity: 0;
+        }
+    }
+
+    /* Compare toggle in the code bar: var | let. */
+    .el-toggle {
+        display: inline-flex;
+        margin: -3px -6px -3px 0;
+        border: 1px solid var(--divider);
+        border-radius: 5px;
+        padding: 1px;
+    }
+
+    .el-toggle__option {
+        border-radius: 3px;
+        padding: 1px 0.6rem;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--muted);
+        transition:
+            background-color 150ms ease,
+            color 150ms ease;
+    }
+
+    .el-toggle__option:hover {
+        color: var(--foreground-strong);
+    }
+
+    .el-toggle__option[aria-pressed="true"] {
+        background: var(--foreground-strong);
+        color: var(--surface);
+    }
+
+    .el-toggle__option:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 1px;
+    }
+
+    @media (pointer: coarse) {
+        .el-toggle__option {
+            padding: 0.35rem 0.85rem;
+        }
+    }
+
+    /*
+     * Bindings panel (closure examples): one row per environment, its
+     * bindings, then the callbacks closing over it. Fixed height, so the
+     * var and let examples swap without moving the page.
+     */
+    .el-bindings,
+    .el-bindings__empty {
+        height: 8.75rem;
+        margin: 0;
+        padding: 8px 12px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.6;
+    }
+
+    .el-bindings {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        overflow-y: auto;
+        list-style: none;
+        scrollbar-width: none;
+    }
+
+    .el-bindings__empty {
+        color: var(--muted);
+    }
+
+    .el-bindings__env {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 0.75rem;
+        border-radius: 4px;
+        margin-inline: -6px;
+        padding: 0 6px;
+        transition: background-color 220ms ease;
+    }
+
+    @starting-style {
+        .el-bindings__env {
+            background-color: color-mix(in oklab, var(--foreground-strong) 10%, transparent);
+        }
+    }
+
+    .el-bindings__env[data-touched] {
+        background: color-mix(in oklab, var(--foreground-strong) 6%, transparent);
+    }
+
+    .el-bindings__label {
+        flex: 0 0 7.5rem;
+        overflow: hidden;
+        color: var(--muted);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .el-bindings__var {
+        flex: 0 0 3.25rem;
+        color: var(--foreground-strong);
+        font-variant-numeric: tabular-nums;
+    }
+
+    .el-bindings__value {
+        display: inline-block;
+        min-width: 1ch;
+        transition:
+            opacity 240ms ease,
+            translate 320ms var(--ease-out);
+    }
+
+    @starting-style {
+        .el-bindings__value {
+            opacity: 0;
+            translate: 0 -4px;
+        }
+    }
+
+    .el-bindings__env[data-touched="write"] .el-bindings__value {
+        color: var(--accent);
+    }
+
+    .el-bindings__closures {
+        display: flex;
+        flex: 1 1 auto;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 4px;
+        min-height: 0;
+        font-size: 11px;
+        color: var(--muted);
+    }
+
+    .el-bindings__closures:empty {
+        display: none;
+    }
+
+    .el-bindings__chip {
+        display: inline-flex;
+        min-width: 1.25rem;
+        justify-content: center;
+        border: 1px solid color-mix(in oklab, var(--scene-task) 45%, transparent);
+        border-radius: 3px;
+        padding: 0 0.25rem;
+        background: var(--scene-task-soft);
+        color: var(--scene-task);
+        font-variant-numeric: tabular-nums;
+        line-height: 1.45;
+        transition:
+            background-color 200ms ease,
+            color 200ms ease;
+    }
+
+    .el-bindings__chip[data-running] {
+        background: var(--scene-task);
+        color: var(--surface);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .el-bindings__env,
+        .el-bindings__value,
+        .el-bindings__chip,
+        .el-toggle__option {
+            transition: none;
         }
     }
 

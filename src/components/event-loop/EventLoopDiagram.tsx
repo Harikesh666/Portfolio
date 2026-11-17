@@ -25,6 +25,9 @@ const loopNode = { cx: 184, cy: 64, r: 11 };
 /** How long a pill takes to travel a wire, in ms. */
 const travelMs = 720;
 
+/** Pills a queue shows; the rest wait out of sight behind a "+N" count. */
+const visibleSlots = 2;
+
 /** Queue slots left to right; the stack fills bottom up. */
 function slot(zone: Zone, index: number): readonly [number, number] {
     if (zone === "stack") return [boxes.stack.x + (boxes.stack.w - pill.w) / 2, 138 - index * 20];
@@ -183,6 +186,7 @@ export function EventLoopDiagram({
 
             {(Object.keys(boxes) as Zone[]).map((name) => {
                 const box = boxes[name];
+                const hidden = name === "stack" ? 0 : placed.filter((item) => item.zone === name && !item.gone).length - visibleSlots;
                 return (
                     <g className="el-zone" data-focus={focus === name ? "" : undefined} key={name}>
                         <rect className="el-zone__box" height={box.h - 1} rx="4" width={box.w - 1} x={box.x + 0.5} y={box.y + 0.5} />
@@ -190,6 +194,11 @@ export function EventLoopDiagram({
                         <text className="el-zone__label" x={box.x + 6} y={box.y + 9.5}>
                             {box.label}
                         </text>
+                        {hidden > 0 && (
+                            <text className="el-zone__more" textAnchor="end" x={box.x + box.w - 6} y={box.y + 9.5}>
+                                +{hidden} more
+                            </text>
+                        )}
                         {name !== "stack" &&
                             [0, 1].map((index) => {
                                 const [x, y] = slot(name, index);
@@ -226,6 +235,7 @@ export function EventLoopDiagram({
                     <g
                         className="el-pill"
                         data-gone={gone ? "" : undefined}
+                        data-hidden={zone !== "stack" && index >= visibleSlots ? "" : undefined}
                         data-kind={job.kind}
                         data-running={running ? "" : undefined}
                         data-waiting={waiting ? "" : undefined}

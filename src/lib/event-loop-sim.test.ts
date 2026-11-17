@@ -6,9 +6,11 @@ import {
     createSim,
     eventLoopExample,
     isSettled,
+    letLoopExample,
     step,
     type CallbackSpec,
     type SimState,
+    varLoopExample,
 } from "./event-loop-sim";
 
 function runToEnd(state: SimState, limit = 200) {
@@ -105,5 +107,33 @@ describe("event-loop simulator", () => {
         };
         const end = runToEnd(createSim(program, { stepCost: 0 }));
         expect(end.log).toEqual([expect.objectContaining({ text: "Later", time: 3 })]);
+    });
+
+    it("runs the var loop: Namaste, then 6 five times, one per second", () => {
+        let state = createSim(varLoopExample, { stepCost: 0 });
+        while (!isSettled(state)) state = step(state);
+        expect(state.log.map((line) => line.text)).toEqual(["Namaste", "6", "6", "6", "6", "6"]);
+        expect(state.log.slice(1).map((line) => line.time)).toEqual([1, 2, 3, 4, 5]);
+        expect(state.envs).toEqual([{ id: "x", label: "x environment", vars: { i: 6 } }]);
+        expect(state.closures.x).toHaveLength(5);
+    });
+
+    it("runs the let loop: Namaste, then 1 to 5, each callback with its own binding", () => {
+        let state = createSim(letLoopExample, { stepCost: 0 });
+        while (!isSettled(state)) state = step(state);
+        expect(state.log.map((line) => line.text)).toEqual(["Namaste", "1", "2", "3", "4", "5"]);
+        expect(state.envs.map((env) => env.vars.i)).toEqual([1, 2, 3, 4, 5, 6]);
+        expect(state.closures["iteration-3"]).toEqual(["callback 3"]);
+        expect(state.closures["iteration-6"]).toBeUndefined();
+    });
+
+    it("marks the binding each step reads or writes", () => {
+        let state = createSim(varLoopExample, { stepCost: 0 });
+        state = step(state);
+        expect(state.touched).toEqual({ env: "x", name: "i", write: true });
+        while (!(state.event.type === "exec" && state.event.instruction.op === "log" && state.event.job.kind === "task")) {
+            state = step(state);
+        }
+        expect(state.touched).toEqual({ env: "x", name: "i", write: false });
     });
 });

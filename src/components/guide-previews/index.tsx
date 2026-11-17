@@ -9,6 +9,7 @@ const LoopPreview = lazy(() => import("./LoopPreview"));
 const previews: Partial<Record<string, FigureExampleName>> = {
     "asynchronous-javascript-event-loop": "tasks-and-microtasks",
     "settimeout-minimum-not-deadline": "blocked-timer",
+    "settimeout-closures-var-let-loop": "var-loop",
 };
 
 /**

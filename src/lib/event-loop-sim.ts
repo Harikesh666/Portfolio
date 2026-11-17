@@ -15,12 +15,27 @@
 
 export type JobKind = "script" | "micro" | "task";
 
+export type Value = number | string;
+
+/**
+ * Every instruction may carry a `note`: the caption for the tick it runs in,
+ * written for the guide it belongs to.
+ */
 export type Instruction =
-    | Readonly<{ op: "log"; line: number; text: string }>
-    | Readonly<{ op: "timer"; line: number; callback: CallbackSpec; delay: number }>
-    | Readonly<{ op: "microtask"; line: number; callback: CallbackSpec }>
+    /** Logs `text`, or the value of `read` looked up in the running job's closure. */
+    | Readonly<{ op: "log"; line: number; text?: string; read?: string; note?: string }>
+    /** Starts a timer; its callback closes over `env` (default: the running job's closure). */
+    | Readonly<{ op: "timer"; line: number; callback: CallbackSpec; delay: number; env?: string; note?: string }>
+    | Readonly<{ op: "microtask"; line: number; callback: CallbackSpec; env?: string; note?: string }>
     /** Synchronous work that keeps the stack busy for `ticks` ticks, like a long loop. */
-    | Readonly<{ op: "work"; line: number; ticks: number }>;
+    | Readonly<{ op: "work"; line: number; ticks: number; note?: string }>
+    /** Creates a binding, and its environment if it is new (a `let` loop's fresh iteration, say). */
+    | Readonly<{ op: "bind"; line: number; env: string; envLabel: string; name: string; value: Value; note?: string }>
+    /** Changes an existing binding. */
+    | Readonly<{ op: "set"; line: number; env: string; name: string; value: Value; note?: string }>;
+
+/** A scope: a labelled set of bindings, like "x() scope" or "iteration 2". */
+export type Env = Readonly<{ id: string; label: string; vars: Readonly<Record<string, Value>> }>;
 
 export type CallbackSpec = Readonly<{
     label: string;
@@ -42,6 +57,8 @@ export type Job = Readonly<{
     /** For timer callbacks: the time the timer started and the delay it asked for. */
     scheduledAt?: number;
     delay?: number;
+    /** The environment this job's code reads variables from: its closure. */
+    env?: string;
 }>;
 
 export type Timer = Readonly<{ job: Job; remaining: number }>;
@@ -77,16 +94,28 @@ export type SimState = Readonly<{
     event: SimEvent;
     /** Timer callbacks that reached the task queue during this tick, alongside the event. */
     arrivals: readonly Job[];
+    /** Scopes created so far, in order. */
+    envs: readonly Env[];
+    /** The binding this tick read or wrote, for the bindings panel to light up. */
+    touched: Readonly<{ env: string; name: string; write: boolean }> | null;
+    /** Labels of the callbacks closing over each environment. */
+    closures: Readonly<Record<string, readonly string[]>>;
     nextId: number;
 }>;
 
-function makeJob(spec: CallbackSpec, kind: JobKind, id: number): Job {
-    return { id: `job-${id}`, label: spec.label, kind, line: spec.line, body: spec.body, pc: 0 };
+function makeJob(spec: CallbackSpec, kind: JobKind, id: number, env?: string): Job {
+    return { id: `job-${id}`, label: spec.label, kind, line: spec.line, body: spec.body, pc: 0, env };
+}
+
+function writeBinding(envs: readonly Env[], id: string, label: string, name: string, value: Value): readonly Env[] {
+    const existing = envs.find((env) => env.id === id);
+    if (!existing) return [...envs, { id, label, vars: { [name]: value } }];
+    return envs.map((env) => (env.id === id ? { ...env, vars: { ...env.vars, [name]: value } } : env));
 }
 
 /** A fresh simulation with the script on the stack, about to run its first line. */
 export function createSim(script: CallbackSpec, options: SimOptions = {}): SimState {
-    const job = makeJob(script, "script", 0);
+    const job = makeJob(script, "script", 0, "global");
     return {
         tick: 0,
         time: 0,
@@ -99,6 +128,9 @@ export function createSim(script: CallbackSpec, options: SimOptions = {}): SimSt
         history: ["script"],
         event: { type: "start", job },
         arrivals: [],
+        envs: [],
+        touched: null,
+        closures: {},
         nextId: 1,
     };
 }
@@ -115,7 +147,8 @@ export function isSettled(state: SimState) {
 
 /** Advances the simulation by one tick. */
 export function step(state: SimState): SimState {
-    let { stack, micro, tasks, log, nextId } = state;
+    let { stack, micro, tasks, log, nextId, envs, closures } = state;
+    let touched: SimState["touched"] = null;
     const tick = state.tick + 1;
     const newTimers: Timer[] = [];
 
@@ -137,19 +170,35 @@ export function step(state: SimState): SimState {
             const job: Job = { ...top, pc: top.pc + 1 };
             stack = replaceTop(job);
             if (instruction.op === "log") {
-                log = [...log, { text: instruction.text, kind: top.kind, tick, time: state.time + cost }];
-            } else if (instruction.op === "timer") {
-                const callback: Job = {
-                    ...makeJob(instruction.callback, "task", nextId),
-                    scheduledAt: state.time + cost,
-                    delay: instruction.delay,
-                };
-                // A zero delay still waits at least one unit: the timer always goes through the browser.
-                newTimers.push({ job: callback, remaining: Math.max(1, instruction.delay) });
+                let text = instruction.text ?? "";
+                if (instruction.read && top.env) {
+                    const value = envs.find((env) => env.id === top.env)?.vars[instruction.read];
+                    text = String(value);
+                    touched = { env: top.env, name: instruction.read, write: false };
+                }
+                log = [...log, { text, kind: top.kind, tick, time: state.time + cost }];
+            } else if (instruction.op === "timer" || instruction.op === "microtask") {
+                const env = instruction.env ?? top.env;
+                if (env) closures = { ...closures, [env]: [...(closures[env] ?? []), instruction.callback.label] };
+                if (instruction.op === "timer") {
+                    const callback: Job = {
+                        ...makeJob(instruction.callback, "task", nextId, env),
+                        scheduledAt: state.time + cost,
+                        delay: instruction.delay,
+                    };
+                    // A zero delay still waits at least one unit: the timer always goes through the browser.
+                    newTimers.push({ job: callback, remaining: Math.max(1, instruction.delay) });
+                } else {
+                    micro = [...micro, makeJob(instruction.callback, "micro", nextId, env)];
+                }
                 nextId += 1;
-            } else {
-                micro = [...micro, makeJob(instruction.callback, "micro", nextId)];
-                nextId += 1;
+            } else if (instruction.op === "bind") {
+                envs = writeBinding(envs, instruction.env, instruction.envLabel, instruction.name, instruction.value);
+                touched = { env: instruction.env, name: instruction.name, write: true };
+            } else if (instruction.op === "set") {
+                const label = envs.find((env) => env.id === instruction.env)?.label ?? instruction.env;
+                envs = writeBinding(envs, instruction.env, label, instruction.name, instruction.value);
+                touched = { env: instruction.env, name: instruction.name, write: true };
             }
             event = { type: "exec", job, instruction };
         }
@@ -192,6 +241,9 @@ export function step(state: SimState): SimState {
         history: [...state.history, stack.at(-1)?.kind ?? null],
         event,
         arrivals,
+        envs,
+        touched,
+        closures,
         nextId,
     };
 }
@@ -291,3 +343,102 @@ export const blockedTimerExampleSource = [
     "",
     'console.log("While loop finished");',
 ] as const;
+
+/**
+ * The guide's var/let loop (`settimeout-closures-var-let-loop`, Examples 3 and 4),
+ * with one unit of time standing for one second. Every step carries the guide's
+ * own explanation as its note.
+ */
+function closureLoop(keyword: "var" | "let"): CallbackSpec {
+    const shared = keyword === "var";
+    const envOf = (iteration: number) => (shared ? "x" : `iteration-${iteration}`);
+    const body: Instruction[] = [
+        {
+            op: "bind",
+            line: 1,
+            env: envOf(1),
+            envLabel: shared ? "x environment" : "iteration 1",
+            name: "i",
+            value: 1,
+            note: shared
+                ? "The loop starts. var is function-scoped, so x gets one i binding for the whole loop. It holds 1."
+                : "The loop starts. With let, the first iteration gets its own i binding. It holds 1.",
+        },
+    ];
+    for (let iteration = 1; iteration <= 5; iteration += 1) {
+        const label = `callback ${iteration}`;
+        body.push({
+            op: "timer",
+            line: 2,
+            delay: iteration,
+            env: envOf(iteration),
+            note: shared
+                ? `setTimeout schedules ${label} for ${iteration * 1000}ms. It closes over the shared i binding, not over its value.`
+                : `setTimeout schedules ${label} for ${iteration * 1000}ms. It closes over the i binding of iteration ${iteration}.`,
+            callback: {
+                label,
+                line: 2,
+                body: [
+                    {
+                        op: "log",
+                        line: 3,
+                        read: "i",
+                        note: shared
+                            ? `${label} reads i. There is only one i binding, and the loop left it at 6.`
+                            : `${label} reads i from its own iteration's binding, which still holds ${iteration}.`,
+                    },
+                ],
+            },
+        });
+        const next = iteration + 1;
+        const ends = next > 5 ? ` The condition ${next} <= 5 is false, so the loop stops.` : "";
+        body.push(
+            shared
+                ? {
+                      op: "set",
+                      line: 1,
+                      env: "x",
+                      name: "i",
+                      value: next,
+                      note: `i++ changes the same binding to ${next}. Every callback sees the change.${ends}`,
+                  }
+                : {
+                      op: "bind",
+                      line: 1,
+                      env: envOf(next),
+                      envLabel: `iteration ${next}`,
+                      name: "i",
+                      value: next,
+                      note: `JavaScript creates a fresh binding for the next iteration and i++ makes it ${next}.${ends}`,
+                  },
+        );
+    }
+    body.push({
+        op: "log",
+        line: 7,
+        text: "Namaste",
+        note: "The loop is done, so Namaste logs first. No timer has finished yet.",
+    });
+    return { label: "x()", line: -1, body };
+}
+
+export const varLoopExample = closureLoop("var");
+export const letLoopExample = closureLoop("let");
+
+const loopSource = (keyword: "var" | "let") =>
+    [
+        "function x() {",
+        `    for (${keyword} i = 1; i <= 5; i++) {`,
+        "        setTimeout(function () {",
+        "            console.log(i);",
+        "        }, i * 1000);",
+        "    }",
+        "",
+        '    console.log("Namaste");',
+        "}",
+        "",
+        "x();",
+    ] as const;
+
+export const varLoopExampleSource = loopSource("var");
+export const letLoopExampleSource = loopSource("let");

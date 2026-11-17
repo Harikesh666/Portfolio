@@ -1,10 +1,11 @@
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { useReducedMotion } from "motion/react";
 import type { JobKind, SimState } from "../../lib/event-loop-sim";
 import { eventLoopBeatMs } from "../../lib/motion";
+import { BindingsPanel } from "./BindingsPanel";
 import { activeLine, describeEvent } from "./captions";
 import { EventLoopDiagram } from "./EventLoopDiagram";
-import { figureExamples, isFigureExampleName, type FigureExample } from "./examples";
+import { figureExamples, isFigureExampleName, type FigureExample, type FigureExampleName } from "./examples";
 import { useEventLoopPlayer, type PlayerSpeed } from "./use-event-loop-player";
 
 function SourceLine({ text, names }: Readonly<{ text: string; names: FigureExample["names"] }>) {
@@ -78,16 +79,49 @@ function Timeline({ state }: Readonly<{ state: SimState }>) {
  * records what held the stack. Readers can play, pause, step forward and
  * back (or use ← → and Space), change speed, restart, and add a timer or a
  * microtask of their own. It waits for the reader to start it and pauses
- * when it scrolls out of view. Styling lives in `styles.css` (`.el-figure`).
+ * when it scrolls out of view. With `compare`, a toggle in the code bar
+ * switches between two examples, like a `var` loop and a `let` loop.
+ * Styling lives in `styles.css` (`.el-figure`).
  */
-export function EventLoopFigure({ example: exampleName }: Readonly<{ example?: unknown }>) {
-    const example: FigureExample = figureExamples[isFigureExampleName(exampleName) ? exampleName : "tasks-and-microtasks"];
+export function EventLoopFigure({ example: exampleName, compare }: Readonly<{ example?: unknown; compare?: unknown }>) {
+    const first: FigureExampleName = isFigureExampleName(exampleName) ? exampleName : "tasks-and-microtasks";
+    const pair: readonly FigureExampleName[] = isFigureExampleName(compare) ? [first, compare] : [];
+    const [shown, setShown] = useState({ name: first, resume: false, fromToggle: false });
+    return (
+        <FigureBody
+            // A switch starts the other example fresh; it plays at once if the reader had started.
+            key={shown.name}
+            name={shown.name}
+            fromToggle={shown.fromToggle}
+            onSwitch={(name, resume) => setShown({ name, resume, fromToggle: true })}
+            pair={pair}
+            resume={shown.resume}
+        />
+    );
+}
+
+function FigureBody({
+    name,
+    pair,
+    resume,
+    fromToggle,
+    onSwitch,
+}: Readonly<{
+    name: FigureExampleName;
+    pair: readonly FigureExampleName[];
+    resume: boolean;
+    fromToggle: boolean;
+    onSwitch: (name: FigureExampleName, resume: boolean) => void;
+}>) {
+    const example: FigureExample = figureExamples[name];
     const shouldReduceMotion = useReducedMotion() ?? false;
     const { sim, isPlaying, hasStarted, speed, canGoBack, dispatch } = useEventLoopPlayer({
         program: example.program,
         options: example.simOptions,
         beatMs: eventLoopBeatMs,
+        autoplay: resume,
     });
+    const toggleRef = useRef<HTMLDivElement>(null);
     const figureRef = useRef<HTMLElement>(null);
     const consoleRef = useRef<HTMLOListElement>(null);
     const line = activeLine(sim);
@@ -107,6 +141,11 @@ export function EventLoopFigure({ example: exampleName }: Readonly<{ example?: u
         observer.observe(figure);
         return () => observer.disconnect();
     }, [dispatch]);
+
+    // After a switch, focus stays on the toggle the reader pressed.
+    useEffect(() => {
+        if (fromToggle) toggleRef.current?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')?.focus();
+    }, [fromToggle]);
 
     // Keep the newest console line in view as the log grows.
     useEffect(() => {
@@ -146,6 +185,23 @@ export function EventLoopFigure({ example: exampleName }: Readonly<{ example?: u
                 <div className="el-code">
                     <div className="el-panel__bar">
                         <span>{example.fileName}</span>
+                        {pair.length > 0 && (
+                            <div aria-label="Declare the loop variable with" className="el-toggle" ref={toggleRef} role="group">
+                                {pair.map((option) => (
+                                    <button
+                                        aria-pressed={option === name}
+                                        className="el-toggle__option"
+                                        key={option}
+                                        onClick={() => {
+                                            if (option !== name) onSwitch(option, hasStarted);
+                                        }}
+                                        type="button"
+                                    >
+                                        {(figureExamples[option] as FigureExample).toggleLabel ?? option}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                     <ol className="el-code__lines">
                         {example.source.map((text, index) => {
@@ -155,7 +211,7 @@ export function EventLoopFigure({ example: exampleName }: Readonly<{ example?: u
                                     className="el-code__line"
                                     data-active={line === index ? "" : undefined}
                                     data-kind={owner?.kind ?? "script"}
-                                    data-owner-running={owner && owner.label === runningLabel ? "" : undefined}
+                                    data-owner-running={owner && runningLabel?.startsWith(owner.label) ? "" : undefined}
                                     // The source is a fixed listing, so the line number is its identity.
                                     key={index}
                                 >
@@ -183,12 +239,21 @@ export function EventLoopFigure({ example: exampleName }: Readonly<{ example?: u
                             ))}
                         </ol>
                     </div>
-                    <div className="el-trace">
-                        <div className="el-panel__bar">
-                            <span>what held the stack</span>
+                    {example.panel === "bindings" ? (
+                        <div className="el-trace">
+                            <div className="el-panel__bar">
+                                <span>bindings</span>
+                            </div>
+                            <BindingsPanel state={sim} />
                         </div>
-                        <Timeline state={sim} />
-                    </div>
+                    ) : (
+                        <div className="el-trace">
+                            <div className="el-panel__bar">
+                                <span>what held the stack</span>
+                            </div>
+                            <Timeline state={sim} />
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -238,14 +303,21 @@ export function EventLoopFigure({ example: exampleName }: Readonly<{ example?: u
                         </button>
                     ))}
                 </div>
-                <div className="el-controls__group">
-                    <button className="el-button" data-kind="task" onClick={() => dispatch({ type: "add-timer" })} type="button">
-                        + setTimeout
-                    </button>
-                    <button className="el-button" data-kind="micro" onClick={() => dispatch({ type: "add-microtask" })} type="button">
-                        + microtask
-                    </button>
-                </div>
+                {example.injectable !== false && (
+                    <div className="el-controls__group">
+                        <button className="el-button" data-kind="task" onClick={() => dispatch({ type: "add-timer" })} type="button">
+                            + setTimeout
+                        </button>
+                        <button
+                            className="el-button"
+                            data-kind="micro"
+                            onClick={() => dispatch({ type: "add-microtask" })}
+                            type="button"
+                        >
+                            + microtask
+                        </button>
+                    </div>
+                )}
                 <p aria-hidden="true" className="el-keys">
                     <kbd>←</kbd>
                     <kbd>→</kbd> step · <kbd>space</kbd> play
