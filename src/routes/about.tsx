@@ -1,6 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { ContributionGraph } from "../components/ContributionGraph";
 import { PageEnter } from "../components/PageEnter";
+import { SketchMark } from "../components/SketchMark";
 import { Reveal } from "../components/Reveal";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { absoluteUrl, site } from "../lib/site";
@@ -16,13 +18,22 @@ const aboutImage = absoluteUrl("/og.png");
  * gains a label saying when it happened. The last step is where things stand
  * now, so its dot is filled.
  */
-const journey = [
+const journey: readonly {
+    when: string;
+    title: string;
+    paragraphs: readonly ReactNode[];
+}[] = [
     {
         when: "Apr 2025",
         title: "Internship, Rabs Net Solutions",
         paragraphs: [
             "I started out wanting to do frontend, React mostly. During my internship I kept getting handed backend work in Node. I took it because the experience was there, and because saying no to an opportunity simply because I was unprepared seemed worse than being unprepared.",
-            "It was overwhelming. I did not have solid footing in frontend yet, let alone backend. There was rarely a point where I felt ready before the work arrived. I learned to start anyway.",
+            <>
+                It was overwhelming. I did not have solid footing in frontend
+                yet, let alone backend. There was rarely a point where I felt
+                ready before the work arrived. I learned to{" "}
+                <SketchMark kind="underline">start anyway</SketchMark>.
+            </>,
         ],
     },
     {
@@ -47,7 +58,7 @@ const journey = [
             "Eventually, touching it stopped being enough. I wanted to know what was actually happening.",
         ],
     },
-] as const;
+];
 
 export const Route = createFileRoute("/about")({
     head: () => ({
@@ -85,8 +96,9 @@ function AboutPage() {
                         className="mt-3 text-[1.0625rem] leading-7 text-foreground"
                     >
                         <p>
-                            I'm a software engineer in Mumbai. I excel most at
-                            backend work, and I ship full-stack
+                            I'm a software engineer in Mumbai. I excel most at{" "}
+                            <SketchMark kind="marker">backend work</SketchMark>,
+                            and I ship full-stack
                             applications when that is what the work needs.
                         </p>
                         <p className="mt-4">
@@ -109,8 +121,9 @@ function AboutPage() {
                                         · {step.title}
                                     </p>
                                     <div className="mt-2 space-y-4">
-                                        {step.paragraphs.map((paragraph) => (
-                                            <p key={paragraph}>{paragraph}</p>
+                                        {step.paragraphs.map((paragraph, index) => (
+                                            // A fixed list that never reorders, so the index is a stable key.
+                                            <p key={index}>{paragraph}</p>
                                         ))}
                                     </div>
                                 </li>
@@ -129,7 +142,9 @@ function AboutPage() {
                         </p>
                         <p>
                             Courses and tutorials can teach you the shape of
-                            something. Curiosity is what takes you past it.
+                            something.{" "}
+                            <SketchMark kind="marker">Curiosity</SketchMark> is
+                            what takes you past it.
                         </p>
                         <p>
                             That is mostly why the writing on this site exists.
