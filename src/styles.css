@@ -465,8 +465,9 @@
 
     /*
      * About: "How I got here" as milestones on a hairline rail. Each step has
-     * a hollow dot on its label line and a rail segment down to the next dot;
-     * the last step (where things stand now) gets a filled dot and no segment.
+     * a hollow dot on its label line and a rail segment down to the next dot.
+     * The step with journey__step--current (where things stand now) gets a filled dot.
+     * Used by About ("How I got here") and Resume (Experience).
      * Geometry: rail at 5px inside a 24px gutter; 11px dot centred on the
      * 20px label line.
      */
@@ -495,7 +496,7 @@
         content: "";
     }
 
-    .journey__step:last-child::before {
+    .journey__step--current::before {
         border-color: var(--foreground-strong);
         background: var(--foreground-strong);
     }

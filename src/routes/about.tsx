@@ -22,6 +22,7 @@ const journey: readonly {
     when: string;
     title: string;
     paragraphs: readonly ReactNode[];
+    current?: boolean;
 }[] = [
     {
         when: "Apr 2025",
@@ -53,6 +54,7 @@ const journey: readonly {
     {
         when: "Now",
         title: "The AI layer",
+        current: true,
         paragraphs: [
             "By then, colleagues around me were building with generative AI and RAG while I worked on the backend underneath it. I had touched the AI layer a few times, just enough to know I didn't understand it properly.",
             "Eventually, touching it stopped being enough. I wanted to know what was actually happening.",
@@ -113,7 +115,10 @@ function AboutPage() {
                     <AboutSection title="How I got here">
                         <ol className="journey">
                             {journey.map((step) => (
-                                <li className="journey__step" key={step.when}>
+                                <li
+                                    className={`journey__step${step.current ? " journey__step--current" : ""}`}
+                                    key={step.when}
+                                >
                                     <p className="journey__label">
                                         <span className="tabular-nums text-foreground-strong">
                                             {step.when}

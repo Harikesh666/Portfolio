@@ -1,18 +1,50 @@
 import { createFileRoute } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { DownloadSimpleIcon } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { snappySpring } from "../lib/motion";
-import { resumeExperience } from "../lib/resume";
+import { resumeExperience, type ResumeHighlight } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 
 const resumeTitle = `Resume - ${site.name}`;
 const resumeDescription =
-    "Harikesh Mishra is a software engineer building production backend and full-stack applications with FastAPI, Node.js, TypeScript, React, and PostgreSQL.";
+    "Harikesh Mishra is a software engineer building production Node.js and TypeScript backends, plus full-stack applications with React, PostgreSQL, and FastAPI.";
 const resumeUrl = absoluteUrl("/resume");
 const resumeImage = absoluteUrl("/og.png");
+
+/*
+ * The four figures a hiring reader should see first, each lifted from a
+ * highlight below. Nothing here is a number the resume doesn't already state.
+ */
+const proofPoints = [
+    { value: "6", label: "agentic workflows on one streaming TypeScript API" },
+    { value: "130K+", label: "records behind server-side pagination" },
+    { value: "~190 ms", label: "typical response time on that data" },
+    { value: "5", label: "client organizations, each with its own database" },
+] as const;
+
+/** Figures inside a highlight: 130K+, 190 ms, 6.4 KB, ~60%, 35+, 27K. */
+const figurePattern = /(~?\d[\d.,]*(?:K\+?|\+|%)?(?:\s(?:KB|ms))?)/;
+
+/** Sets the figures in a highlight in Strong, so a skim lands on the proof. */
+function emphasizeFigures(text: string): ReactNode[] {
+    return text.split(figurePattern).map((part, index) =>
+        index % 2 === 1 ? (
+            <strong
+                className="font-medium tabular-nums text-foreground-strong"
+                // Split positions are fixed for a given string, so the index is stable.
+                key={index}
+            >
+                {part}
+            </strong>
+        ) : (
+            part
+        ),
+    );
+}
 
 export const Route = createFileRoute("/resume")({
     head: () => ({
@@ -114,20 +146,44 @@ function ResumePage() {
                             Open in new tab
                         </a>
                     </StaggerReveal.Item>
+                    <StaggerReveal.Item className="mt-10">
+                        <dl className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
+                        {proofPoints.map((point) => (
+                            <div
+                                className="flex min-w-0 flex-col gap-1"
+                                key={point.label}
+                            >
+                                <dt className="text-[13px] leading-snug text-muted">
+                                    {point.label}
+                                </dt>
+                                <dd className="order-first text-xl font-semibold tabular-nums tracking-[-0.01em] text-foreground-strong">
+                                    {point.value}
+                                </dd>
+                            </div>
+                        ))}
+                        </dl>
+                    </StaggerReveal.Item>
                 </StaggerReveal>
 
                 <Reveal>
                     <ResumeSection title="Summary">
-                        <p className="text-foreground">
-                            Software engineer with one year at EduvanceAI
-                            delivering production backend and full-stack
-                            applications using FastAPI, Node.js, TypeScript,
-                            React, and PostgreSQL. Built data tooling for 130K+
-                            records, multi-tenant systems across five client
-                            organizations, and streaming agentic workflow
-                            APIs, with strong production debugging and
-                            deployment experience.
-                        </p>
+                        <div className="space-y-3 text-foreground">
+                            <p>
+                                Software engineer focused on Node.js and
+                                TypeScript backends, with one year at
+                                EduvanceAI shipping production systems.
+                            </p>
+                            <p>
+                                Built a job-based workflow API in Bun,
+                                TypeScript, and Express with Server-Sent
+                                Events, Zod-validated contracts, and
+                                reconnection after dropped streams. Also
+                                delivered server-side pagination over 130K+
+                                records and database isolation for five client
+                                organizations, with Python (FastAPI) and React
+                                where the work needed them.
+                            </p>
+                        </div>
                     </ResumeSection>
                 </Reveal>
 
@@ -135,12 +191,12 @@ function ResumePage() {
                     <ResumeSection title="Technical Skills">
                         <dl className="space-y-2 text-sm text-foreground">
                             <SkillRow
-                                label="Languages"
-                                value="JavaScript, TypeScript, Python, SQL"
+                                label="Backend"
+                                value="Node.js, Express, Bun, REST APIs, Server-Sent Events, Zod, FastAPI, OpenAI API"
                             />
                             <SkillRow
-                                label="Backend"
-                                value="FastAPI, Node.js, Express, Bun, REST APIs, Server-Sent Events, Zod, OpenAI API"
+                                label="Languages"
+                                value="TypeScript, JavaScript, Python, SQL"
                             />
                             <SkillRow
                                 label="Frontend"
@@ -160,69 +216,41 @@ function ResumePage() {
 
                 <PageEnter.Fade>
                     <ResumeSection title="Experience">
-                        <div className="border-t border-divider">
-                            {resumeExperience.map((experience) => (
+                        <ol className="journey">
+                            {resumeExperience.map((experience, roleIndex) => (
                                 <Reveal
-                                    as="article"
-                                    className="border-b border-divider py-5"
+                                    as="li"
+                                    // The first role is the current one.
+                                    className={`journey__step${roleIndex === 0 ? " journey__step--current" : ""}`}
                                     key={experience.company}
                                 >
-                                    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4">
-                                        <h3 className="font-semibold text-foreground-strong">
-                                            {experience.role},{" "}
-                                            {experience.company}
-                                        </h3>
-                                        <p className="shrink-0 text-[13px] tabular-nums text-muted">
-                                            {experience.dates}
+                                    <p className="journey__label tabular-nums">
+                                        {experience.dates}
+                                    </p>
+                                    <h3 className="mt-1 font-semibold text-foreground-strong">
+                                        {experience.role}, {experience.company}
+                                    </h3>
+                                    {experience.stack && (
+                                        <p className="mt-1 text-[13px] text-muted">
+                                            {experience.stack.join(" · ")}
                                         </p>
-                                    </div>
+                                    )}
 
-                                    {"projects" in experience &&
-                                        experience.projects?.map((project) => (
-                                            <section
-                                                className="mt-5"
-                                                key={project.name}
-                                            >
-                                                <h4 className="text-sm font-semibold text-foreground-strong">
-                                                    {project.name}
-                                                </h4>
-                                                <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
-                                                    {project.highlights.map(
-                                                        (highlight) => (
-                                                            <li
-                                                                key={
-                                                                    highlight.content
-                                                                }
-                                                            >
-                                                                {
-                                                                    highlight.content
-                                                                }
-                                                            </li>
-                                                        ),
-                                                    )}
-                                                </ul>
-                                            </section>
-                                        ))}
+                                    {experience.projects?.map((project) => (
+                                        <section className="mt-5" key={project.name}>
+                                            <h4 className="text-sm font-semibold text-foreground-strong">
+                                                {project.name}
+                                            </h4>
+                                            <HighlightList highlights={project.highlights} />
+                                        </section>
+                                    ))}
 
-                                    {"highlights" in experience &&
-                                        experience.highlights && (
-                                            <ul className="mt-4 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
-                                                {experience.highlights.map(
-                                                    (highlight) => (
-                                                        <li
-                                                            key={
-                                                                highlight.content
-                                                            }
-                                                        >
-                                                            {highlight.content}
-                                                        </li>
-                                                    ),
-                                                )}
-                                            </ul>
-                                        )}
+                                    {experience.highlights && (
+                                        <HighlightList highlights={experience.highlights} />
+                                    )}
                                 </Reveal>
                             ))}
-                        </div>
+                        </ol>
                     </ResumeSection>
                 </PageEnter.Fade>
 
@@ -267,13 +295,27 @@ function ResumeSection({
     );
 }
 
+function HighlightList({
+    highlights,
+}: Readonly<{ highlights: readonly ResumeHighlight[] }>) {
+    return (
+        <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
+            {highlights.map((highlight) => (
+                <li key={highlight.content}>
+                    {emphasizeFigures(highlight.content)}
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 function SkillRow({
     label,
     value,
 }: Readonly<{ label: string; value: string }>) {
     return (
         <div className="grid gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
-            <dt className="font-semibold text-foreground-strong">{label}:</dt>
+            <dt className="text-muted">{label}</dt>
             <dd>{value}</dd>
         </div>
     );

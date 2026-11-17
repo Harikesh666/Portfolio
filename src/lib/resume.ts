@@ -14,7 +14,7 @@ export type ResumeExperience = {
     dates: string;
     /** Shown on the collapsed home row so the work carries proof before expansion. */
     outcome?: string;
-    /** Technologies shipped in this role, shown as text tags on the collapsed row. */
+    /** Technologies shipped in this role, most relevant first; shown under the role on the resume. */
     stack?: readonly string[];
     projects?: readonly ResumeProject[];
     highlights?: readonly ResumeHighlight[];
@@ -29,12 +29,13 @@ export const resumeExperience: readonly ResumeExperience[] = [
             "Server-side pagination over a 130K+ record dataset, database isolation for 5 client organizations, and a streaming workflow API.",
         stack: [
             "TypeScript",
-            "React",
-            "TanStack Router / Query",
+            "Node.js",
             "Bun",
             "Express",
-            "Python",
             "PostgreSQL",
+            "React",
+            "TanStack Router / Query",
+            "Python",
             "AWS",
             "Docker",
         ],
