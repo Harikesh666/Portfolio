@@ -542,7 +542,34 @@ export function TocSheet({
             setIsFooterInView(false);
         };
     }, [isRouteActive]);
-    const isTriggerTucked = isFooterInView && !isOpen;
+    // While the reader scrolls down through the text, the pill would sit on
+    // the line they are reading, so it steps aside and comes back the moment
+    // they scroll up, like Safari's toolbar. It never hides while focused.
+    const [isReadingDown, setIsReadingDown] = useState(false);
+    const [isDockFocused, setIsDockFocused] = useState(false);
+    useEffect(() => {
+        if (!isRouteActive) return;
+        let lastY = window.scrollY;
+        let frame = 0;
+        const onScroll = () => {
+            if (frame) return;
+            frame = window.requestAnimationFrame(() => {
+                frame = 0;
+                const y = window.scrollY;
+                // Small jitters (momentum settling, address bar resizing) change nothing.
+                if (Math.abs(y - lastY) < 8) return;
+                setIsReadingDown(y > lastY && y > 160);
+                lastY = y;
+            });
+        };
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => {
+            window.removeEventListener("scroll", onScroll);
+            window.cancelAnimationFrame(frame);
+            setIsReadingDown(false);
+        };
+    }, [isRouteActive]);
+    const isTriggerTucked = (isFooterInView || (isReadingDown && !isDockFocused)) && !isOpen;
 
     if (!isRouteActive || items.length === 0) return null;
 
@@ -572,6 +599,10 @@ export function TocSheet({
                 className="toc-sheet-dock pointer-events-none fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] left-1/2 z-51 -translate-x-1/2"
                 data-tucked={isTriggerTucked ? "" : undefined}
                 inert={isTriggerTucked ? true : undefined}
+                onBlur={(event) => {
+                    if (!event.currentTarget.contains(event.relatedTarget)) setIsDockFocused(false);
+                }}
+                onFocus={() => setIsDockFocused(true)}
             >
                 <div
                     aria-hidden="true"

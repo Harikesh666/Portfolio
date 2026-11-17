@@ -19,7 +19,8 @@ import {
     UnwindFigure,
 } from "./more";
 import { ParseFigure } from "./parse";
-import { ElementObjectFigure, FiberFieldsFigure, HookNodesFigure } from "./struct";
+import { ElementFieldsFigure, FiberLinksFigure } from "./react-objects";
+import { HookNodesFigure } from "./struct";
 import {
     BoundaryMethodsFigure,
     BoundaryResetFigure,
@@ -148,8 +149,8 @@ const figures = {
     "react-context-value": ContextValueFigure,
     "react-transition-fallback": TransitionFallbackFigure,
     "hk-hook-nodes": HookNodesFigure,
-    "rr-element-object": ElementObjectFigure,
-    "rr-fiber-fields": FiberFieldsFigure,
+    "rr-element-object": ElementFieldsFigure,
+    "rr-fiber-fields": FiberLinksFigure,
     "rr-keys": KeysReorderFigure,
     "rr-work-loop": WorkLoopFigure,
     "rr-commit-phases": CommitPhasesFigure,

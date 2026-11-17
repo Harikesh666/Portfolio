@@ -140,7 +140,7 @@ function SchedulerBody({ mode, onMode }: Readonly<{ mode: Mode; onMode: (mode: M
                                 ))}
                                 {shown > first && (
                                     <text className="gf-schedule__first" textAnchor="end" x="356" y={y + 3}>
-                                        first ran t = {first}
+                                        first t={first}
                                     </text>
                                 )}
                             </g>

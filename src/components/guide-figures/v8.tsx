@@ -493,7 +493,7 @@ export function HeapFigure() {
                         <rect height="114" rx="5" width="124" x="228" y="8" />
                         <line x1="228" x2="352" y1="22.5" y2="22.5" />
                         <text className="gf-group__label" x="235" y="18">
-                            old generation · major
+                            old generation
                         </text>
                     </g>
                     <g className="gf-node" data-variant="ghost">
@@ -506,14 +506,11 @@ export function HeapFigure() {
                         <text className="gf-wire__label" x="66" y="134">
                             unreachable
                         </text>
-                        <text className="gf-wire__label" x="296" y="134">
-                            unreachable
-                        </text>
                         <text className="gf-wire__label" textAnchor="middle" x="221" y="58">
                             survives
                         </text>
                     </g>
-                    <text className="gf-group__label" x="15" y="138">
+                    <text className="gf-group__label" textAnchor="end" x="345" y="138">
                         reclaimed
                     </text>
                     {objects.map((object) => {

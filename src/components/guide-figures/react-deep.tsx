@@ -1,5 +1,6 @@
-import { BitsFigure, ListFigure, TimelineFigure, TreeFigure, type ListCell, type TimelineBlock } from "./kinds";
-import { FlowFigure, type FlowNode, type FlowStep, type FlowWire, type Tone } from "./kit";
+import { useState } from "react";
+import { BitsFigure, ListFigure, TimelineFigure, TreeFigure, type ListCell, type ListSpec, type TimelineBlock } from "./kinds";
+import { CaseSwitch, FlowFigure, type FlowNode, type FlowStep, type FlowWire, type Tone } from "./kit";
 import { SlotsFigure } from "./slots";
 
 /*
@@ -30,7 +31,10 @@ const cell = (label: string, identity: number, detail?: string): ListCell => ({ 
 export function KeysReorderFigure() {
     const before = [cell("Ana", 0, "ana"), cell("Bo", 1, "bo"), cell("Cy", 2, "cy")];
     return (
-        <ListFigure
+        <CaseList
+            cases={["key={id}", "key={index}"]}
+            overviews={["The data is reordered and every row uses `key={id}`. Colour is the fiber, and with it the DOM node and its state. Press Play.", "The same reorder with `key={index}`. Press Play to see which state stays behind."]}
+            picks={[[0, 1, 2, 3], [0, 1, 4, 5]]}
             spec={{
                 rows: ["before", "after"],
                 steps: [
@@ -1009,7 +1013,10 @@ export function InsertKeysFigure() {
     const indexBefore = [cell("A · 0", 0, "typed: hi"), cell("B · 1", 1), cell("C · 2", 2)];
     const idBefore = [cell("A · a", 0, "typed: hi"), cell("B · b", 1), cell("C · c", 2)];
     return (
-        <ListFigure
+        <CaseList
+            cases={["key={i}", "key={item.id}"]}
+            overviews={["Insert one item at the front of a list keyed by position. Colour is the row React reuses. Press Play.", "The same insert, keyed by a stable `item.id`. Press Play."]}
+            picks={[[0, 1, 2], [3, 4, 5]]}
             spec={{
                 rows: ["before", "after"],
                 steps: [
@@ -1297,6 +1304,24 @@ export function FirstLoadFigure() {
                 figcaption: "Server Components never hydrate, and only Client Components make the page interactive.",
                 description: ["Server Components render, then SSR produces HTML, the browser shows it, and client code hydrates. Navigations fetch payloads."],
             }}
+        />
+    );
+}
+
+/** A keyed-list figure split into cases: each case shows its own steps, picked from the spec. */
+function CaseList({
+    spec,
+    cases,
+    picks,
+    overviews,
+}: Readonly<{ spec: ListSpec; cases: readonly string[]; picks: readonly (readonly number[])[]; overviews: readonly string[] }>) {
+    const [caseIndex, setCaseIndex] = useState(0);
+    const caseSpec: ListSpec = { ...spec, overview: overviews[caseIndex], steps: picks[caseIndex].map((index) => spec.steps[index]) };
+    return (
+        <ListFigure
+            key={caseIndex}
+            spec={caseSpec}
+            tools={<CaseSwitch cases={cases} label="Compare" onChange={setCaseIndex} value={caseIndex} />}
         />
     );
 }

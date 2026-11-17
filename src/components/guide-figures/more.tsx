@@ -1,4 +1,5 @@
-import { FlowFigure, type FlowNode, type FlowStep, type FlowWire, type Tone } from "./kit";
+import { useState } from "react";
+import { CaseSwitch, FlowFigure, type FlowNode, type FlowStep, type FlowWire, type Tone } from "./kit";
 import { SlotsFigure } from "./slots";
 
 /*
@@ -657,8 +658,8 @@ export function ChildrenSlotFigure() {
         node("page", 110, 8, 140, 34, "Page", "Server Component", "accent"),
         node("content", 8, 82, 140, 34, "ServerContent", "Server Component", "accent"),
         node("layout", 212, 82, 140, 34, "ClientLayout", "Client Component", "task"),
-        node("result", 8, 156, 140, 34, "rendered result", "—", "accent"),
-        node("browser", 212, 156, 140, 34, "browser", "—", "task"),
+        node("result", 8, 154, 140, 46, "rendered result", "—", "accent"),
+        node("browser", 212, 154, 140, 46, "browser", "—", "task"),
     ];
     const wires: FlowWire[] = [
         { id: "renders", d: "M150 42 V54 Q150 60 144 60 H84 Q78 60 78 66 V80", tone: "accent", label: { text: "renders on server", x: 96, y: 55 } },
@@ -699,7 +700,7 @@ export function ChildrenSlotFigure() {
         <FlowFigure
             description={["Page, a Server Component, renders ServerContent on the server and ClientLayout with children.", "The rendered result of ServerContent is passed down into ClientLayout as children."]}
             figcaption="Server content can live inside a client shell because it is passed down as `children`, not imported."
-            height={198}
+            height={206}
             nodes={nodes}
             overview="A Client Component cannot import a Server Component, yet server content can still sit inside it. Press Play to follow `ServerContent` into `ClientLayout` as `children`."
             steps={steps}
@@ -772,6 +773,7 @@ export function ContextValueFigure() {
 
 /* react-suspense-internals */
 export function TransitionFallbackFigure() {
+    const [caseIndex, setCaseIndex] = useState(0);
     const nodes = [
         node("click", 8, 8, 150, 38, "selectItem(id)", "—", "accent"),
         node("boundary", 202, 8, 150, 38, "Suspense boundary", "content revealed", "task"),
@@ -827,14 +829,22 @@ export function TransitionFallbackFigure() {
             patch: subs({ click: "isPending: false", old: "replaced", new: "on screen" }),
         },
     ];
+    // Each case is its own short run, both starting from the revealed content.
+    const cases = [steps.slice(0, 4), [steps[0], ...steps.slice(4)]];
     return (
         <FlowFigure
             description={["Without a transition, re-suspending already-revealed content swaps it for the fallback until new content is ready.", "With startTransition, the old content stays on screen until the new content is ready."]}
             figcaption="Wrap updates to already-visible Suspense content in a transition, so the old content stays until the new is ready."
             height={142}
+            key={caseIndex}
             nodes={nodes}
-            overview="Selecting a new item re-suspends content that was already showing. Press Play to compare the fallback flash with keeping the old content."
-            steps={steps}
+            overview={
+                caseIndex === 0
+                    ? "Selecting a new item re-suspends content that was already showing. Press Play to see it without a transition."
+                    : "The same update, wrapped in `startTransition`. Press Play to see the old content stay."
+            }
+            steps={cases[caseIndex]}
+            tools={<CaseSwitch cases={["no transition", "startTransition"]} label="Compare" onChange={setCaseIndex} value={caseIndex} />}
             width={360}
             wires={wires}
         />

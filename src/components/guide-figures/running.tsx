@@ -1,4 +1,5 @@
 import { FigureFrame, FlowFigure, Note, useStepper, type FlowNode, type FlowStep, type FlowWire } from "./kit";
+import { SlotsStage } from "./slots";
 
 /*
  * "How JavaScript Keeps Track of Running Code", the event-loop and
@@ -88,27 +89,7 @@ export function MemoryPhaseFigure() {
                     </div>
                 </div>
             }
-            stage={
-                <svg aria-hidden="true" className="gf-flow" viewBox="0 0 360 94">
-                    <text className="gf-group__label" x="8" y="12">
-                        variable environment
-                    </text>
-                    {names.map((name, index) => {
-                        const y = 22 + index * 36;
-                        return (
-                            <g className="gf-slot" key={name}>
-                                <text className="gf-node__label" x="8" y={y + 18}>
-                                    {name}
-                                </text>
-                                <rect className="gf-slot__box" height="28" rx="4" width="220" x="132" y={y} />
-                                <text className="gf-slot__value" key={step.slots[index]} x="144" y={y + 18}>
-                                    {step.slots[index]}
-                                </text>
-                            </g>
-                        );
-                    })}
-                </svg>
-            }
+            stage={<SlotsStage names={names} title="variable environment" values={step.slots} />}
             stepper={stepper}
         />
     );

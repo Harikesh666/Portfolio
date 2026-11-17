@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { FigureFrame, FlowFigure, Note, useStepper, type FlowNode, type FlowStep, type FlowWire } from "./kit";
+import { SlotsStage } from "./slots";
 
 /*
  * Scope figures: a name lookup walking a scope chain, the TDZ, the error
@@ -183,17 +184,6 @@ function ScopeChainBody({ spec, pick, onPick }: Readonly<{ spec: ScopeSpec; pick
     const step = stepper.index >= 0 ? steps[stepper.index] : null;
     const from = lookup.from ?? 0;
 
-    const tops: number[] = [];
-    let y = 6;
-    for (const env of spec.envs) {
-        tops.push(y);
-        y += cardHeight(env, cardW) + gap;
-    }
-    const failY = y - gap + 22;
-    // Room for the ReferenceError row only when some lookup in this figure fails, so switching lookups never resizes it.
-    const canFail = spec.lookups.some((option) => !spec.envs.slice(option.from ?? 0).some((env) => has(env, option.name)));
-    const height = canFail ? failY + 30 : y - gap + 8;
-    const tokenY = step ? (step.at === "fail" ? failY + 4 : tops[step.at] + cardHeight(spec.envs[step.at], cardW) / 2 - 9) : 0;
     const line = step && lookup.line !== undefined ? lookup.line : null;
 
     const envState = (index: number) => {
@@ -240,70 +230,10 @@ function ScopeChainBody({ spec, pick, onPick }: Readonly<{ spec: ScopeSpec; pick
                 </div>
             }
             stage={
-                <svg aria-hidden="true" className="gf-flow gf-chain" viewBox={`0 0 360 ${height}`}>
-                    <defs>
-                        <marker id="gf-arrow-chain" markerHeight="6" markerWidth="6" orient="auto-start-reverse" refX="5" refY="3" viewBox="0 0 6 6">
-                            <path className="gf-arrow" d="M0.5 0.8 5 3 0.5 5.2" />
-                        </marker>
-                    </defs>
-                    {spec.envs.map((env, index) => {
-                        if (index === spec.envs.length - 1) return null;
-                        const bottom = tops[index] + cardHeight(env, cardW);
-                        const traversed = step && (step.passed.includes(index) || (step.at === "fail" && index >= from)) && index >= from;
-                        return (
-                            <g className="gf-wire" data-state={step ? (traversed ? "on" : "off") : undefined} data-tone="task" key={env.label}>
-                                <path d={`M${cardX + 30} ${bottom} V${tops[index + 1] - 2}`} markerEnd="url(#gf-arrow-chain)" />
-                                <text className="gf-wire__label" x={cardX + 37} y={bottom + gap / 2 + 3}>
-                                    outer
-                                </text>
-                            </g>
-                        );
-                    })}
-                    {spec.envs.map((env, index) => (
-                        <EnvCard
-                            env={env}
-                            highlight={step && step.at === index && step.found ? lookup.name : undefined}
-                            key={env.label}
-                            note={envNote(index)}
-                            state={envState(index)}
-                            width={cardW}
-                            x={cardX}
-                            y={tops[index]}
-                        />
-                    ))}
-                    {spec.aside && (
-                        <EnvCard
-                            env={spec.aside}
-                            note={spec.aside.note}
-                            state="aside"
-                            width={104}
-                            x={252}
-                            y={tops[Math.min(1, spec.envs.length - 1)]}
-                        />
-                    )}
-                    {step?.at === "fail" && (
-                        <g className="gf-node" data-state="on" data-tone="accent" data-variant="ghost">
-                            <rect height="26" rx="5" width={cardW} x={cardX} y={failY} />
-                            <text className="gf-node__label" textAnchor="middle" x={cardX + cardW / 2} y={failY + 16}>
-                                ReferenceError
-                            </text>
-                        </g>
-                    )}
-                    {step && (
-                        <g
-                            className="gf-token"
-                            data-found={step.found ? "" : undefined}
-                            data-fail={step.at === "fail" ? "" : undefined}
-                            style={{ transform: `translate(4px, ${tokenY}px)` }}
-                        >
-                            <rect height="18" rx="9" width="40" />
-                            <text textAnchor="middle" x="20" y="12.4">
-                                {lookup.name.length > 5 ? `${lookup.name.slice(0, 4)}…` : lookup.name}
-                                {step.found ? " ✓" : step.at === "fail" ? " ✗" : "?"}
-                            </text>
-                        </g>
-                    )}
-                </svg>
+                <>
+                    <ChainDrawing envNote={envNote} envState={envState} from={from} layout="wide" lookup={lookup} spec={spec} step={step} />
+                    <ChainDrawing envNote={envNote} envState={envState} from={from} layout="narrow" lookup={lookup} spec={spec} step={step} />
+                </>
             }
             stepper={stepper}
             tools={
@@ -324,6 +254,112 @@ function ScopeChainBody({ spec, pick, onPick }: Readonly<{ spec: ScopeSpec; pick
                 ) : undefined
             }
         />
+    );
+}
+
+/**
+ * The chain itself. The wide drawing puts an off-chain scope beside the
+ * chain; the phone drawing puts it below and crops the view to the chain,
+ * so on a phone everything renders about 1.4 times larger.
+ */
+function ChainDrawing({
+    spec,
+    lookup,
+    step,
+    from,
+    envState,
+    envNote,
+    layout,
+}: Readonly<{
+    spec: ScopeSpec;
+    lookup: Lookup;
+    step: ChainStep | null;
+    from: number;
+    envState: (index: number) => string | undefined;
+    envNote: (index: number) => string | undefined;
+    layout: "wide" | "narrow";
+}>) {
+    const marker = `gf-arrow-${useId().replace(/:/g, "")}`;
+    const tops: number[] = [];
+    let y = 6;
+    for (const env of spec.envs) {
+        tops.push(y);
+        y += cardHeight(env, cardW) + gap;
+    }
+    const failY = y - gap + 22;
+    // Room for the ReferenceError row only when some lookup in this figure fails, so switching lookups never resizes it.
+    const canFail = spec.lookups.some((option) => !spec.envs.slice(option.from ?? 0).some((env) => has(env, option.name)));
+    const chainBottom = canFail ? failY + 30 : y - gap + 8;
+    const asideBelow = layout === "narrow" && spec.aside;
+    const asideY = asideBelow ? chainBottom + 10 : tops[Math.min(1, spec.envs.length - 1)];
+    const height = asideBelow && spec.aside ? asideY + cardHeight(spec.aside, cardW) + 22 : chainBottom;
+    const width = layout === "narrow" ? cardX + cardW + 6 : 360;
+    const tokenY = step ? (step.at === "fail" ? failY + 4 : tops[step.at] + cardHeight(spec.envs[step.at], cardW) / 2 - 9) : 0;
+    return (
+        <svg aria-hidden="true" className={`gf-flow gf-chain gf-${layout}`} viewBox={`0 0 ${width} ${height}`}>
+            <defs>
+                <marker id={marker} markerHeight="6" markerWidth="6" orient="auto-start-reverse" refX="5" refY="3" viewBox="0 0 6 6">
+                    <path className="gf-arrow" d="M0.5 0.8 5 3 0.5 5.2" />
+                </marker>
+            </defs>
+            {spec.envs.map((env, index) => {
+                if (index === spec.envs.length - 1) return null;
+                const bottom = tops[index] + cardHeight(env, cardW);
+                const traversed = step && (step.passed.includes(index) || (step.at === "fail" && index >= from)) && index >= from;
+                return (
+                    <g className="gf-wire" data-state={step ? (traversed ? "on" : "off") : undefined} data-tone="task" key={env.label}>
+                        <path d={`M${cardX + 30} ${bottom} V${tops[index + 1] - 2}`} markerEnd={`url(#${marker})`} />
+                        <text className="gf-wire__label" x={cardX + 37} y={bottom + gap / 2 + 3}>
+                            outer
+                        </text>
+                    </g>
+                );
+            })}
+            {spec.envs.map((env, index) => (
+                <EnvCard
+                    env={env}
+                    highlight={step && step.at === index && step.found ? lookup.name : undefined}
+                    key={env.label}
+                    note={envNote(index)}
+                    state={envState(index)}
+                    width={cardW}
+                    x={cardX}
+                    y={tops[index]}
+                />
+            ))}
+            {spec.aside && (
+                <EnvCard
+                    env={spec.aside}
+                    note={spec.aside.note}
+                    state="aside"
+                    width={asideBelow ? cardW : 104}
+                    x={asideBelow ? cardX : 252}
+                    y={asideY}
+                />
+            )}
+            {step?.at === "fail" && (
+                <g className="gf-node" data-state="on" data-tone="accent" data-variant="ghost">
+                    <rect height="26" rx="5" width={cardW} x={cardX} y={failY} />
+                    <text className="gf-node__label" textAnchor="middle" x={cardX + cardW / 2} y={failY + 16}>
+                        ReferenceError
+                    </text>
+                </g>
+            )}
+            {step && (
+                <g
+                    className="gf-token"
+                    data-fail={step.at === "fail" ? "" : undefined}
+                    data-found={step.found ? "" : undefined}
+                    style={{ transform: `translate(4px, ${tokenY}px)` }}
+                >
+                    <rect height="18" rx="9" width="40" />
+                    <text textAnchor="middle" x="20" y="12.4">
+                        {lookup.name.length > 5 ? `${lookup.name.slice(0, 4)}…` : lookup.name}
+                        {step.found ? " ✓" : step.at === "fail" ? " ✗" : "?"}
+                    </text>
+                </g>
+            )}
+        </svg>
     );
 }
 
@@ -698,38 +734,7 @@ export function TdzFigure() {
                     </div>
                 </div>
             }
-            stage={
-                <svg aria-hidden="true" className="gf-flow" viewBox="0 0 360 132">
-                    <text className="gf-group__label" x="8" y="12">
-                        bindings in this scope
-                    </text>
-                    {tdzNames.map((name, index) => {
-                        const slot = step.slots[index];
-                        const y = 22 + index * 36;
-                        const dead = slot === "uninitialized";
-                        return (
-                            <g className="gf-slot" data-dead={dead ? "" : undefined} data-read={read === index ? "" : undefined} key={name}>
-                                <text className="gf-slot__keyword" x="8" y={y + 18}>
-                                    {tdzKeywords[index]}
-                                </text>
-                                <text className="gf-node__label" x="52" y={y + 18}>
-                                    {name}
-                                </text>
-                                <rect className="gf-slot__box" height="28" rx="4" width="200" x="150" y={y} />
-                                {dead && <rect className="gf-slot__hatch" fill="url(#gf-hatch)" height="28" rx="4" width="200" x="150" y={y} />}
-                                <text className="gf-slot__value" key={slot} x="162" y={y + 18}>
-                                    {dead ? "uninitialized · TDZ" : slot}
-                                </text>
-                            </g>
-                        );
-                    })}
-                    <defs>
-                        <pattern height="6" id="gf-hatch" patternTransform="rotate(45)" patternUnits="userSpaceOnUse" width="6">
-                            <line className="gf-slot__hatch-line" x1="0" x2="0" y1="0" y2="6" />
-                        </pattern>
-                    </defs>
-                </svg>
-            }
+            stage={<SlotsStage highlight={read} names={tdzNames} tags={tdzKeywords} title="bindings in this scope" values={step.slots} />}
             stepper={stepper}
             tools={
                 <div aria-label="Read a binding" className="el-controls__group el-segmented" role="group">
@@ -858,11 +863,11 @@ export function BindingFanFigure({ kind }: Readonly<{ kind: FanKind }>) {
                     ) : (
                         [1, 2, 3, 4, 5].slice(0, made).map((k) => (
                             <g className="gf-node gf-fan__env" data-state={stepper.index >= 0 && k === made && !done ? "on" : undefined} data-tone="task" key={k}>
-                                <rect height="24" rx="4" width="170" x="8" y={rowY(k)} />
+                                <rect height="24" rx="4" width="200" x="8" y={rowY(k)} />
                                 <text className="gf-node__sub" x="16" y={rowY(k) + 15.5}>
                                     {text.env(k)}
                                 </text>
-                                <text className="gf-node__label" textAnchor="end" x="170" y={rowY(k) + 15.5}>
+                                <text className="gf-node__label" textAnchor="end" x="200" y={rowY(k) + 15.5}>
                                     {text.name} = {k}
                                 </text>
                             </g>
@@ -870,7 +875,7 @@ export function BindingFanFigure({ kind }: Readonly<{ kind: FanKind }>) {
                     )}
                     {[1, 2, 3, 4, 5].slice(0, made).map((k) => {
                         const y = rowY(k) + 12;
-                        const target = shared ? `M250 ${y} C214 ${y} 196 ${rowY(3) + 13} 160 ${rowY(3) + 13}` : `M250 ${y} H180`;
+                        const target = shared ? `M250 ${y} C214 ${y} 196 ${rowY(3) + 13} 160 ${rowY(3) + 13}` : `M250 ${y} H210`;
                         const current = stepper.index >= 0 && k === made && !done;
                         return (
                             <g className="gf-fan__callback" key={k}>

@@ -1,3 +1,4 @@
+import { useId } from "react";
 import { FigureFrame, Note, useStepper } from "./kit";
 
 /*
@@ -76,21 +77,23 @@ export function StructFigure({ spec }: Readonly<{ spec: StructSpec }>) {
     const step = stepper.index >= 0 ? spec.steps[stepper.index] : null;
     const height = Math.max(...spec.objects.map((object) => object.y + boxHeight(object))) + 8;
     const value = (object: StructObject, field: Field) => step?.values?.[`${object.id}.${field.name}`] ?? field.value;
+    const marker = `gf-arrow-${useId().replace(/:/g, "")}`;
     return (
         <FigureFrame
             caption={<Note>{step?.caption ?? spec.overview}</Note>}
             description={spec.description}
             figcaption={spec.figcaption}
             stage={
-                <svg aria-hidden="true" className="gf-flow gf-struct" viewBox={`0 0 360 ${height}`}>
+                <>
+                <svg aria-hidden="true" className="gf-flow gf-struct gf-wide" viewBox={`0 0 360 ${height}`}>
                     <defs>
-                        <marker id="gf-arrow-struct" markerHeight="6" markerWidth="6" orient="auto-start-reverse" refX="5" refY="3" viewBox="0 0 6 6">
+                        <marker id={marker} markerHeight="6" markerWidth="6" orient="auto-start-reverse" refX="5" refY="3" viewBox="0 0 6 6">
                             <path className="gf-arrow" d="M0.5 0.8 5 3 0.5 5.2" />
                         </marker>
                     </defs>
                     {spec.pointers.map((pointer) => (
                         <g className="gf-wire" data-state={step ? (step.pointers?.includes(pointer.id) ? "on" : "off") : undefined} data-tone="accent" key={pointer.id}>
-                            <path d={pointerPath(spec.objects, pointer)} markerEnd="url(#gf-arrow-struct)" />
+                            <path d={pointerPath(spec.objects, pointer)} markerEnd={`url(#${marker})`} />
                         </g>
                     ))}
                     {spec.objects.map((object) => {
@@ -112,7 +115,7 @@ export function StructFigure({ spec }: Readonly<{ spec: StructSpec }>) {
                                                 {field.name}
                                             </text>
                                             {shown !== undefined && !field.group && (
-                                                <text className="gf-struct__value" key={shown} x={object.x + 9} y={top + 19}>
+                                                <text className="gf-struct__value" key={shown} x={object.x + 9} y={top + 19.5}>
                                                     {shown}
                                                 </text>
                                             )}
@@ -123,13 +126,13 @@ export function StructFigure({ spec }: Readonly<{ spec: StructSpec }>) {
                         );
                     })}
                 </svg>
+                <StructNarrow spec={spec} step={step} />
+                </>
             }
             stepper={stepper}
         />
     );
 }
-
-const fieldsOf = (...names: string[]): Field[] => names.map((name) => (name.startsWith("#") ? { name: name.slice(1), group: true } : { name }));
 
 export function HookNodesFigure() {
     const hook = (id: string, x: number, y: number, title: string, state: string, queue: string, next: string): StructObject => ({
@@ -186,165 +189,84 @@ export function HookNodesFigure() {
     );
 }
 
-export function ElementObjectFigure() {
+/* Phone layout: the cards stacked in reading order at full width, with
+ * larger field text; each pointer runs down a lane in the right margin. */
+function StructNarrow({ spec, step }: Readonly<{ spec: StructSpec; step: StructSpec["steps"][number] | null }>) {
+    const marker = `gf-arrow-${useId().replace(/:/g, "")}`;
+    const narrowRow = (field: Field) => (field.group ? 18 : field.value !== undefined ? 32 : 20);
+    const ordered = [...spec.objects].sort((a, b) => a.y - b.y || a.x - b.x);
+    // Cards stack top to bottom; each field row sits under the one before it.
+    const layout: { object: StructObject; top: number; height: number; fieldRows: { field: Field; top: number; height: number }[] }[] = [];
+    let y = 8;
+    for (const object of ordered) {
+        const fieldRows: { field: Field; top: number; height: number }[] = [];
+        let rowTop = y + 24;
+        for (const field of object.fields ?? []) {
+            fieldRows.push({ field, top: rowTop, height: narrowRow(field) });
+            rowTop += narrowRow(field);
+        }
+        const boxHeight = fieldRows.length === 0 ? 30 : rowTop - y + 6;
+        layout.push({ object, top: y, height: boxHeight, fieldRows });
+        y += boxHeight + 18;
+    }
+    const height = y - 10;
+    const find = (id: string) => layout.find((entry) => entry.object.id === id);
+    const value = (object: StructObject, field: Field) => step?.values?.[`${object.id}.${field.name}`] ?? field.value;
     return (
-        <StructFigure
-            spec={{
-                objects: [
-                    {
-                        id: "host",
-                        title: "<button className=\"primary\">Save</button>",
-                        x: 8,
-                        y: 8,
-                        w: 216,
-                        tone: "task",
-                        fields: [
-                            { name: "$$typeof", value: "Symbol.for('react.transitional.element')" },
-                            { name: "type", value: "'button'" },
-                            { name: "key", value: "null" },
-                            { name: "ref", value: "null" },
-                            { name: "props", value: "{ className: 'primary', children: 'Save' }" },
-                        ],
-                    },
-                    {
-                        id: "composite",
-                        title: "<Toolbar />",
-                        x: 240,
-                        y: 8,
-                        w: 112,
-                        tone: "accent",
-                        fields: [
-                            { name: "type", value: "Toolbar (a function)" },
-                            { name: "props", value: "{}" },
-                        ],
-                    },
-                ],
-                pointers: [],
-                steps: [
-                    {
-                        caption: "JSX becomes a plain, immutable object. Every render makes brand-new ones, which is what makes it safe to hold last render's elements and compare.",
-                        objects: ["host"],
-                    },
-                    {
-                        caption: "`$$typeof` is a real Symbol on purpose. A Symbol cannot survive `JSON.parse`, so React can spot a fake element and refuse to render it.",
-                        fields: ["host.$$typeof"],
-                    },
-                    {
-                        caption: "`type` tells you the kind. The string `'button'` means a host element: the renderer knows how to make a real node for it.",
-                        fields: ["host.type"],
-                    },
-                    {
-                        caption: "A function or class as `type` means a composite element: React has to call it to find out what it produces.",
-                        fields: ["composite.type"],
-                    },
-                    {
-                        caption: "`key` is null here. In React 19 `ref` is a normal prop, so new code no longer needs `forwardRef` to pass one through.",
-                        fields: ["host.key", "host.ref"],
-                    },
-                    { caption: "`props` holds everything else: here `className` and the children, the text `Save`.", fields: ["host.props"] },
-                ],
-                overview: "A React element is just an object. Press Play to read its fields, and to compare a host element with a composite one.",
-                figcaption: "An element is a cheap description: a string `type` for host nodes, a function or class for components.",
-                description: ["The button element has $$typeof (a Symbol), type 'button', key null, ref null, and props with className and children.", "A Toolbar element has type set to the Toolbar function."],
-            }}
-        />
-    );
-}
-
-export function FiberFieldsFigure() {
-    return (
-        <StructFigure
-            spec={{
-                objects: [
-                    {
-                        id: "fiber",
-                        title: "fiber",
-                        x: 120,
-                        y: 8,
-                        w: 120,
-                        tone: "task",
-                        fields: fieldsOf(
-                            "#what it represents",
-                            "tag",
-                            "key",
-                            "type",
-                            "stateNode",
-                            "#tree structure",
-                            "return",
-                            "child",
-                            "sibling",
-                            "index",
-                            "#input and output",
-                            "pendingProps",
-                            "memoizedProps",
-                            "memoizedState",
-                            "updateQueue",
-                            "#scheduling and effects",
-                            "lanes",
-                            "childLanes",
-                            "flags",
-                            "subtreeFlags",
-                            "deletions",
-                            "#double buffering",
-                            "alternate",
-                        ),
-                    },
-                    { id: "dom", title: "DOM node", x: 8, y: 52, w: 88 },
-                    { id: "parent", title: "parent fiber", x: 264, y: 74, w: 88 },
-                    { id: "first", title: "first child", x: 264, y: 104, w: 88 },
-                    { id: "next", title: "next sibling", x: 264, y: 134, w: 88 },
-                    { id: "hooks", title: "hook list", x: 8, y: 186, w: 88 },
-                    { id: "twin", title: "twin fiber", x: 264, y: 290, w: 88, tone: "accent" },
-                ],
-                pointers: [
-                    { id: "state-node", from: "fiber.stateNode", to: "dom" },
-                    { id: "return", from: "fiber.return", to: "parent" },
-                    { id: "child", from: "fiber.child", to: "first" },
-                    { id: "sibling", from: "fiber.sibling", to: "next" },
-                    { id: "hooks", from: "fiber.memoizedState", to: "hooks" },
-                    { id: "alternate", from: "fiber.alternate", to: "twin" },
-                ],
-                steps: [
-                    {
-                        caption: "What this fiber represents: `tag` is its kind, `type` the function, class or string it came from, and `stateNode` the real DOM node, class instance or root behind it.",
-                        fields: ["fiber.tag", "fiber.key", "fiber.type", "fiber.stateNode"],
-                        objects: ["dom"],
-                        pointers: ["state-node"],
-                    },
-                    {
-                        caption: "The tree structure, the rebuilt call stack. `return` is the parent: the return address the loop goes back to after finishing this fiber's subtree.",
-                        fields: ["fiber.return", "fiber.child", "fiber.sibling", "fiber.index"],
-                        objects: ["parent", "first", "next"],
-                        pointers: ["return", "child", "sibling"],
-                    },
-                    {
-                        caption: "Input and output of rendering: new and committed props, and committed state. For a function component, `memoizedState` is the head of the hooks linked list.",
-                        fields: ["fiber.pendingProps", "fiber.memoizedProps", "fiber.memoizedState", "fiber.updateQueue"],
-                        objects: ["hooks"],
-                        pointers: ["hooks"],
-                    },
-                    {
-                        caption: "`lanes` is the pending work on this fiber. `childLanes` is the union of all its descendants' lanes, so one bitwise check can skip a whole subtree.",
-                        fields: ["fiber.lanes", "fiber.childLanes"],
-                    },
-                    {
-                        caption: "`flags` is a bitmask of effects to do at commit: placement, update, deletion, ref, passive. `subtreeFlags` lets commit skip clean subtrees.",
-                        fields: ["fiber.flags", "fiber.subtreeFlags", "fiber.deletions"],
-                    },
-                    {
-                        caption: "`alternate` points to this fiber's twin in the other tree: double buffering, Section 8.",
-                        fields: ["fiber.alternate"],
-                        objects: ["twin"],
-                        pointers: ["alternate"],
-                    },
-                ],
-                overview: "A fiber is both a virtual stack frame and an instance at a position. Press Play to read its fields by job, and to see what each pointer points at.",
-                figcaption: "`childLanes` and `subtreeFlags` are the summaries that let React skip untouched subtrees in one check.",
-                description: [
-                    "Fiber fields: tag, key, type, stateNode; return, child, sibling, index; pendingProps, memoizedProps, memoizedState, updateQueue; lanes, childLanes, flags, subtreeFlags, deletions; alternate.",
-                    "stateNode points to the DOM node, return to the parent, child to the first child, sibling to the next sibling, memoizedState to the hook list, alternate to the twin fiber.",
-                ],
-            }}
-        />
+        <svg aria-hidden="true" className="gf-flow gf-struct gf-narrow" viewBox={`0 0 360 ${height}`}>
+            <defs>
+                <marker id={marker} markerHeight="6" markerWidth="6" orient="auto-start-reverse" refX="5" refY="3" viewBox="0 0 6 6">
+                    <path className="gf-arrow" d="M0.5 0.8 5 3 0.5 5.2" />
+                </marker>
+            </defs>
+            {spec.pointers.map((pointer, lane) => {
+                const [fromId, fieldName] = pointer.from.split(".");
+                const from = find(fromId);
+                const to = find(pointer.to);
+                if (!from || !to) return null;
+                const row = from.fieldRows.find((entry) => entry.field.name === fieldName);
+                const startY = row ? row.top + row.height / 2 : from.top + from.height / 2;
+                const endY = to.top + 15;
+                const laneX = Math.min(356, 338 + lane * 6);
+                const turn = endY > startY ? 5 : -5;
+                return (
+                    <g className="gf-wire" data-state={step ? (step.pointers?.includes(pointer.id) ? "on" : "off") : undefined} data-tone="accent" key={pointer.id}>
+                        <path
+                            d={`M330 ${startY} H${laneX - 5} Q${laneX} ${startY} ${laneX} ${startY + turn} V${endY - turn} Q${laneX} ${endY} ${laneX - 5} ${endY} H332`}
+                            markerEnd={`url(#${marker})`}
+                        />
+                    </g>
+                );
+            })}
+            {layout.map(({ object, top, height: boxH, fieldRows }) => {
+                const lit = step?.objects?.includes(object.id) || step?.fields?.some((entry) => entry.startsWith(`${object.id}.`));
+                return (
+                    <g className="gf-struct__object" data-state={step ? (lit ? "on" : "off") : undefined} data-tone={object.tone} key={object.id}>
+                        <rect height={boxH} rx="6" width="322" x="8" y={top} />
+                        <text className="gf-struct__title" fontSize="11" x="18" y={top + 17}>
+                            {object.title}
+                        </text>
+                        {fieldRows.length > 0 && <line x1="8" x2="330" y1={top + 24} y2={top + 24} />}
+                        {fieldRows.map(({ field, top: rowTop, height: rowH }) => {
+                            const on = step?.fields?.includes(`${object.id}.${field.name}`);
+                            const shown = value(object, field);
+                            return (
+                                <g className="gf-struct__field" data-group={field.group ? "" : undefined} data-on={on ? "" : undefined} key={field.name}>
+                                    {!field.group && <rect height={rowH - 3} rx="4" width="310" x="14" y={rowTop + 1} />}
+                                    <text className={field.group ? "gf-struct__group" : "gf-struct__name"} fontSize={field.group ? 8.5 : 12} x="22" y={rowTop + (field.group ? 13 : 14)}>
+                                        {field.name}
+                                    </text>
+                                    {shown !== undefined && !field.group && (
+                                        <text className="gf-struct__value" fontSize="10" key={shown} x="22" y={rowTop + 27}>
+                                            {shown}
+                                        </text>
+                                    )}
+                                </g>
+                            );
+                        })}
+                    </g>
+                );
+            })}
+        </svg>
     );
 }

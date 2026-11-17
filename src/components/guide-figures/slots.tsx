@@ -25,12 +25,10 @@ export function SlotsFigure({ spec }: Readonly<{ spec: SlotsSpec }>) {
     const step = spec.steps[Math.max(0, stepper.index)];
     const last = spec.steps[spec.steps.length - 1];
     const shown = stepper.index >= 0 ? step : last;
-    const height = 22 + spec.names.length * 36;
     const output = shown.console ?? [];
     const hasConsole = spec.steps.some((one) => one.console && one.console.length > 0);
     // Long lines would wrap beside the console, so the console moves below the code instead.
     const sideBySide = hasConsole && spec.source.every((text) => text.length <= 36);
-    const nameX = spec.tags ? 52 : 8;
     return (
         <FigureFrame
             caption={<Note>{stepper.index >= 0 ? step.caption : spec.overview}</Note>}
@@ -74,41 +72,51 @@ export function SlotsFigure({ spec }: Readonly<{ spec: SlotsSpec }>) {
                 </div>
             }
             stage={
-                <svg aria-hidden="true" className="gf-flow" viewBox={`0 0 360 ${height}`}>
-                    <defs>
-                        <pattern height="6" id="gf-hatch-slots" patternTransform="rotate(45)" patternUnits="userSpaceOnUse" width="6">
-                            <line className="gf-slot__hatch-line" x1="0" x2="0" y1="0" y2="6" />
-                        </pattern>
-                    </defs>
-                    <text className="gf-group__label" x="8" y="12">
-                        {spec.title ?? "values"}
-                    </text>
-                    {spec.names.map((name, index) => {
-                        const value = shown.values[index];
-                        const y = 22 + index * 36;
-                        const dead = value === uninitialized;
-                        const changed = stepper.index > 0 && spec.steps[stepper.index - 1].values[index] !== value;
-                        return (
-                            <g className="gf-slot" data-dead={dead ? "" : undefined} data-read={changed ? "" : undefined} key={name}>
-                                {spec.tags && (
-                                    <text className="gf-slot__keyword" x="8" y={y + 18}>
-                                        {spec.tags[index]}
-                                    </text>
-                                )}
-                                <text className="gf-node__label" x={nameX} y={y + 18}>
-                                    {name}
-                                </text>
-                                <rect className="gf-slot__box" height="28" rx="4" width="200" x="150" y={y} />
-                                {dead && <rect fill="url(#gf-hatch-slots)" height="28" rx="4" width="200" x="150" y={y} />}
-                                <text className="gf-slot__value" key={value} x="162" y={y + 18}>
-                                    {dead ? "uninitialized · TDZ" : value}
-                                </text>
-                            </g>
-                        );
-                    })}
-                </svg>
+                <SlotsStage
+                    changed={spec.names.map((_, index) => stepper.index > 0 && spec.steps[stepper.index - 1].values[index] !== shown.values[index])}
+                    names={spec.names}
+                    tags={spec.tags}
+                    title={spec.title ?? "values"}
+                    values={shown.values}
+                />
             }
             stepper={stepper}
         />
+    );
+}
+
+/**
+ * Named values as rows: the name (with an optional tag such as a keyword)
+ * and a value box that refreshes when it changes. An uninitialized value
+ * is drawn hatched, as a binding in its TDZ. Plain HTML, so it reflows on
+ * any screen with text at reading size.
+ */
+export function SlotsStage({
+    title,
+    names,
+    tags,
+    values,
+    changed = [],
+    highlight,
+}: Readonly<{ title: string; names: readonly string[]; tags?: readonly string[]; values: readonly string[]; changed?: readonly boolean[]; highlight?: number | null }>) {
+    return (
+        <div aria-hidden="true" className="gf-slots">
+            <p className="gf-slots__title">{title}</p>
+            {names.map((name, index) => {
+                const value = values[index];
+                const dead = value === uninitialized;
+                return (
+                    <div className="gf-slots__row" data-changed={changed[index] ? "" : undefined} data-dead={dead ? "" : undefined} data-read={highlight === index ? "" : undefined} key={name}>
+                        <span className="gf-slots__name">
+                            {tags && <span className="gf-slots__tag">{tags[index]}</span>}
+                            {name}
+                        </span>
+                        <span className="gf-slots__value" key={value}>
+                            {dead ? "uninitialized · TDZ" : value}
+                        </span>
+                    </div>
+                );
+            })}
+        </div>
     );
 }

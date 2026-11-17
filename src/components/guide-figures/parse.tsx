@@ -82,7 +82,7 @@ export function ParseFigure({ source, engine }: Readonly<{ source: string; engin
     const sourceLeft = 180 - (source.length * charWidth) / 2;
 
     // Chips sit in one centred row, each as wide as its text.
-    const chipWidths = tokens.map((token) => Math.max(24, token.text.length * 6.6 + 14, token.kind.length * 4.2 + 8));
+    const chipWidths = tokens.map((token) => Math.max(24, token.text.length * 6.6 + 14, token.kind.length * 5.6 + 8));
     const rowWidth = chipWidths.reduce((sum, width) => sum + width, 0) + (tokens.length - 1) * 8;
     const chipXs = chipWidths.map(
         (_, index) => 180 - rowWidth / 2 + chipWidths.slice(0, index).reduce((sum, width) => sum + width + 8, 0),

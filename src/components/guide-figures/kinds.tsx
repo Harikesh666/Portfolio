@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { FigureFrame, Note, useStepper, type Tone } from "./kit";
 
 /*
@@ -82,7 +83,8 @@ export function TreeFigure({ spec }: Readonly<{ spec: TreeSpec }>) {
             description={spec.description}
             figcaption={spec.figcaption}
             stage={
-                <svg aria-hidden="true" className="gf-flow gf-tree-figure" viewBox={`0 0 360 ${height}`}>
+                <>
+                <svg aria-hidden="true" className="gf-flow gf-tree-figure gf-wide" viewBox={`0 0 360 ${height}`}>
                     {placed.map((node) => {
                         const parent = placed.find((other) => other.id === node.parent);
                         if (!parent) return null;
@@ -124,6 +126,8 @@ export function TreeFigure({ spec }: Readonly<{ spec: TreeSpec }>) {
                         </g>
                     ))}
                 </svg>
+                    <TreeNarrow spec={spec} stateOf={stateOf} subOf={subOf} />
+                </>
             }
             stepper={stepper}
         />
@@ -158,7 +162,8 @@ export function TimelineFigure({ spec }: Readonly<{ spec: TimelineSpec }>) {
             description={spec.description}
             figcaption={spec.figcaption}
             stage={
-                <svg aria-hidden="true" className="gf-flow gf-timeline" viewBox={`0 0 360 ${height}`}>
+                <>
+                <svg aria-hidden="true" className="gf-flow gf-timeline gf-wide" viewBox={`0 0 360 ${height}`}>
                     {spec.lanes.map((lane, index) => (
                         <g key={lane}>
                             <text className="gf-group__label" x="8" y={laneY(index) + 12}>
@@ -196,6 +201,8 @@ export function TimelineFigure({ spec }: Readonly<{ spec: TimelineSpec }>) {
                         </text>
                     )}
                 </svg>
+                    <TimelineNarrow at={stepper.index >= 0 ? step.at : undefined} blocks={step.blocks} markers={step.markers} spec={spec} />
+                </>
             }
             stepper={stepper}
         />
@@ -219,7 +226,7 @@ export type ListSpec = Caption &
         }>[];
     }>;
 
-export function ListFigure({ spec }: Readonly<{ spec: ListSpec }>) {
+export function ListFigure({ spec, tools }: Readonly<{ spec: ListSpec; tools?: ReactNode }>) {
     const stepper = useStepper(spec.steps.length);
     const step = stepper.index >= 0 ? spec.steps[stepper.index] : spec.steps[0];
     const rowY = (row: number) => 18 + row * 78;
@@ -233,7 +240,8 @@ export function ListFigure({ spec }: Readonly<{ spec: ListSpec }>) {
             description={spec.description}
             figcaption={spec.figcaption}
             stage={
-                <svg aria-hidden="true" className="gf-flow gf-list" viewBox={`0 0 360 ${height}`}>
+                <>
+                <svg aria-hidden="true" className="gf-flow gf-list gf-wide" viewBox={`0 0 360 ${height}`}>
                     {(step.links ?? []).map(([top, bottom]) => (
                         <path
                             className="gf-list__link"
@@ -265,8 +273,11 @@ export function ListFigure({ spec }: Readonly<{ spec: ListSpec }>) {
                         </g>
                     ))}
                 </svg>
+                    <ListNarrow spec={spec} step={step} />
+                </>
             }
             stepper={stepper}
+            tools={tools}
         />
     );
 }
@@ -321,5 +332,158 @@ export function BitsFigure({ spec }: Readonly<{ spec: BitsSpec }>) {
             }
             stepper={stepper}
         />
+    );
+}
+
+/* ───────────── Phone layouts ─────────────
+ * Each kind draws a second, portrait version for phones with 12px titles
+ * and 10px detail; CSS shows the one that fits the screen.
+ */
+
+function TreeNarrow({
+    spec,
+    stateOf,
+    subOf,
+}: Readonly<{ spec: TreeSpec; stateOf: (id: string) => TreeState; subOf: (id: string) => string | undefined }>) {
+    // An outline: depth-first, each level indented, like a file tree.
+    const rows: { id: string; label: string; depth: number; parent?: string }[] = [];
+    const walk = (parent: string | undefined, depth: number) => {
+        for (const node of spec.nodes.filter((one) => one.parent === parent)) {
+            rows.push({ id: node.id, label: node.label, depth, parent });
+            walk(node.id, depth + 1);
+        }
+    };
+    walk(undefined, 0);
+    const rowY = (index: number) => 8 + index * 42;
+    const x = (depth: number) => 8 + depth * 22;
+    const height = rowY(rows.length) + 4;
+    return (
+        <svg aria-hidden="true" className="gf-flow gf-tree-figure gf-narrow" viewBox={`0 0 360 ${height}`}>
+            {rows.map((row, index) => {
+                if (!row.parent) return null;
+                const parentIndex = rows.findIndex((other) => other.id === row.parent);
+                const parentRow = rows[parentIndex];
+                const lit = stateOf(row.id) !== "idle" && stateOf(row.id) !== "skipped" && stateOf(parentRow.id) !== "idle";
+                return (
+                    <path
+                        className="gf-tree-edge"
+                        d={`M${x(parentRow.depth) + 12} ${rowY(parentIndex) + 32} V${rowY(index) + 16} H${x(row.depth)}`}
+                        data-lit={lit ? "" : undefined}
+                        key={row.id}
+                    />
+                );
+            })}
+            {rows.map((row, index) => {
+                const sub = subOf(row.id);
+                const width = 352 - x(row.depth);
+                return (
+                    <g className="gf-tnode" data-state={stateOf(row.id)} key={row.id}>
+                        <rect height="32" rx="6" width={width} x={x(row.depth)} y={rowY(index)} />
+                        <text className="gf-node__label" fontSize="12" x={x(row.depth) + 10} y={rowY(index) + 20}>
+                            {row.label}
+                        </text>
+                        {sub && (
+                            <text className="gf-node__sub" fontSize="10" key={sub} textAnchor="end" x={x(row.depth) + width - 10} y={rowY(index) + 20}>
+                                {sub}
+                            </text>
+                        )}
+                    </g>
+                );
+            })}
+        </svg>
+    );
+}
+
+function TimelineNarrow({
+    spec,
+    blocks,
+    markers,
+    at,
+}: Readonly<{ spec: TimelineSpec; blocks: readonly TimelineBlock[]; markers?: readonly Readonly<{ at: number; label: string }>[]; at?: number }>) {
+    // Time runs down the screen; each lane is a column.
+    const top = 40;
+    const unit = 24;
+    const column = 344 / spec.lanes.length;
+    const laneX = (index: number) => 8 + index * column;
+    const y = (time: number) => top + time * unit;
+    const height = y(spec.span) + 12;
+    return (
+        <svg aria-hidden="true" className="gf-flow gf-timeline gf-narrow" viewBox={`0 0 360 ${height}`}>
+            {spec.lanes.map((lane, index) => (
+                <g key={lane}>
+                    <text className="gf-group__label" fontSize="9" textAnchor="middle" x={laneX(index) + column / 2} y="16">
+                        {lane}
+                    </text>
+                    <line className="gf-timeline__track" x1={laneX(index) + column / 2} x2={laneX(index) + column / 2} y1="26" y2={height - 8} />
+                </g>
+            ))}
+            {(markers ?? []).map((marker) => (
+                <g key={`${marker.at}-${marker.label}`}>
+                    <line className="gf-timeline__marker" x1="8" x2="352" y1={y(marker.at)} y2={y(marker.at)} />
+                    <text className="gf-wire__label" fontSize="9" textAnchor="end" x="352" y={y(marker.at) - 3}>
+                        {marker.label}
+                    </text>
+                </g>
+            ))}
+            {blocks.map((block) => {
+                const lane = spec.lanes.indexOf(block.lane);
+                const blockHeight = Math.max(6, y(block.end) - y(block.start) - 2);
+                const width = column - 10;
+                return (
+                    <g className="gf-tblock" data-tone={block.tone ?? "task"} key={`${block.lane}-${block.start}-${block.label ?? ""}`}>
+                        <rect height={blockHeight} rx="4" width={width} x={laneX(lane) + 5} y={y(block.start) + 1} />
+                        {block.label && blockHeight >= 16 && block.label.length * 6.8 < width - 4 && (
+                            <text fontSize="10" textAnchor="middle" x={laneX(lane) + column / 2} y={y(block.start) + 1 + blockHeight / 2 + 3.5}>
+                                {block.label}
+                            </text>
+                        )}
+                    </g>
+                );
+            })}
+            {at !== undefined && <line className="gf-timeline__head" x1="4" x2="356" y1={y(at)} y2={y(at)} />}
+        </svg>
+    );
+}
+
+function ListNarrow({ spec, step }: Readonly<{ spec: ListSpec; step: ListSpec["steps"][number] }>) {
+    // Two columns, before and after, with each item's line running across.
+    const columnX = [8, 196];
+    const width = 156;
+    const rowY = (index: number) => 30 + index * 46;
+    const count = Math.max(...step.cells.map((row) => row.length), 1);
+    const height = rowY(count) + 4;
+    return (
+        <svg aria-hidden="true" className="gf-flow gf-list gf-narrow" viewBox={`0 0 360 ${height}`}>
+            {spec.rows.map((row, column) => (
+                <text className="gf-group__label" fontSize="9" key={row} x={columnX[column] + 2} y="16">
+                    {row}
+                </text>
+            ))}
+            {(step.links ?? []).map(([top, bottom]) => (
+                <path
+                    className="gf-list__link"
+                    d={`M${columnX[0] + width} ${rowY(top) + 19} C${columnX[0] + width + 18} ${rowY(top) + 19} ${columnX[1] - 18} ${rowY(bottom) + 19} ${columnX[1]} ${rowY(bottom) + 19}`}
+                    key={`${top}-${bottom}`}
+                />
+            ))}
+            {step.cells.map((cells, column) =>
+                cells.map((cell, index) => {
+                    const wrong = step.wrong?.some(([r, i]) => r === column && i === index);
+                    return (
+                        <g className="gf-lcell" data-identity={cell.identity % 4} data-wrong={wrong ? "" : undefined} key={`${column}-${cell.label}-${index}`}>
+                            <rect height="38" rx="6" width={width} x={columnX[column]} y={rowY(index)} />
+                            <text className="gf-node__label" fontSize="12" x={columnX[column] + 10} y={rowY(index) + 23.5}>
+                                {cell.label}
+                            </text>
+                            {cell.detail && (
+                                <text className="gf-node__sub" fontSize="10" textAnchor="end" x={columnX[column] + width - 10} y={rowY(index) + 23.5}>
+                                    {cell.detail}
+                                </text>
+                            )}
+                        </g>
+                    );
+                }),
+            )}
+        </svg>
     );
 }
