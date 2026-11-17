@@ -1,6 +1,7 @@
 import { createRouter as createTanStackRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import { NotFound } from "./components/NotFound";
+import { RouteError } from "./components/RouteError";
 
 export function getRouter() {
     const router = createTanStackRouter({
@@ -14,6 +15,7 @@ export function getRouter() {
         // still hidden, masking the page-assembly cascade. The theme
         // toggle drives its own document.startViewTransition directly.
         defaultNotFoundComponent: NotFound,
+        defaultErrorComponent: RouteError,
         defaultPreload: "intent",
         defaultPreloadStaleTime: 0,
     });

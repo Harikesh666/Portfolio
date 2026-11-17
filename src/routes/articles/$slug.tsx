@@ -1,13 +1,13 @@
-import { useRef } from "react";
-import { ArrowUUpLeftIcon } from "@phosphor-icons/react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { ArticleHeader } from "../../components/ArticleHeader";
+import { ArticleSkeleton } from "../../components/ArticleSkeleton";
 import { DiagramViewer } from "../../components/DiagramViewer";
 import { FloatingToc } from "../../components/FloatingToc";
 import { PageEnter } from "../../components/PageEnter";
-import { StaggerReveal } from "../../components/StaggerReveal";
 import { TocSheet } from "../../components/TocSheet";
 import { useHasFloatingTocRegistration } from "../../components/TocRegistry";
-import { getPostNeighbors, posts } from "../../lib/content";
+import { getPostNeighbors, posts, type PostSummary } from "../../lib/content";
 import { getPost } from "../../lib/content.functions";
 import { absoluteUrl, site } from "../../lib/site";
 import { desktopQuery } from "../../lib/toc";
@@ -85,19 +85,52 @@ export const Route = createFileRoute("/articles/$slug")({
     component: PostPage,
 });
 
+/** The meta line under an article's title: date, read time, and its place in a series or topic. */
+function metaLine(post: PostSummary) {
+    const collectionPostCount = post.series
+        ? posts.filter((item) => item.series === post.series).length
+        : posts.filter((item) => item.topic === post.topic).length;
+    const place = post.order !== undefined ? ` · ${String(post.order).padStart(2, "0")} of ${collectionPostCount}` : "";
+    return `${post.date} · ${post.readTime}${place}`;
+}
+
+/**
+ * Articles whose loading state already played the header's entrance. The
+ * article that replaces it shows the header still, so the title animates once.
+ */
+const headersShown = new Set<string>();
+
+/**
+ * While an article loads, its real header shows at once (the article list
+ * is already on the client) and a skeleton holds the body's place.
+ */
 function PostPending() {
+    const { slug } = Route.useParams();
+    const summary = posts.find((post) => post.slug === slug);
+
+    useLayoutEffect(() => {
+        if (summary) headersShown.add(slug);
+    }, [slug, summary]);
+
     return (
         <main
+            aria-busy="true"
             id="main-content"
             className="mx-auto w-full max-w-2xl px-5 pb-12 pt-8"
         >
-            <div
-                aria-live="polite"
-                className="text-sm text-muted"
-                role="status"
-            >
-                Loading article…
-            </div>
+            <p aria-live="polite" className="sr-only" role="status">
+                Loading article
+            </p>
+            {summary ? (
+                <ArticleHeader animate meta={metaLine(summary)} title={summary.title} />
+            ) : (
+                <div aria-hidden="true" className="article-skeleton article-skeleton--header">
+                    <span className="article-skeleton__chip" />
+                    <span className="article-skeleton__title" />
+                    <span className="article-skeleton__meta" />
+                </div>
+            )}
+            <ArticleSkeleton />
         </main>
     );
 }
@@ -110,9 +143,8 @@ function PostPage() {
     const navigateToTocItem = useTocNavigation(articleRef);
     useGuideIslands(articleRef, post.slug);
     const { previous, next } = getPostNeighbors(post);
-    const collectionPostCount = post.series
-        ? posts.filter((item) => item.series === post.series).length
-        : posts.filter((item) => item.topic === post.topic).length;
+    // If the loading state already played the header's entrance, show it still.
+    const [headerShown] = useState(() => headersShown.delete(post.slug));
 
     // Heading self-links share the TOC's hash-history navigation.
     function handleHeadingAnchorClick(event: React.MouseEvent<HTMLElement>) {
@@ -142,35 +174,7 @@ function PostPage() {
                 className="mx-auto w-full max-w-2xl px-5 pb-12 pt-8"
             >
                 <PageEnter key={post.slug}>
-                    <header>
-                        <Link
-                            className="chip-link"
-                            to="/articles"
-                        >
-                            <ArrowUUpLeftIcon
-                                aria-hidden="true"
-                                className="nudge-arrow"
-                                data-direction="left"
-                                size={14}
-                            />
-                            Articles
-                        </Link>
-
-                        <StaggerReveal className="mt-7">
-                            <StaggerReveal.Headline className="text-[1.25rem] font-semibold leading-snug tracking-[-0.015em] text-foreground-strong">
-                                {post.title}
-                            </StaggerReveal.Headline>
-                            <StaggerReveal.Item
-                                as="p"
-                                className="mt-3 text-[13px] tabular-nums text-muted"
-                            >
-                                {post.date} · {post.readTime}
-                                {post.order !== undefined
-                                    ? ` · ${String(post.order).padStart(2, "0")} of ${collectionPostCount}`
-                                    : ""}
-                            </StaggerReveal.Item>
-                        </StaggerReveal>
-                    </header>
+                    <ArticleHeader animate={!headerShown} meta={metaLine(post)} title={post.title} />
 
                     <article
                         className="guide-content prose dark:prose-invert mt-10 min-w-0 max-w-none prose-a:font-medium prose-a:text-foreground-strong prose-a:underline prose-a:decoration-foreground-strong/30 prose-a:decoration-1 prose-a:underline-offset-[3px] hover:prose-a:decoration-foreground-strong prose-blockquote:border-foreground-strong/20 prose-blockquote:text-foreground prose-headings:font-semibold prose-headings:text-foreground-strong prose-h2:mb-5 prose-h2:mt-14 prose-h2:text-[1.125rem] prose-h3:mb-3 prose-h3:mt-9 prose-h3:text-base prose-img:rounded-lg prose-li:marker:text-muted prose-li:text-foreground [&>p]:my-7 prose-p:text-foreground prose-strong:font-semibold prose-strong:text-foreground-strong prose-code:font-medium prose-code:before:content-none prose-code:after:content-none"

@@ -1,13 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import type { ReactNode } from "react";
-import { ArrowUpRightIcon, DownloadSimpleIcon } from "@phosphor-icons/react";
+import { Fragment, type ReactNode } from "react";
+import { ArrowUpRightIcon, DownloadSimpleIcon, HardDrivesIcon, RocketLaunchIcon } from "@phosphor-icons/react";
 import { motion, useReducedMotion } from "motion/react";
 import { AvailabilityStatus } from "../components/AvailabilityStatus";
+import { IntroKeyword } from "../components/IntroKeyword";
 import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
+import { SketchMark } from "../components/SketchMark";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { snappySpring } from "../lib/motion";
-import { resumeExperience, type ResumeHighlight } from "../lib/resume";
+import { resumeExperience, type ResumeHighlight, type ResumeMark } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 
 const resumeTitle = `Resume - ${site.name}`;
@@ -177,19 +179,32 @@ function ResumePage() {
 
                 <Reveal>
                     <ResumeSection title="Summary">
-                        <div className="space-y-3 text-foreground">
+                        {/* Annotated like the home intro: the two things the role is about warm on hover, and the proof is penciled. */}
+                        <div className="intro-keywords space-y-3 text-foreground">
                             <p>
-                                Software engineer focused on Node.js and
-                                TypeScript backends, with one year at
-                                EduvanceAI shipping production systems.
+                                Software engineer focused on{" "}
+                                <IntroKeyword icon={HardDrivesIcon} index={0} tone="backend">
+                                    Node.js and TypeScript backends
+                                </IntroKeyword>
+                                , with over a year at EduvanceAI{" "}
+                                <IntroKeyword icon={RocketLaunchIcon} index={1} tone="ship">
+                                    shipping production systems
+                                </IntroKeyword>
+                                .
                             </p>
                             <p>
                                 Built a job-based workflow API in Bun,
-                                TypeScript, and Express with Server-Sent
-                                Events, Zod-validated contracts, and
+                                TypeScript, and Express with{" "}
+                                <SketchMark index={0} kind="underline">
+                                    Server-Sent Events
+                                </SketchMark>
+                                , Zod-validated contracts, and
                                 reconnection after dropped streams. Also
-                                delivered server-side pagination over 130K+
-                                records and database isolation for five client
+                                delivered server-side pagination over{" "}
+                                <SketchMark index={1} kind="marker">
+                                    130K+ records
+                                </SketchMark>{" "}
+                                and database isolation for five client
                                 organizations, with Python (FastAPI) and React
                                 where the work needed them.
                             </p>
@@ -202,6 +217,7 @@ function ResumePage() {
                         <dl className="space-y-2 text-sm text-foreground">
                             <SkillRow
                                 label="Backend"
+                                mark={{ text: "Node.js, Express, Bun, REST APIs", kind: "underline" }}
                                 value="Node.js, Express, Bun, REST APIs, Server-Sent Events, Zod, FastAPI, OpenAI API"
                             />
                             <SkillRow
@@ -214,11 +230,13 @@ function ResumePage() {
                             />
                             <SkillRow
                                 label="Databases"
-                                value="PostgreSQL, multi-tenant schema design, query optimization, CTEs, schema migrations"
+                                mark={{ text: "PostgreSQL, multi-tenant schema design", kind: "underline" }}
+                                value="PostgreSQL, multi-tenant schema design, query optimization, CTEs, schema migrations, DynamoDB"
                             />
                             <SkillRow
                                 label="Cloud & DevOps"
-                                value="AWS (Lambda, ECR, EC2, S3, Amplify, CloudTrail), GCP Cloud Run, Docker, Vercel, CI/CD"
+                                mark={{ text: "AWS (Lambda, ECR, EC2, S3, Amplify, Route 53, CloudTrail), GCP (Cloud Run, Cloud SQL, Secret Manager), Docker", kind: "marker" }}
+                                value="AWS (Lambda, ECR, EC2, S3, Amplify, Route 53, CloudTrail), GCP (Cloud Run, Cloud SQL, Secret Manager), Docker, Nginx, Vercel, CI/CD"
                             />
                         </dl>
                     </ResumeSection>
@@ -305,15 +323,35 @@ function ResumeSection({
     );
 }
 
+/** Text with its figures in Strong and its marked phrases annotated by hand, in reading order. */
+function annotate(content: string, marks: readonly ResumeMark[] = [], index = 0): ReactNode[] {
+    const found = marks
+        .map((mark) => ({ mark, at: content.indexOf(mark.text) }))
+        .filter(({ at }) => at >= 0)
+        .sort((a, b) => a.at - b.at);
+    const parts: ReactNode[] = [];
+    let cursor = 0;
+    found.forEach(({ mark, at }, order) => {
+        if (at < cursor) return;
+        parts.push(<Fragment key={`text-${cursor}`}>{emphasizeFigures(content.slice(cursor, at))}</Fragment>);
+        parts.push(
+            <SketchMark index={index + order} key={`mark-${at}`} kind={mark.kind}>
+                {emphasizeFigures(mark.text)}
+            </SketchMark>,
+        );
+        cursor = at + mark.text.length;
+    });
+    parts.push(<Fragment key={`text-${cursor}`}>{emphasizeFigures(content.slice(cursor))}</Fragment>);
+    return parts;
+}
+
 function HighlightList({
     highlights,
 }: Readonly<{ highlights: readonly ResumeHighlight[] }>) {
     return (
         <ul className="mt-2 list-disc space-y-2 pl-5 text-sm text-foreground marker:text-divider">
-            {highlights.map((highlight) => (
-                <li key={highlight.content}>
-                    {emphasizeFigures(highlight.content)}
-                </li>
+            {highlights.map((highlight, index) => (
+                <li key={highlight.content}>{annotate(highlight.content, highlight.marks, index)}</li>
             ))}
         </ul>
     );
@@ -321,12 +359,13 @@ function HighlightList({
 
 function SkillRow({
     label,
+    mark,
     value,
-}: Readonly<{ label: string; value: string }>) {
+}: Readonly<{ label: string; mark?: ResumeMark; value: string }>) {
     return (
         <div className="grid gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-4">
             <dt className="text-muted">{label}</dt>
-            <dd>{value}</dd>
+            <dd>{annotate(value, mark ? [mark] : [])}</dd>
         </div>
     );
 }

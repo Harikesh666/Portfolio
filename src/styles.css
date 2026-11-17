@@ -485,6 +485,70 @@
             transform 160ms var(--ease-out);
     }
 
+    /*
+     * The 404 and error pages' one sentence: a strong lead that says what
+     * happened, trailing into muted words about what to do.
+     */
+    .lost-lead {
+        max-width: 34rem;
+        color: var(--muted);
+        font-size: 1.25rem;
+        font-weight: 500;
+        line-height: 1.4;
+        letter-spacing: -0.015em;
+        text-wrap: pretty;
+        overflow-wrap: break-word;
+    }
+
+    .lost-lead strong {
+        color: var(--foreground-strong);
+        font-weight: 600;
+    }
+
+    /* A page's main way forward, and its quieter alternatives beside it. */
+    .button-primary,
+    .button-soft {
+        display: inline-flex;
+        min-height: 2.75rem;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.625rem;
+        padding: 0 1.05rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        line-height: 1;
+        white-space: nowrap;
+        transition:
+            background-color 150ms ease,
+            opacity 150ms ease,
+            transform 160ms var(--ease-out);
+    }
+
+    .button-primary {
+        background: var(--foreground-strong);
+        color: var(--surface);
+    }
+
+    .button-soft {
+        background: var(--hover);
+        color: var(--foreground-strong);
+    }
+
+    .button-primary:disabled {
+        opacity: 0.6;
+        cursor: progress;
+    }
+
+    @media (hover: hover) {
+        .button-primary:hover:not(:disabled) {
+            opacity: 0.88;
+        }
+
+        .button-soft:hover {
+            background: var(--divider);
+        }
+    }
+
     /* Press feedback: wide rows scale less than compact chips so the
        visible movement stays similar. */
     @media (prefers-reduced-motion: no-preference) {
@@ -492,7 +556,9 @@
             transform: scale(0.985);
         }
 
-        .chip-link:active {
+        .chip-link:active,
+        .button-primary:active:not(:disabled),
+        .button-soft:active {
             transform: scale(0.97);
         }
     }
@@ -3677,6 +3743,18 @@
         opacity: 1;
     }
 
+    /* A scene's photo: shown at once, cropped like the scene, and kept if WebGL never draws. */
+    .event-loop-pond__still {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: 48% 55%;
+        user-select: none;
+        -webkit-user-drag: none;
+    }
+
     /*
      * The phone TOC pill steps aside while the site footer is on screen.
      * Leaving is quicker than returning, and reduced motion only fades.
@@ -3837,6 +3915,103 @@
             scroll-behavior: auto !important;
             transition-duration: 0.01ms !important;
         }
+    }
+}
+
+/*
+ * Article loading skeleton: bars in the prose column's rhythm. It fades in
+ * only after a beat, so quick loads never flash it, then breathes in a slow
+ * wave down the page. Opacity only; still under reduced motion.
+ */
+.article-skeleton {
+    display: flex;
+    flex-direction: column;
+}
+
+.article-skeleton__paragraph {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+    margin-block: 1.75rem;
+}
+
+.article-skeleton__line,
+.article-skeleton__heading,
+.article-skeleton__code,
+.article-skeleton__chip,
+.article-skeleton__title,
+.article-skeleton__meta {
+    display: block;
+    max-width: 100%;
+    border-radius: 0.375rem;
+    background: var(--divider);
+}
+
+.article-skeleton__line {
+    height: 0.75rem;
+}
+
+.article-skeleton__heading {
+    width: 46%;
+    height: 1rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.article-skeleton__code {
+    width: 100%;
+    height: 9rem;
+    margin-block: 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--code-surface);
+}
+
+.article-skeleton--header {
+    gap: 0.9rem;
+}
+
+.article-skeleton__chip {
+    width: 5.5rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+}
+
+.article-skeleton__title {
+    width: 72%;
+    height: 1.25rem;
+    margin-top: 0.85rem;
+}
+
+.article-skeleton__meta {
+    width: 34%;
+    height: 0.7rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .article-skeleton {
+        animation: article-skeleton-in 260ms ease-out 240ms both;
+    }
+
+    .article-skeleton > *,
+    .article-skeleton__line {
+        animation: article-skeleton-breathe 1.6s ease-in-out infinite alternate;
+        animation-delay: calc(var(--line, 0) * 70ms);
+    }
+
+    .article-skeleton__paragraph {
+        animation: none;
+    }
+}
+
+@keyframes article-skeleton-in {
+    from {
+        opacity: 0;
+    }
+}
+
+@keyframes article-skeleton-breathe {
+    from {
+        opacity: 0.5;
     }
 }
 

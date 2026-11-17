@@ -6,7 +6,16 @@ export type ResumeProject = {
 export type ResumeHighlight = {
     content: string;
     resumeOnly?: boolean;
+    /**
+     * Phrases in `content` the resume page annotates by hand: a pencil
+     * underline or a highlighter swipe. Marks go on what a backend and cloud
+     * hiring reader scans for: API design, AWS and GCP delivery, PostgreSQL
+     * and tenancy, performance at scale, query tuning, observability, security.
+     */
+    marks?: readonly ResumeMark[];
 };
+
+export type ResumeMark = Readonly<{ text: string; kind: "underline" | "marker" }>;
 
 export type ResumeExperience = {
     company: string;
@@ -46,6 +55,7 @@ export const resumeExperience: readonly ResumeExperience[] = [
                     {
                         content:
                             "Designed a job-based API in Bun, TypeScript, and Express for six agentic workflows, using Server-Sent Events for live updates, Zod-validated contracts, and retained job state to support reconnection after dropped streams",
+                        marks: [{ text: "job-based API in Bun, TypeScript, and Express", kind: "underline" }],
                     },
                     {
                         content:
@@ -61,6 +71,18 @@ export const resumeExperience: readonly ResumeExperience[] = [
                         content:
                             "Owned development and deployment from API design through AWS Lambda release, containerizing the service with Docker, publishing images to Amazon ECR, and deploying the console on Vercel",
                         resumeOnly: true,
+                        marks: [
+                            { text: "from API design through AWS Lambda release", kind: "marker" },
+                            { text: "containerizing the service with Docker, publishing images to Amazon ECR", kind: "underline" },
+                        ],
+                    },
+                    {
+                        content:
+                            "Migrated the entire workflow backend from AWS ECR and Lambda to GCP Cloud Run, with its credentials held in GCP Secret Manager",
+                        marks: [
+                            { text: "from AWS ECR and Lambda to GCP Cloud Run", kind: "marker" },
+                            { text: "GCP Secret Manager", kind: "underline" },
+                        ],
                     },
                 ],
             },
@@ -70,6 +92,7 @@ export const resumeExperience: readonly ResumeExperience[] = [
                     {
                         content:
                             "Built server-side pagination for a 130K+ record dataset supporting 70 client super users, keeping page payloads near 6.4 KB and response times around 190 ms",
+                        marks: [{ text: "response times around 190 ms", kind: "marker" }],
                     },
                     {
                         content:
@@ -78,6 +101,7 @@ export const resumeExperience: readonly ResumeExperience[] = [
                     {
                         content:
                             "Introduced structured logging across API endpoints and rebuilt the log export with IST-converted timestamps, then traced session records to an authentication defect affecting active users and resolved it the same day",
+                        marks: [{ text: "structured logging across API endpoints", kind: "underline" }],
                     },
                     {
                         content:
@@ -95,14 +119,17 @@ export const resumeExperience: readonly ResumeExperience[] = [
                     {
                         content:
                             "Designed database isolation across 5 client organizations, provisioning separate PostgreSQL databases, migrating schemas, and introducing a reusable organization-routing hook across 35+ frontend files",
+                        marks: [{ text: "database isolation across 5 client organizations", kind: "marker" }],
                     },
                     {
                         content:
                             "Identified and patched a security vulnerability that exposed deletion authorization codes in API responses, releasing the fix within hours",
+                        marks: [{ text: "patched a security vulnerability", kind: "underline" }],
                     },
                     {
                         content:
                             "Replaced a static reporting template with a dynamic Admin Report engine and optimized its SQL using CTEs, eliminating manual report compilation and reducing query execution time by ~35%",
+                        marks: [{ text: "optimized its SQL using CTEs", kind: "marker" }],
                     },
                     {
                         content:
@@ -113,6 +140,7 @@ export const resumeExperience: readonly ResumeExperience[] = [
                         content:
                             "Independently built and deployed a Project Engineer Interview Chatbot in under 2 weeks (React on Vercel, Python on GCP Cloud Run), implementing LLM-based response scoring and single-attempt enforcement before demonstrating it to McKinsey stakeholders",
                         resumeOnly: true,
+                        marks: [{ text: "Python on GCP Cloud Run", kind: "underline" }],
                     },
                 ],
             },
@@ -128,6 +156,7 @@ export const resumeExperience: readonly ResumeExperience[] = [
             {
                 content:
                     "Developed REST APIs with Node.js and Express for a production CRM and resolved client-reported defects across active deployments",
+                marks: [{ text: "REST APIs with Node.js and Express", kind: "underline" }],
             },
         ],
     },
