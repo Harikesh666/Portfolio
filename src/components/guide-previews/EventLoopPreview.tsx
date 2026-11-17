@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useReducedMotion } from "motion/react";
 import { guidePreviewBeatMs } from "../../lib/motion";
 
 type Zone = "api" | "micro" | "task" | "stack";
 type TokenKind = "sync" | "micro" | "task";
+type Route = "api-task" | "micro-stack" | "task-stack";
 
 type Token = Readonly<{
     id: string;
@@ -18,11 +19,13 @@ type Token = Readonly<{
 
 type Beat = Readonly<{
     caption: string;
-    /** The zone the eye should be on; its label brightens. */
+    /** The zone the eye should be on: it turns solid and tinted. */
     focus: Zone;
-    /** The event loop picks the next job this beat, so its arrow turns. */
-    loops?: boolean;
-    /** The timer in the web APIs zone is counting down. */
+    /** The colour of the job this beat is about, for the focus tint and the route. */
+    tone: TokenKind;
+    /** A job travels this route this beat: the route lights up and a packet runs along it. */
+    route?: Route;
+    /** The timer in the web APIs box is counting down. */
     timing?: boolean;
     tokens: readonly Token[];
 }>;
@@ -37,69 +40,72 @@ const timeout: Token = { id: "timeout", label: "timeout()", kind: "task", zone: 
  * microtask cuts in first, and only then does the task run.
  */
 const beats: readonly Beat[] = [
-    {
-        caption: "main() runs. A promise queues then(), a timer starts.",
-        focus: "stack",
-        timing: true,
-        tokens: [main, then, timeout],
-    },
-    {
-        caption: "The timer is done, so timeout() joins the task queue.",
-        focus: "task",
-        tokens: [main, then, { ...timeout, zone: "task" }],
-    },
-    {
-        caption: "main() returns. The call stack is empty.",
-        focus: "stack",
-        tokens: [{ ...main, gone: true }, then, { ...timeout, zone: "task" }],
-    },
-    {
-        caption: "Microtasks go first: then() runs.",
-        focus: "micro",
-        loops: true,
-        tokens: [{ ...then, zone: "stack" }, { ...timeout, zone: "task" }],
-    },
-    {
-        caption: "then() returns. No microtasks are left.",
-        focus: "micro",
-        tokens: [{ ...then, zone: "stack", gone: true }, { ...timeout, zone: "task" }],
-    },
-    {
-        caption: "Only now does one task run: timeout().",
-        focus: "task",
-        loops: true,
-        tokens: [{ ...timeout, zone: "stack" }],
-    },
-    {
-        caption: "The stack is empty. The loop keeps checking.",
-        focus: "stack",
-        tokens: [{ ...timeout, zone: "stack", gone: true }],
-    },
+    { caption: "main() runs. A promise queues then(), a timer starts.", focus: "stack", tone: "sync", timing: true, tokens: [main, then, timeout] },
+    { caption: "The timer is done, so timeout() joins the task queue.", focus: "task", tone: "task", route: "api-task", tokens: [main, then, { ...timeout, zone: "task" }] },
+    { caption: "main() returns. The call stack is empty.", focus: "stack", tone: "sync", tokens: [{ ...main, gone: true }, then, { ...timeout, zone: "task" }] },
+    { caption: "Microtasks go first: the loop moves then() to the stack.", focus: "micro", tone: "micro", route: "micro-stack", tokens: [{ ...then, zone: "stack" }, { ...timeout, zone: "task" }] },
+    { caption: "then() returns. No microtasks are left.", focus: "stack", tone: "micro", tokens: [{ ...then, zone: "stack", gone: true }, { ...timeout, zone: "task" }] },
+    { caption: "Only now does the loop take one task: timeout().", focus: "task", tone: "task", route: "task-stack", tokens: [{ ...timeout, zone: "stack" }] },
+    { caption: "The stack is empty. The loop keeps checking.", focus: "stack", tone: "task", tokens: [{ ...timeout, zone: "stack", gone: true }] },
 ];
 
 /** Under reduced motion the card holds the guide's key moment. */
 const stillBeat: Beat = {
-    caption: "Microtasks always run before the next task.",
+    caption: "Microtasks like then() always run before the next task, timeout().",
     focus: "micro",
+    tone: "micro",
     tokens: [{ ...then, zone: "stack" }, { ...timeout, zone: "task" }],
 };
 
 /*
- * Scene geometry in CSS pixels, documented against the zone boxes in
- * styles.css (.loop-scene__zone): web APIs left, the two queues stacked in
- * the middle, the call stack tall on the right. Tokens are 58 x 18 pills.
+ * Geometry on a 288 x 150 stage, in CSS pixels. Left column: microtasks
+ * (top), task queue (middle), web APIs (bottom). Middle: the event-loop node.
+ * Right: the call stack. Tokens are 54 x 18 pills; boxes match the SVG below.
  */
+const boxes = {
+    micro: { x: 10, y: 10, w: 104, h: 36 },
+    task: { x: 10, y: 54, w: 104, h: 36 },
+    api: { x: 10, y: 98, w: 104, h: 42 },
+    stack: { x: 192, y: 10, w: 86, h: 130 },
+} as const;
+const loopNode = { cx: 152, cy: 50, r: 10 };
+
 const tokenSlots: Record<Zone, (slot: number) => readonly [number, number]> = {
-    api: () => [12, 68],
-    micro: (slot) => [98 + slot * 60, 38],
-    task: (slot) => [98 + slot * 60, 114],
-    stack: (slot) => [218, 114 - slot * 22],
+    micro: () => [54, 24],
+    task: () => [54, 68],
+    api: () => [54, 117],
+    stack: (slot) => [208, 114 - slot * 22],
 };
+
+/** Connector paths. Queue routes pass through the loop node on their way to the stack. */
+const routes: Record<Route, string> = {
+    "api-task": "M40 98 V90",
+    "micro-stack": "M114 28 H140 Q152 28 152 40 V50 H192",
+    "task-stack": "M114 72 H140 Q152 72 152 60 V50 H192",
+};
+
+const tokenNames = /(main\(\)|then\(\)|timeout\(\))/;
+const toneOfName: Record<string, TokenKind> = { "main()": "sync", "then()": "micro", "timeout()": "task" };
+
+/** Colours the job names in a caption to match their pills. */
+function captionParts(caption: string): ReactNode[] {
+    return caption.split(tokenNames).map((part, index) =>
+        index % 2 === 1 ? (
+            // Split positions are fixed for a given caption, so the index is stable.
+            <code className="loop-scene__name" data-kind={toneOfName[part]} key={index}>
+                {part}
+            </code>
+        ) : (
+            part
+        ),
+    );
+}
 
 /**
  * The event-loop guide's hover preview: a live diagram of the loop that plays
- * the guide's main example while the card is open, restarting on every open.
- * Styling and timing live in `styles.css` (`.loop-scene`).
+ * the guide's main example while the card is open, in the line-drawing style
+ * of an engineering explainer. Styling and timing live in `styles.css`
+ * (`.loop-scene`).
  */
 export default function EventLoopPreview({ isRunning }: Readonly<{ isRunning: boolean }>) {
     const shouldReduceMotion = useReducedMotion();
@@ -120,26 +126,60 @@ export default function EventLoopPreview({ isRunning }: Readonly<{ isRunning: bo
     }, [isRunning, shouldReduceMotion]);
 
     const beat = shouldReduceMotion ? stillBeat : beats[beatIndex];
-    const loopTurns = beats.slice(0, beatIndex + 1).filter((entry) => entry.loops).length + cycle * 2;
+    const loopTurns =
+        beats.slice(0, beatIndex + 1).filter((entry) => entry.route && entry.route !== "api-task").length + cycle * 2;
 
     return (
-        <div className="loop-scene">
+        <div className="loop-scene" data-tone={beat.tone}>
             <div className="loop-scene__stage">
-                <Zone focus={beat.focus} label="web APIs" zone="api">
-                    {beat.timing && <span className="loop-scene__timer" />}
-                </Zone>
-                <Zone focus={beat.focus} label="microtasks" zone="micro" />
-                <Zone focus={beat.focus} label="task queue" zone="task" />
-                <Zone focus={beat.focus} label="call stack" zone="stack" />
-                <svg
-                    aria-hidden="true"
-                    className="loop-scene__loop"
-                    style={{ rotate: `${loopTurns * 180}deg` }}
-                    viewBox="0 0 16 16"
-                >
-                    <path d="M13 8a5 5 0 1 1-1.6-3.7" fill="none" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
-                    <path d="M11.2 1.8l.4 2.7-2.7.3" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" />
+                <svg aria-hidden="true" className="loop-scene__wires" viewBox="0 0 288 150">
+                    {(Object.keys(routes) as Route[]).map((route) => (
+                        <path
+                            className="loop-scene__wire"
+                            d={routes[route]}
+                            data-active={beat.route === route ? "" : undefined}
+                            key={route}
+                        />
+                    ))}
+                    {(Object.keys(boxes) as Zone[]).map((zone) => {
+                        const box = boxes[zone];
+                        return (
+                            <rect
+                                className="loop-scene__box"
+                                data-focus={beat.focus === zone ? "" : undefined}
+                                height={box.h - 1}
+                                key={zone}
+                                rx="6"
+                                width={box.w - 1}
+                                x={box.x + 0.5}
+                                y={box.y + 0.5}
+                            />
+                        );
+                    })}
+                    <circle
+                        className="loop-scene__node"
+                        cx={loopNode.cx}
+                        cy={loopNode.cy}
+                        data-active={beat.route && beat.route !== "api-task" ? "" : undefined}
+                        r={loopNode.r}
+                    />
+                    <g className="loop-scene__loop" style={{ rotate: `${loopTurns * 180}deg` }}>
+                        <path d="M157 50a5 5 0 1 1-1.5-3.6" fill="none" strokeLinecap="round" />
+                        <path d="M155.9 44.2l-.2 2.4-2.4-.1" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                    </g>
+                    {beat.route && !shouldReduceMotion && (
+                        // A packet runs the active route once per beat; the key restarts it each time.
+                        <circle className="loop-scene__packet" key={`${beat.route}-${cycle}`} r="2.5">
+                            <animateMotion dur="0.55s" fill="freeze" path={routes[beat.route]} />
+                        </circle>
+                    )}
                 </svg>
+                <span className="loop-scene__label" style={{ left: 18, top: 15 }}>microtasks</span>
+                <span className="loop-scene__label" style={{ left: 18, top: 59 }}>task queue</span>
+                <span className="loop-scene__label" style={{ left: 18, top: 103 }}>web APIs</span>
+                <span className="loop-scene__label" style={{ left: 200, top: 16 }}>call stack</span>
+                <span className="loop-scene__label loop-scene__label--node" style={{ left: 165, top: 35 }}>loop</span>
+                {beat.timing && <span className="loop-scene__timer" />}
                 {beat.tokens.map((token) => {
                     const [x, y] = tokenSlots[token.zone](token.slot);
                     return (
@@ -155,23 +195,16 @@ export default function EventLoopPreview({ isRunning }: Readonly<{ isRunning: bo
                     );
                 })}
             </div>
-            <p className="loop-scene__caption" key={beat.caption}>
-                {beat.caption}
-            </p>
-        </div>
-    );
-}
-
-function Zone({
-    children,
-    focus,
-    label,
-    zone,
-}: Readonly<{ children?: React.ReactNode; focus: Zone; label: string; zone: Zone }>) {
-    return (
-        <div className="loop-scene__zone" data-focus={focus === zone ? "" : undefined} data-zone={zone}>
-            <span className="loop-scene__label">{label}</span>
-            {children}
+            <div className="loop-scene__footer">
+                <p className="loop-scene__caption" key={beat.caption}>
+                    {captionParts(beat.caption)}
+                </p>
+                {!shouldReduceMotion && (
+                    <span className="loop-scene__count">
+                        {beatIndex + 1}/{beats.length}
+                    </span>
+                )}
+            </div>
         </div>
     );
 }

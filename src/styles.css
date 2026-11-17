@@ -31,6 +31,8 @@
     --sketch-marker: oklch(0.9 0.15 95 / 75%);
     color-scheme: light;
     --status-open: oklch(0.62 0.16 150);
+    --scene-task: oklch(0.5 0.15 255);
+    --scene-task-soft: oklch(0.95 0.025 255);
     --peek-shadow: 0 10px 28px oklch(0 0 0 / 10%), 0 1px 3px oklch(0 0 0 / 8%);
     /* Event-loop pond: CSS water shown until WebGL draws, matching the shader. */
     --pond-shallow: rgb(158 191 186);
@@ -62,6 +64,8 @@
     --sketch-marker: oklch(0.8 0.16 86 / 50%);
     color-scheme: dark;
     --status-open: oklch(0.74 0.17 150);
+    --scene-task: oklch(0.76 0.12 255);
+    --scene-task-soft: oklch(0.29 0.05 255);
     --peek-shadow: 0 12px 32px oklch(0 0 0 / 45%), 0 1px 3px oklch(0 0 0 / 30%);
     --pond-shallow: rgb(28 59 61);
     --pond-deep: rgb(13 31 33);
@@ -652,88 +656,113 @@
     }
 
     /*
-     * Event-loop scene (EventLoopPreview). Geometry in CSS pixels on a
-     * 288 x 150 stage: web APIs at left, microtasks over the task queue in
-     * the middle, the call stack tall at right. The zone that matters in the
-     * current beat goes solid and its label brightens. Tokens glide between
-     * zones (450ms ease-out), pop off the stack by rising and fading (ease-in,
-     * faster), and new tokens grow in from 85%.
+     * Event-loop scene (EventLoopPreview), drawn like an engineering
+     * explainer: 1px boxes on a faint dot grid, dashed when idle and solid
+     * with a light tint of the current job's colour when in focus; dashed
+     * connectors through a central loop node, the active one lit and flowing
+     * while a packet runs along it. One colour per job everywhere: main() is
+     * Strong, then() terracotta (--accent), timeout() blue (--scene-task),
+     * in the pills and in the caption. Pills glide 450ms ease-out; pops rise
+     * and fade in 300ms ease-in; new pills grow in from 85%.
      */
     .loop-scene {
+        --tone: var(--foreground-strong);
         width: 18rem;
+    }
+
+    .loop-scene[data-tone="micro"] {
+        --tone: var(--accent);
+    }
+
+    .loop-scene[data-tone="task"] {
+        --tone: var(--scene-task);
     }
 
     .loop-scene__stage {
         position: relative;
         height: 150px;
         border-bottom: 1px solid var(--divider);
-        background: color-mix(in oklab, var(--hover) 60%, var(--surface));
+        background-color: var(--surface);
+        background-image: radial-gradient(color-mix(in oklab, var(--muted) 22%, transparent) 0.6px, transparent 0.8px);
+        background-size: 10px 10px;
     }
 
-    .loop-scene__zone {
+    .loop-scene__wires {
         position: absolute;
-        border: 1px dashed color-mix(in oklab, var(--muted) 45%, transparent);
-        border-radius: 8px;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+
+    .loop-scene__wire {
+        fill: none;
+        stroke: color-mix(in oklab, var(--muted) 55%, transparent);
+        stroke-dasharray: 3 3;
+        stroke-width: 1;
+        transition: stroke 200ms ease;
+    }
+
+    .loop-scene__wire[data-active] {
+        stroke: var(--tone);
+        stroke-width: 1.25;
+    }
+
+    .loop-scene__box {
+        fill: transparent;
+        stroke: color-mix(in oklab, var(--muted) 50%, transparent);
+        stroke-dasharray: 3 3;
+        stroke-width: 1;
         transition:
-            border-color 200ms ease,
-            background-color 200ms ease;
+            stroke 200ms ease,
+            fill 200ms ease;
     }
 
-    .loop-scene__zone[data-zone="api"] {
-        top: 46px;
-        left: 6px;
-        width: 70px;
-        height: 58px;
+    .loop-scene__box[data-focus] {
+        fill: color-mix(in oklab, var(--tone) 8%, var(--surface));
+        stroke: var(--tone);
+        stroke-dasharray: none;
     }
 
-    .loop-scene__zone[data-zone="micro"] {
-        top: 8px;
-        left: 88px;
-        width: 112px;
-        height: 58px;
+    .loop-scene__node {
+        fill: var(--surface);
+        stroke: color-mix(in oklab, var(--muted) 60%, transparent);
+        stroke-width: 1;
+        transition: stroke 200ms ease;
     }
 
-    .loop-scene__zone[data-zone="task"] {
-        top: 84px;
-        left: 88px;
-        width: 112px;
-        height: 58px;
+    .loop-scene__node[data-active] {
+        stroke: var(--tone);
     }
 
-    .loop-scene__zone[data-zone="stack"] {
-        top: 8px;
-        left: 212px;
-        width: 70px;
-        height: 134px;
+    .loop-scene__loop {
+        stroke: var(--muted);
+        stroke-width: 1.3;
+        transform-box: view-box;
+        transform-origin: 152px 50px;
+        transition: rotate 500ms var(--ease-out);
     }
 
-    .loop-scene__zone[data-focus] {
-        border-style: solid;
-        border-color: color-mix(in oklab, var(--muted) 70%, transparent);
-        background: var(--surface);
+    .loop-scene__packet {
+        fill: var(--tone);
     }
 
     .loop-scene__label {
         position: absolute;
-        top: 5px;
-        left: 7px;
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 9.5px;
-        line-height: 1.2;
+        font-family: var(--font-mono);
+        font-size: 8px;
+        line-height: 10px;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
         color: var(--muted);
-        transition: color 200ms ease;
-    }
-
-    .loop-scene__zone[data-focus] .loop-scene__label {
-        color: var(--foreground-strong);
     }
 
     .loop-scene__timer {
         position: absolute;
-        right: 8px;
-        bottom: 9px;
-        left: 8px;
-        height: 3px;
+        top: 124px;
+        left: 18px;
+        width: 30px;
+        height: 2px;
         overflow: hidden;
         border-radius: 9999px;
         background: var(--divider);
@@ -742,20 +771,10 @@
     .loop-scene__timer::after {
         position: absolute;
         inset: 0;
-        background: var(--muted);
+        background: var(--scene-task);
         content: "";
         transform-origin: left;
         animation: loop-timer 1400ms linear both;
-    }
-
-    .loop-scene__loop {
-        position: absolute;
-        top: 68px;
-        left: 137px;
-        width: 14px;
-        height: 14px;
-        color: var(--muted);
-        transition: rotate 500ms var(--ease-out);
     }
 
     .loop-scene__token {
@@ -763,17 +782,17 @@
         top: 0;
         left: 0;
         display: flex;
-        width: 58px;
+        width: 54px;
         height: 18px;
         align-items: center;
         justify-content: center;
         border: 1px solid transparent;
-        border-radius: 9999px;
-        font-family: var(--font-mono, ui-monospace, monospace);
-        font-size: 9.5px;
+        border-radius: 5px;
+        font-family: var(--font-mono);
+        font-size: 9px;
         line-height: 1;
         transition:
-            translate 450ms var(--ease-out),
+            translate 450ms var(--ease-out) 80ms,
             opacity 300ms ease,
             scale 300ms var(--ease-out);
     }
@@ -791,15 +810,15 @@
     }
 
     .loop-scene__token[data-kind="micro"] {
-        border-color: color-mix(in oklab, var(--accent) 35%, transparent);
+        border-color: color-mix(in oklab, var(--accent) 45%, transparent);
         background: var(--accent-soft);
         color: var(--accent);
     }
 
     .loop-scene__token[data-kind="task"] {
-        border-color: color-mix(in oklab, var(--muted) 60%, transparent);
-        background: var(--surface);
-        color: var(--foreground-strong);
+        border-color: color-mix(in oklab, var(--scene-task) 45%, transparent);
+        background: var(--scene-task-soft);
+        color: var(--scene-task);
     }
 
     .loop-scene__token[data-gone] {
@@ -809,9 +828,16 @@
             opacity 260ms ease-in;
     }
 
-    .loop-scene__caption {
-        min-height: calc(2 * 1.4em + 19px);
+    .loop-scene__footer {
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
         padding: 9px 12px 10px;
+    }
+
+    .loop-scene__caption {
+        min-height: calc(2 * 1.4em);
+        flex: 1;
         font-size: 12px;
         line-height: 1.4;
         color: var(--foreground);
@@ -821,6 +847,33 @@
     @starting-style {
         .loop-scene__caption {
             opacity: 0;
+        }
+    }
+
+    .loop-scene__name {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--foreground-strong);
+    }
+
+    .loop-scene__name[data-kind="micro"] {
+        color: var(--accent);
+    }
+
+    .loop-scene__name[data-kind="task"] {
+        color: var(--scene-task);
+    }
+
+    .loop-scene__count {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-variant-numeric: tabular-nums;
+        color: var(--muted);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .loop-scene__wire[data-active] {
+            animation: loop-wire-flow 600ms linear infinite;
         }
     }
 
@@ -1667,5 +1720,12 @@ html[data-theme-transition]::view-transition-new(root) {
 
     to {
         transform: scaleX(1);
+    }
+}
+
+/* The active connector's dashes flow toward the call stack. */
+@keyframes loop-wire-flow {
+    to {
+        stroke-dashoffset: -6;
     }
 }
