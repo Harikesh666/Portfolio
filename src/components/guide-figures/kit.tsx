@@ -1,6 +1,13 @@
-import { useEffect, useReducer, useRef, type KeyboardEvent, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useReducer, useRef, type KeyboardEvent, type ReactNode } from "react";
 import { useReducedMotion } from "motion/react";
-import { guideFigureBeatMs, guideFigurePulseMs } from "../../lib/motion";
+import { guideFigureBeatMs, guideFigurePreviewBeatMs, guideFigurePulseMs } from "../../lib/motion";
+
+/**
+ * Set by a guide's hover card. Inside it, a figure shows only its drawing
+ * and caption, and plays on a loop while `playing` (the card is open and
+ * motion is allowed); otherwise it holds the overview.
+ */
+export const FigurePreview = createContext<Readonly<{ playing: boolean }> | null>(null);
 
 /** One colour per role, shared with the event-loop figures: Strong, terracotta, blue. */
 export type Tone = "strong" | "accent" | "task";
@@ -26,12 +33,13 @@ export function Note({ children }: Readonly<{ children: string }>) {
 type StepperState = Readonly<{ index: number; isPlaying: boolean }>;
 type StepperAction = "play" | "pause" | "toggle" | "step" | "back" | "restart" | "tick";
 
-function stepperReducer(count: number) {
+function stepperReducer(count: number, loop = false) {
     return (state: StepperState, action: StepperAction): StepperState => {
         const last = count - 1;
         switch (action) {
             case "tick":
-                return state.index >= last ? { ...state, isPlaying: false } : { ...state, index: state.index + 1 };
+                if (state.index >= last) return loop ? { ...state, index: 0 } : { ...state, isPlaying: false };
+                return { ...state, index: state.index + 1 };
             case "play":
                 // Playing from the end starts over.
                 return { index: state.index >= last ? 0 : Math.max(0, state.index), isPlaying: true };
@@ -54,12 +62,17 @@ function stepperReducer(count: number) {
  * diagram at rest, as the guide's text describes it.
  */
 export function useStepper(count: number) {
-    const [state, dispatch] = useReducer(stepperReducer(count), { index: -1, isPlaying: false });
+    const preview = useContext(FigurePreview);
+    const [state, dispatch] = useReducer(
+        stepperReducer(count, preview !== null),
+        preview?.playing ? { index: 0, isPlaying: true } : { index: -1, isPlaying: false },
+    );
+    const beat = preview ? guideFigurePreviewBeatMs : guideFigureBeatMs;
     useEffect(() => {
         if (!state.isPlaying) return;
-        const timer = setTimeout(() => dispatch("tick"), state.index < 0 ? 0 : guideFigureBeatMs);
+        const timer = setTimeout(() => dispatch("tick"), state.index < 0 ? 0 : beat);
         return () => clearTimeout(timer);
-    }, [state.isPlaying, state.index]);
+    }, [state.isPlaying, state.index, beat]);
     return { ...state, count, dispatch };
 }
 
@@ -91,6 +104,7 @@ export function FigureFrame({
     tools?: ReactNode;
 }>) {
     const figureRef = useRef<HTMLElement>(null);
+    const preview = useContext(FigurePreview);
     const dispatch = stepper?.dispatch;
 
     useEffect(() => {
@@ -102,6 +116,15 @@ export function FigureFrame({
         observer.observe(figure);
         return () => observer.disconnect();
     }, [dispatch]);
+
+    if (preview) {
+        return (
+            <div className="el-card gf-card">
+                <div className="gf-stage">{stage}</div>
+                <p className="el-card__caption">{caption}</p>
+            </div>
+        );
+    }
 
     function handleKeyDown(event: KeyboardEvent<HTMLElement>) {
         if (!dispatch) return;

@@ -1,15 +1,32 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import type { FigureExampleName } from "../event-loop/examples";
+import type { GuideFigureName } from "../guide-figures/GuideFigure";
 import { HoverPeek } from "../HoverPeek";
 
-/** One lazy chunk for every loop preview; a page only downloads it when someone hovers. */
+/** Lazy chunks: a page only downloads a preview's code when someone hovers. */
 const LoopPreview = lazy(() => import("./LoopPreview"));
+const FigurePreviewCard = lazy(() => import("./FigurePreviewCard"));
 
-/** Guides that have a live preview, by slug, and the example each one plays. */
-const previews: Partial<Record<string, FigureExampleName>> = {
-    "asynchronous-javascript-event-loop": "tasks-and-microtasks",
-    "settimeout-minimum-not-deadline": "blocked-timer",
-    "settimeout-closures-var-let-loop": "var-loop",
+type Preview = Readonly<{ loop: FigureExampleName }> | Readonly<{ figure: GuideFigureName }>;
+
+/** Guides with a live preview, by slug: an event-loop example, or one of the guide's own figures. */
+const previews: Partial<Record<string, Preview>> = {
+    "asynchronous-javascript-event-loop": { loop: "tasks-and-microtasks" },
+    "settimeout-minimum-not-deadline": { loop: "blocked-timer" },
+    "settimeout-closures-var-let-loop": { loop: "var-loop" },
+    v8: { figure: "v8-node-layers" },
+    "how-javascript-engine-runs-code": { figure: "engine-parser" },
+    processing: { figure: "process-time-slices" },
+    "javascript-scope-how-names-find-values": { figure: "scope-first-second" },
+    "javascript-block-scope-and-shadowing": { figure: "block-shadowing" },
+    "var-let-const-and-temporal-dead-zone": { figure: "tdz-bindings" },
+    "closures-function-backpack": { figure: "backpack-nested" },
+    "closures-beyond-the-basics": { figure: "closures-outest" },
+    "how-javascript-keeps-track-of-running-code": { figure: "ctx-countdown" },
+    "javascript-concurrency-one-thread-many-tasks": { figure: "concurrency-loop" },
+    "higher-order-functions-stop-rewriting-the-loop": { figure: "hof-with-logging" },
+    "map-filter-reduce-transform-select-combine": { figure: "filter-four" },
+    "react-rendering-reconciliation-internals": { figure: "react-double-buffer" },
 };
 
 /**
@@ -18,8 +35,8 @@ const previews: Partial<Record<string, FigureExampleName>> = {
  * row renders unchanged.
  */
 export function GuidePreview({ children, slug }: Readonly<{ children: ReactNode; slug: string }>) {
-    const example = previews[slug];
-    if (!example) return children;
+    const preview = previews[slug];
+    if (!preview) return children;
 
     return (
         <HoverPeek
@@ -29,7 +46,11 @@ export function GuidePreview({ children, slug }: Readonly<{ children: ReactNode;
             peek={(isOpen) => (
                 <Suspense fallback={<div className="el-card" />}>
                     {/* Remount on each open so the story always starts from the top. */}
-                    <LoopPreview example={example} isRunning={isOpen} key={String(isOpen)} />
+                    {"loop" in preview ? (
+                        <LoopPreview example={preview.loop} isRunning={isOpen} key={String(isOpen)} />
+                    ) : (
+                        <FigurePreviewCard figure={preview.figure} isRunning={isOpen} key={String(isOpen)} />
+                    )}
                 </Suspense>
             )}
         >

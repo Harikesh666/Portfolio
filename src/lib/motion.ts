@@ -13,6 +13,9 @@ export const guidePreviewBeatMs = 1100;
 // Guide figures (GuideFigure): one step per 2.2s when playing, long enough to read a two-line caption.
 export const guideFigureBeatMs = 2200;
 
+// Guide figures inside a hover card: one step per 1.8s, looping, a little quicker than the figure in the guide.
+export const guideFigurePreviewBeatMs = 1800;
+
 // A pulse runs the length of a lit wire in 1.4s, then repeats while the step is shown.
 export const guideFigurePulseMs = 1400;
 

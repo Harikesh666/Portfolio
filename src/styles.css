@@ -2196,6 +2196,20 @@
         }
     }
 
+    /* A guide figure inside a hover card: the drawing on its dot grid over a caption, one column. */
+    .gf-card .gf-stage {
+        padding: 12px 10px;
+    }
+
+    .gf-card .gf-journey {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* Room for four frames, so a recursion never resizes the card while it plays. */
+    .gf-card .gf-stack__frames {
+        min-height: 12.5rem;
+    }
+
     /* Compare toggle in the code bar: var | let. */
     .el-toggle {
         display: inline-flex;
