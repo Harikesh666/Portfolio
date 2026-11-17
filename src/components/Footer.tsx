@@ -10,7 +10,8 @@ const elsewhere = [
     { label: "Email", href: `mailto:${site.email}`, external: false },
     { label: "GitHub", href: site.socials.github, external: true },
     { label: "LinkedIn", href: site.socials.linkedin, external: true },
-    { label: "RSS", href: "/feed.xml", external: false },
+    // The feed stays discoverable through the <link rel="alternate"> in the page head.
+    { label: "Contact", href: "/contact", external: false },
 ] as const;
 
 const siteLinks = [
@@ -43,6 +44,11 @@ export default function Footer() {
                                 ·
                             </span>
                         )}
+                        {item.href === "/contact" ? (
+                            <Link className="text-link" to="/contact">
+                                {item.label}
+                            </Link>
+                        ) : (
                         <a
                             className="inline-flex items-center gap-0.5 text-link"
                             href={item.href}
@@ -60,6 +66,7 @@ export default function Footer() {
                                 />
                             )}
                         </a>
+                        )}
                     </li>
                 ))}
             </ul>
