@@ -149,11 +149,7 @@ Think of a lexical environment as:
 
 The first part answers, "Do I have this name?" The second answers, "If I do not, where should I look next?"
 
-```text
-Current lexical environment
-├── local bindings
-└── link to outer lexical environment
-```
+<GuideFigure figure="scope-anatomy" />
 
 The word *lexical* tells us how that outer link is chosen. It follows where the code was written.
 
@@ -218,13 +214,7 @@ outerFunction();
 
 When `innerFunction` reads a name, JavaScript can search:
 
-```text
-innerFunction scope
-        ↓
-outerFunction scope
-        ↓
-global scope
-```
+<GuideFigure figure="scope-inner-outer" />
 
 It finds `innerVar` locally. It finds `outerVar` one level outside. It finds `globalVar` in the global scope.
 
@@ -286,14 +276,7 @@ firstFunction();
 
 For `secondFunction`, the lookup route is:
 
-```text
-secondFunction environment
-├── secondVar
-└── outer → firstFunction environment
-             ├── firstVar
-             └── outer → global environment
-                          └── globalVar
-```
+<GuideFigure figure="scope-first-second" />
 
 JavaScript does not jump directly to the global scope every time. It searches from the nearest environment outward.
 
@@ -431,9 +414,7 @@ When a name looks confusing, do not stare at the whole file. Start at the line u
 
 Draw the lookup route if necessary:
 
-```text
-current scope → outer function scope → global scope → stop
-```
+<GuideFigure figure="scope-route" />
 
 Do not follow the order in which functions happened to call one another. That is the call stack. For scope, follow where the functions are nested in the source.
 

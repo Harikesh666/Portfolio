@@ -146,12 +146,7 @@ The block environment contains `inside` and links to the surrounding environment
 
 That link is why code inside the block can look outward.
 
-```text
-Block environment
-└── inside = "inner"
-    ↓ outer environment
-    outside = "outer"
-```
+<GuideFigure figure="block-outer" />
 
 When execution leaves the block, JavaScript restores the previous lexical environment as the current one.
 
@@ -336,15 +331,7 @@ console.log(c); // 100
 
 There are four different bindings here:
 
-```text
-Outer scope
-├── b = 100
-└── c = 100
-
-Inner block
-├── b = 20
-└── c = 30
-```
+<GuideFigure figure="block-shadowing" />
 
 The inner declarations do not modify the outer values.
 
@@ -546,9 +533,7 @@ An outer block cannot reach into a nested block for a variable.
 
 The rule is:
 
-```text
-current scope → outer scope → next outer scope → global scope
-```
+<GuideFigure figure="block-no-inward" />
 
 The first matching binding wins.
 

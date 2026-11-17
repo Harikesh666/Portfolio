@@ -100,11 +100,7 @@ That uninitialized period is the **Temporal Dead Zone**, usually shortened to TD
 
 So all three declaration types affect the scope before execution reaches their source lines, but they do not behave the same way:
 
-```text
-var   → binding created and initialized to undefined
-let   → binding created but uninitialized
-const → binding created but uninitialized
-```
+<GuideFigure figure="tdz-bindings" />
 
 The article [JavaScript Hoisting Does Not Move Your Code](/articles/javascript-hoisting-does-not-move-code) goes deeper into declaration instantiation. Here, we will focus on how the three keywords differ in practice.
 
@@ -360,11 +356,7 @@ The declaration is valid. The later assignment is not allowed for a constant bin
 
 This distinction is useful while debugging:
 
-```text
-SyntaxError    → the declaration arrangement is invalid
-ReferenceError → the name cannot be accessed here
-TypeError      → the attempted operation is not allowed
-```
+<GuideFigure figure="tdz-error-kinds" />
 
 ## 5. Working with the Temporal Dead Zone
 

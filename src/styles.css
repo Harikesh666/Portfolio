@@ -1799,6 +1799,195 @@
         }
     }
 
+    /*
+     * Scope chain (ScopeChainFigure): environment cards joined by "outer"
+     * arrows, with a search token in the left gutter. The card being
+     * checked turns blue, a card the search left behind dims and says so,
+     * and the card holding the name turns terracotta with its binding lit.
+     */
+    .el-figure__panels.gf-panels--single {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .gf-env rect {
+        fill: var(--surface);
+        stroke: color-mix(in oklab, var(--muted) 55%, transparent);
+        stroke-width: 0.8;
+        transition:
+            fill 220ms ease,
+            stroke 220ms ease;
+    }
+
+    .gf-env line {
+        stroke: color-mix(in oklab, var(--muted) 28%, transparent);
+        stroke-width: 0.6;
+    }
+
+    .gf-env {
+        --tone: var(--scene-task);
+        transition: opacity 220ms ease;
+    }
+
+    .gf-env[data-state="found"] {
+        --tone: var(--accent);
+    }
+
+    .gf-env[data-state="on"] > rect,
+    .gf-env[data-state="found"] > rect {
+        fill: color-mix(in oklab, var(--tone) 7%, var(--surface));
+        stroke: var(--tone);
+        stroke-width: 1.1;
+    }
+
+    .gf-env[data-state="passed"],
+    .gf-env[data-state="off"] {
+        opacity: 0.5;
+    }
+
+    .gf-env[data-state="skip"] {
+        opacity: 0.32;
+    }
+
+    .gf-env[data-state="aside"] > rect {
+        fill: transparent;
+        stroke-dasharray: 2.5 2.5;
+    }
+
+    .gf-env__note {
+        font-size: 6.4px;
+        fill: var(--muted);
+    }
+
+    .gf-env[data-state="on"] .gf-env__note,
+    .gf-env[data-state="found"] .gf-env__note {
+        fill: var(--tone);
+    }
+
+    .gf-env__empty {
+        font-size: 7.4px;
+        font-style: italic;
+        fill: var(--muted);
+    }
+
+    .gf-binding rect {
+        fill: color-mix(in oklab, var(--foreground-strong) 4%, var(--surface));
+        stroke: color-mix(in oklab, var(--muted) 45%, transparent);
+        stroke-width: 0.7;
+        transition:
+            fill 220ms ease,
+            stroke 220ms ease;
+    }
+
+    .gf-binding text {
+        font-size: 8.4px;
+        fill: var(--foreground-strong);
+    }
+
+    .gf-binding__value {
+        fill: var(--muted);
+    }
+
+    .gf-binding[data-hit] rect {
+        fill: color-mix(in oklab, var(--accent) 16%, var(--surface));
+        stroke: var(--accent);
+        stroke-width: 1.1;
+    }
+
+    .gf-binding[data-hit] .gf-binding__value {
+        fill: var(--accent);
+    }
+
+    .gf-token {
+        transition: transform 420ms var(--ease-out);
+    }
+
+    .gf-token rect {
+        fill: var(--scene-task);
+    }
+
+    .gf-token text {
+        font-size: 8px;
+        fill: var(--surface);
+    }
+
+    .gf-token[data-found] rect,
+    .gf-token[data-fail] rect {
+        fill: var(--accent);
+    }
+
+    /* TDZ: one slot per binding; an uninitialized slot is hatched. */
+    .gf-slot__keyword {
+        font-size: 8.4px;
+        fill: var(--muted);
+    }
+
+    .gf-slot__box {
+        fill: var(--surface);
+        stroke: color-mix(in oklab, var(--muted) 55%, transparent);
+        stroke-width: 0.8;
+        transition: stroke 220ms ease;
+    }
+
+    .gf-slot__hatch {
+        pointer-events: none;
+    }
+
+    .gf-slot__hatch-line {
+        stroke: color-mix(in oklab, var(--accent) 22%, transparent);
+        stroke-width: 1.4;
+    }
+
+    .gf-slot[data-dead] .gf-slot__box {
+        stroke: color-mix(in oklab, var(--accent) 55%, transparent);
+        stroke-dasharray: 2.5 2;
+    }
+
+    .gf-slot__value {
+        font-size: 9.4px;
+        fill: var(--foreground-strong);
+        transition: opacity 240ms ease;
+    }
+
+    @starting-style {
+        .gf-slot__value {
+            opacity: 0;
+        }
+    }
+
+    .gf-slot[data-dead] .gf-slot__value {
+        fill: var(--accent);
+    }
+
+    .gf-slot[data-read] .gf-slot__box {
+        stroke: var(--scene-task);
+        stroke-width: 1.2;
+    }
+
+    /* Binding fans: environments on the left, callbacks on the right. */
+    .gf-fan__env,
+    .gf-fan__callback {
+        transition: opacity 260ms ease;
+    }
+
+    @starting-style {
+        .gf-fan__env,
+        .gf-fan__callback {
+            opacity: 0;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .gf-env,
+        .gf-env rect,
+        .gf-binding rect,
+        .gf-token,
+        .gf-slot__value,
+        .gf-fan__env,
+        .gf-fan__callback {
+            transition: none;
+        }
+    }
+
     /* Compare toggle in the code bar: var | let. */
     .el-toggle {
         display: inline-flex;

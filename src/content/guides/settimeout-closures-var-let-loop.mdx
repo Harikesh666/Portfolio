@@ -208,10 +208,7 @@ Why `6`? Why five times? And why does `Namaste` arrive before everyone?
 
 There is one labeled slot:
 
-```text
-x environment
-└── i
-```
+<GuideFigure figure="loop-var-binding" />
 
 Every iteration changes the value inside that same slot:
 
@@ -295,13 +292,7 @@ For a `for` loop whose initializer uses `let`, JavaScript creates a fresh bindin
 
 The picture now looks like this:
 
-```text
-iteration 1 environment → i = 1 → callback 1
-iteration 2 environment → i = 2 → callback 2
-iteration 3 environment → i = 3 → callback 3
-iteration 4 environment → i = 4 → callback 4
-iteration 5 environment → i = 5 → callback 5
-```
+<GuideFigure figure="loop-let-bindings" />
 
 The callbacks are not fighting over one shared slot anymore.
 
@@ -421,13 +412,7 @@ The outer loop has a binding named `i`. The helper function has a parameter bind
 
 Each call to `close` gets a different `x` binding:
 
-```text
-close call 1 → x = 1
-close call 2 → x = 2
-close call 3 → x = 3
-close call 4 → x = 4
-close call 5 → x = 5
-```
+<GuideFigure figure="loop-close-bindings" />
 
 Each timer callback closes over the `x` belonging to its own helper call.
 

@@ -229,15 +229,7 @@ inner();
 
 When `inner` reads a name, JavaScript searches its lexical environments from nearest to farthest:
 
-```text
-inner's local environment
-    ↓
-outer's environment: a = 10, b = "Hello"
-    ↓
-outest's environment: c = 20
-    ↓
-global environment
-```
+<GuideFigure figure="closures-outest" />
 
 `inner` can read:
 

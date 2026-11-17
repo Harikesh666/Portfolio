@@ -78,13 +78,7 @@ Why can `y` read `a`?
 
 The scope chain looks like this:
 
-```text
-y's local scope
-    ↓
-x's local scope: a = 7
-    ↓
-global scope
-```
+<GuideFigure figure="backpack-nested" />
 
 JavaScript finds `a` in `x` and logs `7`.
 
@@ -180,11 +174,7 @@ x(y); // ReferenceError: a is not defined
 
 The scope chain for `y` is:
 
-```text
-y's local scope
-    ↓
-global scope
-```
+<GuideFigure figure="backpack-global" />
 
 The call happens inside `x`, but that does not insert `x` into `y`’s lexical scope.
 
@@ -294,15 +284,7 @@ z(); // 7 900
 
 Its scope chain is:
 
-```text
-y's local scope
-    ↓
-x's scope: a = 7
-    ↓
-z's scope: b = 900
-    ↓
-global scope
-```
+<GuideFigure figure="backpack-three" />
 
 JavaScript searches outward one lexical environment at a time.
 

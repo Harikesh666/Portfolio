@@ -1,6 +1,14 @@
 import type { ComponentType } from "react";
 import { CallStackFigure, JourneyFigure } from "./engine";
 import { ParseFigure } from "./parse";
+import {
+    BindingFanFigure,
+    EnvironmentAnatomyFigure,
+    ErrorKindsFigure,
+    ScopeChainFigure,
+    scopeSpecs,
+    TdzFigure,
+} from "./scope";
 import { AddressSpaceFigure, ClientsServerFigure, ProgramToProcessFigure, SchedulerFigure } from "./processing";
 import {
     ClientServerFigure,
@@ -31,6 +39,22 @@ const figures = {
     "process-time-slices": () => <SchedulerFigure mode="slice" />,
     "process-clients-server": ClientsServerFigure,
     "process-address-space": AddressSpaceFigure,
+    "scope-anatomy": EnvironmentAnatomyFigure,
+    "scope-inner-outer": () => <ScopeChainFigure spec={scopeSpecs["scope-inner-outer"]} />,
+    "scope-first-second": () => <ScopeChainFigure spec={scopeSpecs["scope-first-second"]} />,
+    "scope-route": () => <ScopeChainFigure spec={scopeSpecs["scope-route"]} />,
+    "block-outer": () => <ScopeChainFigure spec={scopeSpecs["block-outer"]} />,
+    "block-shadowing": () => <ScopeChainFigure spec={scopeSpecs["block-shadowing"]} />,
+    "block-no-inward": () => <ScopeChainFigure spec={scopeSpecs["block-no-inward"]} />,
+    "tdz-bindings": TdzFigure,
+    "tdz-error-kinds": ErrorKindsFigure,
+    "backpack-nested": () => <ScopeChainFigure spec={scopeSpecs["backpack-nested"]} />,
+    "backpack-global": () => <ScopeChainFigure spec={scopeSpecs["backpack-global"]} />,
+    "backpack-three": () => <ScopeChainFigure spec={scopeSpecs["backpack-three"]} />,
+    "closures-outest": () => <ScopeChainFigure spec={scopeSpecs["closures-outest"]} />,
+    "loop-var-binding": () => <BindingFanFigure kind="var" />,
+    "loop-let-bindings": () => <BindingFanFigure kind="let" />,
+    "loop-close-bindings": () => <BindingFanFigure kind="close" />,
 } satisfies Record<string, ComponentType>;
 
 export type GuideFigureName = keyof typeof figures;
