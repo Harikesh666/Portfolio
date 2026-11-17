@@ -6,8 +6,15 @@ import { readHourOverride } from "./pond-hour";
 
 export type PondLabel = Readonly<{ text: string; className: string }>;
 
+/** The pond modes, plus "kund": Makari Kund from a photo, set on a 3D model of the tank and brought to life. */
+export type SceneMode = PondMode | "kund";
+
+/** A photo shown at once and kept as the fallback; the scene draws over it when ready. */
+export type PondStill = Readonly<{ src: string; srcSet: string; sizes: string; mask: string }>;
+
 type PondProps = Readonly<{
-    mode: PondMode;
+    mode: SceneMode;
+    still?: PondStill;
     /** Spoken description of the scene for assistive technology. */
     description: string;
     caption: ReactNode;
@@ -19,8 +26,9 @@ type PondProps = Readonly<{
  * page settles, runs it only while visible in a foreground tab, and offers
  * Pause/Play. Under reduced motion it starts paused on a still frame.
  */
-export function Pond({ caption, description, labels = [], mode }: PondProps) {
+export function Pond({ caption, description, labels = [], mode, still }: PondProps) {
     const containerRef = useRef<HTMLDivElement>(null);
+    const stillRef = useRef<HTMLImageElement>(null);
     const waterRef = useRef<HTMLCanvasElement>(null);
     const fishRef = useRef<HTMLCanvasElement>(null);
     const pondRef = useRef<PondEngine | null>(null);
@@ -55,24 +63,48 @@ export function Pond({ caption, description, labels = [], mode }: PondProps) {
         const schedule =
             window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 200));
         const cancelSchedule = window.cancelIdleCallback ?? window.clearTimeout;
+        const isDark = () => document.documentElement.dataset.theme === "dark";
+        const create = async (): Promise<PondEngine | null> => {
+            if (mode === "kund") {
+                const photo = stillRef.current;
+                if (!photo || !still) return null;
+                const { createKundScene } = await import("./kund-scene");
+                return createKundScene({
+                    hourOverride: readHourOverride(),
+                    container,
+                    canvas: waterCanvas,
+                    photo,
+                    maskUrl: still.mask,
+                    reducedMotion: shouldReduceMotion,
+                    isDark,
+                });
+            }
+            const { createPond } = await import("./pond-engine");
+            return createPond({
+                mode,
+                hourOverride: readHourOverride(),
+                container,
+                waterCanvas,
+                fishCanvas,
+                reducedMotion: shouldReduceMotion,
+                isDark,
+            });
+        };
         const handle = schedule(() => {
-            void import("./pond-engine").then(({ createPond }) => {
-                if (isCancelled) return;
+            void create().then((pond) => {
+                // Without WebGL the still photo, or the CSS water, simply stays.
+                if (!pond) return;
+                if (isCancelled) {
+                    pond.destroy();
+                    return;
+                }
                 // Reduced motion starts paused on a still frame; Play opts in.
                 if (shouldReduceMotion) {
                     isPausedRef.current = true;
                     setIsPaused(true);
                 }
-                pondRef.current = createPond({
-                    mode,
-                    hourOverride: readHourOverride(),
-                    container,
-                    waterCanvas,
-                    fishCanvas,
-                    reducedMotion: shouldReduceMotion,
-                    isDark: () => document.documentElement.dataset.theme === "dark",
-                });
-                pondRef.current.resize();
+                pondRef.current = pond;
+                pond.resize();
                 syncActivity();
                 setIsReady(true);
             });
@@ -87,7 +119,7 @@ export function Pond({ caption, description, labels = [], mode }: PondProps) {
             pondRef.current?.destroy();
             pondRef.current = null;
         };
-    }, [mode, shouldReduceMotion]);
+    }, [mode, shouldReduceMotion, still]);
 
     function togglePaused() {
         const next = !isPausedRef.current;
@@ -118,7 +150,7 @@ export function Pond({ caption, description, labels = [], mode }: PondProps) {
             <div className="pond-frame relative">
                 <div
                     aria-label={description}
-                    className="event-loop-pond relative aspect-[2/1] w-full overflow-hidden sm:aspect-[11/4] sm:rounded-2xl"
+                    className={`event-loop-pond relative aspect-[2/1] w-full overflow-hidden sm:rounded-2xl ${mode === "kund" ? "" : "sm:aspect-[11/4]"}`}
                     data-mode={mode}
                     data-ready={isReady ? "" : undefined}
                     onPointerDown={handlePointerDown}
@@ -127,6 +159,18 @@ export function Pond({ caption, description, labels = [], mode }: PondProps) {
                     ref={containerRef}
                     role="img"
                 >
+                    {still ? (
+                        <img
+                            alt=""
+                            className="event-loop-pond__still"
+                            decoding="async"
+                            fetchPriority="high"
+                            ref={stillRef}
+                            sizes={still.sizes}
+                            src={still.src}
+                            srcSet={still.srcSet}
+                        />
+                    ) : null}
                     <canvas aria-hidden="true" className="event-loop-pond__layer" ref={waterRef} />
                     <canvas aria-hidden="true" className="event-loop-pond__layer" ref={fishRef} />
                     {labels.map((label) => (

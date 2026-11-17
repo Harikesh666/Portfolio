@@ -103,3 +103,49 @@ export function mumbaiHour(now = new Date()) {
     const minute = Number(parts.find((part) => part.type === "minute")?.value ?? 0);
     return hour + minute / 60;
 }
+
+/** Bijethua Mahaviran, near Harikesh's home in Pratapgarh. */
+const home = { latitude: 26.3, longitude: 82.3 };
+/** India keeps one clock, set to the sun at 82.5 degrees east. */
+const istMeridian = 82.5;
+const radians = Math.PI / 180;
+
+/**
+ * Sunrise and sunset as fractional hours on the India clock, from the
+ * standard approximation: the sun's declination for the day of the year,
+ * the equation of time, and the hour angle at which the sun's upper edge
+ * clears the horizon (including refraction). Accurate to a few minutes.
+ */
+export function sunTimes(now: Date, latitude = home.latitude, longitude = home.longitude) {
+    const india = new Date(now.getTime() + 5.5 * 3_600_000);
+    const startOfYear = Date.UTC(india.getUTCFullYear(), 0, 0);
+    const day = Math.floor((india.getTime() - startOfYear) / 86_400_000);
+    const declination = 23.44 * radians * Math.sin((2 * Math.PI * (284 + day)) / 365);
+    const b = (2 * Math.PI * (day - 81)) / 364;
+    const equationOfTime = 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b);
+    const noon = 12 + ((istMeridian - longitude) * 4) / 60 - equationOfTime / 60;
+    const phi = latitude * radians;
+    const cosine = (Math.sin(-0.833 * radians) - Math.sin(phi) * Math.sin(declination)) / (Math.cos(phi) * Math.cos(declination));
+    const halfDay = Math.acos(Math.min(1, Math.max(-1, cosine))) / radians / 15;
+    return { sunrise: noon - halfDay, sunset: noon + halfDay };
+}
+
+/** Sunrise and sunset on the keyframe day above, which the light curve was drawn around. */
+const keyframeSunrise = 6.75;
+const keyframeSunset = 18.75;
+
+/**
+ * The hour on the keyframe day that matches the sky at home right now:
+ * today's real sunrise and sunset at Bijethua map onto the curve's, so
+ * dusk comes at 5:15 pm in December and near 7 pm in June.
+ */
+export function homeHour(now = new Date()) {
+    const clock = mumbaiHour(now);
+    const { sunrise, sunset } = sunTimes(now);
+    if (clock >= sunrise && clock <= sunset) {
+        return keyframeSunrise + ((clock - sunrise) / (sunset - sunrise)) * (keyframeSunset - keyframeSunrise);
+    }
+    const night = 24 - (sunset - sunrise);
+    const sinceSunset = (clock - sunset + 24) % 24;
+    return (keyframeSunset + (sinceSunset / night) * (24 - (keyframeSunset - keyframeSunrise))) % 24;
+}

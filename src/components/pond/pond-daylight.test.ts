@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daylightAt, mumbaiHour } from "./pond-daylight";
+import { daylightAt, homeHour, mumbaiHour, sunTimes } from "./pond-daylight";
 
 describe("daylightAt", () => {
     it("is full night after dark and full day at noon", () => {
@@ -39,5 +39,33 @@ describe("mumbaiHour", () => {
     it("reads the time in India, five and a half hours ahead of UTC", () => {
         expect(mumbaiHour(new Date("2026-11-16T15:15:00Z"))).toBeCloseTo(20.75);
         expect(mumbaiHour(new Date("2026-11-16T20:00:00Z"))).toBeCloseTo(1.5);
+    });
+});
+
+describe("sunTimes", () => {
+    it("puts sunrise and sunset at Bijethua within minutes of the almanac", () => {
+        // Sultanpur almanac: about 5:07 and 6:52 pm at midsummer, 6:42 and 5:15 pm at midwinter.
+        const june = sunTimes(new Date("2026-06-21T06:30:00Z"));
+        expect(june.sunrise).toBeCloseTo(5.12, 0);
+        expect(june.sunset).toBeCloseTo(18.87, 0);
+        const december = sunTimes(new Date("2026-12-21T06:30:00Z"));
+        expect(december.sunrise).toBeCloseTo(6.7, 0);
+        expect(december.sunset).toBeCloseTo(17.25, 0);
+    });
+});
+
+describe("homeHour", () => {
+    it("maps today's sunrise and sunset at home onto the light curve's", () => {
+        const now = new Date("2026-12-21T06:30:00Z");
+        const { sunrise, sunset } = sunTimes(now);
+        const at = (hour: number) => new Date(Date.UTC(2026, 11, 21, 0, 0) + (hour - 5.5) * 3_600_000);
+        expect(homeHour(at(sunrise))).toBeCloseTo(6.75, 1);
+        expect(homeHour(at(sunset))).toBeCloseTo(18.75, 1);
+        expect(homeHour(at(12))).toBeGreaterThan(11);
+        expect(homeHour(at(12))).toBeLessThan(13);
+    });
+
+    it("is full night at home by 7 pm in December", () => {
+        expect(daylightAt(homeHour(new Date("2026-12-21T13:30:00Z")), false).night).toBe(1);
     });
 });
