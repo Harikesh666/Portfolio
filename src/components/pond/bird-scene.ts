@@ -109,6 +109,10 @@ const repertoire: readonly (readonly [Act, number, readonly [number, number]])[]
 
 const random = (min: number, max: number) => min + Math.random() * (max - min);
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const smoothstep = (from: number, to: number, value: number) => {
+    const t = clamp((value - from) / (to - from), 0, 1);
+    return t * t * (3 - 2 * t);
+};
 
 /** A seeded random source, so the branch, twigs and leaves come out the same on every visit. */
 function seeded(seed: number) {
@@ -433,6 +437,10 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         const fromLeft = Math.random() < 0.5;
         facing = fromLeft ? 1 : -1;
         flight = { age: 0, from: { x: (fromLeft ? -1 : 1) * (aspect / 2 + 0.4), y: random(0.7, 1.0) }, to: { x: landing.x, y: landing.y + landing.r }, length: random(1.1, 1.5) };
+        // Start out of frame now. The flight only moves the bird from the next step, so without this the
+        // first frame draws it wherever it was last, which on arrival is the frame's bottom centre.
+        birdAt.x = flight.from.x;
+        birdAt.y = flight.from.y;
     }
 
     function step(dt: number) {
@@ -674,8 +682,11 @@ export function createBirdScene(options: BirdOptions): Pond | null {
             // 0.5 is the bird's own upright lean; it crouches forward a little as it hops.
             tilt += ((hop ? 0.25 : 0.5) - tilt) * 0.2;
         } else if (mode !== "away") {
-            fly = 1;
-            flap = Math.sin(time * 34) * 1.0 - 0.2;
+            // The flight pose eases in as it takes off and out over the last stretch of a landing,
+            // so the wings fold and the body pitches up into its perched lean instead of snapping there.
+            const k = clamp(flight.age / flight.length, 0, 1);
+            fly = mode === "flying" ? smoothstep(0, 0.2, k) : 1 - smoothstep(0.7, 1, k);
+            flap = (Math.sin(time * 34) - 0.2) * fly;
             tilt += (0.5 - tilt) * 0.2;
         }
 
