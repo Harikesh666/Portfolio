@@ -40,6 +40,7 @@ import {
     routePageContainer,
     routePageEnterTween,
 } from "../lib/motion";
+import { placeholderStops } from "../components/pond/pond-daylight";
 import { notFoundMeta } from "../lib/not-found-head";
 import {
     HeroHandoffContext,
@@ -67,6 +68,36 @@ const themeScript = `(() => {
   } catch {
     document.documentElement.setAttribute("data-theme", fallback);
   }
+})();`;
+
+/**
+ * Paints the scene placeholders for Mumbai's time of day before first paint,
+ * so a night visit never flashes a daylight teal box while WebGL loads. It
+ * interpolates the same stops the scenes use (`placeholderStops`) and writes
+ * both themes, so a later theme toggle stays right.
+ */
+const pondPlaceholderScript = `(() => {
+  const stops = ${JSON.stringify(placeholderStops)};
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "numeric", hourCycle: "h23" }).formatToParts(new Date());
+  const read = (type) => Number((parts.find((part) => part.type === type) || {}).value || 0);
+  const hour = read("hour") + read("minute") / 60;
+  let i = 0;
+  while (i < stops.length - 2 && hour >= stops[i + 1].hour) i += 1;
+  const from = stops[i];
+  const to = stops[i + 1];
+  const t = Math.min(1, Math.max(0, (hour - from.hour) / (to.hour - from.hour)));
+  const eased = t * t * (3 - 2 * t);
+  const mix = (a, b) => a + (b - a) * eased;
+  const rgb = (a, b, scale) => "rgb(" + a.map((value, k) => Math.round(mix(value, b[k]) * scale)).join(" ") + ")";
+  const dim = 0.66 + 0.34 * mix(from.night, to.night);
+  const vars = (water, theme) =>
+    "--pond-water-shallow:" + rgb(from.shallow, to.shallow, water) +
+    ";--pond-water-deep:" + rgb(from.deep, to.deep, water) +
+    ";--pond-sky-top:" + rgb(from.sky[theme][0], to.sky[theme][0], 1) +
+    ";--pond-sky-bottom:" + rgb(from.sky[theme][1], to.sky[theme][1], 1);
+  const style = document.createElement("style");
+  style.textContent = ":root{" + vars(255, "light") + "}[data-theme=dark]{" + vars(255 * dim, "dark") + "}";
+  document.head.append(style);
 })();`;
 
 const fontStylesheetScript = `(() => {
@@ -145,6 +176,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <html lang="en" suppressHydrationWarning>
             <head>
                 <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+                <script
+                    dangerouslySetInnerHTML={{ __html: pondPlaceholderScript }}
+                />
                 <script
                     dangerouslySetInnerHTML={{ __html: fontStylesheetScript }}
                 />
