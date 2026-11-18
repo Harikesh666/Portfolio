@@ -28,7 +28,7 @@ const { branchPoints: branchPointCount, twigs: maxTwigs, leaves: maxLeaves } = b
 const pixelRatioCap = 1.5;
 const maxStepSeconds = 0.05;
 /** How big the bird is: one bird unit, about its body length, in frame heights. Close, like a long lens. */
-const birdScale = 0.3;
+const birdScale = 0.25;
 /** How often the scene re-reads the clock in Mumbai, in seconds. */
 const clockSeconds = 20;
 
@@ -566,11 +566,12 @@ export function createBirdScene(options: BirdOptions): Pond | null {
             const arc = hop ? Math.sin(Math.PI * clamp(hop.age / feel.hopSeconds, 0, 1)) * feel.hopHeight : 0;
             birdAt.x = at.x;
             birdAt.y = at.y + at.r * 0.85 + arc;
-            tilt += ((hop ? 0.35 : 0.5) - at.angle * facing * 0.5 - tilt) * 0.2;
+            // 0.5 is the bird's own upright lean; it crouches forward a little as it hops.
+            tilt += ((hop ? 0.25 : 0.5) - tilt) * 0.2;
         } else if (mode !== "away") {
             fly = 1;
             flap = Math.sin(time * 34) * 1.0 - 0.2;
-            tilt += (0.05 - tilt) * 0.2;
+            tilt += (0.5 - tilt) * 0.2;
         }
 
         let beak = 0;
@@ -675,8 +676,8 @@ export function createBirdScene(options: BirdOptions): Pond | null {
                 tapTimes.length = 0;
                 flyAway();
             } else if (mode === "perched" || mode === "hopping") {
-                const centre = { x: birdAt.x, y: birdAt.y + birdScale * 0.5 };
-                const onBird = Math.hypot(point.x - centre.x, point.y - centre.y) < birdScale * 0.65;
+                const centre = { x: birdAt.x + birdScale * 0.1 * facing, y: birdAt.y + birdScale * 0.35 };
+                const onBird = Math.hypot(point.x - centre.x, point.y - centre.y) < birdScale * 0.75;
                 if (fluff > 0.5 || light().night > 0.6) {
                     // Asleep: a tap wakes it to look around, then it tucks in again.
                     wakeFor = 3.5;

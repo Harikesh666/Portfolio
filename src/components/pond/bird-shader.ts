@@ -22,8 +22,58 @@ export const birdShaderSizes = { branchPoints: 14, twigs: 18, leaves: 72 } as co
  * A filmic tone curve, a gentle grade, faint god rays, grain and a vignette
  * finish it.
  */
+/**
+ * The bulbul's body in profile, facing +x with its feet at the origin, in
+ * bird units. Hand-placed to a red-vented bulbul's proportions: it leans
+ * forward at about fifty degrees, the breast pushed out, the belly low over
+ * the feet, the back a straight line from the nape to the rump. The head,
+ * crest, beak, wingtip and tail are separate shapes laid over it.
+ */
+const bodyContour: readonly (readonly [number, number])[] = [
+    [0.21, 0.84],
+    [0.13, 0.73],
+    [0.04, 0.6],
+    [-0.07, 0.44],
+    [-0.18, 0.27],
+    [-0.28, 0.1],
+    [-0.36, -0.04],
+    [-0.34, -0.14],
+    [-0.23, -0.12],
+    [-0.09, -0.03],
+    [0.05, 0.03],
+    [0.19, 0.06],
+    [0.31, 0.16],
+    [0.39, 0.3],
+    [0.43, 0.46],
+    [0.44, 0.6],
+    [0.46, 0.72],
+    [0.4, 0.86],
+];
+const contourSteps = 2;
+
+/** A closed Catmull-Rom curve through the contour, so the outline has no corners. */
+function smoothContour() {
+    const points: [number, number][] = [];
+    const count = bodyContour.length;
+    for (let i = 0; i < count; i++) {
+        const p0 = bodyContour[(i - 1 + count) % count];
+        const p1 = bodyContour[i];
+        const p2 = bodyContour[(i + 1) % count];
+        const p3 = bodyContour[(i + 2) % count];
+        for (let step = 0; step < contourSteps; step++) {
+            const f = step / contourSteps;
+            const curve = (a: number, b: number, c: number, d: number) =>
+                0.5 * (2 * b + (-a + c) * f + (2 * a - 5 * b + 4 * c - d) * f * f + (-a + 3 * b - 3 * c + d) * f * f * f);
+            points.push([curve(p0[0], p1[0], p2[0], p3[0]), curve(p0[1], p1[1], p2[1], p3[1])]);
+        }
+    }
+    return points;
+}
+
 export function birdFragment(birdScale: number) {
     const { branchPoints, twigs, leaves } = birdShaderSizes;
+    const contour = smoothContour();
+    const contourGlsl = contour.map(([x, y]) => `vec2(${x.toFixed(4)}, ${y.toFixed(4)})`).join(", ");
     return /* glsl */ `#version 300 es
 precision highp float;
 uniform vec2 uRes;
@@ -61,6 +111,24 @@ ${glslNoise}
 
 const float SCALE = ${birdScale.toFixed(3)};
 const float PI = 3.14159265;
+const int CONTOUR = ${contour.length};
+const vec2 BODY[CONTOUR] = vec2[CONTOUR](${contourGlsl});
+
+// Signed distance to the body's closed contour.
+float bodyShape(vec2 p) {
+    float d = dot(p - BODY[0], p - BODY[0]);
+    float inside = 1.0;
+    for (int i = 0; i < CONTOUR; i++) {
+        int j = (i + CONTOUR - 1) % CONTOUR;
+        vec2 e = BODY[j] - BODY[i];
+        vec2 w = p - BODY[i];
+        vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+        d = min(d, dot(b, b));
+        bvec3 c = bvec3(p.y >= BODY[i].y, p.y < BODY[j].y, e.x * w.y > e.y * w.x);
+        if (all(c) || all(not(c))) inside = -inside;
+    }
+    return inside * sqrt(d);
+}
 
 vec2 rot(vec2 v, float a) {
     float c = cos(a);
@@ -87,7 +155,7 @@ float smin(float a, float b, float k) {
 
 // The light: warm sun by day and at dusk, a faint cool moon at night.
 vec3 sunColour() {
-    return mix(mix(vec3(1.0, 0.92, 0.76), vec3(1.0, 0.56, 0.26), uDusk), vec3(0.55, 0.65, 0.9) * 0.35, uNight);
+    return mix(mix(vec3(1.0, 0.92, 0.76), vec3(1.0, 0.56, 0.26), uDusk), vec3(0.55, 0.65, 0.9) * 0.6, uNight);
 }
 
 vec2 lightAt() {
@@ -134,6 +202,21 @@ vec3 skyAt(vec2 p) {
         vec3 glint = mix(vec3(1.0, 0.97, 0.78), vec3(0.6, 0.8, 0.34), hash(vec2(seed, 6.6)));
         float near = 1.0 - smoothstep(0.0, 1.4, length(centre - uSun));
         c += glint * sun * disc * mix(0.08, 0.26, hash(vec2(seed, 1.9))) * (0.6 + 0.8 * near) * day * foliage;
+    }
+    // Now and then a few birds cross the far sky, small and soft with distance.
+    float pass = fract(uTime / 34.0);
+    float flockDay = (1.0 - smoothstep(0.3, 0.7, uNight));
+    if (pass < 0.55 && flockDay > 0.01) {
+        float travel = pass / 0.55;
+        for (int i = 0; i < 4; i++) {
+            float k = float(i);
+            vec2 at = vec2(mix(1.25, -1.25, travel) + k * 0.045 - mod(k, 2.0) * 0.02, 0.8 + mod(k, 2.0) * 0.035 - k * 0.012 + sin(uTime * 0.6 + k) * 0.006);
+            vec2 w = (p - at) / 0.013;
+            float flap = sin(uTime * 7.0 + k * 1.7) * 0.5;
+            float wings = abs(w.y - abs(w.x) * flap + abs(w.x) * abs(w.x) * 0.25) - 0.16 * (1.0 - abs(w.x));
+            float shape = smoothstep(0.12, -0.05, wings) * step(abs(w.x), 1.0);
+            c = mix(c, c * 0.45, shape * 0.75 * flockDay);
+        }
     }
     return c;
 }
@@ -248,67 +331,74 @@ vec4 leafAt(vec2 p, vec4 leaf, vec4 shape, float px, float layered) {
     return vec4(c, clamp(0.5 - dist / px, 0.0, 1.0));
 }
 
-// The bulbul, in bird units with its feet at the origin, facing +x. A
-// red-vented bulbul perches upright and slim: a rounded head with a short,
-// bushy black tuft rather than a spike, a short stout beak, a breast that
-// rounds into the belly, folded wingtips, and a long tail held down and back,
-// about as long as the body, hanging below the branch.
+// The bulbul, in bird units with its feet at the origin, facing +x. Its body
+// is one traced contour; over it sit the head, which turns on the neck, the
+// short shaggy crest rising from a steep forehead, the beak, the folded
+// wingtip crossing the rump, and the long tail that carries the body's line
+// down and back, its feathers showing as slits at the tip.
 // part: 0 feathers, 2 beak, 5 legs, 6 wings (flight or a stretch). eye: distance to the eye.
 // feathered: distance to the soft, feathered outline only.
 float bird(vec2 b, out float part, out float eye, out float feathered) {
     float fluff = uFluff;
-    float lean = 1.08 + (uTilt - 0.5) * 0.6;
-    float grow = 1.0 + 0.02 * uBreath + 0.15 * fluff;
-    float body = ellipse(rot(b - vec2(-0.01, 0.4), -lean), vec2(0.32, 0.195) * grow);
-    float chest = length(b - vec2(0.08, 0.43)) - 0.165 * grow;
-    float belly = length(b - vec2(0.02, 0.28)) - 0.135 * grow;
-    vec2 tailBase = vec2(-0.1, 0.22);
-    vec2 tailTip = tailBase + rot(vec2(-0.25, -0.72), uTail);
-    float tail = taper(b, tailBase, tailTip, 0.06, 0.072 + 0.018 * uPuff);
-    float wingtip = taper(b, vec2(-0.02, 0.36), vec2(-0.17, 0.08), 0.068, 0.02);
-    // The head turns on its neck in snaps; preening it dips into the breast; asleep it sinks into the shoulders.
-    float headTurn = uHead - 0.75 * fluff - 1.45 * uPreen;
-    vec2 neck = vec2(0.08, 0.585 - 0.1 * fluff - 0.05 * uPreen);
-    vec2 hc = neck + rot(vec2(0.05, 0.14) * (1.0 - 0.5 * fluff), headTurn);
-    float head = length(b - hc) - 0.148;
-    vec2 hq = rot(b - hc, -headTurn);
-    // The crest: a short bushy tuft on the crown, a few wisps at its tip.
-    float crestLength = (0.12 + 0.07 * uCrest) * (1.0 - 0.65 * fluff) * (1.0 - 0.4 * uPreen);
-    vec2 crestTip = vec2(-0.07, 0.085 + crestLength);
-    float crest = taper(hq, vec2(-0.035, 0.085), crestTip, 0.07, 0.028);
-    crest = min(crest, taper(hq, crestTip + vec2(-0.02, -0.03), crestTip + vec2(-0.06, 0.012), 0.011, 0.003));
-    float upper = taper(hq, vec2(0.115, 0.018), vec2(0.27, -0.012), 0.03, 0.004);
-    vec2 lowerTip = vec2(0.115, -0.014) + rot(vec2(0.135, -0.01), -uBeak);
-    float lower = taper(hq, vec2(0.115, -0.014), lowerTip, 0.025, 0.004);
+    // Everything above the feet leans a little with the branch and levels out in flight.
+    vec2 q = rot(b, (uTilt - 0.5) * 0.3 - uFly * 0.5);
+    float body = bodyShape(q) - 0.012 - 0.006 * uBreath - 0.035 * fluff;
+    // The tail: long, a touch broader toward its squared end, where slits part the feathers.
+    vec2 tailBase = vec2(-0.33, -0.08);
+    vec2 tailDir = normalize(rot(vec2(-0.25, -0.64), uTail));
+    vec2 tq = q - tailBase;
+    float along = dot(tq, tailDir);
+    float across = dot(tq, vec2(-tailDir.y, tailDir.x));
+    float tailLength = 0.7;
+    float tailWidth = mix(0.06, 0.082 + 0.02 * uPuff, clamp(along / tailLength, 0.0, 1.0));
+    vec2 tailBox = abs(vec2(along - tailLength * 0.5, across)) - vec2(tailLength * 0.5 - 0.03, tailWidth - 0.03);
+    float tail = length(max(tailBox, 0.0)) + min(max(tailBox.x, tailBox.y), 0.0) - 0.03;
+    for (int i = -1; i <= 1; i += 2) {
+        float slit = taper(vec2(along, across), vec2(tailLength + 0.01, float(i) * 0.028), vec2(tailLength - 0.075, float(i) * 0.03), 0.0055, 0.0);
+        tail = max(tail, -slit);
+    }
+    // The folded wing's tip lies across the rump, over the tail's base.
+    float wingtip = taper(q, vec2(-0.22, 0.12), vec2(-0.44, -0.2), 0.062, 0.012);
+    // The head turns on its neck in snaps; preening it dips to the breast; asleep it sinks into the shoulders.
+    float headTurn = uHead - 0.6 * fluff - 0.95 * uPreen;
+    vec2 neck = vec2(0.27, 0.64 - 0.06 * fluff - 0.03 * uPreen);
+    vec2 hc = neck + rot(vec2(0.07, 0.14) * (1.0 - 0.4 * fluff), headTurn);
+    float head = length(q - hc) - 0.168;
+    vec2 hq = rot(q - hc, -headTurn);
+    // The crest: a short shaggy peak, highest at the back of the crown.
+    float raise = (0.7 + 0.3 * uCrest) * (1.0 - 0.6 * fluff) * (1.0 - 0.35 * uPreen);
+    float crest = taper(hq, vec2(-0.06, 0.12), vec2(-0.13, 0.12 + 0.14 * raise), 0.07, 0.016);
+    crest = smin(crest, taper(hq, vec2(0.0, 0.13), vec2(-0.06, 0.13 + 0.125 * raise), 0.06, 0.014), 0.025);
+    crest = smin(crest, taper(hq, vec2(0.06, 0.12), vec2(0.02, 0.12 + 0.085 * raise), 0.05, 0.012), 0.025);
+    float upper = taper(hq, vec2(0.14, -0.005), vec2(0.3, -0.04), 0.03, 0.004);
+    vec2 lowerTip = vec2(0.14, -0.035) + rot(vec2(0.145, -0.012), -uBeak);
+    float lower = taper(hq, vec2(0.14, -0.035), lowerTip, 0.024, 0.004);
     float beak = min(upper, lower) + 0.3 * step(0.5, fluff);
-    float throat = length(b - vec2(0.15, 0.49)) - 0.08 * (1.0 + 0.6 * uPuff);
-    // Legs and toes curled round the branch.
-    float legs = min(taper(b, vec2(0.0, 0.2), vec2(-0.01, 0.01), 0.016, 0.011), taper(b, vec2(0.06, 0.2), vec2(0.05, 0.01), 0.016, 0.011));
-    legs = min(legs, taper(b, vec2(-0.08, -0.01), vec2(0.0, 0.015), 0.012, 0.011));
-    legs = min(legs, taper(b, vec2(0.0, 0.015), vec2(0.13, -0.012), 0.012, 0.009));
-    legs += uFly * 0.6 + fluff * 0.12;
+    float throat = length(q - vec2(0.38, 0.6)) - 0.07 * (0.6 + 1.0 * uPuff);
+    // Short legs, and toes curled round the branch.
+    float legs = min(taper(b, vec2(0.03, 0.1), vec2(0.0, 0.01), 0.016, 0.011), taper(b, vec2(0.1, 0.1), vec2(0.07, 0.01), 0.016, 0.011));
+    legs = min(legs, taper(b, vec2(-0.07, -0.012), vec2(0.02, 0.014), 0.012, 0.011));
+    legs = min(legs, taper(b, vec2(0.02, 0.014), vec2(0.15, -0.014), 0.012, 0.009));
+    legs += uFly * 0.6 + fluff * 0.06;
     // In flight two wings beat from the shoulder; perched, one opens down and back in a stretch.
-    vec2 shoulder = vec2(0.0, 0.45);
-    float wing = taper(b, shoulder, shoulder + rot(vec2(-0.22, 0.66), uFlap), 0.15, 0.035);
-    float farWing = taper(b, shoulder + vec2(0.05, 0.02), shoulder + vec2(0.05, 0.02) + rot(vec2(-0.14, 0.58), uFlap * 0.85 + 0.25), 0.13, 0.03);
-    wing = min(wing, farWing) + (1.0 - uFly) * 0.7;
-    float stretched = taper(b, vec2(-0.02, 0.42), vec2(-0.02, 0.42) + vec2(-0.2, -0.5) * (0.3 + 0.7 * uStretch), 0.1, 0.03) + (1.0 - smoothstep(0.0, 0.15, uStretch)) * 0.5;
-    wing = min(wing, stretched);
-    feathered = smin(body, chest, 0.06);
-    feathered = smin(feathered, belly, 0.06);
-    // A thick neck: the head blends broadly into the shoulders.
-    feathered = smin(feathered, head, 0.11);
-    feathered = smin(feathered, throat, 0.06);
-    feathered = smin(feathered, wingtip, 0.04);
-    feathered = smin(feathered, tail, 0.035);
-    feathered = smin(feathered, crest, 0.035);
-    feathered += (noise(b * 14.0 + uTime * vec2(1.4, 0.8) * (0.3 + uGust) * uMotion) - 0.5) * 0.014 * (0.4 + uGust + 0.6 * fluff) * smoothstep(-0.05, 0.0, feathered);
-    float d = min(feathered, min(beak, min(legs, wing)));
-    eye = length(hq - vec2(0.06, 0.035)) + fluff + uPreen;
+    vec2 shoulder = vec2(0.1, 0.5);
+    float flight = taper(q, shoulder, shoulder + rot(vec2(-0.3, 0.72), uFlap), 0.17, 0.035);
+    flight = min(flight, taper(q, shoulder + vec2(0.05, 0.02), shoulder + vec2(0.05, 0.02) + rot(vec2(-0.2, 0.64), uFlap * 0.85 + 0.25), 0.15, 0.03));
+    flight += (1.0 - uFly) * 0.7;
+    float stretched = taper(q, vec2(0.0, 0.4), vec2(0.0, 0.4) + vec2(-0.34, -0.5) * (0.3 + 0.7 * uStretch), 0.11, 0.03) + (1.0 - smoothstep(0.0, 0.15, uStretch)) * 0.5;
+    float wings = min(flight, stretched);
+    feathered = smin(body, head, 0.06);
+    feathered = smin(feathered, throat, 0.05);
+    feathered = smin(feathered, wingtip, 0.02);
+    feathered = smin(feathered, tail, 0.03);
+    feathered = smin(feathered, crest, 0.03);
+    feathered += (noise(b * 16.0 + uTime * vec2(1.4, 0.8) * (0.3 + uGust) * uMotion) - 0.5) * 0.012 * (0.4 + uGust + 0.6 * fluff) * smoothstep(-0.05, 0.0, feathered);
+    float d = min(feathered, min(beak, min(legs, wings)));
+    eye = length(hq - vec2(0.065, 0.02)) + fluff + uPreen;
     part = 0.0;
     if (beak <= d + 0.001) part = 2.0;
     if (legs <= d + 0.001) part = 5.0;
-    if (wing <= d + 0.001 && (uFly > 0.5 || uStretch > 0.1)) part = 6.0;
+    if (wings <= d + 0.001 && (uFly > 0.5 || uStretch > 0.1)) part = 6.0;
     return d;
 }
 
@@ -325,59 +415,44 @@ float birdShape(vec2 p) {
     return bird(toBird(p), part, eye, feathered) * SCALE;
 }
 
-// The bird's colour at a pixel, given its distance and surface normal.
+// The bird's colour at a pixel. Against the light it is nearly a silhouette:
+// the hood blackest, the body a very dark brown, with only hints of its
+// colours where the sky's fill reaches: the red vent under the tail, the
+// tail's pale tip. The rim of light and the glow through thin feathers do
+// the rest.
 vec3 plumage(vec2 p, vec2 b, float d, vec2 normal, float part, float eye) {
     float fluff = uFluff;
-    // A black hood and crest down to the upper breast, a brown-grey body with
-    // pale-fringed scale feathers, a paler belly, a small red vent, a dark tail with a pale tip.
-    float hood = smoothstep(0.5, 0.6, b.y - 0.12 * b.x) * (1.0 - fluff * 0.5);
-    float belly = smoothstep(-0.02, 0.14, b.x) * smoothstep(0.5, 0.36, b.y) * smoothstep(0.1, 0.22, b.y);
-    vec2 ventAt = b - vec2(-0.07, 0.14);
-    float vent = exp(-dot(ventAt, ventAt) / 0.0035);
-    float tailDark = smoothstep(0.1, -0.05, b.y);
-    vec3 albedo = vec3(0.22, 0.18, 0.14) * (0.88 + 0.24 * noise(b * 18.0));
-    // Scale feathers: rows of scallops, each with a paler fringe.
-    vec2 s = b * vec2(14.0, 16.0);
-    s.x += floor(s.y) * 0.5;
-    float scallop = smoothstep(0.09, 0.0, abs(length(fract(s) - vec2(0.5, 0.0)) - 0.52));
-    albedo += vec3(0.13, 0.11, 0.09) * scallop * (1.0 - hood) * (1.0 - tailDark) * (1.0 - belly * 0.5);
-    // The folded wing: primaries lying back along the body, each with a paler edge.
-    vec2 wingAxis = normalize(vec2(-0.22, -0.4));
-    vec2 w = b - vec2(0.0, 0.47);
-    float wingAlong = dot(w, wingAxis);
-    float wingAcross = dot(w, vec2(-wingAxis.y, wingAxis.x));
-    float onWing = smoothstep(0.015, 0.0, abs(wingAcross + 0.02) - 0.075 * (1.0 - wingAlong / 0.6)) * smoothstep(0.0, 0.04, wingAlong) * smoothstep(0.48, 0.4, wingAlong) * (1.0 - fluff);
-    float primaries = smoothstep(0.08, 0.0, abs(fract(wingAcross * 15.0 + wingAlong * 2.0) - 0.5) - 0.42);
-    albedo = mix(albedo, vec3(0.15, 0.12, 0.095) + vec3(0.06, 0.05, 0.04) * primaries, onWing * 0.8);
-    // Tail feathers, separated by fine lines, with a pale tip.
-    vec2 tailBase = vec2(-0.1, 0.22);
-    vec2 tailDir = normalize(rot(vec2(-0.25, -0.72), uTail));
-    float tailAlong = dot(b - tailBase, tailDir) / 0.76;
-    float tailAcross = dot(b - tailBase, vec2(-tailDir.y, tailDir.x));
-    float tailLines = smoothstep(0.004, 0.0, abs(fract(tailAcross * 22.0) - 0.5) - 0.47);
-    albedo = mix(albedo, vec3(0.09, 0.075, 0.065) * (1.0 - 0.4 * tailLines), tailDark);
-    albedo = mix(albedo, vec3(0.3, 0.28, 0.25), smoothstep(0.9, 0.99, tailAlong) * tailDark);
-    albedo = mix(albedo, vec3(0.34, 0.3, 0.25), belly);
-    albedo = mix(albedo, vec3(0.032, 0.028, 0.028), hood);
-    albedo = mix(albedo, vec3(0.7, 0.05, 0.035), vent * 0.92);
-    float translucency = mix(0.35, 0.8, hood);
-    if (part == 2.0) { albedo = vec3(0.03); translucency = 0.3; }
-    if (part == 5.0) albedo = vec3(0.1, 0.09, 0.09);
-    if (part == 6.0) { albedo = vec3(0.16, 0.13, 0.1); translucency = 1.0; }
-    // Rounded by its interior distance: the sky lights what faces up and out.
+    float hood = smoothstep(-0.04, 0.04, b.y - (0.56 + (0.3 - b.x) * 0.4)) * (1.0 - fluff * 0.4);
+    vec2 va = vec2(-0.1, -0.03);
+    vec2 vb = vec2(-0.3, -0.13);
+    float ventLine = length(b - va - (vb - va) * clamp(dot(b - va, vb - va) / dot(vb - va, vb - va), 0.0, 1.0));
+    float vent = smoothstep(0.08, 0.02, ventLine) * smoothstep(0.02, -0.06, b.y - (-0.02 + b.x * 0.35));
+    vec2 tailDir = normalize(rot(vec2(-0.25, -0.64), uTail));
+    float tailAlong = dot(b - vec2(-0.33, -0.08), tailDir) / 0.7;
+    float onTail = smoothstep(0.02, 0.1, tailAlong);
+    vec3 albedo = vec3(0.2, 0.155, 0.11) * (0.85 + 0.3 * noise(b * 18.0));
+    albedo = mix(albedo, vec3(0.1, 0.08, 0.065), onTail);
+    albedo = mix(albedo, vec3(0.42, 0.39, 0.34), smoothstep(0.9, 0.99, tailAlong));
+    albedo = mix(albedo, vec3(0.03, 0.026, 0.028), hood);
+    albedo = mix(albedo, vec3(0.62, 0.06, 0.04), vent * 0.85);
+    float translucency = mix(0.5, 0.25, hood) + 0.5 * onTail;
+    if (part == 2.0) { albedo = vec3(0.025); translucency = 0.15; }
+    if (part == 5.0) { albedo = vec3(0.09, 0.08, 0.08); translucency = 0.1; }
+    if (part == 6.0) { albedo = vec3(0.15, 0.12, 0.09); translucency = 1.0; }
+    // Rounded by its interior distance, lit only dimly from the sky in front.
     float inside = max(-d, 0.0);
-    float depth = clamp(inside / (0.11 * SCALE), 0.0, 1.0);
+    float depth = clamp(inside / (0.12 * SCALE), 0.0, 1.0);
     vec3 n3 = normalize(vec3(normal * (1.0 - depth * 0.85), 0.35 + depth));
     float skyLight = clamp(dot(n3, normalize(vec3(-0.1, 0.55, 0.83))) * 0.5 + 0.5, 0.0, 1.0);
-    vec3 fill = mix(vec3(0.24, 0.26, 0.3), vec3(0.05, 0.06, 0.1), uNight) * mix(1.0, 0.72, uDusk);
+    vec3 fill = mix(vec3(0.2, 0.22, 0.26), vec3(0.05, 0.06, 0.1), uNight) * mix(1.0, 0.7, uDusk);
     vec3 c = albedo * fill * (0.4 + 0.8 * skyLight);
     vec3 sun = sunColour();
     float strength = mix(1.0, 0.45, uNight);
     float facing = facingLight(normal, p);
-    c += sun * exp(-inside / 0.0022) * facing * 1.3 * strength;
-    c += sun * vec3(1.0, 0.6, 0.38) * exp(-inside / 0.0042) * translucency * mix(0.3, 0.12, hood) * strength;
-    // The eye catches a point of light while it is open.
-    c += vec3(0.95, 0.9, 0.8) * uEye * smoothstep(0.014, 0.005, eye) * mix(0.45, 0.1, uNight);
+    // A hairline of light on the edges that face the sun, and a warmer glow through thin feathers.
+    c += sun * exp(-inside / 0.002) * facing * (part == 5.0 ? 0.35 : 1.5) * strength;
+    c += sun * vec3(1.0, 0.6, 0.36) * exp(-inside / 0.0045) * translucency * 0.3 * pow(facing, 0.7) * strength;
+    c += vec3(1.0, 0.97, 0.9) * uEye * smoothstep(0.011, 0.004, eye) * mix(0.5, 0.1, uNight);
     return c;
 }
 
@@ -406,8 +481,8 @@ void main() {
     }
 
     // The bird, with its normal from the distance field and a glowing fringe of feather tips.
-    vec2 bc = uBird + vec2(0.0, 0.5 * SCALE);
-    if (length(p - bc) < 1.3 * SCALE) {
+    vec2 bc = uBird + vec2(0.0, 0.15 * SCALE);
+    if (length(p - bc) < 1.25 * SCALE) {
         vec2 b = toBird(p);
         float part;
         float eye;
@@ -425,7 +500,7 @@ void main() {
         // Feather tips just outside the outline catch the light, as fine radial streaks.
         float out_ = feathered * SCALE;
         if (out_ > -px && out_ < 0.012 * SCALE * 2.5) {
-            float angle = atan(b.y - 0.45, b.x * 1.3);
+            float angle = atan(b.y - 0.3, b.x * 1.2);
             float barbs = smoothstep(0.35, 0.85, noise(vec2(angle * 70.0, out_ / SCALE * 6.0)) * 0.7 + noise(vec2(angle * 190.0, 1.0)) * 0.3);
             float reach = exp(-max(out_, 0.0) / (0.012 * SCALE));
             c += sun * barbs * reach * pow(facing, 1.5) * 0.55 * strength * (1.0 - uFly * 0.5);
@@ -444,6 +519,23 @@ void main() {
         float cover = smoothstep(0.04, -0.04, dist);
         vec3 near = mix(vec3(0.04, 0.07, 0.03), vec3(0.3, 0.42, 0.1) * sun, (1.0 - uNight) * 0.5);
         c = mix(c, near * mix(1.0, 0.3, uNight), cover * 0.93);
+    }
+
+    // Motes of dust and pollen drift in the air and flare when they cross the light.
+    float day = 1.0 - uNight;
+    if (day > 0.01) {
+        float span = uRes.x / uRes.y;
+        for (int i = 0; i < 28; i++) {
+            float seed = float(i);
+            float size = mix(0.0016, 0.0045, hash(vec2(seed, 5.2)));
+            vec2 at = vec2((hash(vec2(seed, 0.7)) - 0.5) * span, hash(vec2(seed, 3.9)));
+            at += vec2(sin(uTime * 0.11 + seed * 1.9) * 0.05 + uTime * 0.004 * (0.5 + hash(vec2(seed, 2.2))), sin(uTime * 0.17 + seed) * 0.03 + uTime * 0.006) * uMotion;
+            at = vec2(mod(at.x + span * 0.5, span) - span * 0.5, fract(at.y));
+            float dd = dot(p - at, p - at);
+            float nearSun = exp(-length(at - uSun) * 2.2);
+            float tumble = 0.45 + 0.55 * sin(uTime * (1.2 + hash(vec2(seed, 8.8))) + seed * 5.0);
+            c += sun * exp(-dd / (size * size)) * (0.12 + 0.9 * nearSun) * tumble * day;
+        }
     }
 
     // Fireflies on a dark night.
