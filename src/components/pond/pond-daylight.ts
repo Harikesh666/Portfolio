@@ -2,8 +2,19 @@ import type { WaterTheme } from "./pond-water";
 
 type Rgb = readonly [number, number, number];
 
+/**
+ * The bulbul scene as it renders at a phase of the day, sampled from its
+ * frames: the top and bottom of the frame, in the light and dark themes,
+ * as 0-255 RGB. Only the CSS placeholder shown before WebGL draws uses it.
+ */
+type SkyPlaceholder = Readonly<{
+    light: readonly [Rgb, Rgb];
+    dark: readonly [Rgb, Rgb];
+}>;
+
 type Keyframe = Readonly<{
     hour: number;
+    sky: SkyPlaceholder;
     deep: Rgb;
     shallow: Rgb;
     light: Rgb;
@@ -18,6 +29,7 @@ const night: Omit<Keyframe, "hour"> = {
     light: [0.62, 0.72, 0.92],
     lightStrength: 0.18,
     night: 1,
+    sky: { light: [[7, 11, 30], [40, 38, 37]], dark: [[7, 11, 30], [28, 27, 26]] },
 };
 const dawn: Omit<Keyframe, "hour"> = {
     deep: [0.4, 0.46, 0.62],
@@ -25,6 +37,7 @@ const dawn: Omit<Keyframe, "hour"> = {
     light: [1, 0.95, 0.9],
     lightStrength: 0.4,
     night: 0.2,
+    sky: { light: [[113, 133, 161], [146, 143, 105]], dark: [[99, 117, 141], [119, 116, 82]] },
 };
 const day: Omit<Keyframe, "hour"> = {
     deep: [0.36, 0.58, 0.56],
@@ -32,6 +45,7 @@ const day: Omit<Keyframe, "hour"> = {
     light: [0.97, 1, 0.98],
     lightStrength: 0.42,
     night: 0,
+    sky: { light: [[166, 182, 186], [162, 165, 124]], dark: [[143, 155, 158], [127, 130, 97]] },
 };
 const dusk: Omit<Keyframe, "hour"> = {
     deep: [0.44, 0.29, 0.42],
@@ -39,6 +53,7 @@ const dusk: Omit<Keyframe, "hour"> = {
     light: [1, 0.89, 0.68],
     lightStrength: 0.38,
     night: 0.3,
+    sky: { light: [[99, 90, 130], [132, 115, 73]], dark: [[90, 82, 117], [107, 93, 55]] },
 };
 
 /** Mumbai's day, roughly: first light near six, sunset near seven. */
@@ -61,6 +76,20 @@ const mixRgb = (a: Rgb, b: Rgb, t: number): Rgb => [
 ];
 
 export type Daylight = WaterTheme & Readonly<{ night: number }>;
+
+/**
+ * The colour stops the pre-paint placeholder script interpolates, so a scene's
+ * box shows the right time of day before WebGL draws: the koi pond's water
+ * (0-1, dimmed for the dark theme the way `daylightAt` does) and the bulbul's
+ * sky. Serialized into the page by the root route.
+ */
+export const placeholderStops = keyframes.map(({ deep, hour, night, shallow, sky }) => ({
+    deep,
+    hour,
+    night,
+    shallow,
+    sky,
+}));
 
 /**
  * The pond's lighting for an hour of the day (0 to 24, fractional), with

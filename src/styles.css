@@ -3802,6 +3802,18 @@
         }
     }
 
+    /*
+     * The time-of-day scenes paint their placeholder from Mumbai's clock (set
+     * before first paint by the root route), falling back to the daytime teal.
+     */
+    .event-loop-pond[data-mode="garden"] {
+        background: linear-gradient(160deg, var(--pond-water-shallow, var(--pond-shallow)), var(--pond-water-deep, var(--pond-deep)));
+    }
+
+    .event-loop-pond[data-mode="bird"] {
+        background: linear-gradient(to bottom, var(--pond-sky-top, var(--pond-shallow)), var(--pond-sky-bottom, var(--pond-deep)));
+    }
+
     .event-loop-pond__layer {
         position: absolute;
         inset: 0;
