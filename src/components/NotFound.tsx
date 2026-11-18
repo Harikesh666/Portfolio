@@ -4,7 +4,7 @@ import { Pond } from "./pond/Pond";
 
 /**
  * The 404 page. One sentence says what happened, three links lead back,
- * and the home page's koi pond sits below, so a wrong turn still lands
+ * and the bulbul sits on its branch below, so a wrong turn still lands
  * somewhere worth a moment.
  */
 export function NotFound() {
@@ -17,8 +17,8 @@ export function NotFound() {
                     <header>
                         <p className="text-[13px] text-muted">Error 404</p>
                         <h1 className="lost-lead mt-3">
-                            <strong>This page swam off.</strong> It isn't here, or it has moved. The koi below
-                            know their way around this pond, and these links will get you home.
+                            <strong>This page flew off.</strong> It isn't here, or it has moved. The bulbul
+                            below stayed put, and these links will get you home.
                         </h1>
                     </header>
                 </PageEnter.Item>
@@ -40,9 +40,9 @@ export function NotFound() {
                 <PageEnter.Fade>
                     <div className="mt-16">
                         <Pond
-                            caption="Tap to feed the koi while you're here."
-                            description="A koi pond lit by the current time of day in Mumbai. The koi gather near the pointer and come to food when the pond is tapped."
-                            mode="garden"
+                            caption="Tap the bulbul and it sings; tap the branch and it hops."
+                            description="A red-vented bulbul in silhouette on a peepal bough against the sky, lit from behind by the current time of day in Mumbai. Tapping the bird makes it sing, tapping the branch makes it hop there, and quick taps send it flying off before it comes back."
+                            mode="bird"
                         />
                     </div>
                 </PageEnter.Fade>
