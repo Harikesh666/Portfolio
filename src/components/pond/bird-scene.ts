@@ -437,6 +437,10 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         const fromLeft = Math.random() < 0.5;
         facing = fromLeft ? 1 : -1;
         flight = { age: 0, from: { x: (fromLeft ? -1 : 1) * (aspect / 2 + 0.4), y: random(0.7, 1.0) }, to: { x: landing.x, y: landing.y + landing.r }, length: random(1.1, 1.5) };
+        // Start out of frame now. The flight only moves the bird from the next step, so without this the
+        // first frame draws it wherever it was last, which on arrival is the frame's bottom centre.
+        birdAt.x = flight.from.x;
+        birdAt.y = flight.from.y;
     }
 
     function step(dt: number) {
