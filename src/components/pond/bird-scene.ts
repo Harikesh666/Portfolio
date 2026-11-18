@@ -97,6 +97,8 @@ const feel = {
     wakeRate: 5,
     wakeShakeSeconds: 0.8,
     awakeAfterSong: 3,
+    /** After landing at night, how long it looks around before it fluffs up and tucks its head in. */
+    settleBeforeSleep: 2.5,
 } as const;
 
 type Act = "flicks" | "preen" | "rouse" | "stretch" | "shuffle" | "turn" | "sing";
@@ -464,7 +466,9 @@ export function createBirdScene(options: BirdOptions): Pond | null {
 
     function returnToBranch() {
         mode = "returning";
-        perch = random(perchRange[0] + 0.05, perchRange[1] - 0.05);
+        // It lands on the open stretch, not right under the forking limb, where
+        // its head would vanish among the leaves (at night, all but entirely).
+        perch = random(perchRange[0] + 0.13, perchRange[1] - 0.05);
         const points = branchPoints();
         const landing = onBranch(points, perch);
         const fromLeft = Math.random() < 0.5;
@@ -647,6 +651,8 @@ export function createBirdScene(options: BirdOptions): Pond | null {
                     mode = "perched";
                     sag.v += feel.landingKick;
                     tail.v += 4.5;
+                    // At night it settles in with a look around before it sleeps.
+                    wakeFor = Math.max(wakeFor, feel.settleBeforeSleep);
                     if (isArriving) {
                         isArriving = false;
                         nextSong = random(...feel.greetAfter);
@@ -805,11 +811,14 @@ export function createBirdScene(options: BirdOptions): Pond | null {
 
     // Settle the bird on its perch before the first frame.
     advance(0.5);
-    // Arriving, the branch starts empty and the bird flies in after a beat. Asleep, or under reduced motion, it is simply there.
-    if (arrival === "fly-in" && !reducedMotion && light().night <= 0.6) {
+    // Arriving, the branch starts empty and the bird flies in after a beat, by
+    // day or by moonlight; at night it then settles and falls asleep. Under
+    // reduced motion it is simply there.
+    if (arrival === "fly-in" && !reducedMotion) {
         mode = "away";
         awayFor = feel.arrivalDelay;
         isArriving = true;
+        fluff = 0;
     }
 
     const toFrame = (x: number, y: number) => ({ x: (x - width / 2) / height, y: 1 - y / height });
