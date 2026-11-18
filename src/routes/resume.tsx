@@ -323,6 +323,9 @@ function ResumeSection({
     );
 }
 
+/** Marks longer than this wrap with the words, so none can push past a phone's screen. */
+const wrapLength = 22;
+
 /** Text with its figures in Strong and its marked phrases annotated by hand, in reading order. */
 function annotate(content: string, marks: readonly ResumeMark[] = [], index = 0): ReactNode[] {
     const found = marks
@@ -335,7 +338,7 @@ function annotate(content: string, marks: readonly ResumeMark[] = [], index = 0)
         if (at < cursor) return;
         parts.push(<Fragment key={`text-${cursor}`}>{emphasizeFigures(content.slice(cursor, at))}</Fragment>);
         parts.push(
-            <SketchMark index={index + order} key={`mark-${at}`} kind={mark.kind}>
+            <SketchMark index={index + order} key={`mark-${at}`} kind={mark.kind} wraps={mark.text.length > wrapLength}>
                 {emphasizeFigures(mark.text)}
             </SketchMark>,
         );

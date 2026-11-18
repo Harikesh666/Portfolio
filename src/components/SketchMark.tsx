@@ -6,6 +6,12 @@ type SketchMarkProps = Readonly<{
     kind: "underline" | "marker";
     /** Order among the marks on the page; later marks draw a beat after earlier ones. */
     index?: number;
+    /**
+     * For phrases too long to stay on one line on a phone: the mark wraps with
+     * the words and every line gets its own stroke, so it never pushes past the
+     * screen. Short marks keep the drawn SVG stroke and stay whole.
+     */
+    wraps?: boolean;
 }>;
 
 /*
@@ -34,7 +40,7 @@ const strokes = {
  * and then stays. The words themselves are untouched for screen readers.
  * Styling and timing live in `styles.css` (`.sketch-mark`).
  */
-export function SketchMark({ children, kind, index = 0 }: SketchMarkProps) {
+export function SketchMark({ children, kind, index = 0, wraps = false }: SketchMarkProps) {
     const ref = useRef<HTMLSpanElement>(null);
     const [isDrawn, setIsDrawn] = useState(false);
 
@@ -55,6 +61,19 @@ export function SketchMark({ children, kind, index = 0 }: SketchMarkProps) {
     }, []);
 
     const stroke = strokes[kind];
+    if (wraps) {
+        return (
+            <span
+                className="sketch-mark sketch-mark--wraps"
+                data-drawn={isDrawn ? "" : undefined}
+                data-kind={kind}
+                ref={ref}
+                style={{ "--sketch-index": index } as React.CSSProperties}
+            >
+                {children}
+            </span>
+        );
+    }
     return (
         <span
             className="sketch-mark"
