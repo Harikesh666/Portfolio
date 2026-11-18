@@ -78,7 +78,7 @@ export default function Footer() {
                     {siteLinks.map((link) => (
                         <Link
                             activeOptions={{ exact: link.to === "/" }}
-                            className="hover:text-foreground-strong data-[status=active]:text-foreground-strong"
+                            className="inline-flex min-h-6 items-center hover:text-foreground-strong data-[status=active]:text-foreground-strong"
                             key={link.to}
                             to={link.to}
                         >
@@ -86,7 +86,7 @@ export default function Footer() {
                         </Link>
                     ))}
                     <button
-                        className="inline-flex items-center gap-1.5 hover:text-foreground-strong"
+                        className="inline-flex min-h-6 items-center gap-1.5 hover:text-foreground-strong"
                         onClick={() => window.dispatchEvent(new Event(openCommandPaletteEvent))}
                         type="button"
                     >
@@ -95,11 +95,11 @@ export default function Footer() {
                     </button>
                 </nav>
                 <span className="flex flex-wrap items-baseline gap-x-2">
-                    <LocalTime />
-                    <span aria-hidden="true">·</span>
                     <span>
                         © {new Date().getFullYear()} {site.name}
                     </span>
+                    <span aria-hidden="true">·</span>
+                    <LocalTime />
                 </span>
             </div>
             <FooterGarden />

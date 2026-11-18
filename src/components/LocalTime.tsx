@@ -35,8 +35,9 @@ function getServerSnapshot() {
 }
 
 /**
- * Harikesh's local time in Mumbai. It renders only after hydration, with a
- * fixed-width slot reserved so the footer does not shift when it appears.
+ * Harikesh's local time in Mumbai. It renders only after hydration. Every
+ * caller places it last on its line, so nothing after it shifts when the time
+ * appears, and no fixed-width slot is needed to hold the space.
  */
 export function LocalTime() {
     const time = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
@@ -44,7 +45,7 @@ export function LocalTime() {
     return (
         <span className="inline-flex items-baseline gap-1">
             Mumbai
-            <span className="inline-block min-w-[11ch] tabular-nums">
+            <span className="tabular-nums">
                 {time ? (
                     <>
                         <span className="sr-only">, local time </span>
