@@ -154,7 +154,7 @@ export function TocSheet({
     });
     const [routeId] = useState(currentRouteId);
     const isRouteActive = currentRouteId === routeId;
-    const { activeId, activeIndex } = useScrollSpy(
+    const { activeId, activeIndex, hasMeasured } = useScrollSpy(
         items,
         containerRef,
         isRouteActive,
@@ -569,7 +569,13 @@ export function TocSheet({
             setIsReadingDown(false);
         };
     }, [isRouteActive]);
-    const isTriggerTucked = (isFooterInView || (isReadingDown && !isDockFocused)) && !isOpen;
+    // The trigger waits for the first scrollspy pass, so it enters already
+    // naming the right section instead of swapping its label in place.
+    const isTriggerTucked =
+        (!hasMeasured ||
+            isFooterInView ||
+            (isReadingDown && !isDockFocused)) &&
+        !isOpen;
 
     if (!isRouteActive || items.length === 0) return null;
 

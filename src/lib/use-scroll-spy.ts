@@ -13,6 +13,8 @@ const viewportThreshold = 120;
 type ScrollSpyState = Readonly<{
     activeId: string | null;
     activeIndex: number | null;
+    /** False until the first pass has measured the headings. */
+    hasMeasured: boolean;
     scrollActivity: MotionValue<number>;
     sectionProgress: MotionValue<number>;
     start: () => void;
@@ -25,6 +27,7 @@ export function useScrollSpy(
     enabled = true,
 ): ScrollSpyState {
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [hasMeasured, setHasMeasured] = useState(false);
     const scrollActivity = useMotionValue(0);
     const sectionProgress = useMotionValue(0);
     const cleanupRef = useRef<(() => void) | undefined>(undefined);
@@ -70,7 +73,10 @@ export function useScrollSpy(
                 }
                 if (headings.length === 0) return;
 
-                let nextActiveIndex = 0;
+                // Above the first listed section (an intro, say) no section
+                // is active yet, so the label stays neutral instead of naming
+                // a section the reader has not reached.
+                let nextActiveIndex: number | null = null;
                 const firstHeading = headings[0];
                 if (!firstHeading.isConnected) return;
 
@@ -93,6 +99,14 @@ export function useScrollSpy(
                         nextTop = headingTop;
                         break;
                     }
+                }
+
+                setHasMeasured(true);
+                if (nextActiveIndex === null) {
+                    sectionProgress.set(0);
+                    scrollActivity.set(scrollActivity.get() + 1);
+                    setActiveId(null);
+                    return;
                 }
 
                 const sectionEnd =
@@ -157,6 +171,7 @@ export function useScrollSpy(
         activeId,
         activeIndex:
             activeIndex !== null && activeIndex >= 0 ? activeIndex : null,
+        hasMeasured,
         scrollActivity,
         sectionProgress,
         start,
