@@ -68,8 +68,8 @@
       },
       {
         "name": "reading-motion",
-        "value": "400ms first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 500ms TOC surface spring; cubic-bezier(0.16, 1, 0.3, 1)",
-        "purpose": "Materializes viewport-sized blocks while route heroes remain their sole entrance owners and home content and complete article bodies stay stationary; article-list focus is opacity-only, simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
+        "value": "no entrance on the server-rendered first load; 240ms route enter; 300ms header morph; 90ms route exit; 40ms block stagger; 500ms TOC surface spring; cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Leaves the server-rendered first page in its final state so it reads before JavaScript; on navigation it materializes viewport-sized blocks after the route hero hands off, so pages land top to bottom and home content and complete article bodies stay stationary; article-list focus is opacity-only, simple portfolio destinations swap without a zero-opacity frame, article routes retain one deferred frame, and same-route hash history bypasses route motion."
       },
       {
         "name": "editorial-stagger",
