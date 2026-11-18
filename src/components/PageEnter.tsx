@@ -22,12 +22,11 @@ function PageEnterRoot({ children }: PageEnterProps) {
 function PageEnterItem({ children }: PageEnterItemProps) {
     const shouldReduceMotion = useReducedMotion();
     const revealRef = useRef<HTMLDivElement>(null);
-    const isInView = useRevealInView(revealRef, shouldReduceMotion);
+    const reveal = useRevealInView(revealRef, shouldReduceMotion);
 
     return (
         <motion.div
-            animate={shouldReduceMotion || isInView ? "visible" : "hidden"}
-            initial={shouldReduceMotion ? false : "hidden"}
+            {...reveal}
             ref={revealRef}
             variants={
                 shouldReduceMotion ? reducedPageBlock : routeMaterializeBlock
@@ -41,12 +40,11 @@ function PageEnterItem({ children }: PageEnterItemProps) {
 function PageEnterFade({ children }: PageEnterItemProps) {
     const shouldReduceMotion = useReducedMotion();
     const revealRef = useRef<HTMLDivElement>(null);
-    const isInView = useRevealInView(revealRef, shouldReduceMotion);
+    const reveal = useRevealInView(revealRef, shouldReduceMotion);
 
     return (
         <motion.div
-            animate={shouldReduceMotion || isInView ? "visible" : "hidden"}
-            initial={shouldReduceMotion ? false : "hidden"}
+            {...reveal}
             ref={revealRef}
             variants={shouldReduceMotion ? reducedPageBlock : scrollRevealTree}
         >

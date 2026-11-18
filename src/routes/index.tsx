@@ -13,7 +13,7 @@ import { HomeScene } from "../components/pond/HomeScene";
 import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { homeStructuredData } from "../lib/agent-readiness";
-import { authoredPosts } from "../lib/content";
+import { authoredPosts, posts } from "../lib/content";
 import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 import { stackGroups } from "../lib/stack";
@@ -189,7 +189,7 @@ function HomePage() {
                     <StaggerReveal.Item as="li">
                         <Link className="hover-row" to="/articles">
                             <span className="flex items-center gap-1.5 text-foreground-strong">
-                                All {authoredPosts.length} guides
+                                All {posts.length} guides
                                 <ArrowRightIcon
                                     aria-hidden="true"
                                     className="nudge-arrow"

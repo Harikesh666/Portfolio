@@ -10,6 +10,24 @@ type PortfolioHistoryState = Record<string, unknown> & {
     [hashlessScrollStateKey]?: number;
 };
 
+let hasCheckedDocumentLoad = false;
+
+/**
+ * True once per document, when this page was reloaded or reached by
+ * Back/Forward as a full load. The browser then restores where the reader
+ * was, and that position must win over the hash in the URL. A TOC jump leaves
+ * the hash in place while the reader keeps scrolling past it.
+ */
+function isRestoredDocumentLoad() {
+    if (hasCheckedDocumentLoad) return false;
+    hasCheckedDocumentLoad = true;
+
+    const entry = performance.getEntriesByType("navigation")[0];
+    if (!(entry instanceof PerformanceNavigationTiming)) return false;
+    if (new URL(entry.name).pathname !== window.location.pathname) return false;
+    return entry.type === "reload" || entry.type === "back_forward";
+}
+
 function getHashId() {
     return decodeURIComponent(window.location.hash.slice(1));
 }
@@ -104,7 +122,8 @@ export function useTocNavigation(containerRef: RefObject<HTMLElement | null>) {
         };
 
         window.addEventListener("popstate", handleHistoryNavigation);
-        if (window.location.hash) handleHistoryNavigation();
+        const isRestored = isRestoredDocumentLoad();
+        if (window.location.hash && !isRestored) handleHistoryNavigation();
 
         return () => {
             if (navigationFrame !== undefined) {

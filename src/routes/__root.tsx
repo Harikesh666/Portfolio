@@ -10,6 +10,7 @@ import {
     HeadContent,
     Scripts,
     createRootRoute,
+    rootRouteId,
     useLocation,
 } from "@tanstack/react-router";
 import {
@@ -39,6 +40,12 @@ import {
     routePageContainer,
     routePageEnterTween,
 } from "../lib/motion";
+import { notFoundMeta } from "../lib/not-found-head";
+import {
+    HeroHandoffContext,
+    ServerRenderedRouteContext,
+} from "../lib/route-entrance";
+import { createScrollPositions } from "../lib/scroll-positions";
 import { absoluteUrl, site } from "../lib/site";
 import { themeColors } from "../lib/theme-color";
 
@@ -62,9 +69,6 @@ const themeScript = `(() => {
   }
 })();`;
 
-const motionBootstrapScript =
-    'document.documentElement.setAttribute("data-motion-enabled", "");';
-
 const fontStylesheetScript = `(() => {
   const link = document.createElement("link");
   link.rel = "stylesheet";
@@ -72,15 +76,30 @@ const fontStylesheetScript = `(() => {
   document.head.append(link);
 })();`;
 
+/**
+ * A URL no route matches leaves only the root match. A route whose loader
+ * throws `notFound()` marks its match instead.
+ */
+function isMissingPage(
+    matches: ReadonlyArray<{ routeId: string; status: string }>,
+) {
+    return (
+        matches.every((match) => match.routeId === rootRouteId) ||
+        matches.some((match) => match.status === "notFound")
+    );
+}
+
 export const Route = createRootRoute({
-    head: () => ({
+    head: ({ matches }) => ({
         meta: [
             { charSet: "utf-8" },
             {
                 name: "viewport",
                 content: "width=device-width, initial-scale=1",
             },
-            { title: `${site.name} - Software Engineer` },
+            ...(isMissingPage(matches)
+                ? notFoundMeta
+                : [{ title: `${site.name} - Software Engineer` }]),
             { name: "description", content: site.description },
             {
                 property: "og:title",
@@ -99,6 +118,10 @@ export const Route = createRootRoute({
             { name: "twitter:image", content: absoluteUrl("/og.png") },
         ],
         links: [
+            // React hoists the app stylesheet above the inline scripts, so the
+            // script that injects the font stylesheet waits for it. Preloading
+            // starts the font CSS request with the HTML instead.
+            { rel: "preload", as: "style", href: fontStylesheetHref },
             { rel: "preconnect", href: "https://fonts.googleapis.com" },
             {
                 rel: "preconnect",
@@ -121,9 +144,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
-                <script
-                    dangerouslySetInnerHTML={{ __html: motionBootstrapScript }}
-                />
                 <script dangerouslySetInnerHTML={{ __html: themeScript }} />
                 <script
                     dangerouslySetInnerHTML={{ __html: fontStylesheetScript }}
@@ -161,6 +181,23 @@ function ExitScrollCompensation({
     const presenceData = usePresenceData();
     const exitScrollY = typeof presenceData === "number" ? presenceData : 0;
     const scrollOffset = useMotionValue(0);
+    const lastScrollY = useRef(0);
+
+    // Tracks scroll while the page is live, outside any commit. Reading
+    // `window.scrollY` in the commit that pins the exiting page would force a
+    // style recalc of the whole outgoing tree.
+    useEffect(() => {
+        if (!isPresent) return;
+
+        function recordScrollY() {
+            lastScrollY.current = window.scrollY;
+        }
+
+        recordScrollY();
+        window.addEventListener("scroll", recordScrollY, { passive: true });
+
+        return () => window.removeEventListener("scroll", recordScrollY);
+    }, [isPresent]);
 
     useLayoutEffect(() => {
         if (isPresent) {
@@ -172,7 +209,7 @@ function ExitScrollCompensation({
             scrollOffset.set(headerHeight - window.scrollY);
         }
 
-        syncScrollOffset();
+        scrollOffset.set(headerHeight - lastScrollY.current);
         window.addEventListener("scroll", syncScrollOffset, { passive: true });
 
         return () => window.removeEventListener("scroll", syncScrollOffset);
@@ -225,6 +262,7 @@ function RoutePage({
     );
     const hasSettled = useRef(false);
     const hasPlacedScroll = useRef(false);
+    const heroHandoffRef = useRef(0);
     const settleFrame = useRef<number | undefined>(undefined);
     const shouldExitInstantly = usePresenceData() === true;
 
@@ -305,9 +343,13 @@ function RoutePage({
             }}
             variants={routeContainerVariants}
         >
-            <ExitScrollCompensation headerHeight={headerHeight}>
-                {children}
-            </ExitScrollCompensation>
+            <ServerRenderedRouteContext value={isInitialPage}>
+                <HeroHandoffContext value={heroHandoffRef}>
+                    <ExitScrollCompensation headerHeight={headerHeight}>
+                        {children}
+                    </ExitScrollCompensation>
+                </HeroHandoffContext>
+            </ServerRenderedRouteContext>
         </motion.div>
     );
 }
@@ -320,7 +362,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
     const [initialPathname] = useState(pathname);
     const [hasNavigated, setHasNavigated] = useState(false);
     const [settledRouteId, setSettledRouteId] = useState(pathname);
-    const [scrollPositions] = useState(() => new Map<string, number>());
+    const [scrollPositions] = useState(createScrollPositions);
     const isInitialPage = !hasNavigated && pathname === initialPathname;
     const locationKey = useLocation({
         select: (location) => location.state.__TSR_key ?? location.href,
@@ -339,10 +381,20 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
             scrollPositions.set(currentLocationKey, window.scrollY);
         }
 
+        function persistWhenHidden() {
+            if (document.visibilityState === "hidden") scrollPositions.persist();
+        }
+
         captureScrollY();
         window.addEventListener("scroll", captureScrollY, { passive: true });
+        window.addEventListener("pagehide", scrollPositions.persist);
+        document.addEventListener("visibilitychange", persistWhenHidden);
 
-        return () => window.removeEventListener("scroll", captureScrollY);
+        return () => {
+            window.removeEventListener("scroll", captureScrollY);
+            window.removeEventListener("pagehide", scrollPositions.persist);
+            document.removeEventListener("visibilitychange", persistWhenHidden);
+        };
     }, [scrollPositions]);
 
     const pageTransition = shouldReduceMotion
@@ -367,7 +419,7 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
         <MotionConfig reducedMotion="user" transition={pageTransition}>
             <motion.div
                 animate="visible"
-                initial="hidden"
+                initial={false}
                 variants={containerVariants}
             >
                 <motion.div variants={blockVariants}>

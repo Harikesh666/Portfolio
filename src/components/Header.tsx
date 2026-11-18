@@ -80,7 +80,8 @@ function Avatar({ size }: Readonly<{ size: number }>) {
         return (
             <img
                 alt=""
-                className="rounded-full object-cover"
+                // The dark hair and backdrop melt into the dark page without a hairline edge.
+                className="rounded-full object-cover dark:ring-1 dark:ring-divider"
                 height={size}
                 src={site.avatar}
                 style={{ width: size, height: size }}

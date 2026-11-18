@@ -12,8 +12,14 @@ export function AvailabilityStatus() {
         <span className="availability">
             <span aria-hidden="true" className="availability__dot" />
             <span className="text-foreground-strong">{site.availability}</span>
-            <span aria-hidden="true">·</span>
-            <LocalTime />
+            {/* On a phone the clock takes its own line, aligned under the
+                text, instead of leaving the separator stranded at a line end. */}
+            <span aria-hidden="true" className="max-sm:hidden">
+                ·
+            </span>
+            <span className="max-sm:basis-full max-sm:pl-[calc(7px+0.5rem)]">
+                <LocalTime />
+            </span>
         </span>
     );
 }
