@@ -136,7 +136,7 @@ type Shoot = Readonly<{
     pieces: number;
 }>;
 /** A peepal leaf hanging by its stalk from a shoot. */
-type Leaf = Readonly<{ shoot: number; along: number; hang: number; length: number; width: number; twist: number; seed: number; front: boolean }>;
+type Leaf = Readonly<{ shoot: number; along: number; lean: number; length: number; width: number; twist: number; seed: number; front: boolean; young: boolean }>;
 
 /** The branch at rest: a Catmull-Rom curve through its line, swelling a little where shoots grow out. */
 function restBranch(shoots: readonly Shoot[]) {
@@ -172,12 +172,15 @@ function growFoliage() {
 
     function hangLeaves(shoot: number, count: number, front: number) {
         for (let i = 0; i < count && leaves.length < maxLeaves; i++) {
+            const along = count === 1 ? 1 : 0.35 + (0.65 * i) / (count - 1);
             leaves.push({
                 shoot,
-                along: count === 1 ? 1 : 0.35 + (0.65 * i) / (count - 1),
-                // Leaves hang, a little to either side of straight down.
-                hang: -Math.PI / 2 + next(-0.5, 0.5),
-                length: next(0.07, 0.14),
+                along,
+                // Each leaf leans a little to one side of where its twig and its weight carry it.
+                lean: next(-0.45, 0.45),
+                // New growth is at the twig's tip, and smaller.
+                young: along > 0.95 && next() < 0.55,
+                length: along > 0.95 ? next(0.06, 0.1) : next(0.08, 0.14),
                 width: next(0.4, 0.5),
                 twist: next(-1.1, 1.1),
                 seed: next(0, 100),
@@ -630,10 +633,12 @@ export function createBirdScene(options: BirdOptions): Pond | null {
             // and twists about its midrib, which foreshortens it and flips its paler underside into view.
             const swing = reducedMotion ? 0 : (Math.sin(time * (2.4 + (leaf.seed % 3) * 0.5) + leaf.seed) * 0.16 + Math.sin(time * 6.1 + leaf.seed * 2.3) * 0.05) * (0.3 + gust);
             const twist = leaf.twist + (reducedMotion ? 0 : Math.sin(time * (3.4 + (leaf.seed % 5) * 0.4) + leaf.seed * 1.7) * 0.8 * (0.3 + gust));
-            const direction = leaf.hang + swing;
+            // A leaf follows its twig's line partly and droops the rest of the way toward straight down.
+            const droop = 0.62;
+            const direction = Math.atan2(Math.sin(base.angle) * (1 - droop) - droop, Math.cos(base.angle) * (1 - droop)) + leaf.lean + swing;
             const stalk = leaf.length * 0.4;
             leafData.set([base.x + Math.cos(direction) * stalk, base.y + Math.sin(direction) * stalk, direction, leaf.length], index * 4);
-            leafShape.set([Math.cos(twist), leaf.seed, leaf.front ? 1 : 0, leaf.width], index * 4);
+            leafShape.set([Math.cos(twist), leaf.seed, (leaf.front ? 1 : 0) + (leaf.young ? 2 : 0), leaf.width], index * 4);
         });
 
         // The bird stands on the branch unless it is in the air.

@@ -180,6 +180,12 @@ vec3 skyAt(vec2 p) {
     float lining = cloud * (1.0 - smoothstep(0.56, 0.86, fbm(drift + 0.06)));
     c = mix(c, mix(c * 0.93, mix(vec3(1.0), sun, 0.4), 0.42 * day) * mix(1.0, 0.25, uNight), cloud * 0.75);
     c += sun * lining * exp(-dSun * 2.2) * day;
+    // Thin streaks of cirrus, stretched by high wind, catching the sun more the nearer they lie to it.
+    vec2 high = vec2(p.x * 0.9 + uTime * 0.004 + p.y * 0.6, p.y * 11.0);
+    float cirrus = smoothstep(0.5, 0.82, fbm(high) * 0.7 + fbm(high * vec2(2.3, 1.0) + 5.0) * 0.3) * smoothstep(0.3, 0.5, h) * (1.0 - smoothstep(0.85, 1.0, h));
+    c += mix(vec3(0.9), sun, 0.55) * cirrus * (0.07 + 0.3 * exp(-dSun * 1.6)) * day;
+    // At dusk the low sky burns warm in a soft band.
+    c += vec3(1.0, 0.45, 0.2) * uDusk * exp(-abs(h - 0.3) * 5.0) * 0.14 * day;
     // Night: the moon with a soft halo, and stars between the clouds.
     float dMoon = length(p - uMoon);
     c += vec3(0.92, 0.93, 1.0) * (smoothstep(0.022, 0.017, dMoon) * 0.95 + exp(-dMoon * 9.0) * 0.12 + exp(-dMoon * 2.5) * 0.04) * uNight;
@@ -285,14 +291,15 @@ vec4 branchAt(vec2 p, float px) {
     vec3 c = bark * fill * (0.45 + 0.55 * roundness) * (0.75 + 0.35 * clamp(across * dot(side, vec2(0.0, 1.0)) + 0.5, 0.0, 1.0));
     vec2 normal = normalize(side * across + 0.0001);
     vec3 sun = sunColour();
-    c += sun * exp(-max(-best, 0.0) / 0.0026) * facingLight(normal, p) * mix(1.3, 0.45, uNight) * (1.0 - 0.6 * crack);
+    c += sun * exp(-max(-best, 0.0) / 0.0032) * facingLight(normal, p) * mix(1.7, 0.5, uNight) * (1.0 - 0.6 * crack);
     return vec4(c, clamp(0.5 - best / px, 0.0, 1.0));
 }
 
 // One peepal leaf, hanging by its stalk: a heart with a long drip tip.
 // Returns colour and coverage; layered counts leaves already under this pixel.
 // leaf: base x, base y, direction from base to tip, length. shape: twist (its
-// cosine), seed, in front of the branch or behind, half-width as a share of length.
+// cosine), seed, a flag (1 in front of the branch, plus 2 for new growth),
+// half-width as a share of length.
 vec4 leafAt(vec2 p, vec4 leaf, vec4 shape, float px, float layered) {
     vec2 d = rot(p - leaf.xy, -leaf.z);
     float len = leaf.w;
@@ -324,7 +331,7 @@ vec4 leafAt(vec2 p, vec4 leaf, vec4 shape, float px, float layered) {
     float net = noise(d * 520.0 + seed) * 0.5 + noise(d * 260.0 - seed) * 0.5;
     // Colour: new leaves coppery pink, as peepal's are; then fresh green, then deep green. The underside is paler.
     float age = hash(vec2(seed, 3.3));
-    float young = 1.0 - smoothstep(0.08, 0.16, age);
+    float young = step(1.5, shape.z);
     vec3 top = mix(mix(vec3(0.2, 0.3, 0.07), vec3(0.06, 0.12, 0.04), age), vec3(0.36, 0.17, 0.1), young);
     vec3 under = mix(mix(vec3(0.34, 0.42, 0.16), vec3(0.2, 0.28, 0.12), age), vec3(0.5, 0.28, 0.2), young);
     vec3 albedo = (underside ? under : top) * (0.85 + 0.3 * noise(d * 160.0 + seed));
@@ -465,7 +472,7 @@ vec3 plumage(vec2 p, vec2 b, float d, vec2 normal, float part, float eye) {
     float strength = mix(1.0, 0.45, uNight);
     float facing = facingLight(normal, p);
     // A hairline of light on the edges that face the sun, and a warmer glow through thin feathers.
-    c += sun * exp(-inside / 0.002) * facing * (part == 5.0 ? 0.35 : 1.5) * strength;
+    c += sun * exp(-inside / 0.0028) * facing * (part == 5.0 ? 0.35 : 1.7) * strength;
     c += sun * vec3(1.0, 0.6, 0.36) * exp(-inside / 0.0045) * translucency * 0.3 * pow(facing, 0.7) * strength;
     c += vec3(1.0, 0.97, 0.9) * uEye * smoothstep(0.011, 0.004, eye) * mix(0.5, 0.1, uNight);
     return c;
@@ -488,7 +495,7 @@ void main() {
         for (int i = 0; i < ${leaves}; i++) {
             if (i >= uLeafCount) break;
             vec4 shape = uLeafShape[i];
-            if ((shape.z > 0.5) != (pass == 1)) continue;
+            if ((mod(shape.z, 2.0) > 0.5) != (pass == 1)) continue;
             vec4 leaf = leafAt(p, uLeaves[i], shape, px, layered);
             c = mix(c, leaf.rgb, leaf.a);
             layered = max(layered, leaf.a);
@@ -518,7 +525,7 @@ void main() {
             float angle = atan(b.y - 0.3, b.x * 1.2);
             float barbs = smoothstep(0.35, 0.85, noise(vec2(angle * 70.0, out_ / SCALE * 6.0)) * 0.7 + noise(vec2(angle * 190.0, 1.0)) * 0.3);
             float reach = exp(-max(out_, 0.0) / (0.012 * SCALE));
-            c += sun * barbs * reach * pow(facing, 1.5) * 0.55 * strength * (1.0 - uFly * 0.5);
+            c += sun * barbs * reach * pow(facing, 1.5) * 0.8 * strength * (1.0 - uFly * 0.5);
         }
     }
 
@@ -532,8 +539,9 @@ void main() {
         float width = len * 0.2 * pow(max(sin(PI * u), 0.0), 0.7);
         float dist = max(abs(d.y) - width, max(-d.x, d.x - len));
         float cover = smoothstep(0.04, -0.04, dist);
-        vec3 near = mix(vec3(0.04, 0.07, 0.03), vec3(0.3, 0.42, 0.1) * sun, (1.0 - uNight) * 0.5);
-        c = mix(c, near * mix(1.0, 0.3, uNight), cover * 0.93);
+        float rim = smoothstep(-0.09, 0.02, dist);
+        vec3 near = mix(vec3(0.05, 0.08, 0.03), vec3(0.34, 0.46, 0.12) * sun, (1.0 - uNight) * (0.35 + 0.45 * rim));
+        c = mix(c, near * mix(1.0, 0.3, uNight), cover * 0.86);
     }
 
     // Motes of dust and pollen drift in the air and flare when they cross the light.
