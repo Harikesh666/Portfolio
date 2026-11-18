@@ -505,6 +505,38 @@
         font-weight: 600;
     }
 
+    /* The 404's code: the one large thing on the page, set under the scene. */
+    .lost-code {
+        color: var(--foreground-strong);
+        font-size: clamp(3.5rem, 16vw, 5rem);
+        font-weight: 600;
+        line-height: 1;
+        letter-spacing: -0.045em;
+        font-variant-numeric: tabular-nums;
+    }
+
+    /* Under the code, the 404's sentence and links step down a size, so the code stays the one large thing. */
+    .lost-lead--quiet {
+        max-width: 30rem;
+        font-size: 1.0625rem;
+        line-height: 1.5;
+        letter-spacing: -0.01em;
+    }
+
+    .lost-ways :is(.button-primary, .button-soft) {
+        min-height: 2.25rem;
+        border-radius: 0.5rem;
+        padding: 0 0.85rem;
+        font-size: 0.8125rem;
+    }
+
+    /* A finger still gets the full 44px target. */
+    @media (pointer: coarse) {
+        .lost-ways :is(.button-primary, .button-soft) {
+            min-height: 2.75rem;
+        }
+    }
+
     /* A page's main way forward, and its quieter alternatives beside it. */
     .button-primary,
     .button-soft {

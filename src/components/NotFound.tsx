@@ -3,28 +3,39 @@ import { PageEnter } from "./PageEnter";
 import { Pond } from "./pond/Pond";
 
 /**
- * The 404 page. One sentence says what happened, three links lead back,
- * and the bulbul sits on its branch below, so a wrong turn still lands
- * somewhere worth a moment.
+ * The 404 page. The scene comes first and acts the page out: the branch
+ * sways empty, then the bulbul flies in and lands. Under it sit the code,
+ * one sentence saying what happened, and three links back.
  */
 export function NotFound() {
     const pathname = useLocation({ select: (location) => location.pathname });
 
     return (
-        <main id="main-content" className="mx-auto w-full max-w-2xl px-5 pb-12 pt-10">
+        <main id="main-content" className="mx-auto w-full max-w-2xl px-5 pb-12 pt-6">
             <PageEnter key={pathname}>
+                <PageEnter.Fade>
+                    <Pond
+                        birdArrival="fly-in"
+                        caption="Tap the bulbul to hear it sing. Tap the branch and it hops."
+                        description="A peepal bough against the sky, lit from behind by the current time of day in Mumbai. The bough starts empty, then a red-vented bulbul flies in, lands on it in silhouette and sings. Tapping the bird makes it sing its call aloud, tapping the branch makes it hop there, and quick taps send it flying off before it comes back."
+                        mode="bird"
+                    />
+                </PageEnter.Fade>
+
                 <PageEnter.Item>
-                    <header>
-                        <p className="text-[13px] text-muted">Error 404</p>
-                        <h1 className="lost-lead mt-3">
-                            <strong>This page flew off.</strong> It isn't here, or it has moved. The bulbul
-                            below stayed put, and these links will get you home.
+                    <header className="mt-8">
+                        <p className="lost-code">
+                            <span className="sr-only">Error </span>404
+                        </p>
+                        <h1 className="lost-lead lost-lead--quiet mt-2">
+                            <strong>This page flew off.</strong> A bulbul landed here instead, and these links
+                            will get you home.
                         </h1>
                     </header>
                 </PageEnter.Item>
 
                 <PageEnter.Item>
-                    <nav aria-label="Ways back" className="mt-7 flex flex-wrap items-center gap-3">
+                    <nav aria-label="Ways back" className="lost-ways mt-6 flex flex-wrap items-center gap-2.5">
                         <Link className="button-primary" to="/">
                             Back to home
                         </Link>
@@ -36,16 +47,6 @@ export function NotFound() {
                         </Link>
                     </nav>
                 </PageEnter.Item>
-
-                <PageEnter.Fade>
-                    <div className="mt-16">
-                        <Pond
-                            caption="Tap the bulbul to hear it sing. Tap the branch and it hops."
-                            description="A red-vented bulbul in silhouette on a peepal bough against the sky, lit from behind by the current time of day in Mumbai. Tapping the bird makes it sing its call aloud, tapping the branch makes it hop there, and quick taps send it flying off before it comes back."
-                            mode="bird"
-                        />
-                    </div>
-                </PageEnter.Fade>
             </PageEnter>
         </main>
     );
