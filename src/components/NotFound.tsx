@@ -40,8 +40,8 @@ export function NotFound() {
                 <PageEnter.Fade>
                     <div className="mt-16">
                         <Pond
-                            caption="Tap the bulbul and it sings; tap the branch and it hops."
-                            description="A red-vented bulbul in silhouette on a peepal bough against the sky, lit from behind by the current time of day in Mumbai. Tapping the bird makes it sing, tapping the branch makes it hop there, and quick taps send it flying off before it comes back."
+                            caption="Tap the bulbul to hear it sing. Tap the branch and it hops."
+                            description="A red-vented bulbul in silhouette on a peepal bough against the sky, lit from behind by the current time of day in Mumbai. Tapping the bird makes it sing its call aloud, tapping the branch makes it hop there, and quick taps send it flying off before it comes back."
                             mode="bird"
                         />
                     </div>

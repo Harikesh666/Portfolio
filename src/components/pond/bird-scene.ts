@@ -1,6 +1,7 @@
 import { daylightAt, mumbaiHour } from "./pond-daylight";
 import type { Pond } from "./pond-engine";
 import { birdFragment, birdShaderSizes } from "./bird-shader";
+import { bulbulPhrase, createVoice, type Note } from "./bird-song";
 import { createFullscreenTriangle, fullscreenVertex, link, uniforms } from "./pond-gl";
 
 /**
@@ -16,7 +17,7 @@ import { createFullscreenTriangle, fullscreenVertex, link, uniforms } from "./po
  *
  * The bird behaves like one: its head moves in quick snaps with still
  * pauses, it breathes, its tail bobs after a hop, its crest rises now and
- * then. Tap it and it sings; tap the branch and it hops there, and the
+ * then. Tap it and it sings its call aloud. Tap the branch and it hops there, and the
  * branch dips under it and springs back; tap fast and it flies off and
  * comes back. At night it sleeps, fluffed up with its head tucked in.
  *
@@ -295,7 +296,9 @@ export function createBirdScene(options: BirdOptions): Pond | null {
     let blinkFor = 0;
     let nextBlink = random(2, 5);
     let wakeFor = 0;
-    let song: { notes: { at: number; length: number }[]; age: number } | null = null;
+    let song: { notes: readonly Note[]; age: number } | null = null;
+    // Its voice only sounds when a reader taps it; songs it sings on its own are silent.
+    const voice = createVoice();
     let nextSong = random(...feel.songEvery);
     let act: { kind: Act; age: number; length: number } | null = null;
     let nextAct = random(...feel.actEvery);
@@ -369,16 +372,13 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         return best;
     }
 
-    function sing() {
+    /** A phrase of the bulbul's call: aloud when a reader taps it, silent when it sings on its own. */
+    function sing(aloud = false) {
         if (song || fluff > 0.5) return;
-        const notes: { at: number; length: number }[] = [];
-        let at = 0.05;
-        const count = Math.round(random(4, 7));
-        for (let i = 0; i < count; i++) {
-            const length = random(0.09, 0.2);
-            notes.push({ at, length });
-            at += length + random(0.04, 0.12);
-        }
+        const notes = bulbulPhrase();
+        if (aloud) voice.sing(notes);
+        // Singing interrupts whatever else it was doing, like preening with its head down.
+        act = null;
         song = { notes, age: 0 };
         headTarget = 0.32;
         crestTarget = 1;
@@ -663,7 +663,8 @@ export function createBirdScene(options: BirdOptions): Pond | null {
             for (const note of song.notes) {
                 const k = (song.age - note.at) / note.length;
                 if (k > 0 && k < 1) {
-                    beak = Math.sin(Math.PI * k) * 0.55;
+                    // The beak opens wide on each note, and the throat swells with it.
+                    beak = Math.sin(Math.PI * Math.min(1, k * 1.4)) * 0.85;
                     puff = Math.sin(Math.PI * k);
                 }
             }
@@ -694,7 +695,8 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         gl.uniform2f(u.uBird, mode === "away" ? 9 : birdAt.x, mode === "away" ? 9 : birdAt.y);
         gl.uniform1f(u.uFacing, facing);
         gl.uniform1f(u.uTilt, tilt);
-        gl.uniform1f(u.uHead, head.x);
+        // The head lifts a little more on every note.
+        gl.uniform1f(u.uHead, head.x + puff * 0.09);
         gl.uniform1f(u.uBeak, beak);
         gl.uniform1f(u.uPuff, puff);
         gl.uniform1f(u.uCrest, crest);
@@ -767,7 +769,7 @@ export function createBirdScene(options: BirdOptions): Pond | null {
                     wakeFor = 3.5;
                     headTarget = random(-0.2, 0.3);
                 } else if (onBird) {
-                    sing();
+                    sing(true);
                 } else {
                     const points = branchPoints();
                     const target = nearestOnBranch(points, point.x);
@@ -792,6 +794,7 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         },
         destroy() {
             if (frame !== undefined) window.cancelAnimationFrame(frame);
+            voice.close();
             screen.destroy();
             gl.deleteProgram(program);
         },
