@@ -84,6 +84,23 @@ export const sheetCloseSpring = {
     bounce: 0,
 };
 
+// The phone site dock's menu pops up out of its pill: quick, with a hint of give.
+export const siteDockMenuSpring = {
+    type: "spring" as const,
+    visualDuration: 0.22,
+    bounce: 0.12,
+};
+
+// The menu leaves in about 65% of its entry, ease-in and with no bounce.
+export const siteDockMenuExitTween = {
+    duration: 0.14,
+    ease: [0.4, 0, 1, 1] as const,
+};
+
+// The menu starts just under its open size, anchored to the pill below it.
+export const siteDockMenuFrom = { opacity: 0, scale: 0.96, y: 6 };
+export const siteDockMenuTo = { opacity: 1, scale: 1, y: 0 };
+
 export const bouncySpring = {
     type: "spring" as const,
     visualDuration: 0.35,
