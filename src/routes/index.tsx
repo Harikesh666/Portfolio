@@ -9,7 +9,7 @@ import { AvailabilityStatus } from "../components/AvailabilityStatus";
 import { GuidePreview } from "../components/guide-previews";
 import { IntroKeyword } from "../components/IntroKeyword";
 import { SketchMark } from "../components/SketchMark";
-import { MumbaiPond } from "../components/pond/MumbaiPond";
+import { HomeScene } from "../components/pond/HomeScene";
 import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { homeStructuredData } from "../lib/agent-readiness";
@@ -63,7 +63,7 @@ function HomePage() {
             id="main-content"
         >
             <StaggerReveal.Item className="mb-12 sm:mb-16">
-                <MumbaiPond />
+                <HomeScene />
             </StaggerReveal.Item>
             <header>
                 <StaggerReveal.Item as="p" className="mb-4">

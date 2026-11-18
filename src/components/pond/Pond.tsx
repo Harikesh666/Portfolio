@@ -6,8 +6,11 @@ import { readHourOverride } from "./pond-hour";
 
 export type PondLabel = Readonly<{ text: string; className: string }>;
 
-/** The pond modes, plus "kund": Makari Kund from a photo, set on a 3D model of the tank and brought to life. */
-export type SceneMode = PondMode | "kund";
+/**
+ * The pond modes, plus "kund" (Makari Kund from a photo, set on a 3D model
+ * of the tank) and "bird" (a bulbul on a branch against the sky).
+ */
+export type SceneMode = PondMode | "kund" | "bird";
 
 /** A photo shown at once and kept as the fallback; the scene draws over it when ready. */
 export type PondStill = Readonly<{ src: string; srcSet: string; sizes: string; mask: string }>;
@@ -75,6 +78,16 @@ export function Pond({ caption, description, labels = [], mode, still }: PondPro
                     canvas: waterCanvas,
                     photo,
                     maskUrl: still.mask,
+                    reducedMotion: shouldReduceMotion,
+                    isDark,
+                });
+            }
+            if (mode === "bird") {
+                const { createBirdScene } = await import("./bird-scene");
+                return createBirdScene({
+                    hourOverride: readHourOverride(),
+                    container,
+                    canvas: waterCanvas,
                     reducedMotion: shouldReduceMotion,
                     isDark,
                 });
@@ -150,7 +163,7 @@ export function Pond({ caption, description, labels = [], mode, still }: PondPro
             <div className="pond-frame relative">
                 <div
                     aria-label={description}
-                    className={`event-loop-pond relative aspect-[2/1] w-full overflow-hidden sm:rounded-2xl ${mode === "kund" ? "" : "sm:aspect-[11/4]"}`}
+                    className={`event-loop-pond relative aspect-[2/1] w-full overflow-hidden sm:rounded-2xl ${mode === "kund" || mode === "bird" ? "" : "sm:aspect-[11/4]"}`}
                     data-mode={mode}
                     data-ready={isReady ? "" : undefined}
                     onPointerDown={handlePointerDown}
