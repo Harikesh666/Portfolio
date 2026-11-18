@@ -156,8 +156,10 @@ const config = defineConfig({
         nitro({
             routeRules: {
                 // The resume file name carries a content hash, so it can be
-                // cached for good like the hashed /assets files.
-                "/Harikesh_Mishra_Resume_*.pdf": {
+                // cached for good like the hashed /assets files. The exact
+                // path is used: Vercel reads route sources as regular
+                // expressions, so a mid-name glob never matched there.
+                [site.resumePdfPath]: {
                     headers: {
                         "cache-control": "public, max-age=31536000, immutable",
                     },
