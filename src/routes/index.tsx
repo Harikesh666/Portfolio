@@ -2,7 +2,11 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import {
     ArrowRightIcon,
     BookOpenTextIcon,
+    EnvelopeSimpleIcon,
+    FileTextIcon,
+    GithubLogoIcon,
     HardDrivesIcon,
+    LinkedinLogoIcon,
     RocketLaunchIcon,
 } from "@phosphor-icons/react";
 import { AvailabilityStatus } from "../components/AvailabilityStatus";
@@ -28,6 +32,9 @@ const latestPosts = authoredPosts.slice(0, 6);
 const sectionClassName = "mt-16 sm:mt-32";
 // dim-siblings: hovering one row fades the others (fine pointers only, see styles.css).
 const listClassName = "dim-siblings mt-4 -mb-3 flex flex-col gap-1";
+// 44px tall on phones for thumbs, compact from sm where a pointer is precise.
+const recruiterLinkClassName =
+    "header-link inline-flex h-11 items-center gap-1 px-1.5 font-medium sm:h-9 sm:gap-1.5 sm:px-2";
 
 export const Route = createFileRoute("/")({
     head: () => ({
@@ -66,8 +73,41 @@ function HomePage() {
                 <HomeScene />
             </StaggerReveal.Item>
             <header>
-                <StaggerReveal.Item as="p" className="mb-4">
+                <StaggerReveal.Item as="p">
                     <AvailabilityStatus />
+                </StaggerReveal.Item>
+                {/* What a recruiter came for, right under the availability
+                    line: the resume and three ways to reach me. */}
+                <StaggerReveal.Item className="recruiter-links mb-4 -ml-1.5 flex flex-wrap items-center text-sm sm:-ml-2">
+                    <Link className={recruiterLinkClassName} to="/resume">
+                        <FileTextIcon aria-hidden="true" size={15} />
+                        Resume
+                    </Link>
+                    <a
+                        className={recruiterLinkClassName}
+                        href={`mailto:${site.email}`}
+                    >
+                        <EnvelopeSimpleIcon aria-hidden="true" size={15} />
+                        Email
+                    </a>
+                    <a
+                        className={recruiterLinkClassName}
+                        href={site.socials.github}
+                        rel="noreferrer"
+                        target="_blank"
+                    >
+                        <GithubLogoIcon aria-hidden="true" size={15} />
+                        GitHub
+                    </a>
+                    <a
+                        className={recruiterLinkClassName}
+                        href={site.socials.linkedin}
+                        rel="noreferrer"
+                        target="_blank"
+                    >
+                        <LinkedinLogoIcon aria-hidden="true" size={15} />
+                        LinkedIn
+                    </a>
                 </StaggerReveal.Item>
                 <StaggerReveal.Headline
                     as="h1"
