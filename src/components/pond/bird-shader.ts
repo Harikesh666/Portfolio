@@ -154,9 +154,9 @@ float smin(float a, float b, float k) {
     return mix(b, a, h) - k * h * (1.0 - h);
 }
 
-// The light: warm sun by day and at dusk, a faint cool moon at night.
+// The light: warm sun by day and at dusk, a cool silver moon at night.
 vec3 sunColour() {
-    return mix(mix(vec3(1.0, 0.92, 0.76), vec3(1.0, 0.56, 0.26), uDusk), vec3(0.55, 0.65, 0.9) * 0.6, uNight);
+    return mix(mix(vec3(1.0, 0.92, 0.76), vec3(1.0, 0.56, 0.26), uDusk), vec3(0.6, 0.7, 0.95) * 0.78, uNight);
 }
 
 vec2 lightAt() {
@@ -186,18 +186,39 @@ vec3 skyAt(vec2 p) {
     c += mix(vec3(0.9), sun, 0.55) * cirrus * (0.07 + 0.3 * exp(-dSun * 1.6)) * day;
     // At dusk the low sky burns warm in a soft band.
     c += vec3(1.0, 0.45, 0.2) * uDusk * exp(-abs(h - 0.3) * 5.0) * 0.14 * day;
-    // Night: the moon with a soft halo, and stars between the clouds.
+    // Night over Mumbai: the city's warm sodium glow low on the sky, which
+    // washes the faintest stars out near the horizon.
+    float cityGlow = exp(-h * 6.5) * uNight;
+    c += vec3(1.0, 0.52, 0.22) * cityGlow * 0.085;
+    // The moon: a shaded disc with darker seas and a soft limb, a wide halo,
+    // and silver edges on the clouds that drift near it.
     float dMoon = length(p - uMoon);
-    c += vec3(0.92, 0.93, 1.0) * (smoothstep(0.022, 0.017, dMoon) * 0.95 + exp(-dMoon * 9.0) * 0.12 + exp(-dMoon * 2.5) * 0.04) * uNight;
+    vec2 face = (p - uMoon) / 0.03;
+    float seas = smoothstep(0.42, 0.68, fbm(face * 2.1 + 7.3));
+    vec3 moonFace = vec3(0.95, 0.95, 1.0) * (1.0 - 0.2 * seas) * (1.0 - 0.18 * dot(face, face));
+    c = mix(c, moonFace * 1.05, smoothstep(0.031, 0.027, dMoon) * uNight);
+    c += vec3(0.78, 0.84, 1.0) * (exp(-dMoon * 7.0) * 0.15 + exp(-dMoon * 2.2) * 0.05) * uNight;
+    c += vec3(0.78, 0.84, 1.0) * lining * exp(-dMoon * 3.2) * 0.55 * uNight;
+    // Stars between the clouds: a fine field, and a sparse few that are
+    // brighter and softly glowing. All of them yield to the moon and the city.
+    float starSky = smoothstep(0.6, 0.95, uNight) * (1.0 - cloud) * smoothstep(0.3, 0.62, h) * smoothstep(0.06, 0.32, dMoon);
     vec2 cell = floor(p * 230.0);
     float star = step(0.993, hash(cell * 0.0731 + 0.37)) * smoothstep(0.38, 0.1, length(fract(p * 230.0) - 0.5));
-    c += vec3(0.85, 0.88, 1.0) * star * (0.55 + 0.45 * sin(uTime * 2.3 + hash(cell + 3.1) * 40.0)) * smoothstep(0.6, 0.95, uNight) * (1.0 - cloud) * smoothstep(0.25, 0.5, h);
+    c += vec3(0.85, 0.88, 1.0) * star * (0.55 + 0.45 * sin(uTime * 2.3 + hash(cell + 3.1) * 40.0)) * starSky;
+    vec2 brightCell = floor(p * 38.0);
+    vec2 brightAt = (brightCell + 0.2 + 0.6 * vec2(hash(brightCell + 1.3), hash(brightCell + 4.1))) / 38.0;
+    float bright = step(0.93, hash(brightCell * 0.173 + 2.9));
+    float dBright = dot(p - brightAt, p - brightAt);
+    vec3 starTint = mix(vec3(0.8, 0.86, 1.0), vec3(1.0, 0.9, 0.78), hash(brightCell + 8.8));
+    c += starTint * bright * (exp(-dBright / 0.0000035) * 0.9 + exp(-dBright / 0.00004) * 0.12) * (0.7 + 0.3 * sin(uTime * 1.7 + hash(brightCell) * 30.0)) * starSky;
     // Far trees thrown out of focus by a long lens: a soft green mass with no edges.
     float rise = 0.44 + 0.16 * (fbm(vec2(p.x * 0.9 + 3.0, 1.0)) - 0.5) + 0.08 * sin(p.x * 2.3 + 1.0);
     float foliage = smoothstep(rise + 0.14, rise - 0.2, p.y);
     vec3 green = mix(vec3(0.13, 0.21, 0.08), vec3(0.3, 0.38, 0.15), fbm(p * 2.0 + 4.0));
     green = mix(green * mix(1.0, 0.68, uDusk) + sun * 0.13 * day, vec3(0.02, 0.03, 0.04), uNight * 0.9);
     c = mix(c, mix(green, c, 0.22), foliage * 0.93);
+    // At night the city's glow also hangs as a warm haze over the far trees.
+    c += vec3(1.0, 0.5, 0.2) * uNight * 0.05 * (1.0 - smoothstep(0.08, 0.72, h));
     // Bokeh: the sun glinting through those far leaves, each glint a soft disc with a brighter rim.
     for (int i = 0; i < 18; i++) {
         float seed = float(i);
@@ -291,7 +312,7 @@ vec4 branchAt(vec2 p, float px) {
     vec3 c = bark * fill * (0.45 + 0.55 * roundness) * (0.75 + 0.35 * clamp(across * dot(side, vec2(0.0, 1.0)) + 0.5, 0.0, 1.0));
     vec2 normal = normalize(side * across + 0.0001);
     vec3 sun = sunColour();
-    c += sun * exp(-max(-best, 0.0) / 0.0032) * facingLight(normal, p) * mix(1.7, 0.5, uNight) * (1.0 - 0.6 * crack);
+    c += sun * exp(-max(-best, 0.0) / 0.0032) * facingLight(normal, p) * mix(1.7, 0.8, uNight) * (1.0 - 0.6 * crack);
     return vec4(c, clamp(0.5 - best / px, 0.0, 1.0));
 }
 
@@ -349,7 +370,7 @@ vec4 leafAt(vec2 p, vec4 leaf, vec4 shape, float px, float layered) {
     c += sun * glint * 0.35;
     if (onStem) c = mix(vec3(0.16, 0.2, 0.08), vec3(0.3, 0.16, 0.1), young) * fill + sun * 0.1 * day;
     vec2 normal = rot(vec2(0.0, sign(v)), leaf.z);
-    c += sun * exp(-max(-dist, 0.0) / 0.0016) * facingLight(normal, p) * mix(0.8, 0.4, uNight);
+    c += sun * exp(-max(-dist, 0.0) / 0.0016) * facingLight(normal, p) * mix(0.8, 0.5, uNight);
     return vec4(c, clamp(0.5 - dist / px, 0.0, 1.0));
 }
 
@@ -470,12 +491,13 @@ vec3 plumage(vec2 p, vec2 b, float d, vec2 normal, float part, float eye) {
     vec3 fill = mix(vec3(0.2, 0.22, 0.26), vec3(0.05, 0.06, 0.1), uNight) * mix(1.0, 0.7, uDusk);
     vec3 c = albedo * fill * (0.4 + 0.8 * skyLight);
     vec3 sun = sunColour();
-    float strength = mix(1.0, 0.45, uNight);
+    float strength = mix(1.0, 0.75, uNight);
     float facing = facingLight(normal, p);
     // A hairline of light on the edges that face the sun, and a warmer glow through thin feathers.
     c += sun * exp(-inside / 0.0028) * facing * (part == 5.0 ? 0.35 : 1.7) * strength;
     c += sun * vec3(1.0, 0.6, 0.36) * exp(-inside / 0.0045) * translucency * 0.3 * pow(facing, 0.7) * strength;
-    c += vec3(1.0, 0.97, 0.9) * uEye * smoothstep(0.011, 0.004, eye) * mix(0.5, 0.1, uNight);
+    // The eye's catchlight, a glint of moon when it is woken at night.
+    c += vec3(1.0, 0.97, 0.9) * uEye * smoothstep(0.011, 0.004, eye) * mix(0.5, 0.32, uNight);
     return c;
 }
 
@@ -514,7 +536,7 @@ void main() {
         float e = px;
         vec2 normal = normalize(vec2(birdShape(p + vec2(e, 0.0)) - birdShape(p - vec2(e, 0.0)), birdShape(p + vec2(0.0, e)) - birdShape(p - vec2(0.0, e))) + 0.00001);
         float facing = facingLight(normal, p);
-        float strength = mix(1.0, 0.4, uNight);
+        float strength = mix(1.0, 0.7, uNight);
         if (d < px * 2.0) {
             vec3 surface = plumage(p, b, d, normal, part, eye);
             float soft = part == 2.0 || part == 5.0 ? 1.0 : 1.6;
@@ -565,14 +587,14 @@ void main() {
     // Fireflies on a dark night.
     float flies = smoothstep(0.6, 0.92, uNight) * uMotion;
     if (flies > 0.001) {
-        for (int i = 0; i < 9; i++) {
+        for (int i = 0; i < 12; i++) {
             float seed = float(i);
-            vec2 home = vec2(mix(-0.8, 0.9, hash(vec2(seed, 1.3))), mix(0.18, 0.6, hash(vec2(seed, 7.1))));
+            vec2 home = vec2(mix(-0.85, 0.95, hash(vec2(seed, 1.3))), mix(0.12, 0.58, hash(vec2(seed, 7.1))));
             vec2 wander = vec2(noise(vec2(uTime * 0.15, seed * 3.1)), noise(vec2(seed * 5.3, uTime * 0.12))) - 0.5;
             vec2 at = p - home - wander * vec2(0.18, 0.1);
             float blink = pow(max(0.0, sin(uTime * (0.8 + hash(vec2(seed, 9.9))) * 1.4 + seed * 4.0)), 6.0);
             float dd = dot(at, at);
-            c += vec3(0.78, 1.0, 0.42) * (exp(-dd / 0.000012) * 1.2 + exp(-dd / 0.0002) * 0.15) * blink * flies;
+            c += vec3(0.93, 1.0, 0.45) * (exp(-dd / 0.000016) * 1.15 + exp(-dd / 0.0005) * 0.2) * blink * flies;
         }
     }
 
