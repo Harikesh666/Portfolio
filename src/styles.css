@@ -3840,16 +3840,19 @@
     }
 
     /*
-     * The phone TOC pill steps aside while the site footer is on screen.
-     * Leaving is quicker than returning, and reduced motion only fades.
+     * The phone TOC pill and site dock step aside while the site footer is on
+     * screen, and while the reader scrolls down. Leaving is quicker than
+     * returning, and reduced motion only fades.
      */
-    .toc-sheet-dock {
+    .toc-sheet-dock,
+    .site-dock {
         transition:
             opacity 260ms var(--ease-out),
             transform 260ms var(--ease-out);
     }
 
-    .toc-sheet-dock[data-tucked] {
+    .toc-sheet-dock[data-tucked],
+    .site-dock[data-tucked] {
         opacity: 0;
         transform: translateY(0.75rem);
         transition-duration: 180ms;
@@ -3858,7 +3861,9 @@
 
     @media (prefers-reduced-motion: reduce) {
         .toc-sheet-dock,
-        .toc-sheet-dock[data-tucked] {
+        .toc-sheet-dock[data-tucked],
+        .site-dock,
+        .site-dock[data-tucked] {
             transform: none;
             transition-property: opacity;
         }

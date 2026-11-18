@@ -26,47 +26,51 @@ const headerLinks = [
     { to: "/resume", label: "Resume" },
 ] as const;
 
-const headerGeometry = {
-    identity: {
-        avatarSize: 40, // h-10 → 40px, the height of the leading-6 name plus leading-4 role
-        avatarY: 96, // pt-24 → 96px
-        height: 136, // pt-24 + leading-6 name + leading-4 role → 96 + 24 + 16 = 136px
-    },
-    breadcrumb: {
-        avatarSize: 24, // h-6 → 24px
-        avatarY: 26, // py-4 (16px) + centered within h-11 ((44px - 24px) / 2) → 26px
-        height: 76, // py-4 + h-11 + py-4 → 76px
-    },
+const avatarSize = {
+    identity: 40, // h-10 → 40px, the height of the leading-6 name plus leading-4 role
+    breadcrumb: 24, // h-6 → 24px
 } as const;
 
 /*
- * The toggle's vertical offset, as Tailwind `translate` classes so phones and
- * wider screens get their own constants with no runtime measuring.
- * - Phones, both modes: in the link band at the top, py-4 → 16px. So on phones
- *   the toggle stays put when an article opens.
- * - From sm, identity: the identity row center (96 + 20) minus half the h-11
- *   target (22) → 94px. Breadcrumb: py-4 → 16px.
+ * Vertical geometry, as Tailwind classes so phones and wider screens get their
+ * own constants with no runtime measuring. Phones have no link band: their
+ * pages are reached from the bottom dock, so the identity row moves up to the
+ * toggle's line.
+ * - Toggle, phones, both modes: py-4 → 16px, so its center is 16 + 44 / 2 →
+ *   38px and it stays put when an article opens.
+ * - Toggle, from sm, identity: the identity row center (96 + 20) minus half
+ *   the h-11 target (22) → 94px. Breadcrumb: py-4 → 16px.
+ * - Avatar, identity, phones: centered on the toggle, 38 - 40 / 2 → 18px.
+ *   From sm: pt-24 → 96px. Breadcrumb: py-4 (16px) + centered within h-11
+ *   ((44px - 24px) / 2) → 26px, also centered on 38px.
+ * - Height, identity, phones: pt-[18px] + leading-6 name + leading-4 role →
+ *   18 + 24 + 16 = 58px. From sm: 96 + 24 + 16 = 136px. Breadcrumb: py-4 +
+ *   h-11 + py-4 → 76px.
  */
 const toggleOffsetClassName = {
     identity: "translate-y-4 sm:translate-y-[94px]",
     breadcrumb: "translate-y-4",
 } as const;
 
-// `translate` is its own CSS property, so this never fights Motion's hover scale on `transform`.
-const toggleMorphTransition = `translate ${headerMorphTween.duration}s cubic-bezier(${headerMorphTween.ease.join(", ")})`;
+const avatarOffsetClassName = {
+    identity: "translate-y-[18px] sm:translate-y-24",
+    breadcrumb: "translate-y-[26px]",
+} as const;
 
-const avatarBreadcrumbScale =
-    headerGeometry.breadcrumb.avatarSize / headerGeometry.identity.avatarSize;
+const headerHeightClassName = {
+    identity: "h-[58px] sm:h-[136px]",
+    breadcrumb: "h-[76px]",
+} as const;
+
+// `translate` is its own CSS property, so this never fights Motion's scale on `transform`.
+const morphTranslateTransition = `translate ${headerMorphTween.duration}s cubic-bezier(${headerMorphTween.ease.join(", ")})`;
+
+const avatarBreadcrumbScale = avatarSize.breadcrumb / avatarSize.identity;
 
 function getHeaderPost(pathname: string) {
     const slug = pathname.match(/^\/articles\/([^/]+)\/?$/)?.[1];
 
     return slug ? posts.find((entry) => entry.slug === slug) : undefined;
-}
-
-export function getHeaderHeight(pathname: string) {
-    return headerGeometry[getHeaderPost(pathname) ? "breadcrumb" : "identity"]
-        .height;
 }
 
 function Avatar({ size }: Readonly<{ size: number }>) {
@@ -183,7 +187,7 @@ function ThemeToggle({
             style={{
                 top: 0,
                 right: 20,
-                transition: shouldReduceMotion ? "none" : toggleMorphTransition,
+                transition: shouldReduceMotion ? "none" : morphTranslateTransition,
             }}
             type="button"
             aria-label="Toggle theme"
@@ -230,7 +234,7 @@ function ThemeToggle({
 
 function IdentityHeader() {
     return (
-        <div className="relative flex items-center gap-3 px-5 pt-24">
+        <div className="relative flex items-center gap-3 px-5 pt-[18px] sm:pt-24">
             <span aria-hidden="true" className="h-10 w-10 shrink-0" />
             <p className="flex min-w-0 flex-col font-medium">
                 <Link
@@ -242,18 +246,17 @@ function IdentityHeader() {
                 <span className="leading-4 text-muted">Software Engineer</span>
             </p>
             {/*
-              * Phones: the name and links don't fit in one row, so the links, the
-              * search button and the theme toggle share the empty band above it
-              * (inside pt-24, no geometry change) as one bar, with 44px targets. right-16 clears the toggle
-              * (right 20px + 44px). From sm the links join the row; mr-12 clears it.
+              * From sm the links and search join the identity row; mr-12 clears
+              * the toggle. Phones have no links here: the bottom dock carries
+              * them, so the header is only the name and the toggle.
               */}
             <nav
                 aria-label="Primary"
-                className="absolute top-4 right-16 flex items-center text-[13px] font-medium sm:static sm:mr-12 sm:ml-auto sm:gap-5"
+                className="ml-auto mr-12 hidden items-center gap-5 text-[13px] font-medium sm:flex"
             >
                 {headerLinks.map((link) => (
                     <Link
-                        className="header-link inline-flex h-11 items-center px-2 sm:h-auto sm:px-0"
+                        className="header-link inline-flex items-center"
                         key={link.to}
                         to={link.to}
                     >
@@ -262,7 +265,7 @@ function IdentityHeader() {
                 ))}
                 <button
                     aria-label="Search the site"
-                    className="header-link inline-flex h-11 w-10 items-center justify-center sm:-mx-1 sm:h-7 sm:w-7"
+                    className="header-link -mx-1 inline-flex h-7 w-7 items-center justify-center"
                     onClick={() => window.dispatchEvent(new Event(openCommandPaletteEvent))}
                     title="Search (press /)"
                     type="button"
@@ -313,24 +316,22 @@ function SharedAvatar({
 
     return (
         <motion.div
-            animate={{
-                scale,
-                y: headerGeometry[mode].avatarY,
-            }}
-            className="absolute z-10"
+            animate={{ scale }}
+            className={`absolute z-10 ${avatarOffsetClassName[mode]}`}
             initial={false}
             style={{
                 top: 0,
                 left: 20,
-                width: headerGeometry.identity.avatarSize,
-                height: headerGeometry.identity.avatarSize,
+                width: avatarSize.identity,
+                height: avatarSize.identity,
                 borderRadius: 9999,
                 transformOrigin: "top left",
+                transition: shouldReduceMotion ? "none" : morphTranslateTransition,
             }}
             transition={shouldReduceMotion ? { duration: 0 } : headerMorphTween}
         >
             <Link aria-label="Home" className="block h-full w-full rounded-full" to="/">
-                <Avatar size={headerGeometry.identity.avatarSize} />
+                <Avatar size={avatarSize.identity} />
             </Link>
         </motion.div>
     );
@@ -345,10 +346,7 @@ export default function Header() {
 
     return (
         <header className="mx-auto w-full max-w-2xl">
-            <div
-                className="relative min-w-0"
-                style={{ height: headerGeometry[mode].height }}
-            >
+            <div className={`relative min-w-0 ${headerHeightClassName[mode]}`}>
                 <AnimatePresence initial={false}>
                     <motion.div
                         animate={{

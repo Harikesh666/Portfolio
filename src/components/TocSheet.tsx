@@ -7,7 +7,8 @@ import {
     type RefObject,
 } from "react";
 import { createPortal } from "react-dom";
-import { useLocation } from "@tanstack/react-router";
+import { Link, useLocation } from "@tanstack/react-router";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import {
     AnimatePresence,
     LayoutGroup,
@@ -29,7 +30,9 @@ import {
     tocSurfaceFadeTween,
     tocSurfaceSpring,
 } from "../lib/motion";
+import { openCommandPaletteEvent } from "../lib/command-palette";
 import { getTocItemDelay, shouldDismissSheet } from "../lib/toc";
+import { useDockTuck } from "../lib/use-dock-tuck";
 import { useScrollSpy } from "../lib/use-scroll-spy";
 
 type TocSheetProps = Readonly<{
@@ -46,6 +49,48 @@ type SurfaceSize = Readonly<{
 
 const focusableSelector =
     'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const sheetSiteLinks = [
+    { to: "/", label: "Home" },
+    { to: "/articles", label: "Articles" },
+    { to: "/about", label: "About" },
+    { to: "/resume", label: "Resume" },
+] as const;
+
+/**
+ * The site's own pages under the article's sections, so a reader deep in a
+ * guide reaches Home, About or Resume without scrolling back to the header.
+ * Rendered twice: once invisibly to measure the open sheet, once for real.
+ */
+function TocSheetSiteNav({
+    onSearch,
+}: Readonly<{ onSearch: (() => void) | undefined }>) {
+    return (
+        <nav
+            aria-label="Site"
+            className="flex shrink-0 items-center whitespace-nowrap border-t border-(--toc-border) px-1.5 py-1 text-[13px] font-medium"
+        >
+            {sheetSiteLinks.map((link) => (
+                <Link
+                    activeOptions={{ exact: true }}
+                    className="header-link inline-flex h-11 items-center rounded-xl px-2.5"
+                    key={link.to}
+                    to={link.to}
+                >
+                    {link.label}
+                </Link>
+            ))}
+            <button
+                aria-label="Search the site"
+                className="header-link ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+                onClick={onSearch}
+                type="button"
+            >
+                <MagnifyingGlassIcon aria-hidden="true" size={16} />
+            </button>
+        </nav>
+    );
+}
 
 type TocSheetRowProps = Readonly<{
     activeIndicatorLayoutId: string;
@@ -170,7 +215,6 @@ export function TocSheet({
     );
     const [openSize, setOpenSize] = useState<SurfaceSize | null>(null);
     const [labelWidth, setLabelWidth] = useState<number | null>(null);
-    const [isFooterInView, setIsFooterInView] = useState(false);
     const supportsDirectionalTouchAction =
         typeof CSS !== "undefined" && CSS.supports("touch-action", "pan-down");
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -527,50 +571,19 @@ export function TocSheet({
         };
     }, [isOpen, sheetY, supportsDirectionalTouchAction]);
 
-    // Past the article, the pill would only cover the footer: it steps aside
-    // while the site footer is on screen and returns when the reader scrolls up.
-    useEffect(() => {
-        if (!isRouteActive) return;
-        const footer = document.querySelector("[data-site-footer]");
-        if (!footer) return;
-        const observer = new IntersectionObserver(([entry]) =>
-            setIsFooterInView(entry.isIntersecting),
-        );
-        observer.observe(footer);
-        return () => {
-            observer.disconnect();
-            setIsFooterInView(false);
-        };
-    }, [isRouteActive]);
-    // While the reader scrolls down through the text, the pill would sit on
-    // the line they are reading, so it steps aside and comes back the moment
-    // they scroll up, like Safari's toolbar. It never hides while focused.
-    const [isReadingDown, setIsReadingDown] = useState(false);
+    // Past the article the pill would only cover the footer, and while the
+    // reader scrolls down it would sit on the line they are reading. So it
+    // steps aside then, and comes back the moment they scroll up, like
+    // Safari's toolbar. It never hides while focused.
+    const { isFooterInView, isReadingDown } = useDockTuck(isRouteActive);
     const [isDockFocused, setIsDockFocused] = useState(false);
-    useEffect(() => {
-        if (!isRouteActive) return;
-        let lastY = window.scrollY;
-        let frame = 0;
-        const onScroll = () => {
-            if (frame) return;
-            frame = window.requestAnimationFrame(() => {
-                frame = 0;
-                const y = window.scrollY;
-                // Small jitters (momentum settling, address bar resizing) change nothing.
-                if (Math.abs(y - lastY) < 8) return;
-                setIsReadingDown(y > lastY && y > 160);
-                lastY = y;
-            });
-        };
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => {
-            window.removeEventListener("scroll", onScroll);
-            window.cancelAnimationFrame(frame);
-            setIsReadingDown(false);
-        };
-    }, [isRouteActive]);
     // The trigger waits for the first scrollspy pass, so it enters already
     // naming the right section instead of swapping its label in place.
+    // The label shown before that pass was never on screen, so it leaves
+    // at once and only the real label fades in with the trigger.
+    const pillLabelKey = hasMeasured
+        ? (activeId ?? "toc-neutral")
+        : "toc-unmeasured";
     const isTriggerTucked =
         (!hasMeasured ||
             isFooterInView ||
@@ -626,9 +639,10 @@ export function TocSheet({
                         </span>
                     </div>
                     <div
-                        className="w-max max-w-[calc(100vw-2rem)] max-h-[min(64dvh,520px)] overflow-hidden p-1.5"
+                        className="w-max max-w-[calc(100vw-2rem)]"
                         ref={openMeasureRef}
                     >
+                        <div className="max-h-[min(64dvh,520px)] overflow-hidden p-1.5">
                         <ol className="space-y-0.5">
                             {items.map((item) => (
                                 <li
@@ -642,6 +656,8 @@ export function TocSheet({
                                 </li>
                             ))}
                         </ol>
+                        </div>
+                        <TocSheetSiteNav onSearch={undefined} />
                     </div>
                 </div>
 
@@ -728,9 +744,18 @@ export function TocSheet({
                                         <motion.span
                                             animate={{ opacity: 1 }}
                                             className="flex h-full items-center truncate"
-                                            exit={{ opacity: 0 }}
+                                            exit={
+                                                hasMeasured
+                                                    ? { opacity: 0 }
+                                                    : {
+                                                          opacity: 0,
+                                                          transition: {
+                                                              duration: 0,
+                                                          },
+                                                      }
+                                            }
                                             initial={{ opacity: 0 }}
-                                            key={activeId ?? "toc-neutral"}
+                                            key={pillLabelKey}
                                             transition={
                                                 shouldReduceMotion
                                                     ? { duration: 0 }
@@ -747,7 +772,7 @@ export function TocSheet({
                                 {isOpen && (
                                     <motion.div
                                         aria-labelledby={sheetTitleId}
-                                        className="absolute inset-0 min-h-0 min-w-0"
+                                        className="absolute inset-0 flex min-h-0 min-w-0 flex-col"
                                         id={sheetContentId}
                                         key="toc-list"
                                         initial={
@@ -770,7 +795,7 @@ export function TocSheet({
                                             Table of contents
                                         </h2>
                                         <ol
-                                            className="toc-sheet-list min-h-0 min-w-0 max-h-[min(64dvh,520px)] overflow-y-auto overscroll-contain p-1.5"
+                                            className="toc-sheet-list min-h-0 min-w-0 flex-1 max-h-[min(64dvh,520px)] overflow-y-auto overscroll-contain p-1.5"
                                             onPointerDown={(event) => {
                                                 if (
                                                     isListAtTop &&
@@ -789,7 +814,6 @@ export function TocSheet({
                                             }
                                             ref={listRef}
                                             style={{
-                                                height: "100%",
                                                 touchAction:
                                                     isListAtTop &&
                                                     supportsDirectionalTouchAction
@@ -844,6 +868,20 @@ export function TocSheet({
                                                 );
                                             })}
                                         </ol>
+                                        <TocSheetSiteNav
+                                            onSearch={() =>
+                                                closeSheet(
+                                                    sheetNavigationFadeTween,
+                                                    0,
+                                                    () =>
+                                                        window.dispatchEvent(
+                                                            new Event(
+                                                                openCommandPaletteEvent,
+                                                            ),
+                                                        ),
+                                                )
+                                            }
+                                        />
                                     </motion.div>
                                 )}
                             </AnimatePresence>

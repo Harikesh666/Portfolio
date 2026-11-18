@@ -93,9 +93,17 @@
       "name": "Global Navigation",
       "kind": "nav",
       "refersTo": "main-navigation",
-      "description": "A persistent identity header that morphs into the article breadcrumb through one shared avatar and focus-preserving theme control.",
+      "description": "A persistent identity header that morphs into the article breadcrumb through one shared avatar and focus-preserving theme control. Its page links and search appear from sm; phones get only the name and toggle, with the Phone Site Dock as navigation.",
       "html": "<nav class=\"ds-nav\"><strong>Harikesh Mishra</strong><a href=\"#\">Home</a><a href=\"#\">Articles</a><a href=\"#\">Resume</a><button aria-label=\"Toggle theme\">Theme</button></nav>",
       "css": ".ds-nav { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--color-divider); padding: 16px 20px; color: var(--color-foreground); font: 400 14px var(--font-sans); } .ds-nav strong { margin-right: auto; color: var(--color-foreground-strong); font-weight: 600; } .ds-nav button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: var(--color-foreground-strong); } .ds-nav :focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
+    },
+    {
+      "name": "Phone Site Dock",
+      "kind": "nav",
+      "refersTo": "phone-site-dock",
+      "description": "Below sm, the navigation: a bottom pill on the TOC surface with Search and a menu of pages, shown from the top and stepping aside while the reader scrolls down or the footer is on screen. Articles carry the same links at the foot of the TOC sheet instead.",
+      "html": "<div class=\"ds-dock\"><button>Search</button><button aria-label=\"Site menu\" aria-expanded=\"false\">Menu</button></div>",
+      "css": ".ds-dock { display: inline-flex; align-items: center; height: 44px; border: 1px solid var(--color-divider); border-radius: 20px; background: var(--color-background); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); } .ds-dock button { min-height: 44px; padding: 0 16px; border: 0; background: transparent; color: var(--color-foreground-strong); font: 500 14px var(--font-sans); } .ds-dock :focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }"
     },
     {
       "name": "Article Browse Index",
