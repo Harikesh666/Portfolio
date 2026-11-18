@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { PauseIcon, PlayIcon } from "@phosphor-icons/react";
 import { useReducedMotion } from "motion/react";
+import type { BirdArrival } from "./bird-scene";
 import type { Pond as PondEngine, PondMode } from "./pond-engine";
 import { readHourOverride } from "./pond-hour";
 
@@ -22,6 +23,8 @@ type PondProps = Readonly<{
     description: string;
     caption: ReactNode;
     labels?: ReadonlyArray<PondLabel>;
+    /** The bird scene only: "fly-in" starts on an empty branch and the bird flies in to land. */
+    birdArrival?: BirdArrival;
 }>;
 
 /**
@@ -29,7 +32,7 @@ type PondProps = Readonly<{
  * page settles, runs it only while visible in a foreground tab, and offers
  * Pause/Play. Under reduced motion it starts paused on a still frame.
  */
-export function Pond({ caption, description, labels = [], mode, still }: PondProps) {
+export function Pond({ birdArrival, caption, description, labels = [], mode, still }: PondProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const stillRef = useRef<HTMLImageElement>(null);
     const waterRef = useRef<HTMLCanvasElement>(null);
@@ -90,6 +93,7 @@ export function Pond({ caption, description, labels = [], mode, still }: PondPro
                     canvas: waterCanvas,
                     reducedMotion: shouldReduceMotion,
                     isDark,
+                    arrival: birdArrival,
                 });
             }
             const { createPond } = await import("./pond-engine");
@@ -132,7 +136,7 @@ export function Pond({ caption, description, labels = [], mode, still }: PondPro
             pondRef.current?.destroy();
             pondRef.current = null;
         };
-    }, [mode, shouldReduceMotion, still]);
+    }, [birdArrival, mode, shouldReduceMotion, still]);
 
     function togglePaused() {
         const next = !isPausedRef.current;

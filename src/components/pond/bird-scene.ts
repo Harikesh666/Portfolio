@@ -30,6 +30,8 @@ const { branchPoints: branchPointCount, twigs: maxPieces, leaves: maxLeaves } = 
 const maxShoots = 34;
 const pixelRatioCap = 1.5;
 const maxStepSeconds = 0.05;
+/** The longest step a spring takes at once. A slower frame is split, because the stiff head spring diverges past about 24ms. */
+const springStepSeconds = 1 / 240;
 /** How big the bird is: one bird unit, about its body length, in frame heights. Close, like a long lens. */
 const birdScale = 0.25;
 /** How often the scene re-reads the clock in Mumbai, in seconds. */
@@ -88,6 +90,9 @@ const feel = {
     flickKick: 4.5,
     /** Seconds between flights it takes on its own, to come back a little later. */
     wanderEvery: [70, 140] as const,
+    /** Arriving: how long the branch sways empty before the bird flies in, and how soon after landing it sings. */
+    arrivalDelay: 0.9,
+    greetAfter: [0.6, 0.9] as const,
 } as const;
 
 type Act = "flicks" | "preen" | "rouse" | "stretch" | "shuffle" | "turn" | "sing";
@@ -228,14 +233,25 @@ type BirdOptions = Readonly<{
     canvas: HTMLCanvasElement;
     reducedMotion: boolean;
     isDark: () => boolean;
+    /** "fly-in" starts on an empty branch and the bird flies in to land; the default starts with it perched. */
+    arrival?: BirdArrival;
 }>;
+
+export type BirdArrival = "perched" | "fly-in";
 
 type Mode = "perched" | "hopping" | "flying" | "away" | "returning";
 
-/** A critically or under-damped spring, stepped with semi-implicit Euler. */
-function spring(value: { x: number; v: number }, target: number, stiffness: number, damping: number, dt: number) {
-    value.v += (stiffness * (target - value.x) - damping * value.v) * dt;
-    value.x += value.v * dt;
+/**
+ * A critically or under-damped spring, stepped with semi-implicit Euler in
+ * slices no longer than springStepSeconds, so a slow frame cannot blow it up.
+ */
+export function spring(value: { x: number; v: number }, target: number, stiffness: number, damping: number, dt: number) {
+    const slices = Math.max(1, Math.ceil(dt / springStepSeconds));
+    const slice = dt / slices;
+    for (let i = 0; i < slices; i++) {
+        value.v += (stiffness * (target - value.x) - damping * value.v) * slice;
+        value.x += value.v * slice;
+    }
 }
 
 /**
@@ -243,7 +259,7 @@ function spring(value: { x: number; v: number }, target: number, stiffness: numb
  * CSS backdrop stays.
  */
 export function createBirdScene(options: BirdOptions): Pond | null {
-    const { hourOverride, container, canvas, reducedMotion, isDark } = options;
+    const { hourOverride, container, canvas, reducedMotion, isDark, arrival = "perched" } = options;
     const context = canvas.getContext("webgl2", { alpha: false, antialias: false, powerPreference: "low-power" });
     if (!context) return null;
     const gl: WebGL2RenderingContext = context;
@@ -310,6 +326,8 @@ export function createBirdScene(options: BirdOptions): Pond | null {
     let queuedPerch: number | null = null;
     let flight = { age: 0, from: { x: 0, y: 0 }, to: { x: 0, y: 0 }, length: 1 };
     let awayFor = 0;
+    /** Set while the bird is on its way in, so it sings once it has landed. */
+    let isArriving = false;
     const tapTimes: number[] = [];
     const birdAt = { x: 0, y: 0 };
     let tilt = 0.5;
@@ -577,6 +595,10 @@ export function createBirdScene(options: BirdOptions): Pond | null {
                     mode = "perched";
                     sag.v += feel.landingKick;
                     tail.v += 4.5;
+                    if (isArriving) {
+                        isArriving = false;
+                        nextSong = random(...feel.greetAfter);
+                    }
                 }
             }
         }
@@ -728,6 +750,12 @@ export function createBirdScene(options: BirdOptions): Pond | null {
 
     // Settle the bird on its perch before the first frame.
     advance(0.5);
+    // Arriving, the branch starts empty and the bird flies in after a beat. Asleep, or under reduced motion, it is simply there.
+    if (arrival === "fly-in" && !reducedMotion && light().night <= 0.6) {
+        mode = "away";
+        awayFor = feel.arrivalDelay;
+        isArriving = true;
+    }
 
     const toFrame = (x: number, y: number) => ({ x: (x - width / 2) / height, y: 1 - y / height });
 

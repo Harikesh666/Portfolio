@@ -24,7 +24,7 @@ Update `src/lib/site.ts` for the site name, contact details, production URL, soc
 
 The homepage also serves Markdown when a client prefers `Accept: text/markdown`, with q-value-aware negotiation and `Vary: Accept`. `public/llms.txt` tells agents when to use the portfolio and where to find articles, resume evidence, the sitemap, and contact details. Unknown paths retain a real 404 status and expose the same recovery links in HTML or negotiated Markdown.
 
-Unknown paths render `NotFound` (a 404 with the bulbul on its branch) and route failures render `RouteError` (`defaultErrorComponent` in `src/router.tsx`, with a retry). Articles show their real header and an `ArticleSkeleton` while the body loads (`PostPending` in `src/routes/articles/$slug.tsx`). Resume annotations are `marks` phrases on highlights in `src/lib/resume.ts`, checked by `resume.test.ts`.
+Unknown paths render `NotFound` (a 404 that opens on an empty branch the bulbul flies in to land on) and route failures render `RouteError` (`defaultErrorComponent` in `src/router.tsx`, with a retry). Articles show their real header and an `ArticleSkeleton` while the body loads (`PostPending` in `src/routes/articles/$slug.tsx`). Resume annotations are `marks` phrases on highlights in `src/lib/resume.ts`, checked by `resume.test.ts`.
 
 Trust pages live at `/about`, `/contact`, and `/privacy`. Keep their identity, contact, and data-handling claims accurate when the site's ownership, forms, analytics, storage, or hosting behavior changes. The sitemap generator includes these pages alongside `/resume` and the article catalog.
 
