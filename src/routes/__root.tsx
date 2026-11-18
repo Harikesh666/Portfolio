@@ -296,7 +296,6 @@ function RoutePage({
     isInitialPage,
     onEntranceSettled,
     routeId,
-    routeContainerVariants,
     scrollTarget,
     shouldDeferEntrance,
     shouldReduceMotion,
@@ -305,8 +304,6 @@ function RoutePage({
     isInitialPage: boolean;
     onEntranceSettled: (routeId: string) => void;
     routeId: string;
-    routeContainerVariants:
-        typeof routePageContainer | typeof reducedPageContainer;
     scrollTarget: number;
     shouldDeferEntrance: boolean;
     shouldReduceMotion: boolean;
@@ -410,7 +407,8 @@ function RoutePage({
             onAnimationComplete={(definition) => {
                 if (definition === "visible") signalEntranceSettled();
             }}
-            variants={routeContainerVariants}
+            // Reduced motion too: it stays on "visible" and the server paints opacity 1.
+            variants={routePageContainer}
         >
             <ServerRenderedRouteContext value={isInitialPage}>
                 <HeroHandoffContext value={heroHandoffRef}>
@@ -480,9 +478,6 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
     const routeBlockVariants = shouldReduceMotion
         ? reducedPageBlock
         : routeMaterializeBlock;
-    const routeContainerVariants = shouldReduceMotion
-        ? reducedPageContainer
-        : routePageContainer;
 
     return (
         <MotionConfig reducedMotion="user" transition={pageTransition}>
@@ -507,7 +502,6 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                             key={pathname}
                             onEntranceSettled={setSettledRouteId}
                             routeId={pathname}
-                            routeContainerVariants={routeContainerVariants}
                             scrollTarget={scrollTarget}
                             shouldDeferEntrance={shouldDeferEntrance}
                             shouldReduceMotion={shouldReduceMotion ?? false}
