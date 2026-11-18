@@ -18,9 +18,9 @@ export function Reveal({
     const articleRef = useRef<HTMLElement>(null);
     const divRef = useRef<HTMLDivElement>(null);
     const listItemRef = useRef<HTMLLIElement>(null);
-    const articleIsInView = useRevealInView(articleRef, shouldReduceMotion);
-    const divIsInView = useRevealInView(divRef, shouldReduceMotion);
-    const listItemIsInView = useRevealInView(listItemRef, shouldReduceMotion);
+    const articleReveal = useRevealInView(articleRef, shouldReduceMotion);
+    const divReveal = useRevealInView(divRef, shouldReduceMotion);
+    const listItemReveal = useRevealInView(listItemRef, shouldReduceMotion);
 
     if (shouldReduceMotion) {
         if (as === "li") return <li className={className}>{children}</li>;
@@ -31,18 +31,13 @@ export function Reveal({
         return <div className={className}>{children}</div>;
     }
 
-    const motionProps = {
-        className,
-        initial: "hidden",
-        variants: scrollRevealBlock,
-    };
-
     if (as === "li") {
         return (
             <motion.li
-                {...motionProps}
-                animate={listItemIsInView ? "visible" : "hidden"}
+                {...listItemReveal}
+                className={className}
                 ref={listItemRef}
+                variants={scrollRevealBlock}
             >
                 {children}
             </motion.li>
@@ -52,9 +47,10 @@ export function Reveal({
     if (as === "article") {
         return (
             <motion.article
-                {...motionProps}
-                animate={articleIsInView ? "visible" : "hidden"}
+                {...articleReveal}
+                className={className}
                 ref={articleRef}
+                variants={scrollRevealBlock}
             >
                 {children}
             </motion.article>
@@ -63,9 +59,10 @@ export function Reveal({
 
     return (
         <motion.div
-            {...motionProps}
-            animate={divIsInView ? "visible" : "hidden"}
+            {...divReveal}
+            className={className}
             ref={divRef}
+            variants={scrollRevealBlock}
         >
             {children}
         </motion.div>

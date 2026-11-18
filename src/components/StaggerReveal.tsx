@@ -23,6 +23,10 @@ import {
     editorialLineTransformTo,
     editorialLineTransition,
 } from "../lib/motion";
+import {
+    useIsServerRenderedRoute,
+    useHeroHandoffRef,
+} from "../lib/route-entrance";
 
 const headlineAttribute = "data-stagger-headline";
 const itemAttribute = "data-stagger-item";
@@ -65,6 +69,33 @@ function withDelay(transition: EditorialTransition, delay: number) {
         delay,
         opacity: { ...transition.opacity, delay },
     };
+}
+
+let fontsHaveSettled = false;
+let fontSettlement: Promise<void> | undefined;
+
+/**
+ * Starts watching the page fonts once. Reading `document.fonts.ready` flushes
+ * style for the whole document, so it is read once per page load, not once
+ * per navigation.
+ */
+function primeFontSettlement() {
+    if (fontsHaveSettled || fontSettlement || typeof document === "undefined") {
+        return;
+    }
+    if (!document.fonts) {
+        fontsHaveSettled = true;
+        return;
+    }
+    fontSettlement = document.fonts.ready.then(() => {
+        fontsHaveSettled = true;
+    });
+}
+
+/** Resolves when fonts have settled, or returns null if they already have. */
+function whenFontsSettle() {
+    primeFontSettlement();
+    return fontsHaveSettled ? null : (fontSettlement ?? null);
 }
 
 function createSplitSpan(className: string) {
@@ -137,6 +168,8 @@ function StaggerRevealRoot({
 }: StaggerRevealProps) {
     const containerRef = useRef<HTMLElement>(null);
     const shouldReduceMotion = useReducedMotion();
+    const isServerRendered = useIsServerRenderedRoute();
+    const heroHandoffRef = useHeroHandoffRef();
 
     useLayoutEffect(() => {
         const container = containerRef.current;
@@ -145,126 +178,123 @@ function StaggerRevealRoot({
         const initialHeadline = container.querySelector<HTMLElement>(
             `[${headlineAttribute}]`,
         );
-        if (!initialHeadline) {
-            container.setAttribute("data-stagger-ready", "");
-            return;
-        }
-
-        if (shouldReduceMotion) {
-            const originalText =
-                initialHeadline.getAttribute("aria-label") ??
-                initialHeadline.textContent ??
-                "";
-            initialHeadline.textContent = originalText;
-            container.setAttribute("data-stagger-ready", "");
+        // The server-rendered route keeps its HTML as painted. Hiding it here
+        // would blank text the reader can already see.
+        if (!initialHeadline || shouldReduceMotion || isServerRendered) {
+            primeFontSettlement();
             return;
         }
 
         const animations: AnimationPlaybackControls[] = [];
         let isCancelled = false;
 
-        async function prepareEntrance(currentContainer: HTMLElement) {
-            try {
-                await document.fonts?.ready;
-                if (
-                    isCancelled ||
-                    containerRef.current !== currentContainer
-                ) {
-                    return;
+        function playEntrance(currentContainer: HTMLElement) {
+            const headline = currentContainer.querySelector<HTMLElement>(
+                `[${headlineAttribute}]`,
+            );
+            if (!headline) return;
+
+            const originalText =
+                headline.getAttribute("aria-label") ??
+                headline.textContent ??
+                "";
+            headline.textContent = originalText;
+            const sequence = Array.from(
+                currentContainer.querySelectorAll<HTMLElement>(
+                    `[${headlineAttribute}], [${itemAttribute}]`,
+                ),
+            );
+            let delay = 0;
+
+            for (const element of sequence) {
+                if (element.hasAttribute(headlineAttribute)) {
+                    const lines = splitHeadlineLines(element);
+                    const lineAnimations: AnimationPlaybackControls[] = [];
+
+                    for (const line of lines) {
+                        lineAnimations.push(
+                            animate(
+                                line,
+                                {
+                                    opacity: [0, 1],
+                                    transform: [
+                                        editorialLineTransformFrom,
+                                        editorialLineTransformTo,
+                                    ],
+                                    filter: [
+                                        editorialBlurFrom,
+                                        editorialBlurTo,
+                                    ],
+                                },
+                                withDelay(editorialLineTransition, delay),
+                            ),
+                        );
+                        delay += editorialLineStagger;
+                    }
+                    animations.push(...lineAnimations);
+
+                    // The split lines are frozen at the width they were
+                    // measured at. Once they have landed, hand the headline
+                    // back as plain text so it reflows on rotation and resize.
+                    const headlineElement = element;
+                    void Promise.all(lineAnimations).then(() => {
+                        if (isCancelled || !headlineElement.isConnected) return;
+                        headlineElement.textContent = originalText;
+                    });
+
+                    if (lines.length > 0) delay += editorialHeadlinePause;
+                    continue;
                 }
 
-                const headline = currentContainer.querySelector<HTMLElement>(
-                    `[${headlineAttribute}]`,
-                );
-                if (!headline) return;
-
-                const originalText =
-                    headline.getAttribute("aria-label") ??
-                    headline.textContent ??
-                    "";
-                headline.textContent = originalText;
-                const sequence = Array.from(
-                    currentContainer.querySelectorAll<HTMLElement>(
-                        `[${headlineAttribute}], [${itemAttribute}]`,
+                animations.push(
+                    animate(
+                        element,
+                        {
+                            opacity: [0, 1],
+                            transform: [
+                                editorialFollowerTransformFrom,
+                                editorialFollowerTransformTo,
+                            ],
+                        },
+                        withDelay(
+                            editorialFollowerTransition,
+                            Math.min(delay, editorialFollowerMaxDelay),
+                        ),
                     ),
                 );
-                let delay = 0;
-
-                for (const element of sequence) {
-                    if (element.hasAttribute(headlineAttribute)) {
-                        const lines = splitHeadlineLines(element);
-                        const lineAnimations: AnimationPlaybackControls[] = [];
-
-                        for (const line of lines) {
-                            lineAnimations.push(
-                                animate(
-                                    line,
-                                    {
-                                        opacity: [0, 1],
-                                        transform: [
-                                            editorialLineTransformFrom,
-                                            editorialLineTransformTo,
-                                        ],
-                                        filter: [
-                                            editorialBlurFrom,
-                                            editorialBlurTo,
-                                        ],
-                                    },
-                                    withDelay(editorialLineTransition, delay),
-                                ),
-                            );
-                            delay += editorialLineStagger;
-                        }
-                        animations.push(...lineAnimations);
-
-                        // The split lines are frozen at the width they were
-                        // measured at. Once they have landed, hand the headline
-                        // back as plain text so it reflows on rotation and resize.
-                        const headlineElement = element;
-                        void Promise.all(lineAnimations).then(() => {
-                            if (isCancelled || !headlineElement.isConnected) return;
-                            headlineElement.textContent = originalText;
-                        });
-
-                        if (lines.length > 0) delay += editorialHeadlinePause;
-                        continue;
-                    }
-
-                    animations.push(
-                        animate(
-                            element,
-                            {
-                                opacity: [0, 1],
-                                transform: [
-                                    editorialFollowerTransformFrom,
-                                    editorialFollowerTransformTo,
-                                ],
-                            },
-                            withDelay(
-                                editorialFollowerTransition,
-                                Math.min(delay, editorialFollowerMaxDelay),
-                            ),
-                        ),
-                    );
-                    delay += editorialFollowerStagger;
-                }
-            } finally {
-                if (
-                    !isCancelled &&
-                    containerRef.current === currentContainer
-                ) {
-                    currentContainer.setAttribute("data-stagger-ready", "");
-                }
+                delay += editorialFollowerStagger;
             }
+
+            // Blocks below the hero that are already on screen start here.
+            heroHandoffRef.current =
+                performance.now() +
+                Math.min(
+                    delay,
+                    editorialFollowerMaxDelay + editorialFollowerStagger,
+                ) *
+                    1000;
         }
 
-        void prepareEntrance(container);
+        // Lines are measured from the real font. Once fonts have settled,
+        // which is true on every navigation after the first page, the split
+        // runs before this frame paints, so the hero never shows a blank frame.
+        const fontsPending = whenFontsSettle();
+        if (!fontsPending) {
+            playEntrance(container);
+        } else {
+            container.style.visibility = "hidden";
+            void fontsPending.then(() => {
+                if (isCancelled || containerRef.current !== container) return;
+                playEntrance(container);
+                container.style.visibility = "";
+            });
+        }
 
         return () => {
             isCancelled = true;
             for (const animation of animations) animation.stop();
         };
-    }, [shouldReduceMotion]);
+    }, [heroHandoffRef, isServerRendered, shouldReduceMotion]);
 
     return createElement(
         as,

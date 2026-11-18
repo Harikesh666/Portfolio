@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { SectionHeading } from "../../components/SectionHeading";
 import { StaggerReveal } from "../../components/StaggerReveal";
 import { GuidePreview } from "../../components/guide-previews";
+import { PageEnter } from "../../components/PageEnter";
 import {
     posts,
     seriesIndex,
@@ -68,44 +69,48 @@ function ArticlesPage() {
                 </StaggerReveal.Item>
             </StaggerReveal>
 
-            <ArticleBrowse />
+            {/* Everything under the hero fades in as one tree, after the hero's
+                stagger, so the list never shows before the intro above it. */}
+            <PageEnter.Fade>
+                <ArticleBrowse />
 
-            <section
-                aria-labelledby="react-internals-heading"
-                className="mt-16 sm:mt-20"
-            >
-                <p className={metaClassName}>Learning path</p>
-                <SectionHeading id="react-internals-heading">
-                    {series.title}
-                </SectionHeading>
-                <p className="mt-1 text-pretty text-sm leading-normal text-foreground">
-                    {series.description}
-                </p>
-                <p className={`mt-2 ${metaClassName}`}>
-                    {seriesPosts.length} guides · about {series.readingTime} ·
-                    updated {series.updatedAt}
-                </p>
-                <ArticleList ordered posts={seriesPosts} />
-            </section>
-
-            {topics.map((topic) => (
                 <section
-                    aria-labelledby={`${topic.id}-heading`}
+                    aria-labelledby="react-internals-heading"
                     className="mt-16 sm:mt-20"
-                    key={topic.id}
                 >
-                    <SectionHeading id={`${topic.id}-heading`}>
-                        {topic.title}
+                    <p className={metaClassName}>Learning path</p>
+                    <SectionHeading id="react-internals-heading">
+                        {series.title}
                     </SectionHeading>
                     <p className="mt-1 text-pretty text-sm leading-normal text-foreground">
-                        {topic.description}
+                        {series.description}
                     </p>
                     <p className={`mt-2 ${metaClassName}`}>
-                        {topic.posts.length} guides · recommended reading order
+                        {seriesPosts.length} guides · about {series.readingTime} ·
+                        updated {series.updatedAt}
                     </p>
-                    <ArticleList ordered posts={topic.posts} />
+                    <ArticleList ordered posts={seriesPosts} />
                 </section>
-            ))}
+
+                {topics.map((topic) => (
+                    <section
+                        aria-labelledby={`${topic.id}-heading`}
+                        className="mt-16 sm:mt-20"
+                        key={topic.id}
+                    >
+                        <SectionHeading id={`${topic.id}-heading`}>
+                            {topic.title}
+                        </SectionHeading>
+                        <p className="mt-1 text-pretty text-sm leading-normal text-foreground">
+                            {topic.description}
+                        </p>
+                        <p className={`mt-2 ${metaClassName}`}>
+                            {topic.posts.length} guides · recommended reading order
+                        </p>
+                        <ArticleList ordered posts={topic.posts} />
+                    </section>
+                ))}
+            </PageEnter.Fade>
         </main>
     );
 }

@@ -14,6 +14,7 @@ import { desktopQuery } from "../../lib/toc";
 import { useMediaQuery } from "../../lib/use-media-query";
 import { useGuideIslands } from "../../lib/use-guide-islands";
 import { useTocNavigation } from "../../lib/use-toc-navigation";
+import { notFoundMeta } from "../../lib/not-found-head";
 
 export const Route = createFileRoute("/articles/$slug")({
     pendingComponent: PostPending,
@@ -27,6 +28,8 @@ export const Route = createFileRoute("/articles/$slug")({
         return post;
     },
     head: ({ loaderData }) => {
+        if (!loaderData) return { meta: notFoundMeta };
+
         const title = loaderData?.title ?? "Articles";
         const description = loaderData?.description ?? site.description;
         const canonicalUrl = absoluteUrl(`/articles/${loaderData?.slug ?? ""}`);

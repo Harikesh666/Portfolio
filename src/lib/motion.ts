@@ -296,30 +296,32 @@ export const materializeBlock = {
     },
 };
 
+// The visible variants below take `custom` as a start delay in seconds, so a
+// block already on screen can wait for the hero's stagger to hand over to it.
 export const routeMaterializeBlock = {
     hidden: materializeBlock.hidden,
-    visible: {
+    visible: (delay = 0) => ({
         ...materializeBlock.visible,
-        transition: routePageEnterTween,
-    },
+        transition: { ...routePageEnterTween, delay },
+    }),
 };
 
 export const scrollRevealBlock = {
     hidden: { opacity: 0, y: 16 },
-    visible: {
+    visible: (delay = 0) => ({
         opacity: 1,
         y: 0,
-        transition: scrollRevealTween,
-    },
+        transition: { ...scrollRevealTween, delay },
+    }),
 };
 
 // Fades oversized content trees without rasterizing their full height each frame.
 export const scrollRevealTree = {
     hidden: { opacity: 0 },
-    visible: {
+    visible: (delay = 0) => ({
         opacity: 1,
-        transition: scrollRevealTween,
-    },
+        transition: { ...scrollRevealTween, delay },
+    }),
 };
 
 export const reducedPageBlock = {
