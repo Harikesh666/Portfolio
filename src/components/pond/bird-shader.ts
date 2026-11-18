@@ -363,7 +363,8 @@ vec4 leafAt(vec2 p, vec4 leaf, vec4 shape, float px, float layered) {
 float bird(vec2 b, out float part, out float eye, out float feathered) {
     float fluff = uFluff;
     // Everything above the feet leans a little with the branch and levels out in flight.
-    vec2 q = rot(b, (uTilt - 0.5) * 0.3 - uFly * 0.5);
+    // Rotating the sample point by +a turns the drawn bird by -a, so a positive angle tips it forward.
+    vec2 q = rot(b, (uTilt - 0.5) * 0.3 + uFly * 0.85);
     float body = bodyShape(q) - 0.012 - 0.006 * uBreath - 0.035 * fluff;
     // The tail: long, a touch broader toward its squared end, where slits part the feathers.
     vec2 tailBase = vec2(-0.33, -0.08);

@@ -109,6 +109,10 @@ const repertoire: readonly (readonly [Act, number, readonly [number, number]])[]
 
 const random = (min: number, max: number) => min + Math.random() * (max - min);
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const smoothstep = (from: number, to: number, value: number) => {
+    const t = clamp((value - from) / (to - from), 0, 1);
+    return t * t * (3 - 2 * t);
+};
 
 /** A seeded random source, so the branch, twigs and leaves come out the same on every visit. */
 function seeded(seed: number) {
@@ -674,8 +678,11 @@ export function createBirdScene(options: BirdOptions): Pond | null {
             // 0.5 is the bird's own upright lean; it crouches forward a little as it hops.
             tilt += ((hop ? 0.25 : 0.5) - tilt) * 0.2;
         } else if (mode !== "away") {
-            fly = 1;
-            flap = Math.sin(time * 34) * 1.0 - 0.2;
+            // The flight pose eases in as it takes off and out over the last stretch of a landing,
+            // so the wings fold and the body pitches up into its perched lean instead of snapping there.
+            const k = clamp(flight.age / flight.length, 0, 1);
+            fly = mode === "flying" ? smoothstep(0, 0.2, k) : 1 - smoothstep(0.7, 1, k);
+            flap = (Math.sin(time * 34) - 0.2) * fly;
             tilt += (0.5 - tilt) * 0.2;
         }
 
