@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { MagnifyingGlassIcon, MoonIcon, SunIcon } from "@phosphor-icons/react";
 import { Link, useLocation } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -64,6 +64,9 @@ const headerHeightClassName = {
 
 // `translate` is its own CSS property, so this never fights Motion's scale on `transform`.
 const morphTranslateTransition = `translate ${headerMorphTween.duration}s cubic-bezier(${headerMorphTween.ease.join(", ")})`;
+// The media query, not the render, gates the slide: the server can't know the
+// reduced-motion setting, so both renders carry the same class and style.
+const morphTranslateClassName = "motion-safe:[transition:var(--morph-translate)]";
 
 const avatarBreadcrumbScale = avatarSize.breadcrumb / avatarSize.identity;
 
@@ -183,12 +186,16 @@ function ThemeToggle({
 
     return (
         <motion.button
-            className={`absolute z-10 inline-flex min-h-11 min-w-11 items-center justify-center text-muted hover:text-foreground-strong ${toggleOffsetClassName[mode]}`}
-            style={{
-                top: 0,
-                right: 20,
-                transition: shouldReduceMotion ? "none" : morphTranslateTransition,
-            }}
+            className={`absolute z-10 inline-flex min-h-11 min-w-11 items-center justify-center text-muted hover:text-foreground-strong ${morphTranslateClassName} ${toggleOffsetClassName[mode]}`}
+            style={
+                {
+                    top: 0,
+                    right: 20,
+                    "--morph-translate": morphTranslateTransition,
+                } as CSSProperties
+            }
+            // Motion adds this for whileTap, which reduced motion drops. Fixed so both renders match.
+            tabIndex={0}
             type="button"
             aria-label="Toggle theme"
             aria-pressed={theme === "dark"}
@@ -198,36 +205,33 @@ function ThemeToggle({
             whileTap={shouldReduceMotion ? undefined : themeToggleButtonTap}
             transition={shouldReduceMotion ? { duration: 0 } : snappySpring}
         >
-            {shouldReduceMotion ? (
-                theme === "dark" ? (
-                    <SunIcon aria-hidden="true" size={18} />
-                ) : (
-                    <MoonIcon aria-hidden="true" size={18} />
-                )
-            ) : (
-                <AnimatePresence
+            {/*
+              * One tree for both motion settings: the server always renders this
+              * span, so a reduced-motion branch without it fails hydration (#418).
+              * Reduced motion keeps the key fixed, so the glyph swaps in place.
+              */}
+            <AnimatePresence
+                custom={iconDirection}
+                initial={false}
+                mode="wait"
+            >
+                <motion.span
+                    className="inline-flex"
                     custom={iconDirection}
-                    initial={false}
-                    mode="wait"
+                    key={shouldReduceMotion ? "glyph" : theme}
+                    animate="animate"
+                    exit="exit"
+                    initial={shouldReduceMotion ? false : "initial"}
+                    transition={shouldReduceMotion ? { duration: 0 } : bouncySpring}
+                    variants={themeToggleIconVariants}
                 >
-                    <motion.span
-                        className="inline-flex"
-                        custom={iconDirection}
-                        key={theme}
-                        animate="animate"
-                        exit="exit"
-                        initial="initial"
-                        transition={bouncySpring}
-                        variants={themeToggleIconVariants}
-                    >
-                        {theme === "dark" ? (
-                            <SunIcon aria-hidden="true" size={18} />
-                        ) : (
-                            <MoonIcon aria-hidden="true" size={18} />
-                        )}
-                    </motion.span>
-                </AnimatePresence>
-            )}
+                    {theme === "dark" ? (
+                        <SunIcon aria-hidden="true" size={18} />
+                    ) : (
+                        <MoonIcon aria-hidden="true" size={18} />
+                    )}
+                </motion.span>
+            </AnimatePresence>
         </motion.button>
     );
 }
@@ -317,17 +321,19 @@ function SharedAvatar({
     return (
         <motion.div
             animate={{ scale }}
-            className={`absolute z-10 ${avatarOffsetClassName[mode]}`}
+            className={`absolute z-10 ${morphTranslateClassName} ${avatarOffsetClassName[mode]}`}
             initial={false}
-            style={{
-                top: 0,
-                left: 20,
-                width: avatarSize.identity,
-                height: avatarSize.identity,
-                borderRadius: 9999,
-                transformOrigin: "top left",
-                transition: shouldReduceMotion ? "none" : morphTranslateTransition,
-            }}
+            style={
+                {
+                    top: 0,
+                    left: 20,
+                    width: avatarSize.identity,
+                    height: avatarSize.identity,
+                    borderRadius: 9999,
+                    transformOrigin: "top left",
+                    "--morph-translate": morphTranslateTransition,
+                } as CSSProperties
+            }
             transition={shouldReduceMotion ? { duration: 0 } : headerMorphTween}
         >
             <Link aria-label="Home" className="block h-full w-full rounded-full" to="/">

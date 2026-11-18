@@ -1,6 +1,6 @@
 import { useRef, type ReactNode } from "react";
 import { motion, useReducedMotion } from "motion/react";
-import { scrollRevealBlock } from "../lib/motion";
+import { reducedPageBlock, scrollRevealBlock } from "../lib/motion";
 import { useRevealInView } from "../lib/use-reveal-in-view";
 
 type RevealProps = Readonly<{
@@ -22,14 +22,9 @@ export function Reveal({
     const divReveal = useRevealInView(divRef, shouldReduceMotion);
     const listItemReveal = useRevealInView(listItemRef, shouldReduceMotion);
 
-    if (shouldReduceMotion) {
-        if (as === "li") return <li className={className}>{children}</li>;
-        if (as === "article") {
-            return <article className={className}>{children}</article>;
-        }
-
-        return <div className={className}>{children}</div>;
-    }
+    // Same elements under reduced motion, so the server's markup hydrates as is.
+    // useRevealInView pins them visible, and these variants carry no transform.
+    const variants = shouldReduceMotion ? reducedPageBlock : scrollRevealBlock;
 
     if (as === "li") {
         return (
@@ -37,7 +32,7 @@ export function Reveal({
                 {...listItemReveal}
                 className={className}
                 ref={listItemRef}
-                variants={scrollRevealBlock}
+                variants={variants}
             >
                 {children}
             </motion.li>
@@ -50,7 +45,7 @@ export function Reveal({
                 {...articleReveal}
                 className={className}
                 ref={articleRef}
-                variants={scrollRevealBlock}
+                variants={variants}
             >
                 {children}
             </motion.article>
@@ -62,7 +57,7 @@ export function Reveal({
             {...divReveal}
             className={className}
             ref={divRef}
-            variants={scrollRevealBlock}
+            variants={variants}
         >
             {children}
         </motion.div>
