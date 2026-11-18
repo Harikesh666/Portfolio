@@ -12,20 +12,20 @@ import {
     createRootRoute,
     rootRouteId,
     useLocation,
+    useRouterState,
 } from "@tanstack/react-router";
 import {
     AnimatePresence,
     MotionConfig,
     motion,
     useIsPresent,
-    useMotionValue,
     usePresenceData,
     useReducedMotion,
 } from "motion/react";
 import { CommandPalette } from "../components/CommandPalette";
 import Footer from "../components/Footer";
 import { FloatingTocProvider } from "../components/TocRegistry";
-import Header, { getHeaderHeight } from "../components/Header";
+import Header from "../components/Header";
 import {
     exitTween,
     instantRouteTween,
@@ -173,71 +173,91 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     );
 }
 
-function ExitScrollCompensation({
+/**
+ * Holds a route's place while the router is not rendering it. On the way in,
+ * the URL changes a frame or two before the router swaps its matches, and the
+ * outlet would still render the previous page on the new screen. On the way
+ * out, it holds the outgoing route's place while it exits. The router has already
+ * moved on by then, so the exiting tree would render the next page's content
+ * (at the old scroll offset, on top of the new screen). It renders nothing
+ * instead. Its frame keeps the old page's height as a minimum, measured while
+ * the page was live, so the document does not shrink: a shorter document
+ * clamps the scroll position and pulls the footer into view for a frame.
+ */
+function ExitingRouteFrame({
     children,
-    headerHeight,
-}: Readonly<{ children: React.ReactNode; headerHeight: number }>) {
+    isShowingRoute,
+}: Readonly<{ children: React.ReactNode; isShowingRoute: boolean }>) {
     const isPresent = useIsPresent();
-    const presenceData = usePresenceData();
-    const exitScrollY = typeof presenceData === "number" ? presenceData : 0;
-    const scrollOffset = useMotionValue(0);
-    const lastScrollY = useRef(0);
+    const showsContent = isPresent && isShowingRoute;
+    const frameRef = useRef<HTMLDivElement>(null);
+    const contentRef = useRef<HTMLDivElement>(null);
 
-    // Tracks scroll while the page is live, outside any commit. Reading
-    // `window.scrollY` in the commit that pins the exiting page would force a
-    // style recalc of the whole outgoing tree.
+    // Measured by a ResizeObserver, after layout, so nothing here forces a
+    // layout of its own.
     useEffect(() => {
-        if (!isPresent) return;
+        if (!showsContent) return;
 
-        function recordScrollY() {
-            lastScrollY.current = window.scrollY;
-        }
+        const frame = frameRef.current;
+        const content = contentRef.current;
+        if (!frame || !content) return;
 
-        recordScrollY();
-        window.addEventListener("scroll", recordScrollY, { passive: true });
+        const resizeObserver = new ResizeObserver(([entry]) => {
+            if (entry) frame.style.minHeight = `${entry.contentRect.height}px`;
+        });
+        resizeObserver.observe(content);
 
-        return () => window.removeEventListener("scroll", recordScrollY);
-    }, [isPresent]);
+        return () => resizeObserver.disconnect();
+    }, [showsContent]);
 
-    useLayoutEffect(() => {
-        if (isPresent) {
-            scrollOffset.set(0);
-            return;
-        }
-
-        function syncScrollOffset() {
-            scrollOffset.set(headerHeight - window.scrollY);
-        }
-
-        scrollOffset.set(headerHeight - lastScrollY.current);
-        window.addEventListener("scroll", syncScrollOffset, { passive: true });
-
-        return () => window.removeEventListener("scroll", syncScrollOffset);
-    }, [headerHeight, isPresent, scrollOffset]);
+    // An entering route whose match has not landed yet holds one screen of
+    // space, so the footer stays below the fold instead of flashing up.
+    const frameClassName = !isPresent
+        ? "pointer-events-none"
+        : isShowingRoute
+          ? undefined
+          : "min-h-dvh";
 
     return (
         <div
-            className={isPresent ? undefined : "pointer-events-none"}
-            style={
-                isPresent
-                    ? undefined
-                    : { height: `calc(100dvh + ${exitScrollY}px)` }
-            }
+            aria-hidden={showsContent ? undefined : true}
+            className={frameClassName}
+            ref={frameRef}
         >
-            <div
-                className={
-                    isPresent ? undefined : "fixed inset-0 h-dvh overflow-clip"
-                }
-            >
-                <motion.div style={{ y: scrollOffset }}>{children}</motion.div>
-            </div>
+            {showsContent ? <div ref={contentRef}>{children}</div> : null}
         </div>
     );
 }
 
+/**
+ * True once the router renders `pathname`: its deepest match is that path,
+ * or, for a URL no route matches, only the root matched and the router has
+ * resolved to it.
+ */
+function isRouteRendered(
+    state: Readonly<{
+        matches: ReadonlyArray<{ pathname: string; routeId: string }>;
+        resolvedLocation?: { pathname: string };
+    }>,
+    pathname: string,
+) {
+    const deepest = state.matches.at(-1);
+    if (!deepest) return false;
+    if (deepest.routeId === rootRouteId) {
+        return samePath(state.resolvedLocation?.pathname, pathname);
+    }
+    return samePath(deepest.pathname, pathname);
+}
+
+/** Index routes match as `/articles/` while the URL reads `/articles`. */
+function samePath(a: string | undefined, b: string) {
+    const trim = (path: string) =>
+        path.length > 1 ? path.replace(/\/+$/, "") : path;
+    return a !== undefined && trim(a) === trim(b);
+}
+
 function RoutePage({
     children,
-    headerHeight,
     isInitialPage,
     onEntranceSettled,
     routeId,
@@ -247,7 +267,6 @@ function RoutePage({
     shouldReduceMotion,
 }: Readonly<{
     children: React.ReactNode;
-    headerHeight: number;
     isInitialPage: boolean;
     onEntranceSettled: (routeId: string) => void;
     routeId: string;
@@ -265,18 +284,33 @@ function RoutePage({
     const heroHandoffRef = useRef(0);
     const settleFrame = useRef<number | undefined>(undefined);
     const shouldExitInstantly = usePresenceData() === true;
+    const isRouterShowingRoute = useRouterState({
+        select: (state) => isRouteRendered(state, routeId),
+    });
+    // The server-rendered route is on screen by definition, during SSR and
+    // hydration alike.
+    const isShowingRoute = isInitialPage || isRouterShowingRoute;
 
     useLayoutEffect(() => {
         if (hasPlacedScroll.current) return;
+        if (isInitialPage) {
+            hasPlacedScroll.current = true;
+            return;
+        }
+        // Until this route's content is in the page there is nothing to
+        // restore a position into; hold the empty frame at the top instead.
+        if (!isShowingRoute) {
+            window.scrollTo({ left: 0, top: 0, behavior: "instant" });
+            return;
+        }
         hasPlacedScroll.current = true;
-        if (isInitialPage) return;
 
         window.scrollTo({ left: 0, top: scrollTarget, behavior: "instant"});
         performance.mark("portfolio-route-enter-commit");
         if (!shouldDeferEntrance) {
             performance.mark("portfolio-route-enter-start");
         }
-    }, [isInitialPage, scrollTarget, shouldDeferEntrance]);
+    }, [isInitialPage, isShowingRoute, scrollTarget, shouldDeferEntrance]);
 
     useEffect(() => {
         if (isInitialPage || shouldReduceMotion || !shouldDeferEntrance) return;
@@ -345,9 +379,9 @@ function RoutePage({
         >
             <ServerRenderedRouteContext value={isInitialPage}>
                 <HeroHandoffContext value={heroHandoffRef}>
-                    <ExitScrollCompensation headerHeight={headerHeight}>
+                    <ExitingRouteFrame isShowingRoute={isShowingRoute}>
                         {children}
-                    </ExitScrollCompensation>
+                    </ExitingRouteFrame>
                 </HeroHandoffContext>
             </ServerRenderedRouteContext>
         </motion.div>
@@ -434,7 +468,6 @@ function RouteTransition({ children }: { children: React.ReactNode }) {
                 >
                     <AnimatePresence custom={!shouldDeferEntrance} mode="wait">
                         <RoutePage
-                            headerHeight={getHeaderHeight(pathname)}
                             isInitialPage={isInitialPage}
                             key={pathname}
                             onEntranceSettled={setSettledRouteId}
