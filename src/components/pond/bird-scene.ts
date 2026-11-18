@@ -93,6 +93,10 @@ const feel = {
     /** Arriving: how long the branch sways empty before the bird flies in, and how soon after landing it sings. */
     arrivalDelay: 0.9,
     greetAfter: [0.6, 0.9] as const,
+    /** Tapped awake at night: how fast it unfluffs, the shake before its first note, and how long it stays up after singing. */
+    wakeRate: 5,
+    wakeShakeSeconds: 0.8,
+    awakeAfterSong: 3,
 } as const;
 
 type Act = "flicks" | "preen" | "rouse" | "stretch" | "shuffle" | "turn" | "sing";
@@ -317,6 +321,8 @@ export function createBirdScene(options: BirdOptions): Pond | null {
     let nextBlink = random(2, 5);
     let wakeFor = 0;
     let song: { notes: readonly Note[]; age: number } | null = null;
+    // A song already scheduled to sound, waiting for the bird to finish waking.
+    let pendingSong: { notes: readonly Note[]; wait: number } | null = null;
     // Its voice only sounds when a reader taps it; songs it sings on its own are silent.
     const voice = createVoice();
     let nextSong = random(...feel.songEvery);
@@ -344,10 +350,11 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         const day = clamp((hour - 6.6) / (18.9 - 6.6), 0, 1);
         return { x: (day - 0.5) * 1.6 * (aspect / 2), y: 0.16 + 0.7 * Math.sin(Math.PI * day) };
     }
+    /** The moon's path: like the sun, it rises in the east on the left and sets on the right. */
     function moonAt() {
         const night = ((hour - 18.9 + 24) % 24) / (24 - 18.9 + 6.6);
         const along = clamp(night, 0, 1);
-        return { x: (0.5 - along) * 1.4 * (aspect / 2), y: 0.3 + 0.55 * Math.sin(Math.PI * along) };
+        return { x: (along - 0.5) * 1.4 * (aspect / 2), y: 0.3 + 0.55 * Math.sin(Math.PI * along) };
     }
 
     /** The branch now: its rest shape shifted to the frame's right edge, swaying from the anchor, sagging at the perch. */
@@ -394,16 +401,41 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         return best;
     }
 
-    /** A phrase of the bulbul's call: aloud when a reader taps it, silent when it sings on its own. */
-    function sing(aloud = false) {
-        if (song || fluff > 0.5) return;
-        const notes = bulbulPhrase();
-        if (aloud) voice.sing(notes);
+    function startSong(notes: readonly Note[]) {
         // Singing interrupts whatever else it was doing, like preening with its head down.
         act = null;
         song = { notes, age: 0 };
         headTarget = 0.32;
         crestTarget = 1;
+    }
+
+    /** A phrase of the bulbul's call: aloud when a reader taps it, silent when it sings on its own. */
+    function sing(aloud = false) {
+        if (song || pendingSong || fluff > 0.5) return;
+        const notes = bulbulPhrase();
+        if (aloud) voice.sing(notes);
+        startSong(notes);
+    }
+
+    /**
+     * A tap on the bird at night. Asleep, it wakes, shakes out its feathers and
+     * then sings; already awake, it sings at once. The audio is scheduled inside
+     * the tap, with the shake as its delay, because a browser only lets sound
+     * start from a gesture.
+     */
+    function wakeAndSing() {
+        if (song || pendingSong) return;
+        const notes = bulbulPhrase();
+        const last = notes[notes.length - 1];
+        const shake = fluff > 0.5 ? feel.wakeShakeSeconds : 0;
+        voice.sing(notes, shake);
+        wakeFor = Math.max(wakeFor, shake + last.at + last.length + feel.awakeAfterSong);
+        if (shake > 0) {
+            act = { kind: "rouse", age: 0, length: shake };
+            pendingSong = { notes, wait: shake };
+        } else {
+            startSong(notes);
+        }
     }
 
     function startHop(to: number) {
@@ -421,6 +453,7 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         if (mode !== "perched") return;
         mode = "flying";
         song = null;
+        pendingSong = null;
         act = null;
         const goLeft = Math.random() < 0.6;
         facing = goLeft ? -1 : 1;
@@ -536,7 +569,9 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         // Sleep: after dark it fluffs up and tucks its head in; a tap wakes it for a while.
         wakeFor = Math.max(0, wakeFor - dt);
         const sleepy = night > 0.6 && wakeFor <= 0 && mode === "perched" ? 1 : 0;
-        fluff += (sleepy - fluff) * (1 - Math.exp(-dt * 0.8));
+        // Settling into sleep is slow; being tapped awake is quick.
+        const fluffRate = !sleepy && wakeFor > 0 ? feel.wakeRate : 0.8;
+        fluff += (sleepy - fluff) * (1 - Math.exp(-dt * fluffRate));
 
         // Blink.
         nextBlink -= dt;
@@ -545,6 +580,15 @@ export function createBirdScene(options: BirdOptions): Pond | null {
             blinkFor = 0.13;
         }
         blinkFor = Math.max(0, blinkFor - dt);
+
+        if (pendingSong) {
+            pendingSong.wait -= dt;
+            if (pendingSong.wait <= 0) {
+                const { notes } = pendingSong;
+                pendingSong = null;
+                startSong(notes);
+            }
+        }
 
         // A song: a few bubbling notes, the beak opening and the throat puffing on each.
         if (song) {
@@ -804,9 +848,14 @@ export function createBirdScene(options: BirdOptions): Pond | null {
                 const centre = { x: birdAt.x + birdScale * 0.1 * facing, y: birdAt.y + birdScale * 0.35 };
                 const onBird = Math.hypot(point.x - centre.x, point.y - centre.y) < birdScale * 0.75;
                 if (fluff > 0.5 || light().night > 0.6) {
-                    // Asleep: a tap wakes it to look around, then it tucks in again.
-                    wakeFor = 3.5;
-                    headTarget = random(-0.2, 0.3);
+                    if (onBird) {
+                        // At night a tap on the bird wakes it, and it sings for the reader.
+                        wakeAndSing();
+                    } else {
+                        // Anywhere else, a tap wakes it to look around, then it tucks in again.
+                        wakeFor = Math.max(wakeFor, 3.5);
+                        headTarget = random(-0.2, 0.3);
+                    }
                 } else if (onBird) {
                     sing(true);
                 } else {

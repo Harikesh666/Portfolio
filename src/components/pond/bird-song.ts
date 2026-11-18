@@ -109,16 +109,18 @@ export function singPhrase(context: BaseAudioContext, notes: readonly Note[], st
 /**
  * The bird's voice. `sing` must be called from inside a tap, so the browser
  * lets the audio context start; it does nothing where Web Audio is missing.
+ * `delay` (seconds) schedules the phrase later on the same context, so a song
+ * can wait for the bird to wake while still starting from the tap.
  */
 export function createVoice() {
     let context: AudioContext | null = null;
     return {
-        sing(notes: readonly Note[]) {
+        sing(notes: readonly Note[], delay = 0) {
             const Context = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
             if (!Context) return;
             context ??= new Context();
             if (context.state === "suspended") void context.resume();
-            singPhrase(context, notes, context.currentTime + 0.02);
+            singPhrase(context, notes, context.currentTime + 0.02 + delay);
         },
         close() {
             void context?.close();
