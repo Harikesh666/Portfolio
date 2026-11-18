@@ -1,7 +1,7 @@
 import { glslNoise } from "./pond-gl";
 
 /** Sizes the shader is compiled for; the scene fills these arrays every frame. */
-export const birdShaderSizes = { branchPoints: 14, twigs: 18, leaves: 72 } as const;
+export const birdShaderSizes = { branchPoints: 14, twigs: 96, leaves: 72 } as const;
 
 /**
  * The bulbul scene's fragment shader. Everything is a signed distance in
@@ -86,6 +86,7 @@ uniform vec2 uMoon;
 uniform float uGust;
 uniform vec3 uBranch[${branchPoints}];
 uniform vec4 uTwigs[${twigs}];
+uniform vec2 uTwigRadius[${twigs}];
 uniform int uTwigCount;
 uniform vec4 uLeaves[${leaves}];
 uniform vec4 uLeafShape[${leaves}];
@@ -257,12 +258,13 @@ vec4 branchAt(vec2 p, float px) {
     for (int i = 0; i < ${twigs}; i++) {
         if (i >= uTwigCount) break;
         vec4 t = uTwigs[i];
-        float dist = taper(p, t.xy, t.zw, 0.006, 0.0022);
+        vec2 radius = uTwigRadius[i];
+        float dist = taper(p, t.xy, t.zw, radius.x, radius.y);
         if (dist < best) {
             best = dist;
             vec2 ab = t.zw - t.xy;
             vec2 n = normalize(vec2(-ab.y, ab.x));
-            across = clamp(dot(p - t.xy, n) / 0.0045, -1.0, 1.0);
+            across = clamp(dot(p - t.xy, n) / max(radius.x, 0.002), -1.0, 1.0);
             side = n;
             along = dot(p - t.xy, normalize(ab)) + 9.0;
             twigAcross = 1.0;
@@ -287,47 +289,60 @@ vec4 branchAt(vec2 p, float px) {
     return vec4(c, clamp(0.5 - best / px, 0.0, 1.0));
 }
 
-// One leaf. Returns colour and coverage; layered counts leaves already under this pixel.
+// One peepal leaf, hanging by its stalk: a heart with a long drip tip.
+// Returns colour and coverage; layered counts leaves already under this pixel.
+// leaf: base x, base y, direction from base to tip, length. shape: twist (its
+// cosine), seed, in front of the branch or behind, half-width as a share of length.
 vec4 leafAt(vec2 p, vec4 leaf, vec4 shape, float px, float layered) {
     vec2 d = rot(p - leaf.xy, -leaf.z);
     float len = leaf.w;
-    if (d.x < -0.012 || d.x > len + 0.012 || abs(d.y) > len * 0.4) return vec4(0.0);
+    float stalk = len * 0.4;
+    if (d.x < -stalk - 0.01 || d.x > len + 0.01 || abs(d.y) > len * 0.62) return vec4(0.0);
     float twist = shape.x;
     float seed = shape.y;
-    float u = clamp(d.x / len, 0.0, 1.0);
-    // A gentle curl along the midrib, and the width foreshortened by the leaf's twist.
-    float curl = len * 0.1 * (u - 0.25) * (u - 0.25) * sign(sin(seed));
+    // The blade: broadest near its base, where two lobes round back past the stalk,
+    // narrowing to a long tip; its width foreshortened by the leaf's twist.
+    float t = clamp((d.x + 0.06 * len) / (1.06 * len), 0.0, 1.0);
+    float heart = pow(max(sin(PI * pow(clamp(t / 0.74, 0.0, 1.0), 0.52)), 0.0), 0.85) * (1.0 - 0.2 * t);
+    float drip = 0.1 * clamp((1.0 - t) / 0.42, 0.0, 1.0);
+    float curl = len * 0.08 * (t - 0.3) * (t - 0.3) * sign(sin(seed));
     float v = d.y - curl;
-    float width = len * shape.w * pow(max(sin(PI * pow(u, 0.8)), 0.0), 0.72);
-    width *= v > 0.0 ? 1.07 : 0.93;
-    width *= 0.12 + 0.88 * abs(twist);
-    width *= 1.0 + 0.04 * sin(u * 70.0 + seed);
-    float dist = max(abs(v) - width, max(-d.x, d.x - len)) * 0.85;
+    float width = len * shape.w * max(heart, drip) * (v > 0.0 ? 1.05 : 0.95);
+    width *= 0.1 + 0.9 * abs(twist);
+    width *= 1.0 + 0.03 * sin(t * 22.0 + seed);
+    float blade = max(abs(v) - width, max(-(d.x + 0.06 * len), d.x - len)) * 0.85;
+    blade = max(blade, 0.07 * len * (0.3 + 0.7 * abs(twist)) - length(vec2(d.x + 0.075 * len, v)));
+    float stem = taper(d, vec2(-stalk, 0.0), vec2(0.02 * len, 0.0), 0.002, 0.0014);
+    float dist = min(blade, stem);
     if (dist > px * 2.0) return vec4(0.0);
+    bool onStem = stem < blade;
     float across = clamp(v / max(width, 0.0004), -1.0, 1.0);
     bool underside = twist < 0.0;
-    // Veins: the midrib, and side veins curving toward the tip.
-    float midrib = smoothstep(0.0024, 0.0, abs(v)) * (1.0 - u * 0.55);
-    float veins = smoothstep(0.05, 0.0, abs(fract(u * 7.5 - abs(across) * 0.55 + seed) - 0.5) - 0.45) * smoothstep(1.0, 0.35, abs(across));
-    // Colour: young leaves yellow-green, old ones deep green; the underside paler.
+    // Veins: a pale midrib, side veins arching toward the tip, and a fine net between them.
+    float midrib = smoothstep(0.0022, 0.0, abs(v)) * (1.0 - t * 0.4);
+    float veins = smoothstep(0.05, 0.0, abs(fract(t * 6.5 - abs(across) * 0.75 + seed) - 0.5) - 0.45) * smoothstep(1.0, 0.25, abs(across)) * step(t, 0.78);
+    float net = noise(d * 520.0 + seed) * 0.5 + noise(d * 260.0 - seed) * 0.5;
+    // Colour: new leaves coppery pink, as peepal's are; then fresh green, then deep green. The underside is paler.
     float age = hash(vec2(seed, 3.3));
-    vec3 top = mix(vec3(0.2, 0.3, 0.07), vec3(0.06, 0.12, 0.04), age);
-    vec3 under = mix(vec3(0.34, 0.42, 0.16), vec3(0.2, 0.28, 0.12), age);
-    vec3 albedo = underside ? under : top;
-    albedo *= 0.85 + 0.3 * noise(d * 180.0 + seed);
+    float young = 1.0 - smoothstep(0.08, 0.16, age);
+    vec3 top = mix(mix(vec3(0.2, 0.3, 0.07), vec3(0.06, 0.12, 0.04), age), vec3(0.36, 0.17, 0.1), young);
+    vec3 under = mix(mix(vec3(0.34, 0.42, 0.16), vec3(0.2, 0.28, 0.12), age), vec3(0.5, 0.28, 0.2), young);
+    vec3 albedo = (underside ? under : top) * (0.85 + 0.3 * noise(d * 160.0 + seed));
     vec3 sun = sunColour();
     float day = 1.0 - uNight;
-    vec3 fill = mix(vec3(0.36, 0.4, 0.46), vec3(0.05, 0.06, 0.1), uNight) * mix(1.0, 0.75, uDusk);
+    vec3 fill = mix(vec3(0.34, 0.38, 0.44), vec3(0.05, 0.06, 0.1), uNight) * mix(1.0, 0.75, uDusk);
     vec3 c = albedo * fill;
     // Light through the leaf: strongest near the sun, dimmed by veins, and by every leaf in front.
     float near = exp(-length(p - uSun) * 1.6);
-    float through = day * (0.5 + 0.6 * near) * (underside ? 1.1 : 0.85) * (1.0 - 0.45 * midrib - 0.3 * veins) * (layered > 0.5 ? 0.45 : 1.0);
-    c += vec3(0.7, 0.86, 0.24) * sun * through * 0.6 * mix(0.75, 1.0, 1.0 - age);
-    // A glint where the waxy top tilts toward the light as it flutters.
-    float glint = underside ? 0.0 : pow(clamp(twist, 0.0, 1.0), 10.0) * smoothstep(0.3, 0.8, noise(d * 60.0 + seed)) * day;
+    float through = day * (0.5 + 0.6 * near) * (underside ? 1.1 : 0.85) * (1.0 - 0.5 * midrib - 0.32 * veins - 0.1 * net) * (layered > 0.5 ? 0.45 : 1.0);
+    vec3 glow = mix(vec3(0.68, 0.86, 0.24), vec3(1.0, 0.5, 0.26), young);
+    c += glow * sun * through * 0.62 * mix(0.75, 1.0, 1.0 - age);
+    // A glint where the waxy top tilts toward the light as it trembles.
+    float glint = underside ? 0.0 : pow(clamp(twist, 0.0, 1.0), 10.0) * smoothstep(0.3, 0.8, noise(d * 50.0 + seed)) * day;
     c += sun * glint * 0.35;
+    if (onStem) c = mix(vec3(0.16, 0.2, 0.08), vec3(0.3, 0.16, 0.1), young) * fill + sun * 0.1 * day;
     vec2 normal = rot(vec2(0.0, sign(v)), leaf.z);
-    c += sun * exp(-max(-dist, 0.0) / 0.0016) * facingLight(normal, p) * mix(0.8, 0.3, uNight);
+    c += sun * exp(-max(-dist, 0.0) / 0.0016) * facingLight(normal, p) * mix(0.8, 0.4, uNight);
     return vec4(c, clamp(0.5 - dist / px, 0.0, 1.0));
 }
 

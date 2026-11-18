@@ -24,7 +24,9 @@ import { createFullscreenTriangle, fullscreenVertex, link, uniforms } from "./po
  * so the frame spans x from -aspect/2 to aspect/2.
  */
 
-const { branchPoints: branchPointCount, twigs: maxTwigs, leaves: maxLeaves } = birdShaderSizes;
+const { branchPoints: branchPointCount, twigs: maxPieces, leaves: maxLeaves } = birdShaderSizes;
+/** Shoots of wood off the main branch; each draws as a few pieces. */
+const maxShoots = 34;
 const pixelRatioCap = 1.5;
 const maxStepSeconds = 0.05;
 /** How big the bird is: one bird unit, about its body length, in frame heights. Close, like a long lens. */
@@ -37,9 +39,9 @@ const clockSeconds = 20;
  * edge to its tip, radius in frame heights. A smooth curve is drawn through it.
  */
 const branchLine: readonly (readonly [number, number, number])[] = [
-    [1.18, 0.21, 0.05],
-    [0.88, 0.268, 0.041],
-    [0.58, 0.31, 0.034],
+    [1.18, 0.205, 0.058],
+    [0.88, 0.266, 0.046],
+    [0.58, 0.31, 0.036],
     [0.29, 0.335, 0.027],
     [0.02, 0.352, 0.021],
     [-0.23, 0.378, 0.015],
@@ -114,17 +116,36 @@ function seeded(seed: number) {
     };
 }
 
-type Twig = Readonly<{ at: number; side: number; angle: number; length: number }>;
-type Leaf = Readonly<{ twig: number; along: number; angle: number; length: number; width: number; twist: number; seed: number; front: boolean }>;
+/**
+ * A shoot of wood growing from the main branch or from another shoot: the
+ * fork's limb, the twigs, and a few dead stubs. Each bends along its length.
+ */
+type Shoot = Readonly<{
+    /** -1 for the main branch, or the index of the shoot it grows from. */
+    parent: number;
+    /** Where along its parent it starts, 0 to 1. */
+    at: number;
+    /** Its direction relative to its parent's, and how much it curves along its length. */
+    angle: number;
+    bend: number;
+    length: number;
+    /** Radius at its base and at its tip, in frame heights. */
+    thick: number;
+    thin: number;
+    /** How many straight pieces draw its curve. */
+    pieces: number;
+}>;
+/** A peepal leaf hanging by its stalk from a shoot. */
+type Leaf = Readonly<{ shoot: number; along: number; hang: number; length: number; width: number; twist: number; seed: number; front: boolean }>;
 
-/** The branch at rest: a Catmull-Rom curve through its line, swelling a little where twigs grow out. */
-function restBranch(twigs: readonly Twig[]) {
+/** The branch at rest: a Catmull-Rom curve through its line, swelling a little where shoots grow out. */
+function restBranch(shoots: readonly Shoot[]) {
     const points: { x: number; y: number; r: number }[] = [];
     const last = branchLine.length - 1;
     for (let i = 0; i < branchPointCount; i++) {
-        const t = (i / (branchPointCount - 1)) * last;
-        const k = Math.min(last - 1, Math.floor(t));
-        const f = t - k;
+        const u = (i / (branchPointCount - 1)) * last;
+        const k = Math.min(last - 1, Math.floor(u));
+        const f = u - k;
         const p0 = branchLine[Math.max(0, k - 1)];
         const p1 = branchLine[k];
         const p2 = branchLine[k + 1];
@@ -132,41 +153,67 @@ function restBranch(twigs: readonly Twig[]) {
         const curve = (a: number, b: number, c: number, d: number) =>
             0.5 * (2 * b + (-a + c) * f + (2 * a - 5 * b + 4 * c - d) * f * f + (-a + 3 * b - 3 * c + d) * f * f * f);
         const s = i / (branchPointCount - 1);
-        const swelling = twigs.reduce((sum, twig) => sum + Math.exp(-(((s - twig.at) / 0.025) ** 2)) * 0.18, 0);
+        const swelling = shoots.reduce((sum, shoot) => sum + (shoot.parent === -1 ? Math.exp(-(((s - shoot.at) / 0.025) ** 2)) * shoot.thick * 9 : 0), 0);
         points.push({ x: curve(p0[0], p1[0], p2[0], p3[0]), y: curve(p0[1], p1[1], p2[1], p3[1]), r: curve(p0[2], p1[2], p2[2], p3[2]) * (1 + swelling) });
     }
     return points;
 }
 
-/** The twigs and leaves, placed once in the branch's own frame: clusters at twig ends, as mango and peepal grow them. */
+/**
+ * Grows the bough once: a limb forking up off the main branch, twigs along
+ * both that split again, a few dead stubs, and peepal leaves hanging from
+ * the twigs on their long stalks. The perch is left clear above the branch.
+ */
 function growFoliage() {
-    const next = seeded(11);
-    const twigs: Twig[] = [];
+    const next = seeded(23);
+    const shoots: Shoot[] = [];
     const leaves: Leaf[] = [];
-    const spots = [0.04, 0.09, 0.14, 0.19, 0.25, 0.31, 0.38, 0.47, 0.56, 0.64, 0.7, 0.76, 0.81, 0.86, 0.9, 0.94, 0.97, 1];
-    spots.forEach((at, index) => {
-        if (twigs.length >= maxTwigs) return;
-        const side = index % 2 === 0 ? 1 : -1;
-        const twig = { at, side, angle: side * next(0.35, 1.0), length: at > 0.99 ? 0.02 : next(0.04, 0.13) };
-        twigs.push(twig);
-        // A fan of leaves at the twig's end, thinner where the bird perches so it stays clear.
-        const count = at > 0.8 ? 6 : at > 0.34 && at < 0.62 ? 2 : 5;
+    const isPerch = (at: number) => at > perchRange[0] - 0.04 && at < perchRange[1] + 0.04;
+
+    function hangLeaves(shoot: number, count: number, front: number) {
         for (let i = 0; i < count && leaves.length < maxLeaves; i++) {
-            const spread = (i - (count - 1) / 2) * next(0.38, 0.55);
             leaves.push({
-                twig: twigs.length - 1,
-                along: i === 0 ? 1 : next(0.6, 1),
-                angle: twig.angle + spread + next(-0.15, 0.15),
-                length: next(0.09, 0.145),
-                width: next(0.19, 0.25),
-                twist: next(-1.2, 1.2),
+                shoot,
+                along: count === 1 ? 1 : 0.35 + (0.65 * i) / (count - 1),
+                // Leaves hang, a little to either side of straight down.
+                hang: -Math.PI / 2 + next(-0.5, 0.5),
+                length: next(0.07, 0.14),
+                width: next(0.4, 0.5),
+                twist: next(-1.1, 1.1),
                 seed: next(0, 100),
-                // Around the perch most leaves sit behind the branch, so the bird stays clear.
-                front: at > 0.34 && at < 0.62 ? next() > 0.8 : next() > 0.45,
+                front: next() < front,
             });
         }
+    }
+    function twig(parent: number, at: number, side: number, leafCount: number, front: number) {
+        if (shoots.length >= maxShoots) return;
+        const length = next(0.07, 0.15);
+        // Twigs leave at an angle and curve back along the branch's line, as growing wood does.
+        shoots.push({ parent, at, angle: side * next(0.4, 0.85), bend: -side * next(0.35, 0.75), length, thick: 0.0055, thin: 0.0022, pieces: 3 });
+        const index = shoots.length - 1;
+        hangLeaves(index, leafCount, front);
+        // Now and then a twig splits again.
+        if (next() < 0.45 && shoots.length < maxShoots) {
+            shoots.push({ parent: index, at: next(0.4, 0.7), angle: -side * next(0.4, 0.75), bend: side * next(0.2, 0.5), length: length * next(0.5, 0.8), thick: 0.0032, thin: 0.0018, pieces: 2 });
+            hangLeaves(shoots.length - 1, 2, front);
+        }
+    }
+
+    // The fork: a limb rising from near the trunk end and arching over the scene.
+    shoots.push({ parent: -1, at: 0.13, angle: -0.95, bend: 0.75, length: 0.62, thick: 0.02, thin: 0.006, pieces: 4 });
+    const limb = 0;
+    [0.25, 0.42, 0.58, 0.74, 0.88, 1].forEach((at, i) => twig(limb, at, i % 2 === 0 ? 1 : -1, 3, 0.5));
+
+    // Twigs along the main branch: above and below it, but only below around the perch.
+    [0.05, 0.2, 0.28, 0.36, 0.46, 0.56, 0.66, 0.74, 0.8, 0.86, 0.91, 0.95, 0.98, 1].forEach((at, i) => {
+        const side = isPerch(at) ? 1 : i % 2 === 0 ? 1 : -1;
+        twig(-1, at, side, isPerch(at) ? 2 : at > 0.78 ? 4 : 3, isPerch(at) ? 0.2 : 0.5);
     });
-    return { twigs, leaves };
+    // A few dead stubs, broken short.
+    for (const at of [0.17, 0.52, 0.7]) {
+        if (shoots.length < maxShoots) shoots.push({ parent: -1, at, angle: next(-1.2, -0.7), bend: 0, length: next(0.018, 0.035), thick: 0.0045, thin: 0.003, pieces: 1 });
+    }
+    return { shoots, leaves };
 }
 
 const fragment = birdFragment(birdScale);
@@ -199,15 +246,18 @@ export function createBirdScene(options: BirdOptions): Pond | null {
     const program = link(gl, fullscreenVertex, fragment);
     if (!program) return null;
     const u = uniforms(gl, program, [
-        "uRes", "uTime", "uNight", "uDusk", "uDim", "uSun", "uMoon", "uGust", "uBranch", "uTwigs", "uTwigCount",
+        "uRes", "uTime", "uNight", "uDusk", "uDim", "uSun", "uMoon", "uGust", "uBranch", "uTwigs", "uTwigRadius", "uTwigCount",
         "uLeaves", "uLeafShape", "uLeafCount", "uBird", "uFacing", "uTilt", "uHead", "uBeak", "uPuff", "uCrest",
         "uTail", "uBreath", "uFluff", "uFly", "uFlap", "uEye", "uMotion", "uPreen", "uStretch",
     ]);
     const screen = createFullscreenTriangle(gl, [program]);
-    const { twigs, leaves } = growFoliage();
-    const branchRest = restBranch(twigs);
+    const { shoots, leaves } = growFoliage();
+    const branchRest = restBranch(shoots);
     const branchData = new Float32Array(branchPointCount * 3);
-    const twigData = new Float32Array(maxTwigs * 4);
+    const twigData = new Float32Array(maxPieces * 4);
+    const twigRadius = new Float32Array(maxPieces * 2);
+    /** Each shoot's curve this frame, for the shoots and leaves that grow from it. */
+    const shootCurves: { x: number; y: number; angle: number }[][] = shoots.map(() => []);
     const leafData = new Float32Array(maxLeaves * 4);
     const leafShape = new Float32Array(maxLeaves * 4);
 
@@ -539,22 +589,50 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         const points = branchPoints();
         points.forEach((point, index) => branchData.set([point.x, point.y, point.r], index * 3));
 
-        twigs.forEach((twig, index) => {
-            const base = onBranch(points, twig.at);
-            const angle = base.angle + twig.angle + Math.sin(time * 1.3 + index) * 0.03 * (0.3 + gust);
-            twigData.set([base.x, base.y, base.x + Math.cos(angle) * twig.length, base.y + Math.sin(angle) * twig.length], index * 4);
+        // Shoots grow from the branch or from each other, each swaying a little more than its parent.
+        let pieceCount = 0;
+        const along = (curve: { x: number; y: number; angle: number }[], at: number) => {
+            const scaled = clamp(at, 0, 1) * (curve.length - 1);
+            const index = Math.min(curve.length - 2, Math.floor(scaled));
+            const f = scaled - index;
+            const a = curve[index];
+            const b = curve[index + 1];
+            return { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f, angle: a.angle };
+        };
+        shoots.forEach((shoot, index) => {
+            const base = shoot.parent === -1 ? onBranch(points, shoot.at) : along(shootCurves[shoot.parent], shoot.at);
+            const sway = reducedMotion ? 0 : Math.sin(time * 1.3 + index * 1.7) * 0.035 * (0.3 + gust) * (shoot.parent === -1 ? 1 : 1.6);
+            let angle = base.angle + shoot.angle + sway;
+            let x = base.x;
+            let y = base.y;
+            const curve = shootCurves[index];
+            curve.length = 0;
+            for (let piece = 0; piece < shoot.pieces; piece++) {
+                curve.push({ x, y, angle });
+                const nx = x + (Math.cos(angle) * shoot.length) / shoot.pieces;
+                const ny = y + (Math.sin(angle) * shoot.length) / shoot.pieces;
+                if (pieceCount < maxPieces) {
+                    const r0 = shoot.thick + ((shoot.thin - shoot.thick) * piece) / shoot.pieces;
+                    const r1 = shoot.thick + ((shoot.thin - shoot.thick) * (piece + 1)) / shoot.pieces;
+                    twigData.set([x, y, nx, ny], pieceCount * 4);
+                    twigRadius.set([r0, r1], pieceCount * 2);
+                    pieceCount += 1;
+                }
+                x = nx;
+                y = ny;
+                angle += shoot.bend / shoot.pieces;
+            }
+            curve.push({ x, y, angle });
         });
         leaves.forEach((leaf, index) => {
-            const twig = twigs[leaf.twig];
-            const base = onBranch(points, twig.at);
-            const twigAngle = base.angle + twig.angle;
-            const x = base.x + Math.cos(twigAngle) * twig.length * leaf.along;
-            const y = base.y + Math.sin(twigAngle) * twig.length * leaf.along;
-            // Each leaf flutters on its own, harder in gusts: it swings a little, and twists
-            // about its midrib, which foreshortens it and flips its paler underside into view.
-            const swing = reducedMotion ? 0 : Math.sin(time * (2.1 + (leaf.seed % 3) * 0.4) + leaf.seed) * 0.07 * (0.35 + gust);
-            const twist = leaf.twist + (reducedMotion ? 0 : Math.sin(time * (3.1 + (leaf.seed % 5) * 0.35) + leaf.seed * 1.7) * 0.75 * (0.3 + gust));
-            leafData.set([x, y, base.angle + leaf.angle + swing, leaf.length], index * 4);
+            const base = along(shootCurves[leaf.shoot], leaf.along);
+            // A peepal leaf trembles on its long stalk: it swings like a pendulum, quicker in gusts,
+            // and twists about its midrib, which foreshortens it and flips its paler underside into view.
+            const swing = reducedMotion ? 0 : (Math.sin(time * (2.4 + (leaf.seed % 3) * 0.5) + leaf.seed) * 0.16 + Math.sin(time * 6.1 + leaf.seed * 2.3) * 0.05) * (0.3 + gust);
+            const twist = leaf.twist + (reducedMotion ? 0 : Math.sin(time * (3.4 + (leaf.seed % 5) * 0.4) + leaf.seed * 1.7) * 0.8 * (0.3 + gust));
+            const direction = leaf.hang + swing;
+            const stalk = leaf.length * 0.4;
+            leafData.set([base.x + Math.cos(direction) * stalk, base.y + Math.sin(direction) * stalk, direction, leaf.length], index * 4);
             leafShape.set([Math.cos(twist), leaf.seed, leaf.front ? 1 : 0, leaf.width], index * 4);
         });
 
@@ -602,7 +680,8 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         gl.uniform1f(u.uGust, gust);
         gl.uniform3fv(u.uBranch, branchData);
         gl.uniform4fv(u.uTwigs, twigData);
-        gl.uniform1i(u.uTwigCount, twigs.length);
+        gl.uniform2fv(u.uTwigRadius, twigRadius);
+        gl.uniform1i(u.uTwigCount, pieceCount);
         gl.uniform4fv(u.uLeaves, leafData);
         gl.uniform4fv(u.uLeafShape, leafShape);
         gl.uniform1i(u.uLeafCount, leaves.length);
