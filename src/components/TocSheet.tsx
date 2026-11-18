@@ -571,6 +571,11 @@ export function TocSheet({
     }, [isRouteActive]);
     // The trigger waits for the first scrollspy pass, so it enters already
     // naming the right section instead of swapping its label in place.
+    // The label shown before that pass was never on screen, so it leaves
+    // at once and only the real label fades in with the trigger.
+    const pillLabelKey = hasMeasured
+        ? (activeId ?? "toc-neutral")
+        : "toc-unmeasured";
     const isTriggerTucked =
         (!hasMeasured ||
             isFooterInView ||
@@ -728,9 +733,18 @@ export function TocSheet({
                                         <motion.span
                                             animate={{ opacity: 1 }}
                                             className="flex h-full items-center truncate"
-                                            exit={{ opacity: 0 }}
+                                            exit={
+                                                hasMeasured
+                                                    ? { opacity: 0 }
+                                                    : {
+                                                          opacity: 0,
+                                                          transition: {
+                                                              duration: 0,
+                                                          },
+                                                      }
+                                            }
                                             initial={{ opacity: 0 }}
-                                            key={activeId ?? "toc-neutral"}
+                                            key={pillLabelKey}
                                             transition={
                                                 shouldReduceMotion
                                                     ? { duration: 0 }
