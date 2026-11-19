@@ -61,7 +61,8 @@ describe("steer", () => {
         const fish = koi();
         const target = { x: 40, y: 110 };
         let sharpest = 0;
-        for (let step = 0; step < 600; step++) {
+        // Coming about is unhurried: a koi turns in an arc its body can hold.
+        for (let step = 0; step < 900; step++) {
             steer(fish, target, 46, 1 / 60);
             sharpest = Math.max(sharpest, sharpestBend(fish));
         }
@@ -80,6 +81,39 @@ describe("steer", () => {
             return Math.abs(fish.heading);
         };
         expect(turned("dart")).toBeGreaterThan(turned("cruise") * 2);
+    });
+
+    it("never turns in a tighter arc than its body can hold, or faster than a fish can", () => {
+        const fish = koi();
+        const targets = [
+            { x: 40, y: 110 },
+            { x: 320, y: 30 },
+            { x: 210, y: 105 },
+            { x: 60, y: 20 },
+        ];
+        // A turn eases in and out, so it may trail a limit that has just dropped: judge it against the last half second's speed.
+        const recent: number[] = [];
+        for (const target of targets) {
+            for (let i = 0; i < 240; i++) {
+                recent.push(fish.speed);
+                if (recent.length > 30) recent.shift();
+                steer(fish, target, 46, 1 / 60, "cruise");
+                const limit = Math.min(2.4, Math.max(...recent, fish.speed) / (fish.length * 0.34) + 0.55);
+                expect(Math.abs(fish.turn)).toBeLessThanOrEqual(limit + 1e-6);
+            }
+        }
+    });
+
+    it("eases apart from a neighbour instead of jumping", () => {
+        const fish = koi();
+        fish.nudgeX = 0;
+        fish.nudgeY = 38;
+        const before = fish.points[0].y;
+        steer(fish, { x: 5000, y: 100 }, 46, 1 / 60, "cruise");
+        // One frame of a full nudge moves the head a small fraction of a pixel.
+        expect(Math.abs(fish.points[0].y - before)).toBeLessThan(0.2);
+        for (let i = 0; i < 120; i++) steer(fish, { x: 5000, y: fish.points[0].y }, 46, 1 / 60, "cruise");
+        expect(fish.driftY).toBeGreaterThan(30);
     });
 
     it("glides slower than it strokes", () => {

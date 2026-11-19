@@ -10,7 +10,6 @@ import {
 } from "./pond-decor";
 import {
     drawFish,
-    follow,
     makeFish,
     segments,
     steer,
@@ -51,7 +50,7 @@ const microtaskChance = 0.55;
 /** Fish closer than this many body lengths gently push apart. */
 const personalSpace = 0.75;
 /** How hard wandering fish push apart, in pixels per second. */
-const separationStrength = 38;
+const separationStrength = 52;
 /** The longest step the simulation takes, so a stalled frame never teleports fish. */
 const maxStepSeconds = 0.05;
 /** Koi in the garden pond, and how much larger they are than event-loop fish. A narrow pond holds one fewer. */
@@ -81,13 +80,22 @@ const followChance = 0.28;
 const followSeconds: readonly [number, number] = [4, 9];
 /** Koi that overlap move to different depths at this rate, so one passes under the other. */
 const layeringRate = 0.7;
+/** Koi closing on food crowd in: they keep only this share of their usual distance from each other. */
+const feedingCrowd = 0.3;
+/** Two koi swap places in the drawing order only once their depths differ by this much and they are apart. */
+const layerMargin = 0.06;
+/** A koi has arrived once its head is within this many body lengths of where it was going. */
+const arrivalReach = 0.3;
+/** A roaming koi weighs this many spots and takes the one that needs the least turning. */
+const roamChoices = 6;
 /** Fish notice the pointer within this many pixels and gather around it. */
 const pointerReach = 170;
 /** Fish notice food within this many pixels. */
 const foodReach = 240;
-/** Food pellets dropped per tap, and how long uneaten food lasts, in seconds. */
+/** Food pellets dropped per tap, how long uneaten food lasts in seconds, and a pellet's radius in pixels. */
 const pelletsPerTap = 4;
 const pelletLifetime = 7;
+const pelletSize = 2.4;
 /** At full night the koi slow to this share of their daytime pace. */
 const nightPace = 0.6;
 /** How often the garden re-reads the Mumbai clock, in seconds. */
@@ -197,6 +205,10 @@ export function createPond(options: PondOptions): Pond {
     const context = fishCanvas.getContext("2d");
     const model = new EventLoopModel();
     const fishes: Fish[] = [];
+    /** The fish in the order they are drawn, deepest first. See `layer`. */
+    const order: Fish[] = [];
+    /** Koi that are after a pellet this step. */
+    const feeding = new Set<Fish>();
     const ripples: Ripple[] = [];
     let width = 0;
     let height = 0;
@@ -253,19 +265,49 @@ export function createPond(options: PondOptions): Pond {
         }
     }
 
+    /** Whether two fish are close enough to be drawn over one another. */
+    function overlaps(a: Fish, b: Fish) {
+        const middle = Math.floor(segments / 2);
+        const reach = (a.length + b.length) * 0.5;
+        return Math.hypot(a.points[middle].x - b.points[middle].x, a.points[middle].y - b.points[middle].y) < reach;
+    }
+
     /**
-     * Free-swimming fish nudge apart so they never pile on top of each other.
-     * In the garden, two koi that do cross move to different depths, so one
-     * passes under the other.
+     * Keeps the order fish are drawn in: deepest first. Two koi change
+     * places only while they are apart, so one never pops through another
+     * in the middle of a crossing.
+     */
+    function layer() {
+        for (let i = order.length - 1; i >= 0; i--) {
+            if (!fishes.includes(order[i])) order.splice(i, 1);
+        }
+        for (const fish of fishes) {
+            if (!order.includes(fish)) order.push(fish);
+        }
+        for (let i = 0; i < order.length - 1; i++) {
+            const below = order[i];
+            const above = order[i + 1];
+            if (below.depth < above.depth - layerMargin && !overlaps(below, above)) {
+                order[i] = above;
+                order[i + 1] = below;
+            }
+        }
+    }
+
+    /**
+     * Free-swimming fish drift apart so they never pile on top of each
+     * other. In the garden, two koi that do cross settle at different
+     * depths, the one drawn on top nearer the surface, so one passes under
+     * the other.
      */
     function separate(dt: number) {
         const middle = Math.floor(segments / 2);
         const marks = isGarden ? [0, middle, segments - 1] : [middle];
         for (const fish of fishes) {
+            fish.nudgeX = 0;
+            fish.nudgeY = 0;
             if (fish.state !== "wander" && fish.state !== "leaving") continue;
             const head = fish.points[0];
-            let pushX = 0;
-            let pushY = 0;
             for (const other of fishes) {
                 if (other === fish) continue;
                 const reach = (fish.length + other.length) * 0.5 * personalSpace;
@@ -277,26 +319,47 @@ export function createPond(options: PondOptions): Pond {
                     const distance = Math.hypot(dx, dy) || 1;
                     const space = index === middle ? reach : reach * 0.7;
                     if (distance >= space) continue;
-                    const strength = (1 - distance / space) * separationStrength * dt;
-                    pushX += (dx / distance) * strength;
-                    pushY += (dy / distance) * strength;
+                    const strength = (1 - distance / space) * separationStrength * (feeding.has(fish) ? feedingCrowd : 1);
+                    fish.nudgeX += (dx / distance) * strength;
+                    fish.nudgeY += (dy / distance) * strength;
                     if (isGarden) {
-                        const rises = fish.depth < other.depth || (fish.depth === other.depth && fish.job.id < other.job.id);
+                        const rises = order.indexOf(fish) > order.indexOf(other);
                         fish.depth = Math.min(1, Math.max(0, fish.depth + (rises ? -1 : 1) * layeringRate * dt));
                     }
                 }
             }
-            if (pushX !== 0 || pushY !== 0) {
-                head.x += pushX;
-                head.y += pushY;
-                follow(fish);
-            }
         }
     }
 
-    /** Somewhere new to swim to, and a depth to swim at. */
+    /**
+     * Somewhere new to swim to, and a depth to swim at. Of a few spots it
+     * takes the one that is a fair swim away and needs the least turning,
+     * so a koi sweeps round the pond in long arcs instead of doubling back.
+     */
     function roam(fish: Fish) {
-        fish.target = randomFreePoint();
+        const head = fish.points[0];
+        let best = randomFreePoint();
+        let bestCost = Infinity;
+        for (let i = 0; i < roamChoices; i++) {
+            const spot = randomFreePoint();
+            const distance = Math.hypot(spot.x - head.x, spot.y - head.y);
+            const bearing = Math.atan2(spot.y - head.y, spot.x - head.x) - fish.heading;
+            const turning = Math.abs(Math.atan2(Math.sin(bearing), Math.cos(bearing)));
+            // A spot closer than a body length is hardly a swim at all.
+            let cost = turning + (Math.max(0, fish.length - distance) / fish.length) * 3;
+            // And koi spread out: a spot where another koi is, or is heading, costs more.
+            for (const other of fishes) {
+                if (other === fish) continue;
+                const room = (fish.length + other.length) * 0.9;
+                cost += Math.max(0, 1 - Math.hypot(spot.x - other.points[0].x, spot.y - other.points[0].y) / room) * 1.2;
+                cost += Math.max(0, 1 - Math.hypot(spot.x - other.target.x, spot.y - other.target.y) / room) * 1.6;
+            }
+            if (cost < bestCost) {
+                best = spot;
+                bestCost = cost;
+            }
+        }
+        fish.target = best;
         fish.depthTarget = random(0.2, 0.9);
     }
 
@@ -309,6 +372,7 @@ export function createPond(options: PondOptions): Pond {
         const night = daylight().night;
         const pace = 1 - night * (1 - nightPace);
         const claims = new Map<Pellet, number>();
+        feeding.clear();
 
         for (const fish of fishes) {
             const head = fish.points[0];
@@ -339,11 +403,12 @@ export function createPond(options: PondOptions): Pond {
 
             if (nearest) {
                 claims.set(nearest, (claims.get(nearest) ?? 0) + 1);
+                feeding.add(fish);
                 fish.rest = 0;
                 fish.leader = undefined;
                 // Food floats, so the koi rises to it.
                 fish.depthTarget = 0.05;
-                steer(fish, nearest, taskSpeed * 1.15 * pace, dt);
+                steer(fish, nearest, taskSpeed * 1.15 * pace, dt, "feed");
                 if (nearestDistance < fish.length * gulpReach) mouth = 1;
                 if (nearestDistance < Math.max(6, fish.length * biteReach)) {
                     pellets.splice(pellets.indexOf(nearest), 1);
@@ -401,7 +466,7 @@ export function createPond(options: PondOptions): Pond {
                 continue;
             }
 
-            if (Math.hypot(fish.target.x - head.x, fish.target.y - head.y) < 14) {
+            if (Math.hypot(fish.target.x - head.x, fish.target.y - head.y) < fish.length * arrivalReach) {
                 roam(fish);
                 const choice = Math.random();
                 const rest = restChance[0] + (restChance[1] - restChance[0]) * night;
@@ -430,6 +495,7 @@ export function createPond(options: PondOptions): Pond {
             gardenStep(dt);
             if (decor) driftDecor(decor, width, height, dt);
             separate(dt);
+            layer();
             for (let i = ripples.length - 1; i >= 0; i--) {
                 ripples[i].age += dt * 1.1;
                 if (ripples[i].age >= 1) ripples.splice(i, 1);
@@ -507,6 +573,7 @@ export function createPond(options: PondOptions): Pond {
         for (let i = fishes.length - 1; i >= 0; i--) {
             if (fishes[i].alpha <= 0) fishes.splice(i, 1);
         }
+        layer();
         for (let i = ripples.length - 1; i >= 0; i--) {
             ripples[i].age += dt * 1.1;
             if (ripples[i].age >= 1) ripples.splice(i, 1);
@@ -546,7 +613,7 @@ export function createPond(options: PondOptions): Pond {
                 time,
                 dt,
                 light: light ?? { ...waterThemes[dark ? "dark" : "light"], night: 0 },
-                fishes,
+                fishes: order,
                 stones: isGarden && decor ? decor.stones : [],
             });
         } else {
@@ -565,18 +632,27 @@ export function createPond(options: PondOptions): Pond {
         }
         drawShadows(dark || (light !== undefined && light.night > 0.5));
 
-        for (const pellet of pellets) {
-            const fade = Math.min(1, (pelletLifetime - pellet.age) / 1.5);
-            context.fillStyle = `rgba(255, 236, 196, ${0.9 * fade})`;
-            context.beginPath();
-            context.arc(pellet.x, pellet.y, 2.2, 0, Math.PI * 2);
-            context.fill();
+        if (!gpu) {
+            for (const fish of order) drawFish(context, fish);
         }
 
-        if (!gpu) {
-            for (const fish of [...fishes].sort((a, b) => a.points[0].y - b.points[0].y)) {
-                drawFish(context, fish);
-            }
+        // Pellets float: a small lit bead that bobs, with its shadow on the floor below.
+        for (const pellet of pellets) {
+            const fade = Math.min(1, (pelletLifetime - pellet.age) / 1.5) * Math.min(1, pellet.age / 0.12);
+            const bob = Math.sin(time * 3 + pellet.x) * 0.5;
+            const size = pelletSize * (1 + 0.6 * Math.max(0, 1 - pellet.age / 0.25));
+            context.fillStyle = `rgba(0, 0, 0, ${0.16 * fade})`;
+            context.beginPath();
+            context.ellipse(pellet.x + 5, pellet.y + 9, size * 1.15, size * 0.85, 0, 0, Math.PI * 2);
+            context.fill();
+            const bead = context.createRadialGradient(pellet.x - size * 0.35, pellet.y + bob - size * 0.4, 0, pellet.x, pellet.y + bob, size);
+            bead.addColorStop(0, `rgba(255, 246, 222, ${fade})`);
+            bead.addColorStop(0.55, `rgba(232, 184, 120, ${fade})`);
+            bead.addColorStop(1, `rgba(176, 118, 66, ${fade})`);
+            context.fillStyle = bead;
+            context.beginPath();
+            context.arc(pellet.x, pellet.y + bob, size, 0, Math.PI * 2);
+            context.fill();
         }
         if (light && decor) {
             drawLilyPads(context, decor);

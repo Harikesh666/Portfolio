@@ -135,25 +135,50 @@ export type Fish = {
     /** A koi it is trailing for a while, and the seconds left of that. */
     leader?: Fish;
     leaderTimer: number;
+    /**
+     * Keeping clear of other fish: the sideways velocity it wants, in pixels
+     * per second, and the drift it has eased into. The head is never moved
+     * directly, so a crowd never jitters.
+     */
+    nudgeX: number;
+    nudgeY: number;
+    driftX: number;
+    driftY: number;
 };
 
 /**
  * How the head is driven for a step.
- * "direct" swims straight for the target. "settle" also holds its place
- * facing right once it arrives. "cruise" is a koi at ease: a few tail
- * beats, then a glide. "dart" is a startled sprint that turns on the spot.
+ * "direct" swims straight for the target and slows to arrive. "settle" also
+ * holds its place facing right once it arrives. "cruise" is a koi at ease:
+ * a few tail beats, then a glide. "feed" keeps its pace up to the target
+ * and takes it in passing. "dart" is a startled sprint with a sharp turn.
  */
-export type Swim = "direct" | "settle" | "cruise" | "dart";
+export type Swim = "direct" | "settle" | "cruise" | "feed" | "dart";
 
 /** Joints along each fish's spine; the body bends between them. */
 export const segments = 12;
-/** Fastest heading change, in radians per second. */
-const turnRate = 2.2;
+/**
+ * A fish turns in an arc, not on a pin: its tightest arc is this many body
+ * lengths in radius, so the faster it swims the faster it may turn, and a
+ * slow one can still pivot with its fins at `pivotRate` radians per second.
+ * A tighter arc than the body can follow curls a koi up like a comma.
+ */
+const tightestArc = 0.34;
+const pivotRate = 0.55;
+/** No fish turns faster than this, in radians per second, however fast it swims. */
+const turnRate = 2.4;
 /** How eagerly the head turns toward its target, and how quickly a turn builds and fades. */
-const turnGain = 3.2;
-const turnEase = 6;
-/** A startled koi turns this many times faster. */
-const dartAgility = 3.5;
+const turnGain = 1.9;
+const turnEase = 4;
+/** A startled koi turns this many times faster, and one closing on food a little faster too. */
+const dartAgility = 2.6;
+const feedAgility = 1.7;
+/** Facing well away from its target, a fish slows to this share of its pace while it comes round. */
+const turningPace = 0.6;
+/** A feeding koi never drops below this share of its pace: it takes the pellet in passing. */
+const feedingPace = 0.55;
+/** How quickly the drift that keeps fish apart builds and fades, per second. */
+const driftEase = 3.5;
 /** Sideways yaw of the head with each stroke, in radians at full effort. */
 const swayAmplitude = 0.1;
 /** The swimming wave: its height at the tail root in body lengths, and how many waves fit along the body. */
@@ -257,6 +282,21 @@ export function steer(fish: Fish, target: Vec, maxSpeed: number, dt: number, swi
         desiredSpeed = 4;
     }
 
+    if (swim === "feed") desiredSpeed = Math.max(desiredSpeed, maxSpeed * feedingPace);
+
+    const difference = Math.atan2(
+        Math.sin(desiredHeading - fish.heading),
+        Math.cos(desiredHeading - fish.heading),
+    );
+    const arc = fish.length * tightestArc;
+    if (swim !== "dart") {
+        // A target inside its turning circle cannot be reached at speed, and
+        // one behind it is not worth racing for: it slows and comes round.
+        const sharpness = Math.abs(difference);
+        const reachable = distance / (2 * arc * Math.sin(Math.min(sharpness, Math.PI / 2)) + 1e-6);
+        desiredSpeed *= clamp(reachable, 0.2, 1) * lerp(1, turningPace, smooth(0.8, 2.4, sharpness));
+    }
+
     let effort = clamp(desiredSpeed / maxSpeed, 0.15, 1);
     let gain = pushGain;
     if (swim === "cruise") {
@@ -273,12 +313,8 @@ export function steer(fish: Fish, target: Vec, maxSpeed: number, dt: number, swi
         gain = pushGain * 4;
     }
 
-    const agility = swim === "dart" ? dartAgility : 1;
-    const difference = Math.atan2(
-        Math.sin(desiredHeading - fish.heading),
-        Math.cos(desiredHeading - fish.heading),
-    );
-    const maxTurn = turnRate * (0.55 + fish.speed / maxSpeed) * agility;
+    const agility = swim === "dart" ? dartAgility : swim === "feed" ? feedAgility : 1;
+    const maxTurn = Math.min(turnRate, fish.speed / arc + pivotRate) * agility;
     const wantedTurn = clamp(difference * turnGain * agility, -maxTurn, maxTurn);
     fish.turn += (wantedTurn - fish.turn) * Math.min(1, dt * turnEase * agility);
     fish.heading += fish.turn * dt;
@@ -294,8 +330,11 @@ export function steer(fish: Fish, target: Vec, maxSpeed: number, dt: number, swi
     fish.phase += dt * (1.5 + fish.effort * 3.6 + fish.speed * 0.035);
 
     const sway = Math.sin(fish.phase) * swayAmplitude * fish.effort;
-    head.x += Math.cos(fish.heading + sway) * fish.speed * dt;
-    head.y += Math.sin(fish.heading + sway) * fish.speed * dt;
+    const drift = Math.min(1, dt * driftEase);
+    fish.driftX += (fish.nudgeX - fish.driftX) * drift;
+    fish.driftY += (fish.nudgeY - fish.driftY) * drift;
+    head.x += (Math.cos(fish.heading + sway) * fish.speed + fish.driftX) * dt;
+    head.y += (Math.sin(fish.heading + sway) * fish.speed + fish.driftY) * dt;
     follow(fish);
 }
 
@@ -356,6 +395,10 @@ export function makeFish(job: Job, at: Vec, heading: number, length: number, isM
         startle: 0,
         rest: 0,
         leaderTimer: 0,
+        nudgeX: 0,
+        nudgeY: 0,
+        driftX: 0,
+        driftY: 0,
     };
 }
 

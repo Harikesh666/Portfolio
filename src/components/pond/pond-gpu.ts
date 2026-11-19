@@ -53,8 +53,14 @@ function ribbonHalfWidth(u: number) {
     if (u <= 1) return 0.12;
     return 0.12 + ((u - 1) / tailLength) * 0.14;
 }
-/** Floats per vertex: x, y, u, v, then variety, seed, alpha, phase, then depth, gulp, fin spread, turn. */
-const vertexFloats = 12;
+/**
+ * Floats per vertex: x, y, u, v, then variety, seed, alpha, phase, then
+ * depth, gulp, fin spread, turn, then effort and the direction across the
+ * body in the pond (x, y), so every koi is lit from the same side.
+ */
+const vertexFloats = 15;
+/** Where the pond's light comes from: up and to the left, the way the stones are lit and the shadows fall. */
+const sunDirection = [-0.45, -0.55, 0.75] as const;
 /** The tail fin's ribbon runs this far past the tail root, in body lengths, over this many samples. */
 const tailLength = 0.4;
 const tailSamples = 6;
@@ -203,6 +209,7 @@ in vec2 aPosition;
 in vec2 aLocal;
 in vec4 aFish;
 in vec4 aPose;
+in vec3 aLit;
 uniform vec2 uCss;
 uniform vec2 uOffset;
 uniform sampler2D uState;
@@ -210,6 +217,7 @@ uniform vec2 uSimSize;
 out vec2 vLocal;
 out vec4 vFish;
 out vec4 vPose;
+out vec3 vLit;
 out vec2 vCss;
 
 void main() {
@@ -223,6 +231,7 @@ void main() {
     vLocal = aLocal;
     vFish = aFish;
     vPose = aPose;
+    vLit = aLit;
     vCss = p;
     gl_Position = vec4(p.x / uCss.x * 2.0 - 1.0, 1.0 - p.y / uCss.y * 2.0, 0.0, 1.0);
 }
@@ -235,6 +244,7 @@ precision highp float;
 in vec2 vLocal;
 in vec4 vFish;
 in vec4 vPose;
+in vec3 vLit;
 in vec2 vCss;
 uniform vec4 uBody[7];
 uniform vec4 uMarkA[7];
@@ -300,6 +310,7 @@ void main() {
     float gulp = vPose.y;
     float flare = vPose.z;
     float turn = vPose.w;
+    float effort = vLit.x;
     float side = v < 0.0 ? -1.0 : 1.0;
     float av = abs(v);
     vec2 q = vec2(u, av);
@@ -311,8 +322,13 @@ void main() {
 
     // Fins. The paired ones mirror across the spine, so one fan drawn against |v| serves both sides.
     vec3 f = vec3(0.0);
+    float silk = 0.0;
     if (u > 0.9) {
-        f = fin(vec2(u, v), vec2(0.95, 0.0), 0.0, 1.2, 0.42, 17.0, 0.32, 0.0, 0.0, texel);
+        // The tail is thin as silk: a ripple runs out along it, larger toward the tips and while the koi strokes.
+        float along = clamp((u - 0.95) / 0.4, 0.0, 1.0);
+        float wave = along * 8.0 - uTime * (2.6 + 2.2 * effort) + seed * 3.0 + v * 26.0;
+        silk = cos(wave) * along;
+        f = fin(vec2(u, v + sin(wave) * 0.013 * along * (0.45 + 0.55 * effort)), vec2(0.95, 0.0), 0.0, 1.2, 0.42, 17.0, 0.32, 0.0, 0.0, texel);
     } else if (u > 0.16 && u < 0.5) {
         // Pectorals: broad paddles. The one inside a turn flares to brake, and both scull while the koi hovers.
         float open = clamp(flare - side * turn * 0.2, 0.0, 1.0);
@@ -333,15 +349,28 @@ void main() {
         return;
     }
 
+    // Scales: staggered rows of overlapping discs behind the head, each shaded
+    // along its trailing rim. They fade out where a scale is smaller than a few pixels.
+    float across = clamp(v / max(hw, 1e-4), -1.0, 1.0);
+    float nz = sqrt(max(0.0, 1.0 - across * across));
+    vec2 sp = vec2(u, v) * 38.0;
+    float row = floor(sp.y);
+    sp.x += 0.5 * mod(row, 2.0);
+    float rim = smoothstep(0.3, 0.62, length(fract(sp) - vec2(0.3, 0.5)));
+    float scaled = (1.0 - smoothstep(0.3, 0.55, texel * 38.0)) * smoothstep(0.2, 0.27, u) * (1.0 - smoothstep(0.86, 0.97, u)) * nz;
+
     vec3 base = uBody[k].rgb;
-    // Markings: noise patches across the back, with a crisp but uneven edge.
-    float grit = (noise(vec2(u * 46.0, v * 110.0) + seed) - 0.5) * 0.05;
+    // Markings: noise patches across the back. Where scales show, a patch ends on
+    // whole scales, the stepped edge a koi's pattern really has; elsewhere its edge is crisp but uneven.
+    vec2 scaleCentre = vec2(floor(sp.x) + 0.5 - 0.5 * mod(row, 2.0), row + 0.5) / 38.0;
+    vec2 m = mix(vec2(u, v), scaleCentre, scaled * 0.9);
+    float grit = (noise(vec2(u * 46.0, v * 110.0) + seed) - 0.5) * 0.05 * (1.0 - scaled);
     float coverA = uMarkA[k].w;
     float coverB = uMarkB[k].w;
-    float nA = fbm(vec2(u * 4.2, v * 13.0) + seed * 1.73) + grit;
+    float nA = fbm(vec2(m.x * 4.2, m.y * 13.0) + seed * 1.73) + grit;
     float markA = coverA > 0.0 ? smoothstep(1.0 - coverA - 0.02, 1.0 - coverA + 0.02, nA) : 0.0;
     markA *= smoothstep(0.03, 0.08, u) * (1.0 - smoothstep(0.82, 0.92, u));
-    float nB = fbm(vec2(u * 7.0, v * 21.0) * uFlags[k].w + seed * 3.17 + 9.0) + grit;
+    float nB = fbm(vec2(m.x * 7.0, m.y * 21.0) * uFlags[k].w + seed * 3.17 + 9.0) + grit;
     float markB = coverB > 0.0 ? smoothstep(1.0 - coverB - 0.02, 1.0 - coverB + 0.02, nB) : 0.0;
     markB *= smoothstep(0.1, 0.16, u) * (1.0 - smoothstep(0.76, 0.86, u));
     if (uFlags[k].x > 0.5) {
@@ -351,24 +380,21 @@ void main() {
     base = mix(base, uMarkA[k].rgb, markA);
     base = mix(base, uMarkB[k].rgb, markB);
 
-    // Rounded body: lit along the back, shaded toward the flanks.
-    float across = clamp(v / max(hw, 1e-4), -1.0, 1.0);
-    float nz = sqrt(max(0.0, 1.0 - across * across));
+    // A rounded body lit from the pond's one light: the flank toward it is
+    // bright and the far flank falls into shade, whichever way the koi faces.
+    vec3 normal = normalize(vec3(normalize(vLit.yz) * across, nz + 0.001));
+    vec3 sun = normalize(vec3(${sunDirection.join(", ")}));
+    float lit = clamp(dot(normal, sun), 0.0, 1.0);
     float metallic = uFlags[k].y;
-    vec3 bodyColor = base * (0.58 + 0.42 * nz - 0.06 * across);
-
-    // Scales: staggered rows of overlapping discs behind the head, each shaded
-    // along its trailing rim. They fade out where a scale is smaller than a few pixels.
-    vec2 sp = vec2(u, v) * 38.0;
-    sp.x += 0.5 * mod(floor(sp.y), 2.0);
-    float rim = smoothstep(0.3, 0.62, length(fract(sp) - vec2(0.3, 0.5)));
-    float scaled = (1.0 - smoothstep(0.3, 0.55, texel * 38.0)) * smoothstep(0.2, 0.27, u) * (1.0 - smoothstep(0.86, 0.97, u)) * nz;
+    vec3 bodyColor = base * (0.52 + 0.56 * lit);
     bodyColor *= 1.0 - 0.1 * rim * scaled;
     bodyColor += base * metallic * 0.1 * (1.0 - rim) * scaled;
 
-    // A wet sheen down the middle of the back, brighter on the metallic koi.
-    float sheen = pow(nz, 9.0) * smoothstep(0.05, 0.3, u) * (1.0 - smoothstep(0.75, 1.0, u));
-    bodyColor += vec3(1.0) * (0.12 + metallic * 0.2) * sheen;
+    // A wet highlight where the back turns toward the light: brighter on the
+    // metallic koi, and on one swimming up at the surface.
+    float glance = max(dot(normal, normalize(sun + vec3(0.0, 0.0, 1.0))), 0.0);
+    float sheen = pow(glance, 26.0) * smoothstep(0.05, 0.3, u) * (1.0 - smoothstep(0.75, 1.0, u));
+    bodyColor += vec3(1.0) * (0.13 + metallic * 0.2) * sheen * (1.25 - 0.5 * depth);
 
     // Gill covers: a curved seam on each side of the head.
     float seam = 1.0 - smoothstep(0.003, 0.009, abs(u - (0.15 + 0.055 * abs(across))));
@@ -401,7 +427,7 @@ void main() {
 
     // Fins take the body's colour at the base and pale toward the edge; rays show a little lighter than the membrane.
     vec3 finColor = mix(uBody[k].rgb * 0.96, finPale, smoothstep(0.0, 0.7, f.z));
-    finColor *= mix(0.9, 1.06, f.y);
+    finColor *= mix(0.9, 1.06, f.y) * (1.0 + 0.09 * silk);
     vec3 color = mix(finColor, bodyColor, body);
     float a = max(body, max(finAlpha, barbel * 0.6));
 
@@ -481,6 +507,7 @@ export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
     attribute("aLocal", 2, 2);
     attribute("aFish", 4, 4);
     attribute("aPose", 4, 8);
+    attribute("aLit", 3, 12);
     gl.bindVertexArray(null);
     let vertices = new Float32Array(0);
 
@@ -577,6 +604,9 @@ export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
                     vertices[w++] = fish.gulp;
                     vertices[w++] = fish.spread;
                     vertices[w++] = fish.turn;
+                    vertices[w++] = fish.effort;
+                    vertices[w++] = nx;
+                    vertices[w++] = ny;
                 }
             }
         }
@@ -621,8 +651,8 @@ export function createGpuPond(canvas: HTMLCanvasElement): GpuPond | null {
         gl.drawArrays(gl.TRIANGLES, 0, 3);
 
         if (fishes.length === 0) return;
-        // Deepest first, so a koi near the surface passes over one below it.
-        const sorted = [...fishes].sort((a, b) => b.depth - a.depth || a.points[0].y - b.points[0].y);
+        // The engine hands the fish over deepest first, so a koi near the surface passes over one below it.
+        const sorted = fishes;
         buildRibbons(sorted);
         gl.enable(gl.BLEND);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
