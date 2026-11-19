@@ -12,9 +12,17 @@ type SkyPlaceholder = Readonly<{
     dark: readonly [Rgb, Rgb];
 }>;
 
+/**
+ * The open sky over the 404's rooftops at a phase of the day: its zenith,
+ * its middle and its horizon, as 0-255 RGB. The scene draws these and the
+ * CSS placeholder shows them before it loads.
+ */
+type OpenSky = readonly [Rgb, Rgb, Rgb];
+
 type Keyframe = Readonly<{
     hour: number;
     sky: SkyPlaceholder;
+    open: OpenSky;
     deep: Rgb;
     shallow: Rgb;
     light: Rgb;
@@ -30,6 +38,7 @@ const night: Omit<Keyframe, "hour"> = {
     lightStrength: 0.18,
     night: 1,
     sky: { light: [[7, 11, 30], [40, 38, 37]], dark: [[7, 11, 30], [28, 27, 26]] },
+    open: [[9, 14, 36], [24, 34, 70], [70, 60, 82]],
 };
 const dawn: Omit<Keyframe, "hour"> = {
     deep: [0.4, 0.46, 0.62],
@@ -38,6 +47,7 @@ const dawn: Omit<Keyframe, "hour"> = {
     lightStrength: 0.4,
     night: 0.2,
     sky: { light: [[113, 133, 161], [146, 143, 105]], dark: [[99, 117, 141], [119, 116, 82]] },
+    open: [[82, 110, 160], [178, 170, 192], [246, 198, 162]],
 };
 const day: Omit<Keyframe, "hour"> = {
     deep: [0.36, 0.58, 0.56],
@@ -46,6 +56,7 @@ const day: Omit<Keyframe, "hour"> = {
     lightStrength: 0.42,
     night: 0,
     sky: { light: [[166, 182, 186], [162, 165, 124]], dark: [[143, 155, 158], [127, 130, 97]] },
+    open: [[84, 146, 206], [150, 196, 226], [224, 233, 226]],
 };
 const dusk: Omit<Keyframe, "hour"> = {
     deep: [0.44, 0.29, 0.42],
@@ -54,6 +65,7 @@ const dusk: Omit<Keyframe, "hour"> = {
     lightStrength: 0.38,
     night: 0.3,
     sky: { light: [[99, 90, 130], [132, 115, 73]], dark: [[90, 82, 117], [107, 93, 55]] },
+    open: [[56, 62, 120], [176, 112, 128], [250, 172, 98]],
 };
 
 /** Mumbai's day, roughly: first light near six, sunset near seven. */
@@ -80,28 +92,52 @@ export type Daylight = WaterTheme & Readonly<{ night: number }>;
 /**
  * The colour stops the pre-paint placeholder script interpolates, so a scene's
  * box shows the right time of day before WebGL draws: the koi pond's water
- * (0-1, dimmed for the dark theme the way `daylightAt` does) and the bulbul's
- * sky. Serialized into the page by the root route.
+ * (0-1, dimmed for the dark theme the way `daylightAt` does), the bulbul's
+ * sky, and the 404's open sky (dimmed for the dark theme the way
+ * `openSkyAt` does). Serialized into the page by the root route.
  */
-export const placeholderStops = keyframes.map(({ deep, hour, night, shallow, sky }) => ({
+export const placeholderStops = keyframes.map(({ deep, hour, night, open, shallow, sky }) => ({
     deep,
     hour,
     night,
+    open,
     shallow,
     sky,
 }));
+
+/** The two keyframes around an hour of the day (0 to 24, fractional) and the eased share of the way between them. */
+function phaseAt(hour: number) {
+    const h = ((hour % 24) + 24) % 24;
+    const index = keyframes.findIndex((frame, i) => h >= frame.hour && h < keyframes[i + 1].hour);
+    const from = keyframes[index];
+    const to = keyframes[index + 1];
+    const t = (h - from.hour) / (to.hour - from.hour);
+    return { from, to, eased: t * t * (3 - 2 * t) };
+}
+
+/** The dark theme shows the open sky's daylight at this share of its brightness, so it never glares. Night is left alone. */
+export const openSkyDarkDim = 0.8;
+
+export type OpenSkyLight = Readonly<{ zenith: Rgb; middle: Rgb; horizon: Rgb; night: number }>;
+
+/** The 404's open sky for an hour of the day, as 0-255 RGB, with a dimmer day for the site's dark theme. */
+export function openSkyAt(hour: number, isDarkTheme: boolean): OpenSkyLight {
+    const { from, to, eased } = phaseAt(hour);
+    const night = mix(from.night, to.night, eased);
+    const dim = isDarkTheme ? mix(openSkyDarkDim, 1, night) : 1;
+    const stop = (index: 0 | 1 | 2): Rgb => {
+        const rgb = mixRgb(from.open[index], to.open[index], eased);
+        return [rgb[0] * dim, rgb[1] * dim, rgb[2] * dim];
+    };
+    return { zenith: stop(0), middle: stop(1), horizon: stop(2), night };
+}
 
 /**
  * The pond's lighting for an hour of the day (0 to 24, fractional), with
  * a dimmer version for the site's dark theme so the pond never glares.
  */
 export function daylightAt(hour: number, isDarkTheme: boolean): Daylight {
-    const h = ((hour % 24) + 24) % 24;
-    const index = keyframes.findIndex((frame, i) => h >= frame.hour && h < keyframes[i + 1].hour);
-    const from = keyframes[index];
-    const to = keyframes[index + 1];
-    const t = (h - from.hour) / (to.hour - from.hour);
-    const eased = t * t * (3 - 2 * t);
+    const { from, to, eased } = phaseAt(hour);
 
     const deep = mixRgb(from.deep, to.deep, eased);
     const shallow = mixRgb(from.shallow, to.shallow, eased);

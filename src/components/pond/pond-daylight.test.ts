@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daylightAt, homeHour, mumbaiHour, sunTimes } from "./pond-daylight";
+import { daylightAt, homeHour, mumbaiHour, openSkyAt, placeholderStops, sunTimes } from "./pond-daylight";
 
 describe("daylightAt", () => {
     it("is full night after dark and full day at noon", () => {
@@ -32,6 +32,44 @@ describe("daylightAt", () => {
     it("wraps hours outside 0 to 24", () => {
         expect(daylightAt(26, false)).toEqual(daylightAt(2, false));
         expect(daylightAt(-1, false)).toEqual(daylightAt(23, false));
+    });
+});
+
+describe("openSkyAt", () => {
+    const brightness = (rgb: readonly number[]) => rgb[0] + rgb[1] + rgb[2];
+
+    it("is brightest at the horizon and darkest overhead, at every hour", () => {
+        for (let hour = 0; hour < 24; hour += 0.5) {
+            const sky = openSkyAt(hour, false);
+            expect(brightness(sky.horizon)).toBeGreaterThan(brightness(sky.middle));
+            expect(brightness(sky.middle)).toBeGreaterThan(brightness(sky.zenith));
+        }
+    });
+
+    it("is blue at noon, warm at the horizon at dusk, and dark at night", () => {
+        const noon = openSkyAt(12, false);
+        expect(noon.zenith[2]).toBeGreaterThan(noon.zenith[0]);
+        const dusk = openSkyAt(18.3, false);
+        expect(dusk.horizon[0]).toBeGreaterThan(dusk.horizon[2]);
+        expect(brightness(openSkyAt(1, false).zenith)).toBeLessThan(brightness(noon.zenith) * 0.2);
+    });
+
+    it("changes continuously rather than jumping between keyframes", () => {
+        for (let hour = 0; hour < 24; hour += 0.05) {
+            const a = openSkyAt(hour, false);
+            const b = openSkyAt(hour + 0.05, false);
+            expect(Math.abs(a.horizon[0] - b.horizon[0])).toBeLessThan(12);
+        }
+    });
+
+    it("dims daylight for the dark theme but leaves night alone", () => {
+        expect(openSkyAt(12, true).middle[1]).toBeCloseTo(openSkyAt(12, false).middle[1] * 0.8);
+        expect(openSkyAt(2, true)).toEqual(openSkyAt(2, false));
+    });
+
+    it("gives the placeholder script the same stops it draws", () => {
+        const noon = placeholderStops.find((stop) => stop.hour === 8.5);
+        expect(noon?.open[0]).toEqual(openSkyAt(12, false).zenith);
     });
 });
 

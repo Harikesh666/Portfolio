@@ -9,9 +9,10 @@ export type PondLabel = Readonly<{ text: string; className: string }>;
 
 /**
  * The pond modes, plus "kund" (Makari Kund from a photo, set on a 3D model
- * of the tank) and "bird" (a bulbul on a branch against the sky).
+ * of the tank), "bird" (a bulbul on a branch against the sky) and "sky"
+ * (the 404: an open sky where a flock writes the numerals).
  */
-export type SceneMode = PondMode | "kund" | "bird";
+export type SceneMode = PondMode | "kund" | "bird" | "sky";
 
 /** A photo shown at once and kept as the fallback; the scene draws over it when ready. */
 export type PondStill = Readonly<{ src: string; srcSet: string; sizes: string; mask: string }>;
@@ -96,6 +97,16 @@ export function Pond({ birdArrival, caption, description, labels = [], mode, sti
                     arrival: birdArrival,
                 });
             }
+            if (mode === "sky") {
+                const { createSkyScene } = await import("./sky-scene");
+                return createSkyScene({
+                    hourOverride: readHourOverride(),
+                    container,
+                    canvas: waterCanvas,
+                    reducedMotion: shouldReduceMotion,
+                    isDark,
+                });
+            }
             const { createPond } = await import("./pond-engine");
             return createPond({
                 mode,
@@ -167,7 +178,7 @@ export function Pond({ birdArrival, caption, description, labels = [], mode, sti
             <div className="pond-frame relative">
                 <div
                     aria-label={description}
-                    className={`event-loop-pond relative aspect-[2/1] w-full overflow-hidden sm:rounded-2xl ${mode === "kund" || mode === "bird" ? "" : "sm:aspect-[11/4]"}`}
+                    className={`event-loop-pond relative aspect-[2/1] w-full overflow-hidden sm:rounded-2xl ${mode === "garden" || mode === "event-loop" ? "sm:aspect-[11/4]" : ""}`}
                     data-mode={mode}
                     data-ready={isReady ? "" : undefined}
                     onPointerDown={handlePointerDown}

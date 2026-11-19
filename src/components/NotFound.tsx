@@ -1,41 +1,55 @@
 import { Link, useLocation } from "@tanstack/react-router";
+import { didYouMean } from "../lib/did-you-mean";
 import { PageEnter } from "./PageEnter";
-import { Pond } from "./pond/Pond";
+import { LostSky } from "./pond/LostSky";
 
 /**
- * The 404 page. The scene comes first and acts the page out: the branch
- * sways empty, then the bulbul flies in and lands. Under it sit the code,
- * one sentence saying what happened, and three links back.
+ * The 404 page. The scene comes first and says it: a flock gathers in the
+ * sky over Mumbai's rooftops and writes "404". Under it sit a small label,
+ * one sentence saying what happened, the closest real page when the path
+ * looks like a typo, and three links back.
  */
 export function NotFound() {
     const pathname = useLocation({ select: (location) => location.pathname });
+    const suggestion = didYouMean(pathname);
 
     return (
         <main id="main-content" className="mx-auto w-full max-w-2xl px-5 pb-12 pt-6">
             <PageEnter key={pathname}>
                 <PageEnter.Fade>
-                    <Pond
-                        birdArrival="fly-in"
-                        caption="Tap the bulbul to hear it sing. Tap the branch and it hops."
-                        description="A peepal bough against the sky, lit from behind by the current time of day in Mumbai. The bough starts empty, then a red-vented bulbul flies in, lands on it in silhouette and sings. Tapping the bird makes it sing its call aloud, tapping the branch makes it hop there, and quick taps send it flying off before it comes back."
-                        mode="bird"
-                    />
+                    <LostSky />
                 </PageEnter.Fade>
 
                 <PageEnter.Item>
                     <header className="mt-8">
-                        <p className="lost-code">
-                            <span className="sr-only">Error </span>404
-                        </p>
-                        <h1 className="lost-lead lost-lead--quiet mt-2">
-                            <strong>This page flew off.</strong> A bulbul landed here instead, and these links
-                            will get you home.
+                        <p className="text-[13px] text-muted">Error 404</p>
+                        <h1 className="lost-lead mt-3">
+                            <strong>This page flew off.</strong> The sky above is spelling out what happened, and
+                            these links will get you home.
                         </h1>
                     </header>
                 </PageEnter.Item>
 
+                {suggestion ? (
+                    <PageEnter.Item>
+                        <p className="mt-5 text-[15px] text-muted">
+                            Did you mean{" "}
+                            {suggestion.kind === "article" ? (
+                                <Link className="text-link" params={{ slug: suggestion.slug }} to="/articles/$slug">
+                                    {suggestion.label}
+                                </Link>
+                            ) : (
+                                <Link className="text-link" to={suggestion.to}>
+                                    {suggestion.label}
+                                </Link>
+                            )}
+                            ?
+                        </p>
+                    </PageEnter.Item>
+                ) : null}
+
                 <PageEnter.Item>
-                    <nav aria-label="Ways back" className="lost-ways mt-6 flex flex-wrap items-center gap-2.5">
+                    <nav aria-label="Ways back" className="mt-7 flex flex-wrap items-center gap-3">
                         <Link className="button-primary" to="/">
                             Back to home
                         </Link>
