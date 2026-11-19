@@ -1,6 +1,7 @@
 import { daylightAt, mumbaiHour } from "./pond-daylight";
 import { createFullscreenTriangle, fullscreenVertex, glslNoise, link, uniforms } from "./pond-gl";
 import { createPetals, type Petals } from "./footer-petals";
+import { createSway, swayFeel, type Sway } from "./footer-sway";
 
 /** The petal photo: a 1600×520 strip. The shader tiles it sideways and hides each seam under a second, shifted copy. */
 const imageUrl = "/footer/petals.webp";
@@ -21,15 +22,10 @@ const growSeconds = 1.6;
 const arrivingPetals = 4;
 /** The pointer lifts petals again once it has moved this many pixels. */
 const stirDistance = 12;
-/**
- * A hand through the bed bends the plants the way it moves, and they spring
- * back. The bend is a damped spring: stiff enough to swing back about twice
- * a second, loose enough to wobble two or three times before it rests.
- * `push` is how much of the pointer's travel becomes bend, `most` the
- * furthest a plant's top is carried in CSS pixels, and `radius` how far
- * from the pointer the bend reaches.
- */
-const sweep = { stiffness: 170, damping: 6.5, push: 0.9, most: 8, radius: 70 } as const;
+/** Bent plants also dip: their tops come down by this share of how far they are carried sideways. */
+const swayDip = 0.24;
+/** A loose petal lying on the plants rides this share of their sway. */
+const petalRide = 0.8;
 /** A breeze blows this long, in seconds, and something stirs on its own this often while the bed is on screen. */
 const breezeSeconds = 2.8;
 const idleEvery: readonly [number, number] = [7, 13];
@@ -39,8 +35,9 @@ const pixelRatioCap = 1.5;
 const petalPixelRatioCap = 2;
 
 // The photo seen as a bed of plants. Its top edge is cut from the photo
-// itself, a breeze sways it, a hand through it bends it the way the hand
-// moves, and it rises into place the first time it is seen.
+// itself, a breeze sways it, a hand through it carries the plants along and
+// leaves a wake of sway behind it, and it rises into place the first time
+// it is seen.
 const tiling = /* glsl */ `
 // Every other tile is turned upside down, so two neighbours never look like the same picture.
 vec2 tileUv(vec2 uv) {
@@ -64,7 +61,8 @@ uniform sampler2D uImage;
 uniform vec2 uCss;
 uniform float uDpr;
 uniform vec2 uTile;
-uniform vec4 uSweep;
+uniform sampler2D uSway;
+uniform float uSwayMost;
 uniform float uGrow;
 uniform float uBrightness;
 uniform vec2 uWind;
@@ -84,11 +82,11 @@ void main() {
     float sway = sin(css.x * 0.021 - uWind.y * 2.4) + 0.5 * sin(css.x * 0.047 + uWind.y * 3.1);
     vec2 breeze = vec2(sway * 2.6, sway * 0.7) * uWind.x * smoothstep(0.0, 0.9, fromBottom);
 
-    // A hand through the bed carries the plants near it along with it: all one
-    // way, never outward from a point, and their tops further than their feet,
-    // so it reads as stems bending and not as a lens over the photo.
-    vec2 fromHand = css - uSweep.xy;
-    vec2 swept = uSweep.zw * exp(-dot(fromHand, fromHand) / ${(sweep.radius * sweep.radius).toFixed(1)}) * smoothstep(0.0, 0.8, fromBottom);
+    // How far the plants here are bent, from the row of springs along the bed.
+    // They bend sideways and dip a little as they do, their tops further than
+    // their feet, so it reads as stems swaying and never as a lens over the photo.
+    float bent = (texture(uSway, vec2(css.x / uCss.x, 0.5)).r - 0.5) * 2.0 * uSwayMost;
+    vec2 swept = vec2(bent, abs(bent) * ${swayDip.toFixed(2)}) * smoothstep(0.0, 0.8, fromBottom);
 
     // Sampling the photo along a slow wander keeps its repeats from lining up.
     vec2 wander = vec2(fbm(vec2(css.x * 0.0035, 2.0)) - 0.5, fbm(vec2(css.x * 0.005, 9.0)) - 0.5) * vec2(26.0, 14.0);
@@ -224,9 +222,9 @@ function paintPetalSheet() {
  * A strip of petals on moss along the bottom of the footer. It grows in
  * once, the first time it is seen, as a few petals drift down onto it.
  * After that it is a still frame until something stirs it: a pointer,
- * which bends the plants the way it moves and lifts the loose petals, a
- * tap, which puffs them up, or now and then a breeze or a petal falling on
- * its own. It runs only until everything
+ * which carries the plants along and leaves a wake of sway behind it
+ * (`footer-sway.ts`) and lifts the loose petals, a tap, which puffs them
+ * up, or now and then a breeze or a petal falling on its own. It runs only until everything
  * has settled again. Under reduced motion it appears fully grown and never
  * moves. Returns null without WebGL2.
  */
@@ -243,10 +241,19 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
     const program = link(gl, fullscreenVertex, gardenFragment);
     if (!program) return null;
     const u = uniforms(gl, program, [
-        "uImage", "uCss", "uDpr", "uTile", "uSweep", "uGrow", "uBrightness", "uWind",
+        "uImage", "uCss", "uDpr", "uTile", "uSway", "uSwayMost", "uGrow", "uBrightness", "uWind",
     ]);
     const screen = createFullscreenTriangle(gl, [program]);
     const imageTexture = gl.createTexture();
+    // The plants' sway, one byte per column: a row the shader reads smoothly along the bed.
+    const swayTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, swayTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+    let swayBytes = new Uint8Array(2);
     const petalContext = petalCanvas.getContext("2d");
     const petalSheet = paintPetalSheet();
 
@@ -263,14 +270,14 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
     let frame: number | undefined;
     let idleTimer: number | undefined;
     let lastTimestamp: number | undefined;
+    let lastPoint: { x: number; y: number } | null = null;
     let lastStir: { x: number; y: number } | null = null;
     let petals: Petals | undefined;
     /** The breeze: how hard it is blowing, 0 to 1, how long it has left, and a clock for its sway. */
     let gust = 0;
     let gustLeft = 0;
     let windTime = 0;
-    /** Where the hand is, how far the plants there are bent, and how fast that bend is moving. */
-    const bend = { x: 0, y: 0, dx: 0, dy: 0, vx: 0, vy: 0 };
+    let sway: Sway | undefined;
 
     const image = new Image();
     image.decoding = "async";
@@ -319,16 +326,19 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
             const cos = Math.cos(petal.angle) * petal.size * k;
             const sin = Math.sin(petal.angle) * petal.size * k;
             const alpha = petal.alpha * (petal.airborne ? 1 : shown);
+            // A petal lying on the plants rides their sway, the more the higher up the bed it lies.
+            const ride = petal.airborne || !sway ? 0 : sway.bendAt(petal.x) * petalRide * Math.min(1, (height + headroom - petal.y) / (height * 0.8));
+            const x = petal.x + ride;
             // A petal on the bed sits just above it; one in the air throws no shadow here.
             if (!petal.airborne) {
-                petalContext.setTransform(cos, sin, -sin * squeeze, cos * squeeze, (petal.x + 1.2) * k, (petal.y + 2.2) * k);
+                petalContext.setTransform(cos, sin, -sin * squeeze, cos * squeeze, (x + 1.2) * k, (petal.y + 2.2) * k);
                 petalContext.globalAlpha = alpha * 0.2;
                 petalContext.fillStyle = "#0b1a08";
                 petalContext.beginPath();
                 petalContext.ellipse(0, 0, 0.95, 0.62, 0, 0, Math.PI * 2);
                 petalContext.fill();
             }
-            petalContext.setTransform(cos, sin, -sin * squeeze, cos * squeeze, petal.x * k, petal.y * k);
+            petalContext.setTransform(cos, sin, -sin * squeeze, cos * squeeze, x * k, petal.y * k);
             petalContext.globalAlpha = alpha;
             const kind = face < 0 ? undersideKind : petal.kind;
             petalContext.drawImage(petalSheet, kind * petalCell, 0, petalCell, petalCell, -1.14, -1.14, 2.28, 2.28);
@@ -356,7 +366,17 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
         gl.uniform1f(u.uDpr, ratio);
         const tileHeight = tileHeightFor(height);
         gl.uniform2f(u.uTile, (imageSize.width / imageSize.height) * tileHeight, tileHeight);
-        gl.uniform4f(u.uSweep, bend.x, bend.y, bend.dx, bend.dy);
+        // The sway goes to the shader as a row of bytes, 128 for a plant at rest.
+        const bends = sway?.bends;
+        if (bends) {
+            if (swayBytes.length !== bends.length) swayBytes = new Uint8Array(bends.length);
+            for (let i = 0; i < bends.length; i++) swayBytes[i] = Math.round(127.5 + (bends[i] / swayFeel.most) * 127.5);
+            gl.activeTexture(gl.TEXTURE1);
+            gl.bindTexture(gl.TEXTURE_2D, swayTexture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, bends.length, 1, 0, gl.RED, gl.UNSIGNED_BYTE, swayBytes);
+            gl.uniform1i(u.uSway, 1);
+        }
+        gl.uniform1f(u.uSwayMost, swayFeel.most);
         gl.uniform1f(u.uGrow, grow);
         gl.uniform1f(u.uBrightness, brightness());
         gl.uniform2f(u.uWind, gust, windTime);
@@ -368,19 +388,14 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
         const dt = lastTimestamp === undefined ? 0 : Math.min(maxStepSeconds, (timestamp - lastTimestamp) / 1000);
         lastTimestamp = timestamp;
         if (grow < 1) grow = Math.min(1, grow + dt / growSeconds);
-        // The bent plants spring back, overshoot a little, and come to rest.
-        bend.vx += (-sweep.stiffness * bend.dx - sweep.damping * bend.vx) * dt;
-        bend.vy += (-sweep.stiffness * bend.dy - sweep.damping * bend.vy) * dt;
-        bend.dx += bend.vx * dt;
-        bend.dy += bend.vy * dt;
-        const bent = Math.abs(bend.dx) + Math.abs(bend.dy) > 0.05 || Math.abs(bend.vx) + Math.abs(bend.vy) > 0.5;
+        const swaying = sway?.step(dt) ?? false;
         // A breeze rises quickly and dies away slowly.
         gustLeft = Math.max(0, gustLeft - dt);
         gust += ((gustLeft > 0 ? 1 : 0) - gust) * Math.min(1, dt * (gustLeft > 0 ? 3 : 1.1));
         windTime += dt;
         const petalsMoving = petals?.step(dt) ?? false;
         render();
-        const isMoving = grow < 1 || gust > 0.01 || petalsMoving || bent;
+        const isMoving = grow < 1 || gust > 0.01 || petalsMoving || swaying;
         frame = isMoving && isVisible && !document.hidden ? window.requestAnimationFrame(tick) : undefined;
     }
 
@@ -430,6 +445,8 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
             petalCanvas.style.height = `${height + headroom}px`;
             petalCanvas.width = Math.round(width * petalRatio);
             petalCanvas.height = Math.round((height + headroom) * petalRatio);
+            if (sway) sway.resize(width);
+            else sway = createSway(width);
             if (petals) {
                 petals.resize(width, headroom, height);
             } else {
@@ -459,32 +476,26 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
         },
         stir(point) {
             if (!point) {
+                lastPoint = null;
                 lastStir = null;
                 return;
             }
             if (reducedMotion) return;
-            if (lastStir && Math.hypot(point.x - lastStir.x, point.y - lastStir.y) < stirDistance) return;
-            if (lastStir) {
-                // A hand through the bed bends the plants the way it moves, and carries the petals it passes along with it.
-                const dx = point.x - lastStir.x;
-                const dy = point.y - lastStir.y;
-                bend.dx += dx * sweep.push;
-                bend.dy += dy * sweep.push;
-                const far = Math.hypot(bend.dx, bend.dy);
-                if (far > sweep.most) {
-                    bend.dx *= sweep.most / far;
-                    bend.dy *= sweep.most / far;
-                }
-                petals?.kick(point.x, point.y + headroom, 0.5, dx * 6, dy * 6);
+            // The plants answer every move of the hand, however small, in the frame it happens.
+            if (lastPoint) {
+                sway?.push(point.x, point.x - lastPoint.x);
                 run();
             }
-            bend.x = point.x;
-            bend.y = point.y;
+            lastPoint = point;
+            // The loose petals are lifted a little less often, once the hand has gone some way.
+            if (lastStir && Math.hypot(point.x - lastStir.x, point.y - lastStir.y) < stirDistance) return;
+            if (lastStir) petals?.kick(point.x, point.y + headroom, 0.5, (point.x - lastStir.x) * 6, (point.y - lastStir.y) * 6);
             lastStir = point;
         },
         tap(x, y) {
             if (reducedMotion) return;
-            // The petals near the tap puff up into the air above the bed.
+            // The plants lean away from the tap on both sides, and the petals near it puff up into the air above the bed.
+            sway?.puff(x);
             petals?.kick(x, y + headroom, 1);
             run();
         },
@@ -497,6 +508,7 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
             if (idleTimer !== undefined) window.clearTimeout(idleTimer);
             screen.destroy();
             gl.deleteTexture(imageTexture);
+            gl.deleteTexture(swayTexture);
             gl.deleteProgram(program);
         },
     };
