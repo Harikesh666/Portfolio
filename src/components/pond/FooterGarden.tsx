@@ -5,8 +5,9 @@ import { readHourOverride } from "./pond-hour";
 
 /**
  * Decorative petals on moss along the bottom of the footer: move a pointer
- * through them and the plants bend the way it moves and spring back, and
- * the loose petals lift and flutter back down. A tap puffs the petals up. The renderer and photo load only when the strip comes
+ * through them and petals lift, follow it through the air and flutter back
+ * down, while the plants sway under it. A tap puffs the petals up. The
+ * garden follows the pointer itself, since petals fly above the strip. The renderer and photo load only when the strip comes
  * near the viewport, and the strip stays hidden without WebGL2.
  */
 export function FooterGarden() {
@@ -88,8 +89,6 @@ export function FooterGarden() {
                 const point = pointFrom(event);
                 gardenRef.current?.tap(point.x, point.y);
             }}
-            onPointerLeave={() => gardenRef.current?.stir(null)}
-            onPointerMove={(event) => gardenRef.current?.stir(pointFrom(event))}
             ref={containerRef}
         >
             <canvas className="footer-garden__canvas" ref={canvasRef} />

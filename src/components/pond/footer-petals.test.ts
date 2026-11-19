@@ -97,6 +97,75 @@ describe("createPetals", () => {
         expect(petals.petals.every((petal) => petal.alpha === 1)).toBe(true);
     });
 
+    /** Moves a hand across the bed at a steady speed, one frame at a time. */
+    function pass(petals: Petals, from: number, to: number, speed: number, y = frame.headroom + 60, onBed = true) {
+        for (let x = from; x <= to; x += speed / 60) {
+            petals.sweep(x, y, speed, 0, 1 / 60, onBed);
+            petals.step(1 / 60);
+        }
+    }
+
+    it("throws up a trail of petals behind a hand through the bed, fresh ones among them", () => {
+        const petals = garden(8);
+        pass(petals, 200, 700, 700);
+        const inAir = petals.petals.filter((petal) => petal.airborne);
+        expect(inAir.length).toBeGreaterThan(12);
+        expect(petals.petals.length).toBeGreaterThan(frame.count + 8);
+        // They leave with the hand's own direction.
+        const along = inAir.reduce((sum, petal) => sum + petal.vx, 0);
+        expect(along).toBeGreaterThan(0);
+        for (const petal of inAir) expect(petal.y).toBeGreaterThan(-20);
+    });
+
+    it("leaves the bed alone under a hand that barely moves, or one that is above it", () => {
+        const slow = garden(9);
+        pass(slow, 300, 340, 20);
+        expect(slow.petals).toHaveLength(frame.count);
+        expect(slow.petals.every((petal) => !petal.airborne)).toBe(true);
+        const above = garden(9);
+        pass(above, 200, 700, 700, frame.headroom - 30, false);
+        expect(above.petals).toHaveLength(frame.count);
+        expect(above.petals.every((petal) => !petal.airborne)).toBe(true);
+    });
+
+    it("carries floating petals along with a hand moving through the air", () => {
+        const drift = (withHand: boolean) => {
+            const petals = garden(10);
+            petals.kick(450, frame.headroom + 60);
+            for (let i = 0; i < 20; i++) petals.step(1 / 60);
+            const floating = petals.petals.filter((petal) => petal.airborne);
+            const before = floating.reduce((sum, petal) => sum + petal.x, 0) / floating.length;
+            for (let i = 0; i < 20; i++) {
+                if (withHand) petals.sweep(400 + i * 6, frame.headroom - 20, 360, 0, 1 / 60, false);
+                petals.step(1 / 60);
+            }
+            return floating.reduce((sum, petal) => sum + petal.x, 0) / floating.length - before;
+        };
+        expect(drift(true)).toBeGreaterThan(drift(false) + 6);
+    });
+
+    it("never fills the bed up: what a hand shakes loose fades back into it", () => {
+        const petals = garden(11);
+        for (let lap = 0; lap < 6; lap++) pass(petals, 100, 800, 900);
+        // However long the hand keeps at it, only so many are loose at once.
+        expect(petals.petals.length).toBeLessThanOrEqual(frame.count + 46);
+        expect(settle(petals, 30)).toBeLessThan(14);
+        expect(petals.petals).toHaveLength(frame.count);
+        expect(petals.isStill()).toBe(true);
+    });
+
+    it("puffs fresh petals up from a tap", () => {
+        const petals = garden(12);
+        petals.burst(450, frame.headroom + 60, 7);
+        expect(petals.petals).toHaveLength(frame.count + 7);
+        for (let i = 0; i < 15; i++) petals.step(1 / 60);
+        const fresh = petals.petals.slice(frame.count);
+        expect(fresh.every((petal) => petal.airborne && petal.y < frame.headroom + 60)).toBe(true);
+        expect(fresh.every((petal) => petal.alpha === 1)).toBe(true);
+        expect(settle(petals)).toBeLessThan(10);
+        expect(petals.petals).toHaveLength(frame.count);
+    });
+
     it("keeps each petal the same way down the bed when the strip changes size", () => {
         const petals = garden(7);
         const before = petals.petals.map((petal) => (petal.y - frame.headroom) / frame.bed);

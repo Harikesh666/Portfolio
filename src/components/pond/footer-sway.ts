@@ -4,7 +4,8 @@
  * The bed is cut into narrow columns, and each column is a spring: how far
  * its plants are bent sideways, and how fast that bend is changing. A hand
  * moving through the bed carries the columns under it along with it at
- * once, so the plants move in the same frame the hand does. Each column
+ * once, so the plants move in the same frame the hand does. The sway is
+ * kept small: it is the ground under the petals, which are the show. Each column
  * then springs back and overshoots a few times, and pulls on its two
  * neighbours as it goes, so the sway runs outward along the bed as a wave
  * and what the hand has passed keeps rustling behind it.
@@ -28,14 +29,14 @@ export const swayFeel = {
      */
     spread: 14000,
     /** How much of the hand's travel the plants right under it are carried, and how far from it the carry reaches. */
-    carry: 0.62,
+    carry: 0.42,
     reach: 54,
     /** A moving hand also leaves the plants with some of its speed, so a quick pass throws them further than a slow one. */
-    fling: 5.5,
+    fling: 4,
     /** A tap pushes the plants on either side of it this far apart. */
     puff: 7,
     /** No plant's top is ever carried further than this. */
-    most: 13,
+    most: 9,
     /** The longest step the springs take at once. A slower frame is split, because the wave is unstable past about 8ms. */
     step: 1 / 240,
 } as const;

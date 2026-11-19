@@ -20,8 +20,15 @@ const petalLimits: readonly [number, number] = [12, 56];
 const growSeconds = 1.6;
 /** As it grows in, this many petals drift down onto it. */
 const arrivingPetals = 4;
-/** The pointer lifts petals again once it has moved this many pixels. */
-const stirDistance = 12;
+/** The hand is felt from this far above the petals' layer, in CSS pixels, so floating petals can be chased a little past it. */
+const handMargin = 60;
+/** A hand that has not moved for this long, in seconds, has stopped, and its speed dies away this quickly. */
+const handStill = 0.08;
+const handFade = 14;
+/** No hand is taken to move faster than this, in pixels a second: one wild event must not throw petals across the page. */
+const handFastest = 2400;
+/** A tap shakes this many fresh petals loose. */
+const tapPetals = 7;
 /** Bent plants also dip: their tops come down by this share of how far they are carried sideways. */
 const swayDip = 0.24;
 /** A loose petal lying on the plants rides this share of their sway. */
@@ -129,8 +136,6 @@ void main() {
 export type FooterGarden = Readonly<{
     resize(): void;
     setVisible(visible: boolean): void;
-    /** The pointer moved over the garden, in CSS pixels; null when it leaves. */
-    stir(point: { x: number; y: number } | null): void;
     tap(x: number, y: number): void;
     /** Repaints the still frame, for example after the theme changes. */
     refresh(): void;
@@ -221,10 +226,12 @@ function paintPetalSheet() {
 /**
  * A strip of petals on moss along the bottom of the footer. It grows in
  * once, the first time it is seen, as a few petals drift down onto it.
- * After that it is a still frame until something stirs it: a pointer,
- * which carries the plants along and leaves a wake of sway behind it
- * (`footer-sway.ts`) and lifts the loose petals, a tap, which puffs them
- * up, or now and then a breeze or a petal falling on its own. It runs only until everything
+ * After that it is a still frame until something stirs it. A pointer
+ * through the bed lifts the petals it passes, shakes fresh ones loose and
+ * moves the air, so floating petals follow it and swirl round it
+ * (`footer-petals.ts`), while the plants sway under it (`footer-sway.ts`).
+ * A tap puffs petals up, and now and then a breeze or a falling petal
+ * stirs it on its own. It runs only until everything
  * has settled again. Under reduced motion it appears fully grown and never
  * moves. Returns null without WebGL2.
  */
@@ -270,8 +277,8 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
     let frame: number | undefined;
     let idleTimer: number | undefined;
     let lastTimestamp: number | undefined;
-    let lastPoint: { x: number; y: number } | null = null;
-    let lastStir: { x: number; y: number } | null = null;
+    /** The hand: where the pointer is in the petals' layer, how fast it is moving, and when it last moved. */
+    const hand = { x: 0, y: 0, vx: 0, vy: 0, at: 0, near: false };
     let petals: Petals | undefined;
     /** The breeze: how hard it is blowing, 0 to 1, how long it has left, and a clock for its sway. */
     let gust = 0;
@@ -389,13 +396,23 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
         lastTimestamp = timestamp;
         if (grow < 1) grow = Math.min(1, grow + dt / growSeconds);
         const swaying = sway?.step(dt) ?? false;
+        // The hand moves the petals and the air for as long as it is moving; once it stops, so does its wind.
+        if (hand.near) {
+            if (timestamp - hand.at > handStill * 1000) {
+                const fade = Math.min(1, dt * handFade);
+                hand.vx -= hand.vx * fade;
+                hand.vy -= hand.vy * fade;
+            }
+            petals?.sweep(hand.x, hand.y, hand.vx, hand.vy, dt, hand.y >= headroom);
+        }
+        const handMoving = hand.near && Math.hypot(hand.vx, hand.vy) > 4;
         // A breeze rises quickly and dies away slowly.
         gustLeft = Math.max(0, gustLeft - dt);
         gust += ((gustLeft > 0 ? 1 : 0) - gust) * Math.min(1, dt * (gustLeft > 0 ? 3 : 1.1));
         windTime += dt;
         const petalsMoving = petals?.step(dt) ?? false;
         render();
-        const isMoving = grow < 1 || gust > 0.01 || petalsMoving || swaying;
+        const isMoving = grow < 1 || gust > 0.01 || petalsMoving || swaying || handMoving;
         frame = isMoving && isVisible && !document.hidden ? window.requestAnimationFrame(tick) : undefined;
     }
 
@@ -421,6 +438,52 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
         }
         idleTimer = window.setTimeout(idle, (idleEvery[0] + Math.random() * (idleEvery[1] - idleEvery[0])) * 1000);
     }
+
+    /**
+     * Follows the pointer wherever it is on the page, since floating petals
+     * leave the strip and the hand may follow them. Only a pointer over the
+     * petals' layer, or just above it, counts as near.
+     */
+    function onPointerMove(event: PointerEvent) {
+        if (!isVisible || reducedMotion || !petals) return;
+        const bounds = petalCanvas.getBoundingClientRect();
+        const x = event.clientX - bounds.left;
+        const y = event.clientY - bounds.top;
+        if (x < 0 || x > bounds.width || y < -handMargin || y > bounds.height) {
+            hand.near = false;
+            return;
+        }
+        const elapsed = (event.timeStamp - hand.at) / 1000;
+        if (hand.near && elapsed > 0 && elapsed < 0.12) {
+            // Eased between events, so the hand's speed is a steady figure and not one event's guess.
+            let vx = (x - hand.x) / elapsed;
+            let vy = (y - hand.y) / elapsed;
+            const speed = Math.hypot(vx, vy);
+            if (speed > handFastest) {
+                vx *= handFastest / speed;
+                vy *= handFastest / speed;
+            }
+            hand.vx += (vx - hand.vx) * 0.5;
+            hand.vy += (vy - hand.vy) * 0.5;
+            // The plants under it are carried along in the same frame.
+            if (y >= headroom) sway?.push(x, x - hand.x);
+        } else {
+            hand.vx = 0;
+            hand.vy = 0;
+        }
+        hand.x = x;
+        hand.y = y;
+        hand.at = event.timeStamp;
+        hand.near = true;
+        run();
+    }
+    /** A finger lifted is a hand gone. A mouse stays where it is. */
+    function onPointerGone(event: PointerEvent) {
+        if (event.pointerType !== "mouse") hand.near = false;
+    }
+    window.addEventListener("pointermove", onPointerMove, { passive: true });
+    window.addEventListener("pointerup", onPointerGone, { passive: true });
+    window.addEventListener("pointercancel", onPointerGone, { passive: true });
 
     function maybeStartGrowing() {
         if (!isVisible || !imageSize || hasBeenSeen) return;
@@ -474,29 +537,12 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
                 idleTimer = undefined;
             }
         },
-        stir(point) {
-            if (!point) {
-                lastPoint = null;
-                lastStir = null;
-                return;
-            }
-            if (reducedMotion) return;
-            // The plants answer every move of the hand, however small, in the frame it happens.
-            if (lastPoint) {
-                sway?.push(point.x, point.x - lastPoint.x);
-                run();
-            }
-            lastPoint = point;
-            // The loose petals are lifted a little less often, once the hand has gone some way.
-            if (lastStir && Math.hypot(point.x - lastStir.x, point.y - lastStir.y) < stirDistance) return;
-            if (lastStir) petals?.kick(point.x, point.y + headroom, 0.5, (point.x - lastStir.x) * 6, (point.y - lastStir.y) * 6);
-            lastStir = point;
-        },
         tap(x, y) {
             if (reducedMotion) return;
             // The plants lean away from the tap on both sides, and the petals near it puff up into the air above the bed.
             sway?.puff(x);
             petals?.kick(x, y + headroom, 1);
+            petals?.burst(x, y + headroom, tapPetals);
             run();
         },
         refresh() {
@@ -506,6 +552,9 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
             isDestroyed = true;
             if (frame !== undefined) window.cancelAnimationFrame(frame);
             if (idleTimer !== undefined) window.clearTimeout(idleTimer);
+            window.removeEventListener("pointermove", onPointerMove);
+            window.removeEventListener("pointerup", onPointerGone);
+            window.removeEventListener("pointercancel", onPointerGone);
             screen.destroy();
             gl.deleteTexture(imageTexture);
             gl.deleteTexture(swayTexture);
