@@ -5,13 +5,14 @@ import { readHourOverride } from "./pond-hour";
 
 /**
  * Decorative petals on moss along the bottom of the footer: move a pointer
- * through them, or tap, and they part and ripple. The renderer and photo
- * load only when the strip comes near the viewport, and the strip stays
- * hidden without WebGL2.
+ * through them and the plants bend the way it moves and spring back, and
+ * the loose petals lift and flutter back down. A tap puffs the petals up. The renderer and photo load only when the strip comes
+ * near the viewport, and the strip stays hidden without WebGL2.
  */
 export function FooterGarden() {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const petalCanvasRef = useRef<HTMLCanvasElement>(null);
     const gardenRef = useRef<FooterGardenEngine | null>(null);
     const [isReady, setIsReady] = useState(false);
     const shouldReduceMotion = useReducedMotion() ?? false;
@@ -19,7 +20,8 @@ export function FooterGarden() {
     useEffect(() => {
         const container = containerRef.current;
         const canvas = canvasRef.current;
-        if (!container || !canvas) return;
+        const petalCanvas = petalCanvasRef.current;
+        if (!container || !canvas || !petalCanvas) return;
 
         let isCancelled = false;
         let isLoading = false;
@@ -33,6 +35,7 @@ export function FooterGarden() {
                 gardenRef.current = createFooterGarden({
                     container,
                     canvas,
+                    petalCanvas,
                     reducedMotion: shouldReduceMotion,
                     hourOverride: readHourOverride(),
                     isDark: () => document.documentElement.dataset.theme === "dark",
@@ -90,6 +93,8 @@ export function FooterGarden() {
             ref={containerRef}
         >
             <canvas className="footer-garden__canvas" ref={canvasRef} />
+            {/* The loose petals, and the air above the bed that they fly in. Taps pass through it to the page. */}
+            <canvas className="footer-garden__petals" ref={petalCanvasRef} />
         </div>
     );
 }

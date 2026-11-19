@@ -3849,11 +3849,13 @@
 
     /* A full-bleed strip of petals on moss closing the page. Its ragged top edge and grow-in come from the shader. */
     .footer-garden {
+        position: relative;
         width: 100vw;
         height: 4.675rem; /* 15% under the original 5.5rem */
         margin-top: 2.5rem;
         margin-left: calc(50% - 50vw);
         opacity: 0;
+        transition: opacity 400ms ease;
         touch-action: pan-y;
     }
 
@@ -3865,6 +3867,19 @@
         display: block;
         width: 100%;
         height: 100%;
+    }
+
+    /*
+     * The loose petals' layer: the bed plus the air above it, set by the
+     * garden to the height it needs. It never takes a tap from the footer.
+     */
+    .footer-garden__petals {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
     }
 
     @media (min-width: 40rem) {
