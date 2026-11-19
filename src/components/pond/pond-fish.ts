@@ -71,7 +71,7 @@ const varieties: readonly Variety[] = [
         fin: "rgba(70, 62, 58, 0.5)",
         marks: [
             { color: "#d44a2b", count: [2, 3], size: [0.8, 1.2] },
-            { color: "#f1ebe2", count: [1, 2], size: [0.6, 0.9] },
+            { color: "#f1ebe2", count: [2, 3], size: [0.7, 1] },
         ],
     },
     // Yamabuki: soft yellow with a pale back.
@@ -96,8 +96,13 @@ const microVariety: Variety = {
 export type Fish = {
     job: Job;
     state: FishState;
+    /** The spine as the simulation moves it: the head leads and each joint follows. */
     points: Vec[];
+    /** The spine as it is drawn: `points` with the swimming wave laid over it. See `poseOf`. */
+    pose: Vec[];
     heading: number;
+    /** How fast the heading is changing, in radians per second. Eased, so turns start and end gently. */
+    turn: number;
     speed: number;
     length: number;
     variety: Variety;
@@ -111,25 +116,86 @@ export type Fish = {
     phase: number;
     orbit: number;
     alpha: number;
+    /** How hard it is swimming: 0 coasting with a straight body, 1 a full stroke. */
+    effort: number;
+    /** Burst and glide: whether it is coasting now, and the seconds until it switches. */
+    gliding: boolean;
+    strokeTimer: number;
+    /** 0 at the surface, 1 down near the floor, and the depth it is heading for. */
+    depth: number;
+    depthTarget: number;
+    /** Pectoral fins: 0 folded against the body, 1 flared out to brake or hover. */
+    spread: number;
+    /** Mouth: 0 closed, 1 open for a pellet. `gulpTimer` holds it open a moment after a bite. */
+    gulp: number;
+    gulpTimer: number;
+    /** Seconds left of a startled dart, and of a rest in one place. */
+    startle: number;
+    rest: number;
+    /** A koi it is trailing for a while, and the seconds left of that. */
+    leader?: Fish;
+    leaderTimer: number;
 };
+
+/**
+ * How the head is driven for a step.
+ * "direct" swims straight for the target. "settle" also holds its place
+ * facing right once it arrives. "cruise" is a koi at ease: a few tail
+ * beats, then a glide. "dart" is a startled sprint that turns on the spot.
+ */
+export type Swim = "direct" | "settle" | "cruise" | "dart";
 
 /** Joints along each fish's spine; the body bends between them. */
 export const segments = 12;
 /** Fastest heading change, in radians per second. */
 const turnRate = 2.2;
-/** Sideways sway of the swimming stroke, in radians at full speed. */
-const swayAmplitude = 0.17;
+/** How eagerly the head turns toward its target, and how quickly a turn builds and fades. */
+const turnGain = 3.2;
+const turnEase = 6;
+/** A startled koi turns this many times faster. */
+const dartAgility = 3.5;
+/** Sideways yaw of the head with each stroke, in radians at full effort. */
+const swayAmplitude = 0.1;
+/** The swimming wave: its height at the tail root in body lengths, and how many waves fit along the body. */
+const waveAmplitude = 0.075;
+export const waveTurns = 0.85;
+/** The head barely moves sideways; the wave grows from this share toward the tail. */
+const waveAtHead = 0.05;
+/** Cruising: seconds spent beating the tail, then gliding, and the speed of each as a share of the cruising pace. */
+const burstSeconds: readonly [number, number] = [0.9, 1.9];
+const glideSeconds: readonly [number, number] = [1.1, 2.6];
+const burstPace = 1.35;
+const glidePace = 0.5;
+/** How fast speed catches up: quick when pushing off, slow when water drag is all there is. */
+const pushGain = 2.3;
+const dragGain = 0.65;
 
 const random = (min: number, max: number) => min + Math.random() * (max - min);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const smooth = (from: number, to: number, value: number) => {
+    const t = clamp((value - from) / (to - from), 0, 1);
+    return t * t * (3 - 2 * t);
+};
 
-/** Half-width of a koi at a point along it: round snout, full shoulders, long taper. */
+/**
+ * Half-width of a koi from above, in body lengths, at u from the snout (0)
+ * to the tail root (1): a blunt rounded head, shoulders that swell just
+ * behind the gill covers, then a long taper to the wrist of the tail.
+ * The GPU shader repeats this as `bodyHalfWidth`; keep the two in step.
+ */
+export function bodyProfile(u: number) {
+    if (u <= 0 || u > 1) return 0;
+    const nose = Math.max(0.2 - u, 0) / 0.2;
+    const head = Math.max(0, 1 - nose * nose) ** 0.55;
+    const shoulder = lerp(0.09, 0.118, smooth(0.16, 0.38, u));
+    const taper = 1 - 0.75 * smooth(0.36, 1, u) ** 1.15;
+    return shoulder * taper * head;
+}
+
+/** Half-width for the 2D koi, whose spine starts a little behind the nose. */
 export function widthAt(t: number, length: number) {
-    const max = length * 0.105;
-    if (t < 0.12) return max * (0.6 + 0.4 * Math.sin((t / 0.12) * (Math.PI / 2)));
-    if (t < 0.32) return max;
-    const taper = (t - 0.32) / 0.68;
-    return max * Math.max(0.06, (1 - taper) ** 1.25);
+    return length * bodyProfile((t + 0.055) / 1.055);
 }
 
 /** The most one spine joint can bend, in radians, so a koi turning on the spot never folds. */
@@ -152,32 +218,82 @@ export function follow(fish: Fish) {
 }
 
 /**
- * Turns the head toward a target at a limited rate, eases speed, and adds
- * a calm swimming sway; the rest of the spine follows the head.
- * `settle` makes a fish hold its place facing right.
+ * Lays the swimming wave over the spine and returns the drawn pose.
+ * A fish pushes water with a wave that runs from head to tail and grows as
+ * it goes, so the head stays nearly still and the tail sweeps widest. The
+ * wave's height follows `effort`: a gliding koi is almost straight.
  */
-export function steer(fish: Fish, target: Vec, maxSpeed: number, dt: number, settle = false) {
+export function poseOf(fish: Fish) {
+    const { points, pose, length } = fish;
+    const height = length * waveAmplitude * fish.effort;
+    for (let i = 0; i < segments; i++) {
+        const before = points[Math.max(0, i - 1)];
+        const after = points[Math.min(segments - 1, i + 1)];
+        const tx = before.x - after.x;
+        const ty = before.y - after.y;
+        const tangent = Math.hypot(tx, ty) || 1;
+        const u = i / (segments - 1);
+        const offset = height * (waveAtHead + (1 - waveAtHead) * u * u) * Math.sin(fish.phase - u * waveTurns * Math.PI * 2);
+        pose[i].x = points[i].x + (-ty / tangent) * offset;
+        pose[i].y = points[i].y + (tx / tangent) * offset;
+    }
+    return pose;
+}
+
+/**
+ * Turns the head toward a target, eases speed, and advances the stroke;
+ * the rest of the spine follows the head. See `Swim` for the modes.
+ */
+export function steer(fish: Fish, target: Vec, maxSpeed: number, dt: number, swim: Swim = "direct") {
     const head = fish.points[0];
     const dx = target.x - head.x;
     const dy = target.y - head.y;
     const distance = Math.hypot(dx, dy);
-    let desiredHeading = Math.atan2(dy, dx);
+    // Right on top of its target a fish keeps its line, or it would spin.
+    let desiredHeading = distance < 3 ? fish.heading : Math.atan2(dy, dx);
     let desiredSpeed = Math.min(maxSpeed, distance * 1.4);
-    if (settle && distance < 6) {
+    if (swim === "settle" && distance < 6) {
         desiredHeading = 0;
         desiredSpeed = 4;
     }
 
+    let effort = clamp(desiredSpeed / maxSpeed, 0.15, 1);
+    let gain = pushGain;
+    if (swim === "cruise") {
+        fish.strokeTimer -= dt;
+        if (fish.strokeTimer <= 0) {
+            fish.gliding = !fish.gliding;
+            fish.strokeTimer = random(...(fish.gliding ? glideSeconds : burstSeconds));
+        }
+        desiredSpeed *= fish.gliding ? glidePace : burstPace;
+        effort = fish.gliding ? 0.1 : 1;
+        gain = fish.gliding ? dragGain : pushGain;
+    } else if (swim === "dart") {
+        effort = 1;
+        gain = pushGain * 4;
+    }
+
+    const agility = swim === "dart" ? dartAgility : 1;
     const difference = Math.atan2(
         Math.sin(desiredHeading - fish.heading),
         Math.cos(desiredHeading - fish.heading),
     );
-    const maxTurn = turnRate * (0.55 + fish.speed / maxSpeed) * dt;
-    fish.heading += Math.max(-maxTurn, Math.min(maxTurn, difference));
-    fish.speed += (desiredSpeed - fish.speed) * Math.min(1, dt * 1.8);
-    fish.phase += dt * (2.4 + fish.speed * 0.07);
+    const maxTurn = turnRate * (0.55 + fish.speed / maxSpeed) * agility;
+    const wantedTurn = clamp(difference * turnGain * agility, -maxTurn, maxTurn);
+    fish.turn += (wantedTurn - fish.turn) * Math.min(1, dt * turnEase * agility);
+    fish.heading += fish.turn * dt;
 
-    const sway = Math.sin(fish.phase) * swayAmplitude * Math.min(1, fish.speed / maxSpeed + 0.2);
+    // Fins flare to brake or hover, half open on a glide, and fold flat for a sprint.
+    const braking = fish.speed > desiredSpeed * 1.3 || desiredSpeed < 8;
+    const spread = swim === "dart" ? 0 : braking ? 1 : fish.gliding && swim === "cruise" ? 0.7 : 0.35;
+    fish.spread += (spread - fish.spread) * Math.min(1, dt * 4);
+
+    fish.speed += (desiredSpeed - fish.speed) * Math.min(1, dt * gain);
+    fish.effort += (effort - fish.effort) * Math.min(1, dt * 3.5);
+    fish.depth += (fish.depthTarget - fish.depth) * Math.min(1, dt * 0.9);
+    fish.phase += dt * (1.5 + fish.effort * 3.6 + fish.speed * 0.035);
+
+    const sway = Math.sin(fish.phase) * swayAmplitude * fish.effort;
     head.x += Math.cos(fish.heading + sway) * fish.speed * dt;
     head.y += Math.sin(fish.heading + sway) * fish.speed * dt;
     follow(fish);
@@ -207,14 +323,17 @@ export function makeFish(job: Job, at: Vec, heading: number, length: number, isM
     const spacing = length / (segments - 1);
     const varietyIndex = isMicro ? varieties.length : job.id % varieties.length;
     const variety = isMicro ? microVariety : varieties[varietyIndex];
+    const points = Array.from({ length: segments }, (_, i) => ({
+        x: at.x - Math.cos(heading) * spacing * i,
+        y: at.y - Math.sin(heading) * spacing * i,
+    }));
     return {
         job,
         state: "wander",
-        points: Array.from({ length: segments }, (_, i) => ({
-            x: at.x - Math.cos(heading) * spacing * i,
-            y: at.y - Math.sin(heading) * spacing * i,
-        })),
+        points,
+        pose: points.map((point) => ({ ...point })),
         heading,
+        turn: 0,
         speed: 0,
         length,
         variety,
@@ -226,30 +345,41 @@ export function makeFish(job: Job, at: Vec, heading: number, length: number, isM
         phase: random(0, Math.PI * 2),
         orbit: 0,
         alpha: 1,
+        effort: 0.5,
+        gliding: Math.random() < 0.5,
+        strokeTimer: random(0, 1.5),
+        depth: 0.4,
+        depthTarget: 0.4,
+        spread: 0.5,
+        gulp: 0,
+        gulpTimer: 0,
+        startle: 0,
+        rest: 0,
+        leaderTimer: 0,
     };
 }
 
-type Frame = Readonly<{ left: Vec[]; right: Vec[]; normals: Vec[] }>;
+type Frame = Readonly<{ spine: Vec[]; left: Vec[]; right: Vec[]; normals: Vec[] }>;
 
-/** Edge points and outward normals along the spine, for this frame's pose. */
+/** Edge points and outward normals along the drawn spine, for this frame's pose. */
 function frameOf(fish: Fish): Frame {
-    const { points, length } = fish;
+    const spine = poseOf(fish);
     const left: Vec[] = [];
     const right: Vec[] = [];
     const normals: Vec[] = [];
     for (let i = 0; i < segments; i++) {
-        const before = points[Math.max(0, i - 1)];
-        const after = points[Math.min(segments - 1, i + 1)];
+        const before = spine[Math.max(0, i - 1)];
+        const after = spine[Math.min(segments - 1, i + 1)];
         const tx = before.x - after.x;
         const ty = before.y - after.y;
         const tangentLength = Math.hypot(tx, ty) || 1;
         const normal = { x: -ty / tangentLength, y: tx / tangentLength };
-        const width = widthAt(i / (segments - 1), length);
+        const width = widthAt(i / (segments - 1), fish.length);
         normals.push(normal);
-        left.push({ x: points[i].x + normal.x * width, y: points[i].y + normal.y * width });
-        right.push({ x: points[i].x - normal.x * width, y: points[i].y - normal.y * width });
+        left.push({ x: spine[i].x + normal.x * width, y: spine[i].y + normal.y * width });
+        right.push({ x: spine[i].x - normal.x * width, y: spine[i].y - normal.y * width });
     }
-    return { left, right, normals };
+    return { spine, left, right, normals };
 }
 
 /** A smooth closed curve through points, using midpoints as anchors. */
@@ -267,20 +397,19 @@ function traceClosed(context: CanvasRenderingContext2D, shape: Vec[]) {
 
 function bodyShape(fish: Fish, frame: Frame) {
     const nose = {
-        x: fish.points[0].x + Math.cos(fish.heading) * fish.length * 0.055,
-        y: fish.points[0].y + Math.sin(fish.heading) * fish.length * 0.055,
+        x: frame.spine[0].x + Math.cos(fish.heading) * fish.length * 0.055,
+        y: frame.spine[0].y + Math.sin(fish.heading) * fish.length * 0.055,
     };
-    return [nose, ...frame.left, fish.points[segments - 1], ...[...frame.right].reverse()];
+    return [nose, ...frame.left, frame.spine[segments - 1], ...[...frame.right].reverse()];
 }
 
-/** The tail: two long lobes that trail the body's sway with a lag. */
-function traceTail(context: CanvasRenderingContext2D, fish: Fish) {
-    const { points, length } = fish;
-    const root = points[segments - 1];
-    const before = points[segments - 3];
+/** The tail: two soft lobes that trail the body's wave with a lag. */
+function traceTail(context: CanvasRenderingContext2D, fish: Fish, frame: Frame) {
+    const root = frame.spine[segments - 1];
+    const before = frame.spine[segments - 3];
     const back = Math.atan2(root.y - before.y, root.x - before.x);
-    const lag = Math.sin(fish.phase - 1.6) * 0.42;
-    const reach = length * 0.4;
+    const lag = tailFlex(fish, 1);
+    const reach = fish.length * 0.34;
     const lobe = (spread: number) => ({
         x: root.x + Math.cos(back + lag + spread) * reach,
         y: root.y + Math.sin(back + lag + spread) * reach,
@@ -288,8 +417,8 @@ function traceTail(context: CanvasRenderingContext2D, fish: Fish) {
     const upper = lobe(0.5);
     const lower = lobe(-0.5);
     const notch = {
-        x: root.x + Math.cos(back + lag * 1.2) * reach * 0.42,
-        y: root.y + Math.sin(back + lag * 1.2) * reach * 0.42,
+        x: root.x + Math.cos(back + lag * 1.2) * reach * 0.5,
+        y: root.y + Math.sin(back + lag * 1.2) * reach * 0.5,
     };
     const curve = (spread: number) => ({
         x: root.x + Math.cos(back + lag * 0.6 + spread) * reach * 0.62,
@@ -306,18 +435,29 @@ function traceTail(context: CanvasRenderingContext2D, fish: Fish) {
     return { root, reach, back: back + lag };
 }
 
-/** Pectoral and pelvic fins: soft fans that paddle slowly. */
+/**
+ * How far the tail fin bends from the body's line at a point along it
+ * (0 at its root, 1 at its tips), in radians. The fin is a soft sheet: it
+ * trails the tail root's sideways sweep, later toward its tips, and swings
+ * wide of a turn.
+ */
+export function tailFlex(fish: Fish, along: number) {
+    const sweep = Math.cos(fish.phase - waveTurns * Math.PI * 2 - 0.8 * along);
+    return (0.62 * fish.effort * sweep - clamp(fish.turn * 0.12, -0.35, 0.35)) * along;
+}
+
+/** Pectoral and pelvic fins: soft fans that flare to brake and fold to sprint. */
 function drawSideFins(context: CanvasRenderingContext2D, fish: Fish, frame: Frame) {
-    const paddle = Math.sin(fish.phase * 0.7) * 0.22;
+    const scull = Math.sin(fish.phase * 0.7) * 0.18 * fish.spread;
     const fins = [
-        { index: 2, reach: 0.2, width: 0.11, sweep: 2.25 },
+        { index: 2, reach: 0.21, width: 0.12, sweep: lerp(2.6, 1.95, fish.spread) },
         { index: 6, reach: 0.1, width: 0.055, sweep: 2.5 },
     ];
     context.fillStyle = fish.variety.fin;
     for (const fin of fins) {
         for (const side of [1, -1]) {
             const edge = side === 1 ? frame.left[fin.index] : frame.right[fin.index];
-            const angle = fish.heading + side * (fin.sweep + paddle * side);
+            const angle = fish.heading + side * (fin.sweep + scull * side);
             const tip = {
                 x: edge.x + Math.cos(angle) * fish.length * fin.reach,
                 y: edge.y + Math.sin(angle) * fish.length * fin.reach,
@@ -348,18 +488,19 @@ export function traceFishSilhouette(context: CanvasRenderingContext2D, fish: Fis
     const frame = frameOf(fish);
     traceClosed(context, bodyShape(fish, frame));
     context.fill();
-    traceTail(context, fish);
+    traceTail(context, fish, frame);
     context.fill();
 }
 
 export function drawFish(context: CanvasRenderingContext2D, fish: Fish) {
-    const { variety, points, length } = fish;
+    const { variety, length } = fish;
     const frame = frameOf(fish);
+    const points = frame.spine;
     context.globalAlpha = fish.alpha;
 
     // Fins sit under the body; the tail fades from its root to its tips.
     drawSideFins(context, fish, frame);
-    const tail = traceTail(context, fish);
+    const tail = traceTail(context, fish, frame);
     const tailTip = {
         x: tail.root.x + Math.cos(tail.back) * tail.reach,
         y: tail.root.y + Math.sin(tail.back) * tail.reach,
@@ -436,10 +577,10 @@ export function drawFish(context: CanvasRenderingContext2D, fish: Fish) {
     for (let i = 4; i <= 7; i++) context.lineTo(points[i].x, points[i].y);
     context.stroke();
 
-    // Eyes sit just behind the snout on either side.
+    // Eyes sit on top of the head, a little in from its edge.
     context.globalAlpha = fish.alpha * 0.7;
     context.fillStyle = "#1c1816";
-    const eyeWidth = widthAt(0.06, length) * 0.72;
+    const eyeWidth = widthAt(0.03, length) * 0.74;
     for (const side of [1, -1]) {
         context.beginPath();
         context.arc(
