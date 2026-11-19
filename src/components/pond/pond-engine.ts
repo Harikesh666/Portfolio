@@ -10,7 +10,6 @@ import {
 } from "./pond-decor";
 import {
     drawFish,
-    follow,
     makeFish,
     segments,
     steer,
@@ -51,19 +50,52 @@ const microtaskChance = 0.55;
 /** Fish closer than this many body lengths gently push apart. */
 const personalSpace = 0.75;
 /** How hard wandering fish push apart, in pixels per second. */
-const separationStrength = 38;
+const separationStrength = 52;
 /** The longest step the simulation takes, so a stalled frame never teleports fish. */
 const maxStepSeconds = 0.05;
-/** Koi in the garden pond, and how much larger they are than event-loop fish. */
+/** Koi in the garden pond, and how much larger they are than event-loop fish. A narrow pond holds one fewer. */
 const gardenFishCount = 6;
+const narrowPondWidth = 480;
 const gardenFishScale = 1.3;
+/** No koi is longer than this share of the pond's width, so a phone's pond is not crowded. */
+const gardenFishWidthShare = 0.17;
+/** Each koi's size against the pond's standard: one large, one young, the rest between. */
+const gardenFishSizes = [1.08, 0.94, 1, 0.72, 1.14, 0.88] as const;
+/** A tap startles koi within this many body lengths: they dart away for a moment before the food draws them back. */
+const startleReach = 0.8;
+const startleSeconds: readonly [number, number] = [0.3, 0.5];
+const dartSpeed = taskSpeed * 3.2;
+/** A koi opens its mouth this many body lengths from a pellet, and eats it this close. */
+const gulpReach = 0.5;
+const biteReach = 0.1;
+/** Seconds the mouth stays open after a bite. */
+const gulpHold = 0.2;
+/** A pellet another koi is already after counts as this many pixels farther away, so koi share the food out. */
+const claimedPelletPenalty = 55;
+/** On reaching a spot a koi may rest there, more often at night, or trail another koi for a while. */
+const restChance: readonly [number, number] = [0.22, 0.5];
+const restSeconds: readonly [number, number] = [1.6, 4.2];
+const restSpeed = 5;
+const followChance = 0.28;
+const followSeconds: readonly [number, number] = [4, 9];
+/** Koi that overlap move to different depths at this rate, so one passes under the other. */
+const layeringRate = 0.7;
+/** Koi closing on food crowd in: they keep only this share of their usual distance from each other. */
+const feedingCrowd = 0.3;
+/** Two koi swap places in the drawing order only once their depths differ by this much and they are apart. */
+const layerMargin = 0.06;
+/** A koi has arrived once its head is within this many body lengths of where it was going. */
+const arrivalReach = 0.3;
+/** A roaming koi weighs this many spots and takes the one that needs the least turning. */
+const roamChoices = 6;
 /** Fish notice the pointer within this many pixels and gather around it. */
 const pointerReach = 170;
 /** Fish notice food within this many pixels. */
 const foodReach = 240;
-/** Food pellets dropped per tap, and how long uneaten food lasts, in seconds. */
+/** Food pellets dropped per tap, how long uneaten food lasts in seconds, and a pellet's radius in pixels. */
 const pelletsPerTap = 4;
 const pelletLifetime = 7;
+const pelletSize = 2.4;
 /** At full night the koi slow to this share of their daytime pace. */
 const nightPace = 0.6;
 /** How often the garden re-reads the Mumbai clock, in seconds. */
@@ -173,6 +205,10 @@ export function createPond(options: PondOptions): Pond {
     const context = fishCanvas.getContext("2d");
     const model = new EventLoopModel();
     const fishes: Fish[] = [];
+    /** The fish in the order they are drawn, deepest first. See `layer`. */
+    const order: Fish[] = [];
+    /** Koi that are after a pellet this step. */
+    const feeding = new Set<Fish>();
     const ripples: Ripple[] = [];
     let width = 0;
     let height = 0;
@@ -194,8 +230,14 @@ export function createPond(options: PondOptions): Pond {
         const job: Job = { id: nextId++, kind };
         const isMicro = kind === "micro";
         // Garden koi are larger: there is no queue to fit them into.
-        const scale = isMicro ? 0.5 : isGarden ? gardenFishScale : 1;
-        const fish = makeFish(job, at, heading, fishLength() * scale, isMicro);
+        const length = isMicro
+            ? fishLength() * 0.5
+            : isGarden
+              ? Math.min(fishLength() * gardenFishScale, width * gardenFishWidthShare) *
+                gardenFishSizes[(job.id - 1) % gardenFishSizes.length]
+              : fishLength();
+        const fish = makeFish(job, at, heading, length, isMicro);
+        if (isGarden) fish.depth = fish.depthTarget = random(0.2, 0.85);
         fish.timer = random(...timerRange);
         fish.target = randomFreePoint();
         fishes.push(fish);
@@ -223,32 +265,102 @@ export function createPond(options: PondOptions): Pond {
         }
     }
 
-    /** Free-swimming fish nudge apart so they never pile on top of each other. */
-    function separate(dt: number) {
+    /** Whether two fish are close enough to be drawn over one another. */
+    function overlaps(a: Fish, b: Fish) {
+        const middle = Math.floor(segments / 2);
+        const reach = (a.length + b.length) * 0.5;
+        return Math.hypot(a.points[middle].x - b.points[middle].x, a.points[middle].y - b.points[middle].y) < reach;
+    }
+
+    /**
+     * Keeps the order fish are drawn in: deepest first. Two koi change
+     * places only while they are apart, so one never pops through another
+     * in the middle of a crossing.
+     */
+    function layer() {
+        for (let i = order.length - 1; i >= 0; i--) {
+            if (!fishes.includes(order[i])) order.splice(i, 1);
+        }
         for (const fish of fishes) {
-            if (fish.state !== "wander" && fish.state !== "leaving") continue;
-            const head = fish.points[0];
-            let pushX = 0;
-            let pushY = 0;
-            for (const other of fishes) {
-                if (other === fish) continue;
-                const near = other.points[Math.floor(segments / 2)];
-                const dx = head.x - near.x;
-                const dy = head.y - near.y;
-                const distance = Math.hypot(dx, dy) || 1;
-                const reach = (fish.length + other.length) * 0.5 * personalSpace;
-                if (distance < reach) {
-                    const strength = (1 - distance / reach) * separationStrength * dt;
-                    pushX += (dx / distance) * strength;
-                    pushY += (dy / distance) * strength;
-                }
-            }
-            if (pushX !== 0 || pushY !== 0) {
-                head.x += pushX;
-                head.y += pushY;
-                follow(fish);
+            if (!order.includes(fish)) order.push(fish);
+        }
+        for (let i = 0; i < order.length - 1; i++) {
+            const below = order[i];
+            const above = order[i + 1];
+            if (below.depth < above.depth - layerMargin && !overlaps(below, above)) {
+                order[i] = above;
+                order[i + 1] = below;
             }
         }
+    }
+
+    /**
+     * Free-swimming fish drift apart so they never pile on top of each
+     * other. In the garden, two koi that do cross settle at different
+     * depths, the one drawn on top nearer the surface, so one passes under
+     * the other.
+     */
+    function separate(dt: number) {
+        const middle = Math.floor(segments / 2);
+        const marks = isGarden ? [0, middle, segments - 1] : [middle];
+        for (const fish of fishes) {
+            fish.nudgeX = 0;
+            fish.nudgeY = 0;
+            if (fish.state !== "wander" && fish.state !== "leaving") continue;
+            const head = fish.points[0];
+            for (const other of fishes) {
+                if (other === fish) continue;
+                const reach = (fish.length + other.length) * 0.5 * personalSpace;
+                // Its head keeps clear of the other's head, middle and tail.
+                for (const index of marks) {
+                    const near = other.points[index];
+                    const dx = head.x - near.x;
+                    const dy = head.y - near.y;
+                    const distance = Math.hypot(dx, dy) || 1;
+                    const space = index === middle ? reach : reach * 0.7;
+                    if (distance >= space) continue;
+                    const strength = (1 - distance / space) * separationStrength * (feeding.has(fish) ? feedingCrowd : 1);
+                    fish.nudgeX += (dx / distance) * strength;
+                    fish.nudgeY += (dy / distance) * strength;
+                    if (isGarden) {
+                        const rises = order.indexOf(fish) > order.indexOf(other);
+                        fish.depth = Math.min(1, Math.max(0, fish.depth + (rises ? -1 : 1) * layeringRate * dt));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Somewhere new to swim to, and a depth to swim at. Of a few spots it
+     * takes the one that is a fair swim away and needs the least turning,
+     * so a koi sweeps round the pond in long arcs instead of doubling back.
+     */
+    function roam(fish: Fish) {
+        const head = fish.points[0];
+        let best = randomFreePoint();
+        let bestCost = Infinity;
+        for (let i = 0; i < roamChoices; i++) {
+            const spot = randomFreePoint();
+            const distance = Math.hypot(spot.x - head.x, spot.y - head.y);
+            const bearing = Math.atan2(spot.y - head.y, spot.x - head.x) - fish.heading;
+            const turning = Math.abs(Math.atan2(Math.sin(bearing), Math.cos(bearing)));
+            // A spot closer than a body length is hardly a swim at all.
+            let cost = turning + (Math.max(0, fish.length - distance) / fish.length) * 3;
+            // And koi spread out: a spot where another koi is, or is heading, costs more.
+            for (const other of fishes) {
+                if (other === fish) continue;
+                const room = (fish.length + other.length) * 0.9;
+                cost += Math.max(0, 1 - Math.hypot(spot.x - other.points[0].x, spot.y - other.points[0].y) / room) * 1.2;
+                cost += Math.max(0, 1 - Math.hypot(spot.x - other.target.x, spot.y - other.target.y) / room) * 1.6;
+            }
+            if (cost < bestCost) {
+                best = spot;
+                bestCost = cost;
+            }
+        }
+        fish.target = best;
+        fish.depthTarget = random(0.2, 0.9);
     }
 
     function gardenStep(dt: number) {
@@ -257,34 +369,66 @@ export function createPond(options: PondOptions): Pond {
             daylightAge = 0;
             daylightHour = mumbaiHour();
         }
-        const pace = 1 - daylight().night * (1 - nightPace);
+        const night = daylight().night;
+        const pace = 1 - night * (1 - nightPace);
+        const claims = new Map<Pellet, number>();
+        feeding.clear();
 
         for (const fish of fishes) {
             const head = fish.points[0];
-            let nearest: Pellet | undefined;
-            let nearestDistance = Infinity;
-            for (const pellet of pellets) {
-                const distance = Math.hypot(pellet.x - head.x, pellet.y - head.y);
-                if (distance < nearestDistance) {
-                    nearest = pellet;
-                    nearestDistance = distance;
-                }
-            }
+            fish.gulpTimer = Math.max(0, fish.gulpTimer - dt);
+            let mouth = fish.gulpTimer > 0 ? 1 : 0;
 
-            if (nearest && nearestDistance < foodReach) {
-                steer(fish, nearest, taskSpeed * 1.15 * pace, dt);
-                if (nearestDistance < fish.length * 0.2) {
-                    pellets.splice(pellets.indexOf(nearest), 1);
-                    if (gpu) gpu.drop(nearest.x, nearest.y, biteStrength, 3);
-                    else ripples.push({ x: nearest.x, y: nearest.y, age: 0.55 });
-                }
+            if (fish.startle > 0) {
+                fish.startle -= dt;
+                fish.depthTarget = 0.8;
+                steer(fish, fish.target, dartSpeed, dt, "dart");
+                if (fish.startle <= 0) roam(fish);
+                fish.gulp += (mouth - fish.gulp) * Math.min(1, dt * 14);
                 continue;
             }
 
+            let nearest: Pellet | undefined;
+            let nearestDistance = Infinity;
+            let nearestScore = Infinity;
+            for (const pellet of pellets) {
+                const distance = Math.hypot(pellet.x - head.x, pellet.y - head.y);
+                const score = distance + (claims.get(pellet) ?? 0) * claimedPelletPenalty;
+                if (distance < foodReach && score < nearestScore) {
+                    nearest = pellet;
+                    nearestDistance = distance;
+                    nearestScore = score;
+                }
+            }
+
+            if (nearest) {
+                claims.set(nearest, (claims.get(nearest) ?? 0) + 1);
+                feeding.add(fish);
+                fish.rest = 0;
+                fish.leader = undefined;
+                // Food floats, so the koi rises to it.
+                fish.depthTarget = 0.05;
+                steer(fish, nearest, taskSpeed * 1.15 * pace, dt, "feed");
+                if (nearestDistance < fish.length * gulpReach) mouth = 1;
+                if (nearestDistance < Math.max(6, fish.length * biteReach)) {
+                    pellets.splice(pellets.indexOf(nearest), 1);
+                    fish.gulpTimer = gulpHold;
+                    if (gpu) gpu.drop(nearest.x, nearest.y, biteStrength, 3);
+                    else ripples.push({ x: nearest.x, y: nearest.y, age: 0.55 });
+                    roam(fish);
+                }
+                fish.gulp += (mouth - fish.gulp) * Math.min(1, dt * 14);
+                continue;
+            }
+            fish.gulp += (mouth - fish.gulp) * Math.min(1, dt * 14);
+
             if (pointer && Math.hypot(pointer.x - head.x, pointer.y - head.y) < pointerReach) {
-                // Each fish takes its own spot on a ring, so they gather instead of piling up.
+                // Each fish takes its own spot on a slowly turning ring, so they gather instead of piling up.
                 const angle = fish.job.id * 2.39996 + time * 0.25;
-                const ring = fish.length * 0.65;
+                const ring = fish.length * (0.6 + 0.3 * ((fish.job.id * 0.618) % 1));
+                fish.rest = 0;
+                fish.leader = undefined;
+                fish.depthTarget = 0.15;
                 steer(
                     fish,
                     { x: pointer.x + Math.cos(angle) * ring, y: pointer.y + Math.sin(angle) * ring },
@@ -294,10 +438,48 @@ export function createPond(options: PondOptions): Pond {
                 continue;
             }
 
-            if (Math.hypot(fish.target.x - head.x, fish.target.y - head.y) < 14) {
-                fish.target = randomFreePoint();
+            if (fish.leader) {
+                // Trail another koi: a spot behind its tail and a little to one side.
+                const leader = fish.leader;
+                fish.leaderTimer -= dt;
+                if (fish.leaderTimer <= 0 || !fishes.includes(leader)) {
+                    fish.leader = undefined;
+                    roam(fish);
+                } else {
+                    const tail = leader.points[segments - 1];
+                    const side = fish.job.id % 2 === 0 ? 1 : -1;
+                    const gap = fish.length * 0.4;
+                    fish.target = {
+                        x: tail.x - Math.cos(leader.heading) * gap - Math.sin(leader.heading) * gap * side,
+                        y: tail.y - Math.sin(leader.heading) * gap + Math.cos(leader.heading) * gap * side,
+                    };
+                    fish.depthTarget = leader.depthTarget;
+                    steer(fish, fish.target, taskSpeed * 0.6 * pace, dt, "cruise");
+                    continue;
+                }
             }
-            steer(fish, fish.target, taskSpeed * 0.55 * pace, dt);
+
+            if (fish.rest > 0) {
+                // Resting: it hangs low in the water, drifting forward with its fins out.
+                fish.rest -= dt;
+                steer(fish, fish.target, restSpeed, dt);
+                continue;
+            }
+
+            if (Math.hypot(fish.target.x - head.x, fish.target.y - head.y) < fish.length * arrivalReach) {
+                roam(fish);
+                const choice = Math.random();
+                const rest = restChance[0] + (restChance[1] - restChance[0]) * night;
+                const leaders = fishes.filter((other) => other !== fish && !other.leader && other.startle <= 0);
+                if (choice < rest) {
+                    fish.rest = random(...restSeconds);
+                    fish.depthTarget = random(0.6, 0.95);
+                } else if (choice < rest + followChance && leaders.length > 0) {
+                    fish.leader = leaders[Math.floor(Math.random() * leaders.length)];
+                    fish.leaderTimer = random(...followSeconds);
+                }
+            }
+            steer(fish, fish.target, taskSpeed * 0.55 * pace, dt, "cruise");
         }
 
         for (let i = pellets.length - 1; i >= 0; i--) {
@@ -313,6 +495,7 @@ export function createPond(options: PondOptions): Pond {
             gardenStep(dt);
             if (decor) driftDecor(decor, width, height, dt);
             separate(dt);
+            layer();
             for (let i = ripples.length - 1; i >= 0; i--) {
                 ripples[i].age += dt * 1.1;
                 if (ripples[i].age >= 1) ripples.splice(i, 1);
@@ -346,7 +529,7 @@ export function createPond(options: PondOptions): Pond {
                 case "queued": {
                     const lane = isTask ? layout.taskLane : layout.microLane;
                     const place = Math.max(0, model.position(fish.job));
-                    steer(fish, { x: lane.front - place * lane.gap, y: lane.y }, speed, dt, true);
+                    steer(fish, { x: lane.front - place * lane.gap, y: lane.y }, speed, dt, "settle");
                     break;
                 }
                 case "running": {
@@ -390,6 +573,7 @@ export function createPond(options: PondOptions): Pond {
         for (let i = fishes.length - 1; i >= 0; i--) {
             if (fishes[i].alpha <= 0) fishes.splice(i, 1);
         }
+        layer();
         for (let i = ripples.length - 1; i >= 0; i--) {
             ripples[i].age += dt * 1.1;
             if (ripples[i].age >= 1) ripples.splice(i, 1);
@@ -429,7 +613,7 @@ export function createPond(options: PondOptions): Pond {
                 time,
                 dt,
                 light: light ?? { ...waterThemes[dark ? "dark" : "light"], night: 0 },
-                fishes,
+                fishes: order,
                 stones: isGarden && decor ? decor.stones : [],
             });
         } else {
@@ -448,18 +632,27 @@ export function createPond(options: PondOptions): Pond {
         }
         drawShadows(dark || (light !== undefined && light.night > 0.5));
 
-        for (const pellet of pellets) {
-            const fade = Math.min(1, (pelletLifetime - pellet.age) / 1.5);
-            context.fillStyle = `rgba(255, 236, 196, ${0.9 * fade})`;
-            context.beginPath();
-            context.arc(pellet.x, pellet.y, 2.2, 0, Math.PI * 2);
-            context.fill();
+        if (!gpu) {
+            for (const fish of order) drawFish(context, fish);
         }
 
-        if (!gpu) {
-            for (const fish of [...fishes].sort((a, b) => a.points[0].y - b.points[0].y)) {
-                drawFish(context, fish);
-            }
+        // Pellets float: a small lit bead that bobs, with its shadow on the floor below.
+        for (const pellet of pellets) {
+            const fade = Math.min(1, (pelletLifetime - pellet.age) / 1.5) * Math.min(1, pellet.age / 0.12);
+            const bob = Math.sin(time * 3 + pellet.x) * 0.5;
+            const size = pelletSize * (1 + 0.6 * Math.max(0, 1 - pellet.age / 0.25));
+            context.fillStyle = `rgba(0, 0, 0, ${0.16 * fade})`;
+            context.beginPath();
+            context.ellipse(pellet.x + 5, pellet.y + 9, size * 1.15, size * 0.85, 0, 0, Math.PI * 2);
+            context.fill();
+            const bead = context.createRadialGradient(pellet.x - size * 0.35, pellet.y + bob - size * 0.4, 0, pellet.x, pellet.y + bob, size);
+            bead.addColorStop(0, `rgba(255, 246, 222, ${fade})`);
+            bead.addColorStop(0.55, `rgba(232, 184, 120, ${fade})`);
+            bead.addColorStop(1, `rgba(176, 118, 66, ${fade})`);
+            context.fillStyle = bead;
+            context.beginPath();
+            context.arc(pellet.x, pellet.y + bob, size, 0, Math.PI * 2);
+            context.fill();
         }
         if (light && decor) {
             drawLilyPads(context, decor);
@@ -563,7 +756,7 @@ export function createPond(options: PondOptions): Pond {
         }
 
         if (fishes.length === 0) {
-            const count = isGarden ? gardenFishCount : taskFishCount;
+            const count = isGarden ? gardenFishCount - (width < narrowPondWidth ? 1 : 0) : taskFishCount;
             for (let i = 0; i < count; i++) addFish("task", randomFreePoint());
             // Start mid-story, with a queue and a running task, not a blank pond.
             advance(reducedMotion ? 9 : 4);
@@ -601,6 +794,19 @@ export function createPond(options: PondOptions): Pond {
 
     function feed(x: number, y: number) {
         splash(x, y);
+        // Koi right under the splash dart away from it first.
+        for (const fish of fishes) {
+            const head = fish.points[0];
+            const dx = head.x - x;
+            const dy = head.y - y;
+            const distance = Math.hypot(dx, dy);
+            if (distance > fish.length * startleReach) continue;
+            const away = distance > 1 ? Math.atan2(dy, dx) : fish.heading + Math.PI;
+            fish.startle = random(...startleSeconds);
+            fish.target = { x: head.x + Math.cos(away) * 140, y: head.y + Math.sin(away) * 140 };
+            fish.rest = 0;
+            fish.leader = undefined;
+        }
         for (let i = 0; i < pelletsPerTap; i++) {
             pellets.push({ x: x + random(-14, 14), y: y + random(-10, 10), age: 0 });
         }

@@ -41,7 +41,7 @@ import {
     routePageContainer,
     routePageEnterTween,
 } from "../lib/motion";
-import { placeholderStops } from "../components/pond/pond-daylight";
+import { openSkyDarkDim, placeholderStops } from "../components/pond/pond-daylight";
 import { notFoundMeta } from "../lib/not-found-head";
 import {
     HeroHandoffContext,
@@ -91,13 +91,17 @@ const pondPlaceholderScript = `(() => {
   const mix = (a, b) => a + (b - a) * eased;
   const rgb = (a, b, scale) => "rgb(" + a.map((value, k) => Math.round(mix(value, b[k]) * scale)).join(" ") + ")";
   const dim = 0.66 + 0.34 * mix(from.night, to.night);
-  const vars = (water, theme) =>
+  const openDim = ${openSkyDarkDim} + ${(1 - openSkyDarkDim).toFixed(2)} * mix(from.night, to.night);
+  const vars = (water, theme, open) =>
     "--pond-water-shallow:" + rgb(from.shallow, to.shallow, water) +
     ";--pond-water-deep:" + rgb(from.deep, to.deep, water) +
     ";--pond-sky-top:" + rgb(from.sky[theme][0], to.sky[theme][0], 1) +
-    ";--pond-sky-bottom:" + rgb(from.sky[theme][1], to.sky[theme][1], 1);
+    ";--pond-sky-bottom:" + rgb(from.sky[theme][1], to.sky[theme][1], 1) +
+    ";--pond-open-top:" + rgb(from.open[0], to.open[0], open) +
+    ";--pond-open-middle:" + rgb(from.open[1], to.open[1], open) +
+    ";--pond-open-bottom:" + rgb(from.open[2], to.open[2], open);
   const style = document.createElement("style");
-  style.textContent = ":root{" + vars(255, "light") + "}[data-theme=dark]{" + vars(255 * dim, "dark") + "}";
+  style.textContent = ":root{" + vars(255, "light", 1) + "}[data-theme=dark]{" + vars(255 * dim, "dark", openDim) + "}";
   document.head.append(style);
 })();`;
 
