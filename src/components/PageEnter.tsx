@@ -46,7 +46,9 @@ function PageEnterFade({ children }: PageEnterItemProps) {
         <motion.div
             {...reveal}
             ref={revealRef}
-            variants={shouldReduceMotion ? reducedPageBlock : scrollRevealTree}
+            // The same opacity-only variant with reduced motion on: `reveal` then never
+            // leaves "visible", so nothing animates, and the server's markup still matches.
+            variants={scrollRevealTree}
         >
             {children}
         </motion.div>
