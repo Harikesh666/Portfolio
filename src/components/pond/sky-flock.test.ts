@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createFlock, numerals, pointAlong } from "./sky-flock";
+import { circuitLength, createFlock, numerals, pointAlong, pointOnCircuit } from "./sky-flock";
 
 /** A repeatable random source, so a flaky flock would fail every run and not one in ten. */
 function seeded(seed: number) {
@@ -38,12 +38,40 @@ describe("numerals", () => {
     });
 });
 
+describe("pointOnCircuit", () => {
+    const lane = 4;
+
+    it.each([0, 1, 2])("is one unbroken loop round stroke %i, with no jump anywhere", (index) => {
+        const stroke = numerals(632, 316)[index];
+        const length = circuitLength(stroke, lane);
+        const side = stroke.closed ? lane : lane;
+        let previous = pointOnCircuit(stroke, 0, side, lane);
+        for (let distance = 0.5; distance <= length; distance += 0.5) {
+            const at = pointOnCircuit(stroke, distance % length, side, lane);
+            // Half a pixel round the circuit never moves the place more than a couple of pixels, even at a corner.
+            expect(Math.hypot(at.x - previous.x, at.y - previous.y)).toBeLessThan(2.5);
+            expect(Math.hypot(at.tx, at.ty)).toBeCloseTo(1, 5);
+            previous = at;
+        }
+    });
+
+    it("flies an open stroke out along one side and back along the other", () => {
+        const stroke = numerals(632, 316)[0];
+        const length = circuitLength(stroke, lane);
+        const out = pointOnCircuit(stroke, stroke.total * 0.1, lane, lane);
+        const back = pointOnCircuit(stroke, length - Math.PI * lane - stroke.total * 0.1, lane, lane);
+        // The same stretch of the stem, two lanes apart, flown in opposite directions.
+        expect(Math.hypot(out.x - back.x, out.y - back.y)).toBeCloseTo(lane * 2, 1);
+        expect(out.tx * back.tx + out.ty * back.ty).toBeCloseTo(-1, 5);
+    });
+});
+
 describe("createFlock", () => {
     it("sizes the flock to the numerals, within its limits", () => {
         for (const frame of frames) {
             const count = createFlock({ ...frame, random: seeded(1) }).birds.length;
-            expect(count).toBeGreaterThanOrEqual(130);
-            expect(count).toBeLessThanOrEqual(260);
+            expect(count).toBeGreaterThanOrEqual(160);
+            expect(count).toBeLessThanOrEqual(340);
         }
     });
 
@@ -102,6 +130,22 @@ describe("createFlock", () => {
         expect(flock.formed()).toBeLessThan(0.3);
         run(flock, 7);
         expect(flock.formed()).toBeGreaterThan(0.95);
+    });
+
+    it("never asks a bird to turn on the spot while the numerals hold", () => {
+        const flock = createFlock({ ...frames[1], start: "formed", random: seeded(9) });
+        run(flock, 1);
+        let sharpest = 0;
+        for (let frame = 0; frame < 360; frame++) {
+            const before = flock.birds.map((bird) => bird.heading);
+            flock.step(1 / 60);
+            flock.birds.forEach((bird, i) => {
+                const swing = bird.heading - before[i];
+                sharpest = Math.max(sharpest, Math.abs(Math.atan2(Math.sin(swing), Math.cos(swing))));
+            });
+        }
+        // The tightest turn is the half circle round a stroke's end: well under ten degrees in a frame.
+        expect(sharpest).toBeLessThan(0.17);
     });
 
     it("keeps every bird's place when the frame changes size", () => {
