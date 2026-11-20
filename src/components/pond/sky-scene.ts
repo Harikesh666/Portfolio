@@ -1,6 +1,6 @@
 import { mumbaiHour, openSkyAt, type OpenSkyLight } from "./pond-daylight";
 import type { Pond } from "./pond-engine";
-import { createFlock, type Flock, type Point } from "./sky-flock";
+import { createFlock, numeralBox, type Flock, type Point } from "./sky-flock";
 
 /**
  * The 404's scene: Mumbai's open sky at the current hour over a line of
@@ -43,7 +43,23 @@ const fireflyNight: readonly [number, number] = [0.45, 0.75];
 /** Clouds cross the frame at these speeds, in frame heights per second: the high band, then the low one. */
 const cloudDrift: readonly [number, number] = [0.006, 0.013];
 /** A bird's half wingspan in frame heights: the smallest, and how much larger the largest is. */
-const birdSize: readonly [number, number] = [0.0095, 0.006];
+const birdSize: readonly [number, number] = [0.0085, 0.005];
+/**
+ * A bird glides while a slow wave of its own is above this: the first value
+ * flying free (about a quarter of the time), the second settled in the
+ * numerals (most of the time), so the strokes read as lines and not flicker.
+ */
+const glideAbove: readonly [number, number] = [0.72, -0.55];
+/** The faintest bird's opacity, flying free and settled in the numerals. Settled birds are more alike, so a stroke reads as one even line. */
+const birdFaintest: readonly [number, number] = [0.62, 0.86];
+/** A firefly's glow in frame heights: the smallest, how much larger the largest is, and the fewest pixels it may have. */
+const fireflySize: readonly [number, number, number] = [0.034, 0.02, 7];
+/** Settled in the numerals, a firefly's glow shrinks to this share, at no fewer than this many pixels, so neighbours don't run together. */
+const fireflyHeld: readonly [number, number] = [0.6, 5];
+/** A firefly's dimmest point in its pulse, as a share of full brightness: flying free, then settled, so a stroke never goes dark. */
+const fireflyDimmest: readonly [number, number] = [0.4, 0.72];
+/** The moon's radius in frame heights, its halo's reach in moon radii, and the clear sky it keeps from the numerals' box, in moon radii. */
+const moonSize = { radius: 0.046, halo: 3.6, clearance: 2.2 } as const;
 /** The wingbeat sprites: how many poses, and the size of one in pixels. */
 const wingPoses = 8;
 const spriteCell = 40;
@@ -509,15 +525,33 @@ export function createSkyScene(options: SkySceneOptions): Pond | null {
     /** 0 while the flock is birds, 1 once it is fireflies. */
     const fireflies = (sky: OpenSkyLight) => smoothstep(fireflyNight[0], fireflyNight[1], sky.night);
 
-    /** Where the sun and the moon are for the hour, in pixels. Each arcs from the left edge to the right. */
+    /**
+     * Where the moon is for the hour, in pixels. It keeps clear of the
+     * numerals so its glow never sits among the fireflies: it rises up the
+     * left margin through the evening and leaves through the top of the
+     * frame, then comes down the right margin before dawn.
+     */
+    function moonAt(dark: number) {
+        const box = numeralBox(width, height);
+        const radius = height * moonSize.radius;
+        const clear = radius * moonSize.clearance;
+        const evening = dark < 0.5;
+        // 0 on the horizon, 1 just out of the top of the frame.
+        const climb = clamp(evening ? dark * 2 : (1 - dark) * 2, 0, 1);
+        const outer = evening ? width * 0.06 : width * 0.94;
+        const inner = evening ? Math.max(outer, box.left - clear) : Math.min(outer, box.right + clear);
+        return { x: lerp(outer, inner, climb), y: lerp(height * horizon + radius, -radius * 2, climb) };
+    }
+
+    /** Where the sun and the moon are for the hour, in pixels. */
     function lamps() {
         const day = (hour - sunrise) / (sunset - sunrise);
         const dark = ((hour - sunset + 24) % 24) / (24 - (sunset - sunrise));
         const ground = height * horizon;
         return {
-            // The sun climbs out of the top of the frame by mid-morning; only its glow is left at noon.
+            // The sun arcs from the left edge to the right, and climbs out of the top of the frame by mid-morning; only its glow is left at noon.
             sun: { x: width * lerp(0.12, 0.88, day), y: ground - Math.sin(Math.PI * clamp(day, 0, 1)) * height * 1.3, up: day > -0.02 && day < 1.02 },
-            moon: { x: width * lerp(0.14, 0.86, dark), y: ground - Math.sin(Math.PI * clamp(dark, 0, 1)) * height * 0.7 },
+            moon: moonAt(dark),
             /** 1 with the sun on the horizon, 0 with it overhead. */
             low: 1 - Math.sin(Math.PI * clamp(day, 0, 1)),
         };
@@ -580,13 +614,14 @@ export function createSkyScene(options: SkySceneOptions): Pond | null {
                 context.fillStyle = `rgba(232, 238, 255, ${moonlight * haze * twinkle * 0.9})`;
                 context.fillRect(star.x, star.y, star.size, star.size);
             }
-            const radius = height * 0.046;
-            const halo = context.createRadialGradient(moon.x, moon.y, radius * 0.8, moon.x, moon.y, radius * 6);
+            const radius = height * moonSize.radius;
+            const reach = radius * moonSize.halo;
+            const halo = context.createRadialGradient(moon.x, moon.y, radius * 0.8, moon.x, moon.y, reach);
             halo.addColorStop(0, `rgba(206, 220, 255, ${0.3 * moonlight})`);
             halo.addColorStop(0.3, `rgba(190, 208, 250, ${0.1 * moonlight})`);
             halo.addColorStop(1, "rgba(190, 208, 250, 0)");
             context.fillStyle = halo;
-            context.fillRect(moon.x - radius * 6, moon.y - radius * 6, radius * 12, radius * 12);
+            context.fillRect(moon.x - reach, moon.y - reach, reach * 2, reach * 2);
             context.fillStyle = `rgba(240, 242, 232, ${moonlight})`;
             context.beginPath();
             context.arc(moon.x, moon.y, radius, 0, Math.PI * 2);
@@ -660,33 +695,44 @@ export function createSkyScene(options: SkySceneOptions): Pond | null {
         context.globalAlpha = 1;
     }
 
-    /** Small birds from the wingbeat sheet, each turned the way it flies. Smaller ones read as farther off, so they are fainter. */
+    /**
+     * Small birds from the wingbeat sheet, each turned the way it flies.
+     * Smaller ones read as farther off, so they are fainter. A bird settled
+     * in the numerals mostly glides and is less faint, so a stroke is calm.
+     */
     function drawBirds(alpha: number) {
         if (!context || !flock || !wingbeats || alpha <= 0.01) return;
         for (const bird of flock.birds) {
             const size = Math.max(2.2, height * (birdSize[0] + birdSize[1] * bird.seed));
             // Now and then a bird stops beating and glides on spread wings.
-            const glides = Math.sin(time * 0.9 + bird.seed * 30) > 0.72;
+            const glides = Math.sin(time * 0.9 + bird.seed * 30) > lerp(glideAbove[0], glideAbove[1], bird.held);
             const pose = glides ? 1 : Math.floor((((bird.flap / (Math.PI * 2)) % 1) + 1) * wingPoses) % wingPoses;
             const cos = Math.cos(bird.heading) * ratio;
             const sin = Math.sin(bird.heading) * ratio;
             const half = size * 1.25;
+            const faintest = lerp(birdFaintest[0], birdFaintest[1], bird.held);
             context.setTransform(cos, sin, -sin, cos, bird.x * ratio, bird.y * ratio);
-            context.globalAlpha = alpha * (0.62 + 0.38 * bird.seed);
+            context.globalAlpha = alpha * (faintest + (1 - faintest) * bird.seed);
             context.drawImage(wingbeats, pose * spriteCell, 0, spriteCell, spriteCell, -half, -half, half * 2, half * 2);
         }
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
         context.globalAlpha = 1;
     }
 
-    /** Fireflies: a warm point with a soft glow, each pulsing in its own time. */
+    /**
+     * Fireflies: a warm point with a soft glow, each pulsing in its own time.
+     * Settled in the numerals, a glow tightens and pulses less, so the
+     * strokes stay crisp lines instead of merging into blobs.
+     */
     function drawFireflies(alpha: number) {
         if (!context || !flock || !firefly || alpha <= 0.01) return;
         context.globalCompositeOperation = "lighter";
         for (const bird of flock.birds) {
             const pulse = 0.5 + 0.5 * Math.sin(time * (1.4 + bird.seed * 2.2) + bird.seed * 40);
-            const size = Math.max(7, height * (0.034 + 0.02 * bird.seed));
-            context.globalAlpha = alpha * (0.4 + 0.6 * pulse * pulse);
+            const free = height * (fireflySize[0] + fireflySize[1] * bird.seed);
+            const size = Math.max(lerp(fireflySize[2], fireflyHeld[1], bird.held), free * lerp(1, fireflyHeld[0], bird.held));
+            const dimmest = lerp(fireflyDimmest[0], fireflyDimmest[1], bird.held);
+            context.globalAlpha = alpha * (dimmest + (1 - dimmest) * pulse * pulse);
             context.drawImage(firefly, bird.x - size / 2, bird.y - size / 2, size, size);
         }
         context.globalAlpha = 1;

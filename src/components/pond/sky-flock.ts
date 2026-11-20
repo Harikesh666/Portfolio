@@ -2,13 +2,14 @@
  * The flock that writes "404" in the sky of the not-found page.
  *
  * Each numeral is a pen stroke: a line a pen could draw without lifting.
- * The flock flies each stroke as a narrow circuit, out along one side and
- * back along the other, the way traffic keeps to its side of a road. Every
- * bird owns a place on a circuit and keeps flying round it, so the numerals
- * hold their shape while nothing in them stands still, and no bird ever
- * has to stop, turn on the spot, or fly through another. Between times the
- * flock lets go and roams as one loose, turning cloud, then pours back in.
- * A tap flushes it.
+ * A "4" keeps its sharp corners, because its acute corner and the bar that
+ * runs on past the stem are what make it a 4. The flock flies an open
+ * stroke as a tight circuit, out along one side and back along the other,
+ * with the two lanes so close that the stroke reads as one line. The zero
+ * is one lap in a single lane. Every bird owns a place on a circuit and
+ * keeps flying round it, so the numerals hold their shape while nothing in
+ * them stands still. Between times the flock lets go and roams as one
+ * loose, turning cloud, then pours back in. A tap flushes it.
  *
  * This file is the flock's behaviour only, with no drawing and no DOM, so
  * it can be tested. `sky-scene.ts` draws it: small birds by day, fireflies
@@ -20,39 +21,26 @@ export type Point = { x: number; y: number };
 /** A pen stroke in a unit box: x runs right, y runs down. A closed stroke joins its last point to its first. */
 type Glyph = Readonly<{ points: readonly (readonly [number, number])[]; closed: boolean }>;
 
-/** Rounds a pen stroke's corners by cutting each one three times over, keeping its two ends where they are. */
-function rounded(points: readonly (readonly [number, number])[]) {
-    let line = points;
-    for (let pass = 0; pass < 3; pass++) {
-        const next: (readonly [number, number])[] = [line[0]];
-        for (let i = 0; i < line.length - 1; i++) {
-            const [ax, ay] = line[i];
-            const [bx, by] = line[i + 1];
-            if (i > 0) next.push([ax + (bx - ax) * 0.25, ay + (by - ay) * 0.25]);
-            if (i < line.length - 2) next.push([ax + (bx - ax) * 0.75, ay + (by - ay) * 0.75]);
-        }
-        next.push(line[line.length - 1]);
-        line = next;
-    }
-    return line;
-}
-
-/** A "4" drawn in one go: up the stem, down the slope, and across the bar. Its two corners are rounded, so a bird can fly them. */
+/**
+ * A "4" drawn in one go: up the stem, down the slope to the left, and across
+ * the bar, which runs on past the stem. Its corners stay sharp: the acute
+ * one at the top and the bar's overshoot are what tell a 4 from a blob.
+ */
 const four: Glyph = {
-    points: rounded([
-        [0.72, 1],
-        [0.72, 0],
-        [0, 0.7],
-        [1, 0.7],
-    ]),
+    points: [
+        [0.68, 1],
+        [0.68, 0],
+        [0, 0.68],
+        [1, 0.68],
+    ],
     closed: false,
 };
 
 /** A "0": an upright oval. */
 const zero: Glyph = {
-    points: Array.from({ length: 32 }, (_, i) => {
-        const angle = (i / 32) * Math.PI * 2;
-        return [0.5 + 0.47 * Math.sin(angle), 0.5 - 0.5 * Math.cos(angle)] as const;
+    points: Array.from({ length: 48 }, (_, i) => {
+        const angle = (i / 48) * Math.PI * 2;
+        return [0.5 + 0.46 * Math.sin(angle), 0.5 - 0.5 * Math.cos(angle)] as const;
     }),
     closed: true,
 };
@@ -60,13 +48,21 @@ const zero: Glyph = {
 const glyphs: readonly Glyph[] = [four, zero, four];
 
 /** The numerals' proportions: each glyph's width and the gap between two, as shares of their height. */
-const glyphWidth = 0.62;
-const glyphGap = 0.26;
-/** The numerals are this tall: a share of the frame's height, but never so wide they crowd a narrow frame. */
-const numeralHeight = 0.46;
-const numeralWidthLimit = 0.52;
+const glyphWidth = 0.64;
+const glyphGap = 0.24;
+/**
+ * The numerals' height as a share of the frame's, and the most of the frame's
+ * width they may fill. A narrow frame is a phone, where the whole scene is
+ * small, so the numerals take more of it. Between the two frame widths in
+ * `narrowWidths` (pixels) the values blend.
+ */
+const numeralHeight = { narrow: 0.58, wide: 0.5 } as const;
+const numeralWidthLimit = { narrow: 0.8, wide: 0.66 } as const;
+const narrowWidths: readonly [number, number] = [400, 640];
 /** Where the numerals' centre sits in the frame, leaving the bottom for the rooftops. */
-const numeralCentre = { x: 0.5, y: 0.41 } as const;
+const numeralCentre = { x: 0.5, y: 0.4 } as const;
+/** A stroke is laid out as points at most this far apart, in shares of the numerals' height, so a sharp corner stays a point while the lanes beside a straight run stay straight. */
+const strokeStep = 0.025;
 
 /**
  * A stroke laid out in the frame, in pixels, with the running length to each
@@ -75,16 +71,41 @@ const numeralCentre = { x: 0.5, y: 0.41 } as const;
  */
 export type Stroke = Readonly<{ points: readonly Point[]; directions: readonly Point[]; lengths: readonly number[]; total: number; closed: boolean }>;
 
-/** Lays "404" out in a frame of this size. */
-export function numerals(width: number, height: number): Stroke[] {
-    const tall = Math.min(height * numeralHeight, (width * numeralWidthLimit) / (glyphs.length * glyphWidth + (glyphs.length - 1) * glyphGap));
+/** Where "404" sits in a frame of this size: the numerals' height and width, and their box, in pixels. */
+export function numeralBox(width: number, height: number) {
+    const narrow = Math.min(1, Math.max(0, (width - narrowWidths[0]) / (narrowWidths[1] - narrowWidths[0])));
+    const share = numeralHeight.narrow + (numeralHeight.wide - numeralHeight.narrow) * narrow;
+    const limit = numeralWidthLimit.narrow + (numeralWidthLimit.wide - numeralWidthLimit.narrow) * narrow;
+    const tall = Math.min(height * share, (width * limit) / (glyphs.length * glyphWidth + (glyphs.length - 1) * glyphGap));
     const wide = tall * glyphWidth;
     const step = wide + tall * glyphGap;
-    const left = width * numeralCentre.x - (step * (glyphs.length - 1) + wide) / 2;
+    const span = step * (glyphs.length - 1) + wide;
+    const left = width * numeralCentre.x - span / 2;
     const top = height * numeralCentre.y - tall / 2;
+    return { tall, wide, step, left, top, right: left + span, bottom: top + tall };
+}
+
+/** Adds points along each segment so none is longer than `step`, keeping every corner where it is. */
+function subdivide(points: readonly Point[], step: number) {
+    const fine: Point[] = [points[0]];
+    for (let i = 1; i < points.length; i++) {
+        const from = points[i - 1];
+        const to = points[i];
+        const pieces = Math.max(1, Math.ceil(Math.hypot(to.x - from.x, to.y - from.y) / step));
+        for (let piece = 1; piece <= pieces; piece++) {
+            fine.push({ x: from.x + ((to.x - from.x) * piece) / pieces, y: from.y + ((to.y - from.y) * piece) / pieces });
+        }
+    }
+    return fine;
+}
+
+/** Lays "404" out in a frame of this size. */
+export function numerals(width: number, height: number): Stroke[] {
+    const { tall, wide, step, left, top } = numeralBox(width, height);
     return glyphs.map((glyph, index) => {
-        const points = glyph.points.map(([x, y]) => ({ x: left + index * step + x * wide, y: top + y * tall }));
-        if (glyph.closed) points.push({ ...points[0] });
+        const corners = glyph.points.map(([x, y]) => ({ x: left + index * step + x * wide, y: top + y * tall }));
+        if (glyph.closed) corners.push({ ...corners[0] });
+        const points = glyph.closed ? corners : subdivide(corners, tall * strokeStep);
         const lengths = [0];
         for (let i = 1; i < points.length; i++) {
             lengths.push(lengths[i - 1] + Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y));
@@ -132,8 +153,8 @@ export function circuitLength(stroke: Stroke, lane: number) {
 /**
  * The point a distance round a stroke's circuit, and the way a bird flies
  * there. `side` is how far from the stroke's line the bird keeps: on a
- * closed stroke its sign picks the inner or outer lane, and on an open
- * one it is the lane's distance, the same out and back.
+ * closed stroke its sign picks the side of the line, and on an open one
+ * it is the lane's distance, the same out and back.
  */
 export function pointOnCircuit(stroke: Stroke, distance: number, side: number, lane: number) {
     if (stroke.closed) {
@@ -199,30 +220,36 @@ export type Bird = {
     /** Wingbeat phase, and a value of its own for size, blinking and wander. */
     flap: number;
     seed: number;
+    /** 0 while it flies free, easing to 1 once it is settled in its place in the numerals. The scene draws a settled bird calmer, so the strokes read as lines. */
+    held: number;
 };
 
 /** How the flock flies. Speeds are in frame heights per second, so every screen sees the same pace. */
 const feel = {
     /** Seconds the numerals hold before the flock lets go, and seconds it roams before it pours back. */
-    holdSeconds: 9,
-    roamSeconds: 4.2,
-    /** The first roam is short: the flock sweeps in and the page says what it is. */
-    arriveSeconds: 2.2,
+    holdSeconds: 14,
+    roamSeconds: 3.4,
+    /** The first roam is barely a turn: the flock sweeps in and writes the numerals almost at once. */
+    arriveSeconds: 0.5,
     /** After a tap the flock stays up a little, then comes back. */
     flushSeconds: 2.6,
     /** Birds join the numerals over this long, and leave over this long. */
-    pourSeconds: 1.5,
+    pourSeconds: 0.8,
     leaveSeconds: 0.7,
     /** How fast a bird flies round its circuit while the numerals hold. */
-    flow: 0.085,
+    flow: 0.06,
     /** Top speed, and how quickly a bird's velocity answers its steering, per second. */
-    speed: 0.95,
+    speed: 1.15,
     response: 3.4,
-    /** How hard a bird closes on where it wants to be: speed per distance. */
+    /** How hard a bird closes on where it wants to be: speed per distance. It grips its place in the numerals harder, so it barely cuts a corner. */
     approach: 2.6,
-    /** The two lanes of a circuit run this far either side of the stroke's line, in frame heights, and a bird strays this far from its lane's middle. */
-    lane: 0.0125,
-    stray: 0.0055,
+    grip: 4.2,
+    /** An open stroke's two lanes run this far either side of its line, in frame heights, close enough to read as one line. A bird strays this far from its lane's middle. */
+    lane: 0.0035,
+    stray: 0.0012,
+    /** A bird counts as in its place within this distance, in frame heights, and settles into it at this rate, per second. */
+    formedWithin: 0.03,
+    settling: 2.5,
     /** How quickly a bird's heading follows its flight, per second. */
     banking: 7,
     /** A tap throws birds within this radius outward at up to this speed. */
@@ -232,9 +259,11 @@ const feel = {
     shyRadius: 0.2,
     shyPush: 0.55,
     /** Fireflies drift: slower, softer to steer, and never quite straight. */
-    nightPace: 0.5,
-    nightResponse: 1.7,
+    nightPace: 0.6,
+    nightResponse: 2.2,
     nightWander: 0.018,
+    /** A firefly settled in the numerals drops this share of its wander. */
+    heldCalm: 0.8,
 } as const;
 
 export type FlockOptions = Readonly<{
@@ -267,8 +296,8 @@ export type Flock = Readonly<{
 }>;
 
 /** One bird for about every this many pixels of circuit, within these limits. */
-const spacing = 6.2;
-const countLimits: readonly [number, number] = [160, 340];
+const spacing = 5.4;
+const countLimits: readonly [number, number] = [180, 400];
 
 export function createFlock(options: FlockOptions): Flock {
     const random = options.random ?? Math.random;
@@ -283,23 +312,26 @@ export function createFlock(options: FlockOptions): Flock {
 
     const lane = () => feel.lane * height;
     const circuits = () => strokes.map((stroke) => circuitLength(stroke, lane()));
-    /** How many birds a stroke needs, as a length: a closed stroke has two lanes on one lap, so it counts twice. */
+    /**
+     * How many birds a stroke needs, as a length. An open stroke's circuit
+     * runs along its line twice, out and back. A closed one runs along it
+     * once, so it counts twice to carry as many birds per length of line.
+     */
     const crowds = () => strokes.map((stroke) => circuitLength(stroke, lane()) * (stroke.closed ? 2 : 1));
 
-    /** Shares the birds out round the circuits by length, evenly spaced. A closed stroke's birds alternate between its two lanes. */
+    /** Shares the birds out round the circuits by length, evenly spaced. */
     function assign() {
         const lengths = circuits();
         const crowd = crowds();
         const total = crowd.reduce((sum, length) => sum + length, 0);
         let index = 0;
-        strokes.forEach((stroke, s) => {
+        strokes.forEach((_, s) => {
             const share = s === strokes.length - 1 ? birds.length - index : Math.round((crowd[s] / total) * birds.length);
             for (let i = 0; i < share && index < birds.length; i++, index++) {
                 const bird = birds[index];
                 bird.stroke = s;
                 bird.along = ((i + between(0.25, 0.75)) / share) * lengths[s];
                 bird.aside = between(-1, 1);
-                if (stroke.closed) bird.aside = (i % 2 === 0 ? 1 : -1) * Math.abs(bird.aside);
             }
         });
     }
@@ -311,9 +343,9 @@ export function createFlock(options: FlockOptions): Flock {
         birds.length = 0;
         for (let i = 0; i < count; i++) {
             birds.push({
-                // Off the right edge and high up, or low along the bottom of the frame.
-                x: width * (fromLow ? between(0.04, 0.96) : between(1.05, 1.5)),
-                y: height * (fromLow ? between(0.74, 0.9) : between(0.05, 0.5)),
+                // Just off the right edge at the numerals' height, or low along the bottom of the frame.
+                x: width * (fromLow ? between(0.04, 0.96) : between(1.03, 1.3)),
+                y: height * (fromLow ? between(0.72, 0.86) : between(0.1, 0.6)),
                 vx: fromLow ? 0 : -height * feel.speed * between(0.5, 0.9),
                 vy: 0,
                 heading: fromLow ? -Math.PI / 2 : Math.PI,
@@ -326,6 +358,7 @@ export function createFlock(options: FlockOptions): Flock {
                 delay: 0,
                 flap: between(0, Math.PI * 2),
                 seed: random(),
+                held: 0,
             });
         }
         assign();
@@ -334,10 +367,8 @@ export function createFlock(options: FlockOptions): Flock {
     /** Where a bird's place in the numerals is right now, and the way that place is moving. */
     function place(bird: Bird) {
         const stroke = strokes[bird.stroke];
-        // On a closed stroke the sign of `aside` picks the lane. On an open one both lanes are the same distance out.
-        const side = stroke.closed
-            ? Math.sign(bird.aside) * lane() + (Math.abs(bird.aside) * 2 - 1) * feel.stray * height
-            : lane() + bird.aside * feel.stray * height;
+        // A closed stroke has one lane, on its line. An open one has a lane either side, both the same distance out.
+        const side = (stroke.closed ? 0 : lane()) + bird.aside * feel.stray * height;
         return pointOnCircuit(stroke, bird.along, side, lane());
     }
 
@@ -396,8 +427,13 @@ export function createFlock(options: FlockOptions): Flock {
                 targetY = at.y;
             }
 
-            let wantX = (targetX - bird.x) * feel.approach;
-            let wantY = (targetY - bird.y) * feel.approach;
+            const offX = targetX - bird.x;
+            const offY = targetY - bird.y;
+            const settled = bird.forming && Math.hypot(offX, offY) < feel.formedWithin * height ? 1 : 0;
+            bird.held += (settled - bird.held) * Math.min(1, dt * feel.settling);
+            const approach = bird.forming ? feel.grip : feel.approach;
+            let wantX = offX * approach;
+            let wantY = offY * approach;
             const want = Math.hypot(wantX, wantY);
             if (want > topSpeed) {
                 wantX *= topSpeed / want;
@@ -406,7 +442,8 @@ export function createFlock(options: FlockOptions): Flock {
             wantX += carryX;
             wantY += carryY;
             if (night > 0) {
-                const wander = feel.nightWander * height * night;
+                // A firefly settled in the numerals wanders less, so the strokes stay crisp.
+                const wander = feel.nightWander * height * night * (1 - feel.heldCalm * bird.held);
                 wantX += Math.sin(time * 1.7 + bird.seed * 40) * wander;
                 wantY += Math.cos(time * 1.3 + bird.seed * 70) * wander;
             }
@@ -448,6 +485,7 @@ export function createFlock(options: FlockOptions): Flock {
             bird.vx = at.tx * feel.flow * height;
             bird.vy = at.ty * feel.flow * height;
             bird.heading = Math.atan2(at.ty, at.tx);
+            bird.held = 1;
         }
     }
 
@@ -463,6 +501,7 @@ export function createFlock(options: FlockOptions): Flock {
             bird.vx = ((next.x - at.x) / span) * feel.speed * height * 0.3;
             bird.vy = ((next.y - at.y) / span) * feel.speed * height * 0.3;
             bird.heading = Math.atan2(bird.vy, bird.vx);
+            bird.held = 0;
         }
     }
 
@@ -486,21 +525,32 @@ export function createFlock(options: FlockOptions): Flock {
         const sx = nextWidth / width;
         const sy = nextHeight / height;
         const before = circuits();
+        // The numerals take a different share of a narrow frame than a wide one, so a bird in them keeps its place relative to them, not to the frame.
+        const offsets = birds.map((bird) => {
+            const at = place(bird);
+            return { x: bird.x - at.x, y: bird.y - at.y };
+        });
         width = nextWidth;
         height = nextHeight;
         strokes = numerals(width, height);
         const after = circuits();
-        for (const bird of birds) {
-            bird.x *= sx;
-            bird.y *= sy;
+        birds.forEach((bird, i) => {
+            bird.along *= after[bird.stroke] / before[bird.stroke];
+            if (bird.forming) {
+                const at = place(bird);
+                bird.x = at.x + offsets[i].x * sy;
+                bird.y = at.y + offsets[i].y * sy;
+            } else {
+                bird.x *= sx;
+                bird.y *= sy;
+            }
             bird.vx *= sy;
             bird.vy *= sy;
-            bird.along *= after[bird.stroke] / before[bird.stroke];
-        }
+        });
     }
 
     function formed() {
-        const near = feel.lane * height * 2.5;
+        const near = feel.formedWithin * height;
         let count = 0;
         for (const bird of birds) {
             const at = place(bird);
