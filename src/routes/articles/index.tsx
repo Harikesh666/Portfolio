@@ -3,7 +3,9 @@ import { SectionHeading } from "../../components/SectionHeading";
 import { StaggerReveal } from "../../components/StaggerReveal";
 import { GuidePreview } from "../../components/guide-previews";
 import { PageEnter } from "../../components/PageEnter";
+import { NewTag } from "../../components/SketchMark";
 import {
+    newPostSlug,
     posts,
     seriesIndex,
     topicIndex,
@@ -182,6 +184,7 @@ function ArticleList(props: ArticleListProps) {
                         <span className="block min-w-0">
                             <span className="block font-medium leading-snug text-foreground-strong">
                                 {post.title}
+                                {post.slug === newPostSlug && <NewTag />}
                             </span>
                             <span className="mt-0.5 block text-sm leading-normal text-muted">
                                 {post.description}

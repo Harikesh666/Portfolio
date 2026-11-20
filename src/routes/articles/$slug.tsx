@@ -13,6 +13,7 @@ import { absoluteUrl, site } from "../../lib/site";
 import { desktopQuery } from "../../lib/toc";
 import { useMediaQuery } from "../../lib/use-media-query";
 import { useGuideIslands } from "../../lib/use-guide-islands";
+import { useGuideSketches } from "../../lib/use-guide-sketches";
 import { useTocNavigation } from "../../lib/use-toc-navigation";
 import { notFoundMeta } from "../../lib/not-found-head";
 
@@ -145,6 +146,7 @@ function PostPage() {
     const articleRef = useRef<HTMLElement>(null);
     const navigateToTocItem = useTocNavigation(articleRef);
     useGuideIslands(articleRef, post.slug);
+    useGuideSketches(articleRef, post.slug);
     const { previous, next } = getPostNeighbors(post);
     // If the loading state already played the header's entrance, show it still.
     const [headerShown] = useState(() => headersShown.delete(post.slug));

@@ -138,6 +138,8 @@ compilerPreset.rolldown.applyToEnvironmentHook = () => true;
 
 const config = defineConfig({
     resolve: { tsconfigPaths: true },
+    // Build-time facts the pages share with the browser, e.g. which guide is still "New".
+    define: { __BUILD_TIME__: JSON.stringify(Date.now()) },
     plugins: [
         tanstackStart({
             prerender: {

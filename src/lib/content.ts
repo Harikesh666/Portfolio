@@ -230,6 +230,22 @@ export const authoredPosts = posts
         second.publishedAt.localeCompare(first.publishedAt),
     );
 
+/** Days a guide stays "New" after it is published, counted when the site is built. */
+const newGuideDays = 120;
+const builtAt = typeof __BUILD_TIME__ === "number" ? __BUILD_TIME__ : Date.now();
+
+/**
+ * The newest guide I wrote, while it is still new: it gets a circled "New"
+ * on Home and on Articles. Decided at build time, so the prerendered page
+ * and the browser always agree.
+ */
+export const newPostSlug = (() => {
+    const newest = authoredPosts[0];
+    if (!newest) return undefined;
+    const ageInDays = (builtAt - Date.parse(newest.publishedAt)) / 86_400_000;
+    return ageInDays >= 0 && ageInDays <= newGuideDays ? newest.slug : undefined;
+})();
+
 export const featuredPosts = posts
     .filter((post) => post.series === "react-internals")
     .slice(0, 2);

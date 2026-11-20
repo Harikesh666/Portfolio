@@ -28,7 +28,15 @@
     --keyword-backend: oklch(0.5 0.13 150);
     /* Sketch marks in the prose: a graphite pencil and a soft highlighter. */
     --sketch-ink: oklch(0.42 0.02 60 / 72%);
-    --sketch-marker: oklch(0.9 0.15 95 / 75%);
+    /*
+     * A pink pen for circled words such as "New", Benji Taylor's #ff00aa. The
+     * stroke uses it as is; the word itself is a shade deeper, because #ff00aa
+     * is only 3.6:1 on the page and small text needs 4.5:1.
+     */
+    --sketch-pen-stroke: #ff00aa;
+    --sketch-pen: oklch(0.56 0.24 355);
+    /* Benji Taylor's highlighter yellow, opaque: the words paint above it. */
+    --sketch-marker: #ffd43b;
     color-scheme: light;
     --status-open: oklch(0.62 0.16 150);
     --scene-task: oklch(0.5 0.15 255);
@@ -61,6 +69,8 @@
     --keyword-learn: oklch(0.76 0.14 345);
     --keyword-backend: oklch(0.77 0.14 150);
     --sketch-ink: oklch(0.8 0.02 60 / 62%);
+    --sketch-pen-stroke: oklch(0.72 0.24 355);
+    --sketch-pen: oklch(0.76 0.17 355);
     --sketch-marker: oklch(0.8 0.16 86 / 50%);
     color-scheme: dark;
     --status-open: oklch(0.74 0.17 150);
@@ -85,6 +95,7 @@
     --color-code-surface: var(--code-surface);
     --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, monospace;
+    --font-hand: "Kalam", "Segoe Print", "Bradley Hand", cursive;
 }
 
 @layer base {
@@ -471,7 +482,7 @@
         border-radius: 0.5rem;
         padding: 0.25rem 0.625rem;
         color: var(--foreground-strong);
-        font-size: 0.8125rem;
+        font-size: 0.875rem;
         font-weight: 500;
         line-height: 1;
         transition:
@@ -580,39 +591,37 @@
     }
 
     /*
-     * Pencil marks on a few words. The stroke is an SVG stretched to the words
-     * and revealed once, left to right, with a clip-path wipe like a pen moving
-     * across the page. The insets overflow vertically so thick strokes and
-     * round caps are never cut off.
+     * Hand-drawn marks on a few words: Rough Notation's strokes, ported in
+     * rough-annotation.ts and drawn by sketch-draw.ts. The SVG sits at the
+     * mark's corner with overflow visible, and the strokes are placed in it
+     * from the measured words. It comes before the words, so a highlighter
+     * swipe paints under them. Each stroke draws along itself
+     * (rough-notation-dash, with its own duration and delay set inline).
      */
     .sketch-mark {
         position: relative;
-        isolation: isolate;
         white-space: nowrap;
     }
 
-    .sketch-mark__stroke {
+    .sketch-mark--wraps {
+        white-space: normal;
+    }
+
+    .sketch-mark__text {
+        position: relative;
+    }
+
+    .rough-annotation {
         position: absolute;
+        top: 0;
+        left: 0;
+        width: 100px;
+        height: 100px;
         overflow: visible;
         pointer-events: none;
-        /*
-         * Zero width at the left overhang. A right inset of only 100% would
-         * leave that 6% overhang showing, and the marker's round cap with it:
-         * a stray dot in the gutter whenever the phrase starts a line.
-         */
-        clip-path: inset(-60% 106% -60% -6%);
     }
 
-    .sketch-mark[data-drawn] .sketch-mark__stroke {
-        clip-path: inset(-60% -6% -60% -6%);
-    }
-
-    .sketch-mark[data-kind="underline"] .sketch-mark__stroke {
-        right: -0.05em;
-        bottom: -0.34em;
-        left: -0.05em;
-        width: calc(100% + 0.1em);
-        height: 0.5em;
+    .sketch-mark[data-kind="underline"] > .rough-annotation {
         color: var(--sketch-ink);
     }
 
@@ -621,71 +630,79 @@
         color: var(--foreground-strong);
     }
 
-    .sketch-mark[data-kind="marker"] .sketch-mark__stroke {
-        z-index: -1;
-        top: 0.08em;
-        right: -0.18em;
-        bottom: 0;
-        left: -0.18em;
-        width: calc(100% + 0.36em);
-        height: calc(100% - 0.08em);
+    .sketch-mark[data-kind="marker"] > .rough-annotation {
         color: var(--sketch-marker);
     }
 
+    .sketch-mark[data-kind="circle"] > .rough-annotation {
+        color: var(--sketch-pen-stroke);
+    }
+
+    @keyframes rough-notation-dash {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+
     /*
-     * Long marks wrap with their words. Each line fragment draws its own stroke
-     * (box-decoration-break: clone): a pencil line along the bottom, or a
-     * highlighter band over the lower part of the line, swept in left to right.
+     * "New" on the newest guide: the word in the pink pen, circled twice.
+     * Kept small so the circle, not the word, does the shouting.
      */
-    .sketch-mark--wraps {
-        white-space: normal;
-        -webkit-box-decoration-break: clone;
-        box-decoration-break: clone;
-        background-repeat: no-repeat;
-        background-position: left bottom;
+    .new-tag {
+        margin-inline-start: 0.85em;
+        color: var(--sketch-pen);
+        font-size: 0.875rem;
+        font-weight: 500;
+        white-space: nowrap;
     }
 
-    .sketch-mark--wraps[data-kind="underline"] {
-        background-image: linear-gradient(
-            transparent calc(100% - 0.14em),
-            var(--sketch-ink) calc(100% - 0.14em),
-            var(--sketch-ink) calc(100% - 0.04em),
-            transparent calc(100% - 0.04em)
-        );
-        background-size: 0% 100%;
+    /*
+     * Margin notes in the guides: a handwritten aside joined to its passage by
+     * a pen bracket. Below xl the bracket lies under the passage, ticks up,
+     * with the note centred beneath. From xl (where the right margin holds
+     * the contents) the note moves into the left margin and the bracket stands
+     * beside the passage, ticks pointing at the text. The note itself is
+     * always visible; only the bracket draws in.
+     */
+    .margin-note {
+        position: relative;
+        margin-block: 1.75rem;
     }
 
-    .sketch-mark--wraps[data-kind="marker"] {
-        margin-inline: -0.14em;
-        border-radius: 0.25em;
-        padding-inline: 0.14em;
-        background-image: linear-gradient(var(--sketch-marker), var(--sketch-marker));
-        background-position: left 85%;
-        background-size: 0% 74%;
+    .margin-note__body > :first-child {
+        margin-top: 0;
     }
 
-    .sketch-mark--wraps[data-kind="underline"][data-drawn] {
-        background-size: 100% 100%;
+    .margin-note__body > :last-child {
+        margin-bottom: 0;
     }
 
-    .sketch-mark--wraps[data-kind="marker"][data-drawn] {
-        background-size: 100% 74%;
+    /* The bracket is drawn in the prose's own ink, as a pen would. */
+    .margin-note > .rough-annotation {
+        color: var(--foreground);
     }
 
-    @media (prefers-reduced-motion: no-preference) {
-        .sketch-mark--wraps {
-            transition: background-size 680ms cubic-bezier(0.65, 0, 0.35, 1);
-            transition-delay: calc(300ms + var(--sketch-index, 0) * 420ms);
-        }
+    .margin-note__text {
+        display: block;
+        /* Clears the bracket below the passage: 2 × 5px padding plus the pen's wobble. */
+        margin-top: 1.1rem;
+        color: var(--muted);
+        font-family: var(--font-hand);
+        font-size: 1.375rem;
+        font-weight: 300;
+        line-height: 1.3;
+        text-align: center;
+        text-wrap: balance;
+    }
 
-        .sketch-mark__stroke {
-            transition: clip-path 560ms cubic-bezier(0.65, 0, 0.35, 1);
-            /* After the home entrance settles; each later mark a beat behind. */
-            transition-delay: calc(300ms + var(--sketch-index, 0) * 420ms);
-        }
-
-        .sketch-mark[data-kind="marker"] .sketch-mark__stroke {
-            transition-duration: 680ms;
+    @media (min-width: 80rem) {
+        .margin-note__text {
+            position: absolute;
+            top: -0.15em;
+            right: calc(100% + 2.1rem);
+            width: 12.5rem;
+            margin: 0;
+            text-align: right;
         }
     }
 
@@ -3681,7 +3698,7 @@
         border-radius: 9999px;
         padding: 0 0.7rem 0 0.55rem;
         color: var(--foreground-strong);
-        font-size: 0.8125rem;
+        font-size: 0.875rem;
         font-weight: 500;
         line-height: 1;
         transition:
