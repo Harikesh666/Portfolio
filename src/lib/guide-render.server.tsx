@@ -1,5 +1,6 @@
 import type { ComponentType } from "react";
 import { renderToStaticMarkup, renderToString } from "react-dom/server";
+import { MarginNote, SketchMark } from "../components/SketchMark";
 import {
     islandNameAttribute,
     islandPropsAttribute,
@@ -10,9 +11,20 @@ import {
 
 type MdxModule = {
     default: ComponentType<{
-        components?: Record<string, ComponentType<IslandProps>>;
+        components?: Record<string, ComponentType<Record<string, unknown>>>;
     }>;
 };
+
+/*
+ * Prose decorations: pen marks on words and handwritten margin notes. They
+ * render to plain HTML with the rest of the prose (no island, no React in
+ * the browser); `observeSketches` draws them as they scroll into view.
+ */
+const decorations = {
+    // In a guide a mark draws the moment it scrolls in, as Benji Taylor's do.
+    Mark: (props: Parameters<typeof SketchMark>[0]) => <SketchMark delay={0} {...props} />,
+    MarginNote,
+} as unknown as Record<string, ComponentType<Record<string, unknown>>>;
 
 type IslandInstance = { name: IslandName; props: IslandProps };
 
@@ -64,7 +76,9 @@ async function renderGuide(path: string) {
             },
         ]),
     );
-    const markup = renderToStaticMarkup(<Guide components={components} />);
+    const markup = renderToStaticMarkup(
+        <Guide components={{ ...decorations, ...components }} />,
+    );
 
     // Second pass: fill each marker with hydratable island HTML and the
     // props the browser needs to hydrate it.

@@ -1,108 +1,81 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
+import { watchSketch } from "../lib/sketch-draw";
+
+type SketchMarkKind = "underline" | "marker" | "circle";
 
 type SketchMarkProps = Readonly<{
     children: ReactNode;
-    /** A quick double pencil underline, or a translucent highlighter swipe behind the words. */
-    kind: "underline" | "marker";
-    /** Order among the marks on the page; later marks draw a beat after earlier ones. */
+    /** A pen underline, a highlighter swipe behind the words, or a pen circling them. */
+    kind: SketchMarkKind;
+    /** Order among the marks on a page; each later mark waits a beat longer. */
     index?: number;
     /**
-     * For phrases too long to stay on one line on a phone: the mark wraps with
-     * the words and every line gets its own stroke, so it never pushes past the
-     * screen. Short marks keep the drawn SVG stroke and stay whole.
+     * For phrases that wrap on a phone: every line gets its own strokes, and
+     * the drawing time is shared across the lines by width.
      */
     wraps?: boolean;
+    /** Wait before drawing, in ms. Defaults to a beat after the page settles. */
+    delay?: number;
 }>;
 
-/*
- * Fixed, hand-drawn-looking strokes. They stretch to the words' width
- * (preserveAspectRatio="none") while vector-effect keeps the line weight
- * constant, so a short word and a long phrase both look drawn by the same pen.
- * They are constants, not random, so server and client markup always match.
- */
-const strokes = {
-    underline: {
-        viewBox: "0 0 100 10",
-        paths: [
-            { d: "M1.5 5.6 C 18 4.1, 38 7.3, 58 5.5 S 88 4.6, 98.5 5.2", width: 1.7, opacity: 0.9 },
-            { d: "M9 8.4 C 30 7.1, 55 9.2, 76 7.8 S 92 7.6, 95 7.4", width: 1.2, opacity: 0.55 },
-        ],
-    },
-    marker: {
-        viewBox: "0 0 100 20",
-        paths: [{ d: "M1.5 11.6 C 22 10.2, 46 12.2, 70 10.6 S 94 10.4, 98.5 9.6", width: 15, opacity: 1 }],
-    },
-} as const;
+/** Page marks wait for the entrance to settle; "New" waits long enough to be read first. */
+function defaultDelay(kind: SketchMarkKind, index: number) {
+    return kind === "circle" ? 800 : 300 + index * 420;
+}
 
 /**
- * Pencil marks on a few words in the prose, like someone annotated the page.
- * Each draws itself once, left to right, the first time it scrolls into view,
- * and then stays. The words themselves are untouched for screen readers.
- * Styling and timing live in `styles.css` (`.sketch-mark`).
+ * Hand-drawn marks on a few words, like someone annotated the page: Rough
+ * Notation's strokes (ported in `rough-annotation.ts`), drawn once the first
+ * time the words scroll into view, then kept fitted to them. The server
+ * renders only the words and an empty SVG, so the markup is the same
+ * everywhere; the strokes are made in the browser, where the words can be
+ * measured. Words stay plain text for screen readers.
  */
-export function SketchMark({ children, kind, index = 0, wraps = false }: SketchMarkProps) {
+export function SketchMark({ children, kind, index = 0, wraps = false, delay }: SketchMarkProps) {
     const ref = useRef<HTMLSpanElement>(null);
-    const [isDrawn, setIsDrawn] = useState(false);
 
     useEffect(() => {
         const element = ref.current;
         if (!element) return;
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (!entry.isIntersecting) return;
-                setIsDrawn(true);
-                observer.disconnect();
-            },
-            // Wait until the words are comfortably on screen, not just peeking in.
-            { rootMargin: "0px 0px -15% 0px" },
-        );
-        observer.observe(element);
-        return () => observer.disconnect();
+        return watchSketch(element);
     }, []);
 
-    const stroke = strokes[kind];
-    if (wraps) {
-        return (
-            <span
-                className="sketch-mark sketch-mark--wraps"
-                data-drawn={isDrawn ? "" : undefined}
-                data-kind={kind}
-                ref={ref}
-                style={{ "--sketch-index": index } as React.CSSProperties}
-            >
-                {children}
-            </span>
-        );
-    }
     return (
         <span
-            className="sketch-mark"
-            data-drawn={isDrawn ? "" : undefined}
+            className={wraps ? "sketch-mark sketch-mark--wraps" : "sketch-mark"}
             data-kind={kind}
+            data-sketch-delay={delay ?? defaultDelay(kind, index)}
             ref={ref}
-            style={{ "--sketch-index": index } as React.CSSProperties}
         >
-            {children}
-            <svg
-                aria-hidden="true"
-                className="sketch-mark__stroke"
-                focusable="false"
-                preserveAspectRatio="none"
-                viewBox={stroke.viewBox}
-            >
-                {stroke.paths.map((path) => (
-                    <path
-                        d={path.d}
-                        fill="none"
-                        key={path.d}
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeOpacity={path.opacity}
-                        strokeWidth={path.width}
-                        vectorEffect="non-scaling-stroke"
-                    />
-                ))}
-            </svg>
+            {/* First, so a highlighter swipe paints under the words. */}
+            <svg aria-hidden="true" className="rough-annotation" focusable="false" />
+            <span className="sketch-mark__text">{children}</span>
         </span>
+    );
+}
+
+/** "New" in the pink pen, circled twice, beside the newest guide's title. */
+export function NewTag() {
+    return (
+        <span className="new-tag">
+            <SketchMark kind="circle">New</SketchMark>
+        </span>
+    );
+}
+
+/**
+ * A handwritten aside beside a passage, joined to it by a pen bracket, like
+ * a note in the margin of a book. On wide screens the note sits in the left
+ * margin and the bracket stands on the passage's left; on narrower ones the
+ * bracket runs under the passage and the note sits centred below it. Static
+ * markup only: in a guide, `observeSketches` draws it as it scrolls in.
+ */
+export function MarginNote({ children, note }: Readonly<{ children: ReactNode; note: string }>) {
+    return (
+        <div className="margin-note" data-sketch-delay={0}>
+            <svg aria-hidden="true" className="rough-annotation" focusable="false" />
+            <div className="margin-note__body">{children}</div>
+            <aside className="margin-note__text">{note}</aside>
+        </div>
     );
 }

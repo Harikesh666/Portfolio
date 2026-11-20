@@ -12,12 +12,12 @@ import {
 import { AvailabilityStatus } from "../components/AvailabilityStatus";
 import { GuidePreview } from "../components/guide-previews";
 import { IntroKeyword } from "../components/IntroKeyword";
-import { SketchMark } from "../components/SketchMark";
+import { NewTag, SketchMark } from "../components/SketchMark";
 import { HomeScene } from "../components/pond/HomeScene";
 import { SectionHeading } from "../components/SectionHeading";
 import { StaggerReveal } from "../components/StaggerReveal";
 import { homeStructuredData } from "../lib/agent-readiness";
-import { authoredPosts, posts } from "../lib/content";
+import { authoredPosts, newPostSlug, posts } from "../lib/content";
 import { resumeExperience } from "../lib/resume";
 import { absoluteUrl, site } from "../lib/site";
 import { stackGroups } from "../lib/stack";
@@ -218,6 +218,7 @@ function HomePage() {
                                 >
                                     <span className="block text-foreground-strong">
                                         {post.title}
+                                        {post.slug === newPostSlug && <NewTag />}
                                     </span>
                                     <span className="block text-muted">
                                         {post.description}

@@ -1,3 +1,6 @@
+/** When the site was built (ms since epoch), set by `define` in vite.config.ts. */
+declare const __BUILD_TIME__: number | undefined;
+
 declare module "*.mdx" {
     import type { ComponentType } from "react";
     import type { TocItem } from "#/lib/content-headings";

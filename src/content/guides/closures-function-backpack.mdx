@@ -11,7 +11,7 @@ publishedAt: "2024-11-05"
 
 # Closures in JavaScript: The Function's Backpack
 
-A closure is created every time a JavaScript function is created.
+A closure is created <Mark kind="circle">every time</Mark> a JavaScript function is created.
 
 That sentence is short, but closures often take time to understand because they connect three ideas:
 
@@ -33,7 +33,11 @@ Here is the mental model that makes those ideas easier to hold together:
 
 > A closure is a function carrying a backpack filled with access to the bindings from the scope where it was created.
 
+<MarginNote note="not a copy of the values, a way back to them">
+
 The backpack does not contain every value in the program. It gives the function a route back to the surrounding bindings it needs.
+
+</MarginNote>
 
 Let’s unpack that slowly.
 
@@ -54,7 +58,11 @@ Closures matter because they let functions:
 - Remember information inside callbacks
 - Cache previous results
 
-Closures are not a special mode that we switch on. They are part of how JavaScript functions and lexical scope work.
+<MarginNote note="no keyword, no switch: every function gets one">
+
+Closures are not a special mode that we switch on. <Mark kind="marker" wraps>They are part of how JavaScript functions and lexical scope work.</Mark>
+
+</MarginNote>
 
 ## Start with the smallest example
 
