@@ -56,6 +56,8 @@ const birdFaintest: readonly [number, number] = [0.62, 0.86];
 const fireflySize: readonly [number, number, number] = [0.034, 0.02, 7];
 /** Settled in the numerals, a firefly's glow shrinks to this share, at no fewer than this many pixels, so neighbours don't run together. */
 const fireflyHeld: readonly [number, number] = [0.6, 5];
+/** The firefly glow sprite's size in pixels: close to the sizes it is drawn at, since shrinking a sprite many times over costs far more per draw. */
+const fireflyCell = 16;
 /** A firefly's dimmest point in its pulse, as a share of full brightness: flying free, then settled, so a stroke never goes dark. */
 const fireflyDimmest: readonly [number, number] = [0.4, 0.72];
 /** The moon's radius in frame heights, its halo's reach in moon radii, and the clear sky it keeps from the numerals' box, in moon radii. */
@@ -863,16 +865,17 @@ export function createSkyScene(options: SkySceneOptions): Pond | null {
     /** One glow, drawn once: a bright warm core fading through yellow-green. */
     function paintFirefly() {
         const sprite = document.createElement("canvas");
-        sprite.width = sprite.height = 48;
+        sprite.width = sprite.height = fireflyCell;
         const spriteContext = sprite.getContext("2d");
         if (!spriteContext) return sprite;
-        const glow = spriteContext.createRadialGradient(24, 24, 0, 24, 24, 24);
+        const middle = fireflyCell / 2;
+        const glow = spriteContext.createRadialGradient(middle, middle, 0, middle, middle, middle);
         glow.addColorStop(0, "rgba(255, 250, 214, 1)");
         glow.addColorStop(0.16, "rgba(255, 232, 130, 0.85)");
         glow.addColorStop(0.42, "rgba(214, 226, 90, 0.22)");
         glow.addColorStop(1, "rgba(190, 220, 80, 0)");
         spriteContext.fillStyle = glow;
-        spriteContext.fillRect(0, 0, 48, 48);
+        spriteContext.fillRect(0, 0, fireflyCell, fireflyCell);
         return sprite;
     }
 
