@@ -65,7 +65,7 @@ When JavaScript converts a value because an operation requires another type, it 
 "6" / "2"; // The division operation needs numeric values.
 ```
 
-Coercion is not automatically bad. JavaScript uses it constantly, including inside `if` statements, template literals, arithmetic, property access, and web APIs.
+Coercion is <Mark kind="circle">not automatically bad</Mark>. JavaScript uses it constantly, including inside `if` statements, template literals, arithmetic, property access, and web APIs.
 
 The danger is invisible intent. If a reader cannot tell which conversion will happen, a short expression can become a long debugging session.
 
@@ -256,7 +256,11 @@ console.log(Number(null));      // 0
 console.log(Number(undefined)); // NaN
 ```
 
+<MarginNote note="a memory aid is not a rule">
+
 These are language conversion rules, not conclusions JavaScript reaches by reading our intentions. It is tempting to invent a story such as "null means intentionally empty, so it becomes zero." That story may help memory, but it should not be mistaken for a guarantee that `null` means numeric zero in your application.
+
+</MarginNote>
 
 If `null` represents missing data, converting it to `0` can hide a bug:
 
@@ -377,7 +381,11 @@ The string `"0"` is not the number `0`. It is a non-empty string, so it is truth
 
 The string `" "` contains a space. It is also non-empty, so it is truthy.
 
+<MarginNote note="the list decides, not the wording">
+
 Boolean conversion does not inspect whether the text *looks false*. It follows a short list of falsy values.
+
+</MarginNote>
 
 ## The falsy list
 
@@ -444,7 +452,7 @@ if (itemCount === null || itemCount === undefined) {
 }
 ```
 
-Truthiness is a language rule. Meaning belongs to your program.
+<Mark kind="marker" wraps>Truthiness is a language rule. Meaning belongs to your program.</Mark>
 
 ## Logical operators test truthiness but return values
 
@@ -557,7 +565,7 @@ This function does three separate jobs:
 2. Validate that the conversion produced the kind of number we accept.
 3. Return a stable value for the rest of the program.
 
-Conversion alone is not validation. `Number("2.5")` succeeds, but `2.5` may still be invalid when the application expects a whole quantity.
+<Mark kind="underline" wraps>Conversion alone is not validation.</Mark> `Number("2.5")` succeeds, but `2.5` may still be invalid when the application expects a whole quantity.
 
 ## How to predict a conversion
 

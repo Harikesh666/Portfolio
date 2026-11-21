@@ -173,7 +173,7 @@ But compare their structure:
 4. Push that result.
 5. Return the output.
 
-Only step three changes.
+Only <Mark kind="circle">step three</Mark> changes.
 
 Copying the whole loop for every formula creates several maintenance points. If we later need to validate radii, preserve sparse positions, collect timing data, or change how results are stored, we must update every copied function.
 
@@ -235,7 +235,11 @@ The real floating-point values contain more decimal places. The output above is 
 
 `area`, `circumference`, and `diameter` are callbacks for their respective calls.
 
+<MarginNote note="it trusts the contract, not the formula">
+
 Most importantly, `calculate` does not need to know which formula it is running. It knows only the contract:
+
+</MarginNote>
 
 > Give me a function that accepts one radius and returns the result for that radius.
 
@@ -253,7 +257,7 @@ After refactoring:
 - `calculate` owns the traversal.
 - The callback owns the transformation.
 
-This is why higher-order functions can reduce repetition. They let stable control flow accept changing behavior as a value.
+This is why higher-order functions can reduce repetition. <Mark kind="marker" wraps>They let stable control flow accept changing behavior as a value.</Mark>
 
 The pattern appears beyond arrays:
 
@@ -335,7 +339,11 @@ Output:
 
 `createMultiplier` is higher-order because it returns a function.
 
+<MarginNote note="each call makes a closure with its own factor">
+
 The returned `multiply` function remembers the `factor` binding from the call that created it. `double` remembers `2`; `triple` remembers `3`.
+
+</MarginNote>
 
 This combines two JavaScript features:
 
@@ -490,7 +498,7 @@ function area(radius) {
 
 It is still a perfectly valid callback, and `calculate` is still higher-order. The function now also changes shared state.
 
-Higher-order is a structural description, not a quality certificate.
+<Mark kind="underline" wraps>Higher-order is a structural description, not a quality certificate.</Mark>
 
 ## When the abstraction helps and when it does not
 

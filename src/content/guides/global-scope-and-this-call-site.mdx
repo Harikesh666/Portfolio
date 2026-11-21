@@ -118,7 +118,11 @@ Now change `var` to `let`:
 </script>
 ```
 
+<MarginNote note="in scope, yet missing from window">
+
 The binding exists in global scope, but it is not created as a property on `window`:
+
+</MarginNote>
 
 ```text
 Lexical
@@ -263,7 +267,7 @@ undefined
 
 Module code is always strict, so simple calls inside modules follow the strict behavior.
 
-This is why relying on the global fallback is fragile. The same function can appear to work in an old script and fail in a module.
+This is why <Mark kind="underline" wraps>relying on the global fallback is fragile</Mark>. The same function can appear to work in an old script and fail in a module.
 
 ## A method call uses the receiver
 
@@ -311,7 +315,7 @@ Hello, Alice
 Hello, Binod
 ```
 
-The function did not permanently belong to either object. Each call supplied a different receiver.
+<Mark kind="marker" wraps>The function did not permanently belong to either object.</Mark> Each call supplied a different receiver.
 
 ## Detaching a method loses the receiver
 
@@ -426,7 +430,11 @@ person.greetWithArrow();
 
 `person.greet()` uses `person` as the receiver.
 
+<MarginNote note="object braces are not a scope">
+
 But `person.greetWithArrow()` does not give the arrow its own `this`. The arrow looks outside the object literal, because object literals do not create lexical scopes or `this` bindings.
+
+</MarginNote>
 
 What value does it find?
 
@@ -600,7 +608,7 @@ Closures answer **where was this function created?**
 
 Ordinary `this` usually answers **how was this function called?**
 
-Those are different questions.
+Those are <Mark kind="circle">different questions</Mark>.
 
 ## A practical this checklist
 

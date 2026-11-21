@@ -48,7 +48,13 @@ const journey: readonly {
         when: "A few months in",
         title: "Choosing the stack",
         paragraphs: [
-            "After a couple of months, my managers gave me the freedom to choose the stack for POCs I owned end to end. I came back to Node, this time because I wanted to rather than because it had been handed to me. It stuck.",
+            <>
+                After a couple of months, my managers gave me the freedom to
+                choose the stack for POCs I owned end to end. I came back to
+                Node, this time because I{" "}
+                <SketchMark kind="circle">wanted to</SketchMark> rather than
+                because it had been handed to me. It stuck.
+            </>,
         ],
     },
     {

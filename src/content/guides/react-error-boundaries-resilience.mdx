@@ -74,7 +74,7 @@ When a component throws an error during rendering, React's default is to unmount
 
 An _error boundary_ is a component that wraps part of your tree and _catches_ errors thrown during the rendering of its children, letting you show a fallback UI for just that part instead of crashing the whole app.
 
-It is React's mechanism for graceful degradation: contain a failure to a subtree, show something sensible there, and keep the rest of the app alive.
+It is React's mechanism for graceful degradation: <Mark kind="marker" wraps>contain a failure to a subtree, show something sensible there, and keep the rest of the app alive</Mark>.
 
 ### How it actually works
 
@@ -163,7 +163,11 @@ React chose the drastic default deliberately, and the reasoning (a broken UI is 
 
 React unmounts the whole tree on an uncaught render error because a partially-rendered or broken UI can be _worse_ than a blank one: it can show wrong, inconsistent, or impossible state, which at best confuses users and at worst causes them to act on bad information (a wrong balance, a wrong recipient, a wrong button).
 
+<MarginNote note="a blank screen beats a wrong one">
+
 Rather than risk leaving the UI in a corrupt state it cannot reason about, React tears the whole thing down to a known-safe empty state.
+
+</MarginNote>
 
 Error boundaries exist precisely so that you can opt into graceful degradation for the parts of your app where a contained fallback is better than a full teardown.
 
@@ -241,7 +245,7 @@ It must be pure (no side effects), because it runs in the render phase.
 
 It receives an `errorInfo` object with a `componentStack` telling you where in the tree the error occurred.
 
-Two methods, because rendering the fallback and performing side effects happen in two different phases with different rules.
+Two methods, because rendering the fallback and performing side effects happen in <Mark kind="circle">two different phases</Mark> with different rules.
 
 ### How it actually works
 
@@ -335,7 +339,7 @@ This feels like an oversight or an inconsistency, and you want to know whether i
 
 ### The short version
 
-As of React 19, error boundaries must still be class components: there is no built-in hook equivalent.
+As of React 19, error boundaries must still be class components: there is <Mark kind="circle">no built-in hook</Mark> equivalent.
 
 This is not an oversight so much as a genuine design gap that has not been resolved.
 
@@ -414,7 +418,7 @@ When it finds one, it discards the failed work in that subtree, schedules the bo
 
 If it reaches the root without finding a boundary, the error is uncaught and the whole tree unmounts (Section 2).
 
-This unwinding is the same machinery Suspense uses for thrown promises (Section 10).
+<Mark kind="marker" wraps>This unwinding is the same machinery Suspense uses for thrown promises</Mark> (Section 10).
 
 ### How it actually works
 
@@ -488,7 +492,11 @@ They do **not** catch errors thrown in: event handlers, asynchronous code (`setT
 
 The reason is the unwind mechanism (Section 5): a boundary catches a throw only when React is _rendering_ the subtree and can unwind to the boundary.
 
+<MarginNote note="no render running, so nothing to unwind">
+
 Event handlers and async callbacks run _outside_ the render, when React is not building the UI, so a throw there does not unwind into a boundary and React has no render to recover.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -678,7 +686,7 @@ A boundary that has caught an error keeps showing its fallback until you _reset_
 
 You reset by clearing the boundary's `hasError` state (often via a "try again" button in the fallback), by changing `resetKeys` (so the boundary resets when some value changes, like the route or an input), or by remounting the boundary via a changed `key`.
 
-The danger is resetting back into the _same_ error (an infinite error-reset loop), so a reset should be paired with a _change_ that makes the next render likely to succeed (new inputs, resolved data), not a blind retry of the identical conditions.
+The danger is resetting back into the _same_ error (<Mark kind="underline">an infinite error-reset loop</Mark>), so a reset should be paired with a _change_ that makes the next render likely to succeed (new inputs, resolved data), not a blind retry of the identical conditions.
 
 ### How it actually works
 
@@ -783,7 +791,11 @@ React 19 added three options to `createRoot` and `hydrateRoot` for centralized, 
 
 Each receives the `error` and an `errorInfo` with a `componentStack`.
 
+<MarginNote note="report at the root, recover in the tree">
+
 These complement boundaries (they do not replace them): boundaries decide the _UI_ response per subtree, while the root options give you one place for _reporting_.
+
+</MarginNote>
 
 React 19 also changed default logging: uncaught errors now go to `window.reportError` and caught errors to `console.error`, rather than being re-thrown.
 
@@ -887,7 +899,7 @@ Throw an `Error`, and React unwinds to the nearest _error boundary_ and shows it
 
 Throw a _promise_ (what a suspending component does), and React unwinds to the nearest _Suspense boundary_ and shows its fallback _temporarily_, retrying when the promise resolves (via retry lanes).
 
-Same unwind, different thrown value, different follow-up.
+<Mark kind="marker" wraps>Same unwind, different thrown value, different follow-up.</Mark>
 
 This is why they are introduced together, and the dedicated Suspense guide builds on this shared backbone.
 
@@ -974,7 +986,11 @@ You want a principled way to decide boundary placement for a resilient app.
 
 ### The short version
 
+<MarginNote note="ask what should still work when this breaks">
+
 Boundary placement is about _blast radius_: each boundary contains failures in its subtree, so you place boundaries to make a failure take down the smallest sensible region.
+
+</MarginNote>
 
 The standard architecture is layered: a top-level boundary as a catch-all (so the app never white-screens), boundaries around independent _sections_ or _routes_ (so one broken section does not take down the others), and boundaries around specifically _risky_ components (third-party widgets, data-driven views) where failure is more likely.
 
@@ -1142,7 +1158,11 @@ You want to map each symptom to the mechanism and the fix, fast.
 
 Most error-handling problems are one of a small set, each mapping to a section.
 
+<MarginNote note="find the thrower before moving boundaries">
+
 The procedure: identify _what_ threw and _where_ (render versus event handler versus async versus hydration), check whether a boundary was in the right place to catch it (above the throw, and an error boundary for an `Error`), and use the `componentStack` from `errorInfo` (or the React 19 root callbacks) to locate the source.
+
+</MarginNote>
 
 The two instruments are the console (React 19's logging and component stacks) and the React DevTools.
 

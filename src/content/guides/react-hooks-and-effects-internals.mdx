@@ -90,7 +90,7 @@ So React keeps a small internal object for each component on screen (its fiber) 
 
 Call a hook conditionally and the order shifts between renders, so React reads the wrong slot.
 
-The rules are not style preferences.
+The rules are <Mark kind="circle">not style preferences</Mark>.
 
 They are the only thing that could possibly work given how hooks are stored.
 
@@ -217,7 +217,7 @@ When state changes, React does not mutate that constant.
 
 It schedules a brand new run of your function, which produces a new render with a new constant.
 
-Closures capture the render they were born in.
+<Mark kind="marker" wraps>Closures capture the render they were born in.</Mark>
 
 Almost every effect and event-handler surprise is this one fact wearing a costume.
 
@@ -426,7 +426,7 @@ What is the model?
 
 ### The short version
 
-Calling a setter does not change a variable.
+Calling a setter <Mark kind="circle">does not change</Mark> a variable.
 
 It pushes an update onto that hook's queue and asks React to schedule a render.
 
@@ -638,7 +638,11 @@ The lifecycle framing is the problem itself.
 
 ### The short version
 
+<MarginNote note="forget mount and unmount as the model">
+
 An effect does not represent a moment in a component's life.
+
+</MarginNote>
 
 It represents a _synchronization_: "this external thing (a subscription, a timer, the document title, a network resource, a non-React widget) should be kept in agreement with these values from my render." You describe the target state and how to achieve and undo it.
 
@@ -738,7 +742,7 @@ You want to know what the array physically is so you can stop guessing.
 
 ### The short version
 
-The dependency array is a memoization key for your synchronization.
+<Mark kind="marker" wraps>The dependency array is a memoization key for your synchronization.</Mark>
 
 React stores the previous array on the effect's hook node, and after each commit it compares the new array to the old one element by element with `Object.is`.
 
@@ -839,7 +843,11 @@ Both times the value "looks the same." You are running into identity, and it is 
 
 In JavaScript, objects, arrays, and functions are compared by identity, not by contents: `{} !== {}` and `(() => {}) !== (() => {})`, even though they look identical.
 
+<MarginNote note="fresh identity even when the contents match">
+
 Every time your component renders, every object, array, and function literal written inside it is created fresh, so it has a new identity.
+
+</MarginNote>
 
 React's equality checks (dependency arrays, `React.memo`, `useMemo`) all use `Object.is`, which sees those fresh identities as "changed." So an inline object or function handed to a dependency array re-runs the effect every render, and one handed to a memoized child defeats the memo.
 
@@ -970,7 +978,7 @@ Before re-running an effect because its dependencies changed, React runs the pre
 
 On unmount, it runs the final cleanup.
 
-The mental model: each render's effect cleans up the previous render's effect before establishing its own.
+The mental model: <Mark kind="marker" wraps>each render's effect cleans up the previous render's effect before establishing its own</Mark>.
 
 Get this and double-subscriptions, leaks, and fetch races stop happening.
 
@@ -1180,7 +1188,11 @@ You wrap the "read the latest value but do not treat it as a trigger" logic in a
 
 Inside that wrapped function, props and state always read at their latest committed values, but the function is intentionally excluded from the dependency array, so changes to what it reads do not re-run the effect.
 
+<MarginNote note="the honest way to leave a value out">
+
 It is the principled, lint-understood answer to the cases where you were tempted to lie to the dependency array.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -1296,7 +1308,7 @@ Their primary real job is referential stability (Section 8): keeping an object o
 
 Their secondary job is skipping genuinely expensive recomputation.
 
-They are not a correctness tool (React may throw the cache away), and used reflexively they add cost and noise.
+<Mark kind="underline" wraps>They are not a correctness tool</Mark> (React may throw the cache away), and used reflexively they add cost and noise.
 
 With the React Compiler 1.0 (stable October 2025), most manual memoization becomes unnecessary, because the Compiler inserts equivalent memoization for you.
 
@@ -1513,7 +1525,11 @@ A custom hook is just a function whose name starts with `use` and that calls oth
 
 There is no magic and no shared instance.
 
+<MarginNote note="as if you pasted the calls into the component">
+
 When a component calls a custom hook, that hook's internal `useState`, `useEffect`, and so on are appended to the _calling component's_ own hook list, inline, at the call site.
+
+</MarginNote>
 
 So two components calling the same custom hook each get their own completely independent state.
 

@@ -11,7 +11,7 @@ publishedAt: "2025-01-10"
 
 # Callback Functions: JavaScript Calls You Back
 
-A callback function is not a special kind of function.
+A callback function is <Mark kind="circle">not</Mark> a special kind of function.
 
 It does not have unique syntax. It does not wear a badge saying “Hello, I am a callback.” It becomes a callback because of the job we give it.
 
@@ -131,7 +131,11 @@ finishRepair(function collectLaptop() {
 });
 ```
 
+<MarginNote note="the shop decides when to phone you">
+
 The receiving function controls the call. It may call the callback immediately, later, more than once, or not at all.
+
+</MarginNote>
 
 That last sentence matters. A callback is a relationship between two pieces of code. To use one safely, we need to understand the receiving function’s contract.
 
@@ -287,7 +291,7 @@ The two callbacks in this example follow different timing rules:
 - `y` is a synchronous callback controlled directly by `x`.
 - `timerCallback` is an asynchronous callback scheduled through a browser timer.
 
-Callbacks do not create asynchrony on their own. The timer and the browser’s event-loop machinery create the asynchronous behavior. The callback tells the browser which JavaScript to run when the timer is ready.
+<Mark kind="marker" wraps>Callbacks do not create asynchrony on their own.</Mark> The timer and the browser’s event-loop machinery create the asynchronous behavior. The callback tells the browser which JavaScript to run when the timer is ready.
 
 For the complete scheduling model, read [JavaScript, the Browser, and the Event Loop](/articles/asynchronous-javascript-event-loop).
 
@@ -395,7 +399,7 @@ button.removeEventListener("click", function () {
 });
 ```
 
-Those two function expressions create two different function objects. The second one is not the listener that was registered.
+<Mark kind="underline" wraps>Those two function expressions create two different function objects.</Mark> The second one is not the listener that was registered.
 
 An `AbortController` can make cleanup convenient when several listeners share one lifecycle:
 
@@ -453,7 +457,11 @@ console.log("Scheduled");
 
 This lets `Scheduled` appear before the heavy loop begins, but the loop still blocks when the timer callback runs. We postponed the problem; we did not remove it.
 
+<MarginNote note="later is not the same as off the main thread">
+
 Callbacks are a way to supply behavior. Asynchronous host APIs are a way to avoid waiting on the current stack. Neither one automatically moves CPU-heavy JavaScript to another thread.
+
+</MarginNote>
 
 For expensive computation, we may need to split the work into smaller tasks or move suitable work to a Web Worker.
 

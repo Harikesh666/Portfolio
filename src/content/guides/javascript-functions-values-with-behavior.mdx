@@ -66,7 +66,11 @@ function a() {
 }
 ```
 
+<MarginNote note="setup happens first, then the code runs">
+
 The source code still runs from top to bottom. JavaScript does not physically move the declaration above the call. The surrounding scope creates the function binding during its setup, before evaluating the statements.
+
+</MarginNote>
 
 We will give hoisting its own full article later. For now, remember that a function declaration can usually be called earlier in its scope than where it appears in the file.
 
@@ -114,7 +118,7 @@ var b = function () {
 
 The `var` binding exists and contains `undefined` before the assignment. Calling `undefined` throws a `TypeError`, typically with a message such as `b is not a function`.
 
-The function expression itself was not available early. Only the `var` binding was created early.
+The function expression itself was <Mark kind="circle">not available</Mark> early. Only the `var` binding was created early.
 
 This is more precise than saying “function expressions are not hoisted.” What matters is the combination of the expression and the variable declaration that stores its result.
 
@@ -368,7 +372,7 @@ run(function greet() {
 
 Now `run` calls the received function, so `"Hello"` appears.
 
-Passing a function and calling a function are different operations. This distinction becomes the foundation of callbacks.
+<Mark kind="marker" wraps>Passing a function and calling a function are different operations.</Mark> This distinction becomes the foundation of callbacks.
 
 ## 7. Returning functions from functions
 
@@ -476,7 +480,11 @@ And, as we just saw, we can return functions.
 
 This is why functions can act as callbacks, strategy choices, event handlers, factories, and units of composition.
 
+<MarginNote note="about freedom of movement, not rank">
+
 “First-class” does not mean “more important than other values.” It means functions are not trapped in declaration syntax. We can move them through the program.
+
+</MarginNote>
 
 ## 9. Arrow functions
 

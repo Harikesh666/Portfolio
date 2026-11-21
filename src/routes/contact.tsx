@@ -2,6 +2,7 @@ import { Link, createFileRoute } from "@tanstack/react-router";
 import { PageEnter } from "../components/PageEnter";
 import { Reveal } from "../components/Reveal";
 import { StaggerReveal } from "../components/StaggerReveal";
+import { SketchMark } from "../components/SketchMark";
 import { contactText } from "../lib/trust-pages";
 import { absoluteUrl, site } from "../lib/site";
 
@@ -9,6 +10,8 @@ const contactTitle = `Contact - ${site.name}`;
 const contactDescription =
     "Contact Harikesh Mishra in Mumbai about software engineering roles, backend or full-stack projects, technical collaboration, and questions about his writing.";
 const contactUrl = absoluteUrl("/contact");
+/** The one line a recruiter needs from this page, highlighted by hand. */
+const emailLead = "Email is the best way to contact me";
 const contactImage = absoluteUrl("/og.png");
 
 export const Route = createFileRoute("/contact")({
@@ -93,7 +96,18 @@ function ContactPage() {
                             Before you write
                         </h2>
                         {contactText.map((paragraph) => (
-                            <p key={paragraph}>{paragraph}</p>
+                            <p key={paragraph}>
+                                {paragraph.startsWith(emailLead) ? (
+                                    <>
+                                        <SketchMark kind="marker" wraps>
+                                            {emailLead}
+                                        </SketchMark>
+                                        {paragraph.slice(emailLead.length)}
+                                    </>
+                                ) : (
+                                    paragraph
+                                )}
+                            </p>
                         ))}
                         <p>
                             Read the <Link className="text-link" to="/about">About page</Link> or review my <Link className="text-link" to="/resume">resume</Link> before getting in touch.

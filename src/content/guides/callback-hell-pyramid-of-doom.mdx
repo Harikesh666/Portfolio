@@ -143,7 +143,11 @@ startOperation(function () {
 });
 ```
 
+<MarginNote note="fixing the indentation alone will not fix this">
+
 Indentation is the visible symptom. The deeper problem is that the program’s sequence, data, errors, and ownership are tangled across several nested function boundaries.
+
+</MarginNote>
 
 <GuideFigure figure="js-pyramid" />
 
@@ -313,7 +317,7 @@ But we have not changed the underlying callback model:
 - The receiving API still controls whether and when each callback runs.
 - The sequence is spread across several function declarations.
 
-Extracting functions is a valuable refactor, not a complete cure.
+<Mark kind="marker" wraps>Extracting functions is a valuable refactor, not a complete cure.</Mark>
 
 ## Promises turn nesting into a chain
 
@@ -368,7 +372,7 @@ createOrder(cart)
     });
 ```
 
-Promises do not remove callbacks. Functions passed to `.then` and `.catch` are still callbacks. Promises give those callbacks a standard timing, result, error, and composition model.
+Promises do <Mark kind="circle">not remove</Mark> callbacks. Functions passed to `.then` and `.catch` are still callbacks. Promises give those callbacks a standard timing, result, error, and composition model.
 
 ## Async and await restore the story
 
@@ -398,11 +402,15 @@ Now the code reads in the same order as the process:
 3. Show the summary.
 4. Update the wallet.
 
+<MarginNote note="only this function waits, the page keeps going">
+
 `await` pauses this particular async function until the promise settles. It does not freeze the whole JavaScript runtime or block the main thread while a network operation is pending. Other scheduled work can continue.
+
+</MarginNote>
 
 Promises and `async` functions improve composition, but they do not make failures disappear. We still need to decide where errors belong, which failures are recoverable, and what should be cancelled when the user leaves.
 
-Better syntax cannot make an undefined workflow well designed.
+<Mark kind="underline" wraps>Better syntax cannot make an undefined workflow well designed.</Mark>
 
 ## Do not make independent work wait unnecessarily
 

@@ -106,7 +106,7 @@ The call to `x` has left the call stack, the running list of active function cal
 
 When the callback eventually gets a turn, it follows its closure back to `i` and reads the current value, which is still `1`.
 
-The closure did not keep the whole function call running. It kept the required binding reachable.
+The closure did not keep the whole function call running. <Mark kind="marker" wraps>It kept the required binding reachable.</Mark>
 
 ## Closures remember bindings, not frozen screenshots
 
@@ -223,7 +223,11 @@ loop ends:   i becomes 6
 
 Each callback is created inside the same function scope. Each one closes over the same `i` binding.
 
+<MarginNote note="one shared slot, read late, not a saved value">
+
 It is tempting to say that all callbacks "capture the final value." That wording can mislead us. They do not know the final value while they are being created. They all keep access to the same binding, and that binding contains `6` by the time they read it.
+
+</MarginNote>
 
 ### Why the loop reaches 6
 
@@ -357,7 +361,7 @@ During the second iteration, `close` is called again. That call gets another par
 
 The timer callbacks no longer close directly over the loop's shared `var i`. Each one closes over the parameter binding belonging to a different call of `close`.
 
-The helper function does not freeze the outer variable. It creates a fresh local binding and passes the current number into it.
+The helper function does <Mark kind="circle">not freeze</Mark> the outer variable. It creates a fresh local binding and passes the current number into it.
 
 Before `let` became common, this was a standard way to preserve each iteration's value for an asynchronous callback. An immediately invoked function expression, or IIFE, was often used for the same reason:
 
@@ -429,7 +433,11 @@ Renaming a variable does not change closure behavior. Creating a new binding doe
 | Helper parameter named `i` | A different parameter binding for each call | `1` through `5` |
 | Helper parameter named `x` | The same mechanism with another name | `1` through `5` |
 
+<MarginNote note="this is the whole puzzle in two sentences">
+
 The timer delay changes when each callback becomes eligible. The binding structure changes what each callback reads.
+
+</MarginNote>
 
 Those are separate questions. Mixing them is what makes the puzzle feel harder than it is.
 
@@ -466,7 +474,7 @@ When delayed code reads a loop variable, ask these questions in order:
 5. **When does the synchronous loop finish?**
 6. **When can each timer task actually run?**
 
-Do not begin with the delay. Begin with the binding.
+<Mark kind="underline" wraps>Do not begin with the delay.</Mark> Begin with the binding.
 
 For the `var` loop, the shortest correct explanation is:
 

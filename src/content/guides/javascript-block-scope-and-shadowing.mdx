@@ -152,7 +152,7 @@ When execution leaves the block, JavaScript restores the previous lexical enviro
 
 But be careful with one common explanation: “the block’s memory is destroyed as soon as the block finishes.”
 
-That is not always true.
+That is <Mark kind="circle">not always true</Mark>.
 
 ```js
 let readMessage;
@@ -266,7 +266,7 @@ Think of standing under a small umbrella while a larger roof is above it. The ro
 
 When the block ends, the inner binding is no longer in scope and the outer `value` becomes visible again.
 
-Shadowing does not overwrite the outer variable by itself. It creates a different binding with the same name in a nested scope.
+<Mark kind="marker" wraps>Shadowing does not overwrite the outer variable by itself.</Mark> It creates a different binding with the same name in a nested scope.
 
 ## Shadowing with var does not work the same way
 
@@ -287,7 +287,11 @@ It looks as if the block created an inner `a` that shadowed the outer `a`.
 
 It did not.
 
+<MarginNote note="same binding, so this is just reassignment">
+
 Both `var` declarations belong to the same variable scope. The second statement assigns `10` to the existing binding.
+
+</MarginNote>
 
 That is why the value outside the block is also `10`.
 
@@ -431,7 +435,11 @@ function x() {
 
 The `var a` belongs to `x`, not to the outer scope containing `let a`.
 
+<MarginNote note="ask which scope owns each name">
+
 When illegal-shadowing rules feel arbitrary, ask where each declaration is trying to create its binding. If both declarations land in incompatible parts of the same scope, JavaScript rejects them.
+
+</MarginNote>
 
 ## 7. Global, script, function, and block bindings
 
@@ -609,7 +617,7 @@ for (var index = 0; index < 3; index += 1) {
 
 By the time the callbacks run, the shared `index` is `3`, so the output is `3`, `3`, `3`.
 
-This is not a timer trick. It is a scope and closure difference.
+<Mark kind="underline" wraps>This is not a timer trick.</Mark> It is a scope and closure difference.
 
 ## What to remember
 
