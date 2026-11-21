@@ -106,7 +106,7 @@ React's whole job is captured in one idea: `UI = f(state)`.
 
 You write a function that, given the current state, returns a description of what the screen should look like.
 
-When state changes, React re-runs your function to get a new description, compares it to the old one, and changes only the real DOM that differs.
+When state changes, React re-runs your function to get a new description, <Mark kind="marker" wraps>compares it to the old one, and changes only the real DOM that differs</Mark>.
 
 That comparison is called **reconciliation**, and it is the thing everything else in this guide exists to support.
 
@@ -261,7 +261,7 @@ React does **not** compare against the real DOM.
 
 It compares its own previous tree against its own new tree, and the DOM is only the output.
 
-The Virtual DOM is not inherently fast.
+The Virtual DOM is <Mark kind="circle">not inherently fast</Mark>.
 
 Its real value is letting you code declaratively while React schedules the updates.
 
@@ -429,7 +429,7 @@ If you use the **array index** as the key, you are telling React "position 0 is 
 
 So any state attached to the item (a checkbox, typed text, focus) stays glued to the _position_ instead of following the _item_.
 
-Fix: use a stable id from your data, never the index, for any list that can change order.
+Fix: <Mark kind="underline" wraps>use a stable id from your data, never the index</Mark>, for any list that can change order.
 
 ### How it actually works
 
@@ -507,7 +507,11 @@ What changed under the hood to make that possible?
 
 ### The short version
 
+<MarginNote note="the problem fiber was built to solve">
+
 Before React 16, rendering was plain recursion, and the progress lived on the JavaScript call stack, which you cannot pause.
+
+</MarginNote>
 
 **Fiber** rebuilt rendering so that each unit of work is a plain object (a "fiber") on the heap, with pointers to its parent, child, and sibling.
 
@@ -657,9 +661,13 @@ Every update has two phases.
 
 The **render phase** runs your component to figure out what changed.
 
+<MarginNote note="render is a plan, commit is the change">
+
 It must be pure and side-effect-free, because React may run it multiple times or throw the work away.
 
 The **commit phase** applies the changes to the real DOM in one quick, uninterruptible burst, and that is when effects fire.
+
+</MarginNote>
 
 `useLayoutEffect` runs during commit, before the browser paints (so it can measure/adjust with no flicker, but it blocks paint).
 
@@ -819,7 +827,7 @@ How?
 
 "Concurrent" rendering means React does a little rendering work, then hands the thread back to the browser so it can handle your keystroke and paint, then picks up where it left off.
 
-It is not multiple threads.
+It is <Mark kind="circle">not multiple threads</Mark>.
 
 It is cooperative time-slicing on one thread.
 
@@ -923,7 +931,11 @@ IdleLane             // lowest; render only when nothing else is pending
 OffscreenLane        // hidden/pre-rendered content; powers <Activity> (Section 17)
 ```
 
+<MarginNote note="lower lanes wait for a later pass">
+
 For each render pass, React picks the highest-priority set of lanes that has pending work and renders exactly those, urgent first.
+
+</MarginNote>
 
 #### Why transitions get a band of lanes, not one
 
@@ -977,7 +989,7 @@ A function component has no `this` to hang state on.
 
 So React stores your hooks as an ordered **linked list** on the component's fiber, and it matches them up purely by **call order**: the first `useState` you call gets the first slot, the second gets the second, and so on.
 
-If you call a hook conditionally, the order shifts between renders and React reads the wrong slot.
+<Mark kind="marker" wraps>If you call a hook conditionally, the order shifts between renders and React reads the wrong slot.</Mark>
 
 That is the entire reason for the rule.
 
@@ -1199,9 +1211,13 @@ This is a deliberate test of the two contracts the rest of this guide leans on:
 1. **Render must be pure** (Section 9). If rendering twice yields different output or a visible side effect (mutating a module variable, pushing to an external array, firing a request), double-invocation surfaces it immediately in dev, instead of as an intermittent, unreproducible bug under concurrency in production.
 2. **Effects must fully clean up after themselves.** The mount-unmount-mount cycle proves your `useEffect` tears down exactly what it sets up. A leaked subscription or uncleared timer shows up right away as a double.
 
+<MarginNote note="the double run is a rehearsal, not a bug">
+
 The forward-looking reason it matters: concurrency and `<Activity>` (Section 17) assume components can be mounted, unmounted, and re-mounted at React's discretion.
 
 StrictMode trains your code to survive that.
+
+</MarginNote>
 
 Clean under StrictMode means safe under concurrency.
 

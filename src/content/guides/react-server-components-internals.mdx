@@ -202,7 +202,7 @@ A Server Component can render a Client Component (you cross the boundary going d
 
 The boundary is decided at **build time** by the `"use client"` directive, not at runtime.
 
-Get this picture right and almost every rule is a consequence of it.
+<Mark kind="marker" wraps>Get this picture right and almost every rule is a consequence of it.</Mark>
 
 ### How it actually works
 
@@ -258,7 +258,7 @@ Why can't a Server Component just use a hook like everything else?
 
 ### The short version
 
-A Server Component runs once on the server and then it is done.
+A Server Component <Mark kind="circle">runs once</Mark> on the server and then it is done.
 
 There is no "later" for it: no re-render, no browser, no user events.
 
@@ -322,7 +322,11 @@ You assumed `"use client"` means "this component runs only in the browser." Then
 
 `"use client"` does **not** mean "runs only on the client." It marks the **boundary** where your code enters the client bundle.
 
+<MarginNote note="client means shipped, not browser only">
+
 A Client Component actually runs in _two_ places: once on the server to produce the initial HTML (this is plain SSR, the same as React has done for years), and then in the browser, where it hydrates and becomes interactive.
+
+</MarginNote>
 
 The thing that makes it a "Client Component" is that its code is **shipped to the browser** so it _can_ run there.
 
@@ -404,7 +408,7 @@ Arbitrary **functions and class instances cannot**, because you cannot send a li
 
 As for "Server Components inside Client Components": you cannot _import_ one into client code, but you can **pass server-rendered content as `children`** (or any prop) into a Client Component.
 
-That trick lets a client component wrap server content without ever running it.
+<Mark kind="marker" wraps>That trick lets a client component wrap server content without ever running it.</Mark>
 
 ### How it actually works
 
@@ -503,7 +507,7 @@ It is not just HTML, and it is not the component's code.
 
 The server renders your Server Components into a special streamable description of the UI tree, often called the **RSC payload** (the format is sometimes called "Flight").
 
-It is not HTML and it is not JavaScript.
+It is <Mark kind="circle">not HTML</Mark> and it is not JavaScript.
 
 It is a serialized description that says "here is the rendered tree, here are the plain values, and here are the _holes_ where client components go, identified by a reference the browser can use to load that component's code." The browser takes this payload plus the client component code and assembles the final tree.
 
@@ -578,7 +582,11 @@ They are three distinct steps that cooperate on first load.
 
 **Hydration** happens in the browser, where React attaches interactivity to that HTML for the Client Components only.
 
+<MarginNote note="the same reason they ship no code">
+
 Server Components never hydrate, because they have no browser-side behavior to attach.
+
+</MarginNote>
 
 So the user gets fast HTML, then the interactive bits wake up, and the non-interactive bits stay as cheap static content forever.
 
@@ -628,7 +636,11 @@ You heard `"use server"` and Server Actions fix this, but it is unclear what is 
 
 A **Server Function** is an `async` function marked with `"use server"` that runs on the server but can be **called from client code as if it were a normal function**.
 
+<MarginNote note="it looks local but it is a network call">
+
 Under the hood, the bundler replaces it on the client with a reference, and calling it performs a network request (an RPC) to run the real function on the server.
+
+</MarginNote>
 
 This lets a Client Component trigger server-side work (a database write, say) without you writing an API route.
 
@@ -711,7 +723,7 @@ Everything from the rendering guide (fibers, reconciliation, the render and comm
 
 RSC is best understood as a new **source** for the element tree: instead of all elements coming from components that run in the browser, some of the tree arrives pre-rendered from the server as the RSC payload, and the browser's reconciler works with the combination.
 
-Same engine, new input.
+<Mark kind="marker">Same engine, new input.</Mark>
 
 ### How it actually works
 
@@ -756,7 +768,11 @@ You want a compact set of rules and traps so you stop making the common RSC mist
 
 Default to Server Components, push `"use client"` as deep as possible, pass data not functions across the boundary, and remember that `"use server"` is for functions, not components.
 
+<MarginNote note="the boundary from section 2 again">
+
 When something breaks, ask: which side of the boundary is this code on, and is it trying to do something only the other side can do?
+
+</MarginNote>
 
 ### How it actually works
 

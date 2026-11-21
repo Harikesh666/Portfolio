@@ -156,7 +156,7 @@ outer();
 
 The binding exists, but it is uninitialized when `inner` tries to read it.
 
-Closures do not bypass normal scope or initialization rules. They preserve access to the binding with those rules intact.
+Closures <Mark kind="circle">do not bypass</Mark> normal scope or initialization rules. They preserve access to the binding with those rules intact.
 
 ## Function parameters are bindings too
 
@@ -237,7 +237,11 @@ When `inner` reads a name, JavaScript searches its lexical environments from nea
 - `b`, passed as a parameter to `outer`
 - `c`, declared in `outest`
 
+<MarginNote note="a chain of links, not one merged object">
+
 The function does not copy these bindings into one flat object. Its internal environment connection leads through the lexical chain.
+
+</MarginNote>
 
 An engine can optimize how that chain is represented, but the observable lookup behavior must remain the same.
 
@@ -381,7 +385,7 @@ console.log(first.increment());  // 2
 console.log(second.increment()); // 1
 ```
 
-The methods within one instance share state. Different factory calls create independent state.
+The methods within one instance share state. <Mark kind="marker" wraps>Different factory calls create independent state.</Mark>
 
 ## Constructor functions can also create private state
 
@@ -457,7 +461,11 @@ const read = createReader();
 
 The returned function observes `used`. It never refers to `unused`.
 
+<MarginNote note="the spec fixes behavior, engines pick the layout">
+
 The JavaScript specification defines the observable scope behavior, not the engine’s exact memory layout. An engine may avoid retaining data that cannot affect the program, but code should not depend on a particular internal optimization.
+
+</MarginNote>
 
 The safe rule is:
 
@@ -498,7 +506,7 @@ This pattern appears in:
 - Application-level registries
 - Long-lived asynchronous callbacks
 
-The issue is lifecycle, not the existence of a closure.
+<Mark kind="marker" wraps>The issue is lifecycle, not the existence of a closure.</Mark>
 
 ## Closures and garbage collection
 

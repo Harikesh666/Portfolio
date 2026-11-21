@@ -72,7 +72,7 @@ Pick it right and you often need no library at all.
 
 ### The short version
 
-State management is not primarily about tools.
+State management is <Mark kind="circle">not primarily</Mark> about tools.
 
 It is about deciding, for each piece of state, two things: its **location** (which component holds it) and its **ownership** (which component is responsible for changing it).
 
@@ -158,7 +158,7 @@ Colocation means keeping each piece of state as close as possible to where it is
 
 This is the default and it is almost always right.
 
-The mechanism is simple: a state change re-renders its owner and that owner's subtree, so the lower the owner, the smaller the re-render.
+The mechanism is simple: a state change re-renders its owner and that owner's subtree, so <Mark kind="marker" wraps>the lower the owner, the smaller the re-render</Mark>.
 
 Lifting state higher than it needs to be is the most common self-inflicted performance problem in React, and it is invisible until you watch the Profiler.
 
@@ -330,7 +330,11 @@ The bug is that `filteredItems` should never have been state.
 
 If a value can be computed from existing state or props, it is not state, it is a derivation, and it should be computed during render rather than stored.
 
+<MarginNote note="keep each fact in one place">
+
 Storing derived values creates two sources of truth for the same fact, which inevitably drift apart, producing the entire family of "these two things disagree" bugs.
+
+</MarginNote>
 
 The fix is to compute the derived value inline during render (and memoize it only if the computation is genuinely expensive).
 
@@ -441,7 +445,7 @@ First, avoid redundant or contradictory state: do not keep multiple pieces of st
 
 Second, when several flags really describe one situation, model the situation as a single value with named states rather than as independent booleans, so the illegal combinations become unrepresentable.
 
-Good structure makes whole categories of bugs impossible instead of merely unlikely.
+<Mark kind="marker" wraps>Good structure makes whole categories of bugs impossible instead of merely unlikely.</Mark>
 
 ### How it actually works
 
@@ -658,7 +662,11 @@ But you have also heard "Context is overused," so you are not sure whether this 
 
 Prop drilling is passing a prop down through intermediate components that do not use it, only to reach a deep descendant that does.
 
+<MarginNote note="explicit flow is a feature, not a flaw">
+
 A little of it is completely fine and is often clearer than the alternative, because the data flow is explicit and traceable.
+
+</MarginNote>
 
 It becomes a smell when the same props thread through many layers or large parts of the tree, at which point the noise obscures each component's real job.
 
@@ -742,7 +750,7 @@ It does not store state, manage updates, or optimize re-renders by itself.
 
 You hold the state with `useState` or `useReducer` in a component above, and use Context only to _deliver_ that state to deep consumers without drilling.
 
-Treating Context as a state-management solution is the source of most of the trouble people have with it.
+<Mark kind="underline" wraps>Treating Context as a state-management solution is the source of most of the trouble people have with it.</Mark>
 
 Treating it as a delivery mechanism for state you manage elsewhere is how to use it correctly.
 
@@ -1052,7 +1060,11 @@ You have hit Context's actual ceiling, and the fix is not more Context.
 
 ### The short version
 
+<MarginNote note="all or nothing for every consumer">
+
 Context has no built-in way to subscribe to _part_ of its value.
+
+</MarginNote>
 
 A consumer of a context re-renders when the value changes, full stop.
 
@@ -1136,7 +1148,7 @@ Every external store works the same way underneath: the state lives in a plain J
 
 React's official bridge for subscribing to an external store safely (including under concurrent rendering, without a consistency bug called tearing) is `useSyncExternalStore`.
 
-Once you see that shared shape, the libraries differ mainly in how you define state and selectors, not in what they fundamentally do.
+Once you see that shared shape, <Mark kind="marker" wraps>the libraries differ mainly in how you define state and selectors, not in what they fundamentally do</Mark>.
 
 ### How it actually works
 
@@ -1352,7 +1364,11 @@ There are two fundamentally different kinds of state, and conflating them is the
 
 Server state needs caching, synchronization, and staleness handling that client-state tools (`useState`, Redux, Context) do not provide, which is why dedicated server-state libraries (the one you have used, React Query, now TanStack Query, and RTK Query) exist.
 
+<MarginNote note="server data is a cache, not state">
+
 Putting server data in client-state tools is what forces you to reinvent all of that by hand.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -1425,7 +1441,7 @@ Can it be local?
 
 Does it need to be shared, and if so, how widely and how often does it change?
 
-The order matters: it routes most state to the cheap, low rungs and reserves the expensive ones for the cases that truly need them.
+<Mark kind="circle">The order matters</Mark>: it routes most state to the cheap, low rungs and reserves the expensive ones for the cases that truly need them.
 
 ### How it actually works
 
@@ -1499,7 +1515,11 @@ The procedure is: identify the symptom, find the rung of the ladder it implicate
 
 The Profiler is your main instrument for re-render problems.
 
+<MarginNote note="ask which copy is the real one">
+
 The "two sources of truth" lens is your main instrument for desync problems.
+
+</MarginNote>
 
 ### How it actually works
 

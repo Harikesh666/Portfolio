@@ -3,7 +3,7 @@ import { SectionHeading } from "../../components/SectionHeading";
 import { StaggerReveal } from "../../components/StaggerReveal";
 import { GuidePreview } from "../../components/guide-previews";
 import { PageEnter } from "../../components/PageEnter";
-import { NewTag } from "../../components/SketchMark";
+import { NewTag, SketchMark } from "../../components/SketchMark";
 import {
     newPostSlug,
     posts,
@@ -63,7 +63,9 @@ function ArticlesPage() {
                     as="p"
                     className="mt-3 text-pretty leading-relaxed text-foreground"
                 >
-                    {articlesDescription}
+                    Long-form guides on JavaScript, React internals, and the{" "}
+                    <SketchMark kind="underline">mental models</SketchMark>{" "}
+                    behind modern web applications.
                 </StaggerReveal.Item>
                 <StaggerReveal.Item as="p" className={`mt-3 ${metaClassName}`}>
                     {posts.length} guides · {topics.length} topics · 1 learning

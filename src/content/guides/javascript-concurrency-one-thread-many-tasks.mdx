@@ -25,7 +25,7 @@ It needs a way to start work, avoid waiting uselessly, and return to each result
 
 ## What is concurrency?
 
-Concurrency means making progress on multiple tasks during overlapping periods of time.
+Concurrency means making progress on multiple tasks during <Mark kind="circle">overlapping periods</Mark> of time.
 
 Imagine one cook preparing tea and toast.
 
@@ -97,7 +97,7 @@ This is called **run-to-completion**. It makes an individual JavaScript task eas
 
 But run-to-completion has a price. If `first()` performs five seconds of heavy computation, `second()` waits for five seconds. So do click handlers and rendering opportunities.
 
-One thread is manageable only when we return control quickly.
+<Mark kind="marker" wraps>One thread is manageable only when we return control quickly.</Mark>
 
 ## The host environment handles the waiting
 
@@ -321,13 +321,17 @@ The watch finishes first and sets the balance to `70`. Then the shoes operation 
 
 We spent `70`, but the final balance says `60` instead of `30`.
 
+<MarginNote note="a race needs a pause, not a second thread">
+
 No two JavaScript statements executed simultaneously on the main thread. The race happened because two asynchronous workflows read shared state, paused, and later wrote results based on stale snapshots.
+
+</MarginNote>
 
 This is a **logical race condition**. The final state depends on the order in which concurrent operations resume.
 
 Solutions depend on the application. We might serialize updates, move the authoritative transaction to a database, use version checks, or design operations that do not overwrite shared state from stale reads.
 
-“Single-threaded” is not a free pass from concurrency bugs.
+<Mark kind="underline" wraps>“Single-threaded” is not a free pass from concurrency bugs.</Mark>
 
 ## Concurrency needs fairness
 
@@ -377,7 +381,11 @@ Workers do not share the page’s `window` or direct DOM access. Their separatio
 
 Use asynchronous APIs for work that mostly waits, such as network I/O. Consider workers for expensive computation that would otherwise monopolize the main thread.
 
+<MarginNote note="same cook as the tea and toast">
+
 Do not hire a second cook merely to watch another kettle.
+
+</MarginNote>
 
 ## Why the concurrency model matters
 

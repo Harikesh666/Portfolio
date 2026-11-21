@@ -71,7 +71,7 @@ Every returned value takes the corresponding position in the new array.
 
 The first element does not have to remain a number. The `binary` callback returns strings, so `map` returns an array of strings.
 
-That is the point of `map`. It keeps the one-to-one structure while allowing each value to become something else.
+That is the point of `map`. <Mark kind="marker" wraps>It keeps the one-to-one structure while allowing each value to become something else.</Mark>
 
 ## How map works
 
@@ -131,7 +131,11 @@ console.log(users[0].name);     // AKSHAY
 console.log(sameUsers[0].name); // AKSHAY
 ```
 
+<MarginNote note="a new array, not new objects">
+
 The outer array is new, but both arrays contain the same object reference.
+
+</MarginNote>
 
 If you want new objects, return new objects deliberately:
 
@@ -222,7 +226,7 @@ const largeNumbers = numbers.filter(isGreaterThanFour);
 console.log(largeNumbers); // [5, 6]
 ```
 
-Notice what `filter` returns. It returns the original values that passed the test, not the Boolean results from the callback.
+Notice what `filter` returns. It returns the <Mark kind="circle">original values</Mark> that passed the test, not the Boolean results from the callback.
 
 <GuideFigure figure="filter-four" />
 
@@ -313,7 +317,7 @@ Trace the calls:
 | 4 | 9 | 2 | 11 |
 | 5 | 11 | 6 | 17 |
 
-The value returned by one callback becomes the accumulator for the next callback.
+<Mark kind="marker" wraps>The value returned by one callback becomes the accumulator for the next callback.</Mark>
 
 That sentence is the key to `reduce`.
 
@@ -532,7 +536,11 @@ const youngUserNames = users.reduce((names, user) => {
 console.log(youngUserNames); // ["akshay", "deepika"]
 ```
 
+<MarginNote note="fewer arrays, more work for the reader">
+
 This version avoids the intermediate array, but it asks the reader to inspect the callback before understanding the operation.
+
+</MarginNote>
 
 The chain states the two steps directly. The `reduce` version controls both selection and transformation itself.
 

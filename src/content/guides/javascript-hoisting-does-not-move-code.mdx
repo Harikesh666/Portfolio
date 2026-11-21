@@ -47,7 +47,7 @@ Three declarations. Three different results. One word is usually offered as the 
 
 Unfortunately, “JavaScript moves declarations to the top” creates almost as much confusion as it solves.
 
-The code does not move. The bindings are prepared differently before the statements are evaluated.
+The code <Mark kind="circle">does not move</Mark>. The bindings are prepared differently before the statements are evaluated.
 
 ## Hoisting is a teaching term
 
@@ -92,7 +92,11 @@ This line combines two ideas:
 1. Declare a binding named `score`.
 2. Evaluate `10` and assign it to `score`.
 
+<MarginNote note="the name comes early, the value comes later">
+
 The `var` binding is created and initialized before statement evaluation. The assignment to `10` still happens at the source line.
+
+</MarginNote>
 
 That separation explains most hoisting behavior.
 
@@ -209,7 +213,7 @@ But one execution does not reach step three. The `ReferenceError` on the second 
 
 Test declarations in separate snippets or wrap each access deliberately if you want to observe every error.
 
-The difference matters when teaching execution flow. JavaScript does not keep running the next line after an uncaught exception merely because that line would also fail.
+The difference matters when teaching execution flow. <Mark kind="underline" wraps>JavaScript does not keep running the next line after an uncaught exception merely because that line would also fail.</Mark>
 
 ## The TDZ shadows outer variables too
 
@@ -229,7 +233,11 @@ You might expect `"outer"` because the inner declaration appears later. Instead,
 
 The block already has its own `message` binding. That binding shadows the outer one from the start of the block, but it remains uninitialized until the `const` declaration runs.
 
+<MarginNote note="the inner name hides the outer one from the start">
+
 The lookup finds the inner binding and stops. It does not skip the uninitialized binding and continue searching outside.
+
+</MarginNote>
 
 This is strong evidence that `const` affects the scope before its source line, whether or not you choose to call that behavior hoisting.
 
@@ -479,7 +487,7 @@ var callMe = function () {};
 
 The binding exists and contains `undefined`. Trying to call `undefined` produces the `TypeError`.
 
-Ask what value lookup produced before memorizing an error message.
+<Mark kind="marker" wraps>Ask what value lookup produced before memorizing an error message.</Mark>
 
 ## Hoisting is not permission to write backward
 

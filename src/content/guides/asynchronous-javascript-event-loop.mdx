@@ -31,7 +31,7 @@ You will often hear that JavaScript is a synchronous, single-threaded language. 
 
 I am using **job** in the ordinary sense here: the piece of JavaScript work that currently has the main thread. Later, we will separate the browser's more precise tasks and microtasks.
 
-On the browser’s main thread, JavaScript code runs **one job at a time**. A function that is already running is not interrupted halfway through so another JavaScript function can take over. Each job runs to completion before the next one begins.
+On the browser’s main thread, JavaScript code runs **one job at a time**. A function that is already running is not interrupted halfway through so another JavaScript function can take over. Each job runs <Mark kind="circle">to completion</Mark> before the next one begins.
 
 Consider this code:
 
@@ -195,7 +195,11 @@ A **task** is one scheduled turn of browser work. Running the initial script, ha
 
 When the event loop selects the timer task, the engine calls `callback`. A new execution context is created, `"Callback"` is logged, and the function returns.
 
+<MarginNote note="ready and running are two separate moments">
+
 This is why a timeout delay is a minimum rather than a deadline. The timer can become ready while the main thread is still busy. The callback must wait for its turn.
+
+</MarginNote>
 
 The complete timing problem deserves its own walkthrough, so I covered it separately in [setTimeout Has Trust Issues](/articles/settimeout-minimum-not-deadline).
 
@@ -332,7 +336,7 @@ Here is the flow:
 6. `promiseCallback` runs.
 7. On a later event-loop iteration, the timer task runs.
 
-The zero-millisecond timer did not lose a race measured in milliseconds. It was scheduled in a different kind of queue.
+The zero-millisecond timer did not lose a race measured in milliseconds. <Mark kind="marker" wraps>It was scheduled in a different kind of queue.</Mark>
 
 <EventLoopFigure example="tasks-and-microtasks" />
 
@@ -436,7 +440,11 @@ setTimeout(function heavyWork() {
 
 That callback blocks the main thread for roughly five seconds. During that time, other main-thread JavaScript cannot run, and the page may not respond to input or paint updates smoothly.
 
+<MarginNote note="async moves the waiting, not the work">
+
 Asynchronous APIs prevent waiting from blocking the stack. They do not make expensive callback code harmless.
+
+</MarginNote>
 
 If you genuinely need JavaScript computation on another thread in a browser, Web Workers provide that capability. A worker has its own execution environment and communicates with the main thread through messages. It does not turn two main-thread callbacks into simultaneous work.
 
@@ -461,7 +469,7 @@ statusElement.textContent = "Done";
 
 You might expect the page to show `Working...` for five seconds and then `Done`. Instead, the browser may not paint the intermediate state at all. The script changes the DOM twice inside one long task, and the browser cannot render between those statements while JavaScript still owns the main thread.
 
-The DOM changed. The screen did not get its turn.
+The DOM changed. <Mark kind="underline" wraps>The screen did not get its turn.</Mark>
 
 ## A mental model that holds up
 

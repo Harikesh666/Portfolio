@@ -38,7 +38,11 @@ You might have seen newborn babies. What happens with newborn babies is that the
 
 Now let's understand the habitable environment with respect to technology. For you to do something specific in a particular technology, maybe the technology is not sufficient enough, and you want to add more capabilities to the said technology. That is what a runtime environment is. A runtime environment is software. It's nothing crazy. It can provide extra ecosystem stuff that the technology inherently lacks and enhance the capability of the corresponding technology. We are talking about JavaScript as the technology here.
 
+<MarginNote note="files and timers come from the runtime, not the language">
+
 JavaScript is a programming language. It is modern, high-level, and has some crazy features, but the language specification itself does not define everything required to build an end-to-end application. For example, it does not define APIs for accessing files, creating servers, manipulating the DOM, or using timers. These capabilities are provided by the runtime environment in which JavaScript is running.
+
+</MarginNote>
 
 What extra capabilities? You might have seen functions like `setTimeout` and `setInterval`, their use cases are to to provide runtime-provided timer functionality to schedule callbacks. JavaScript in itself doesn't know how to access timers. They are not an inherent part of JavaScript. There is no such logic implemented in JavaScript itself. You can check the ECMAScript spec. So how do they work? These are some extra capabilities provided by the runtime environment. And these capabilities can vary according to the runtimes. A runtime knows a lot of interesting things, like accessing timers. One of the simplest runtime environments is your browser. A browser can act as a runtime environment for JavaScript. It provides capabilities like reading and modifying HTML, accessing timers, and using DOM-related functions. JavaScript is about loops, functions, etc.
 
@@ -92,7 +96,7 @@ If you want to interact directly with the OS using JavaScript, then the OS has t
 
 The most important question is: How is Node.js cross-platform when it contains native C and C++ code, and compiled native binaries are platform-specific?
 
-No single component makes Node.js cross-platform. V8 supports multiple CPU architectures, libuv handles many differences between operating systems, and Node.js contains platform-specific code where it is required. A separate Node.js binary is built for each supported platform.
+<Mark kind="circle">No single component</Mark> makes Node.js cross-platform. V8 supports multiple CPU architectures, libuv handles many differences between operating systems, and Node.js contains platform-specific code where it is required. A separate Node.js binary is built for each supported platform.
 
 ### Browser and Server Communication
 
@@ -164,7 +168,7 @@ How? V8 collects feedback at places such as function calls, property accesses, a
 
 If we repeatedly pass similarly shaped objects to a function, V8 can use that feedback when optimizing the function. An optimizing compiler can then generate machine code specialized for the patterns that were observed during earlier executions.
 
-It is not simply caching an entire line of code or creating a copied version of the object. It is recording feedback and generating specialized machine code from that feedback.
+It is not simply caching an entire line of code or creating a copied version of the object. <Mark kind="marker" wraps>It is recording feedback and generating specialized machine code from that feedback.</Mark>
 
 The optimization is based on information collected during previous executions of the function. V8 can consider things like how frequently the function runs and what types or object shapes it has observed.
 
@@ -203,7 +207,7 @@ In a normal C++ workflow, we compile the program into machine code before runnin
 
 With JIT compilation, machine code is generated while the program is running. This allows the compiler to use information collected from the actual execution of the program.
 
-Parsing, interpreting bytecode, and garbage collection also happen at runtime, but those activities are not all called JIT. JIT specifically refers to compilation performed during execution.
+Parsing, interpreting bytecode, and garbage collection also happen at runtime, but those activities are not all called JIT. <Mark kind="underline" wraps>JIT specifically refers to compilation performed during execution.</Mark>
 
 So TurboFan optimizes the hot part of the code.
 
@@ -219,7 +223,11 @@ At a high level, V8 uses a generational heap. It contains a young generation and
 
 Newly created heap objects normally begin in the young generation. Many objects become unreachable shortly after they are created, so the young generation is collected frequently.
 
+<MarginNote note="promotion rewards survival, it does not predict use">
+
 If an object remains reachable through multiple garbage-collection cycles, it may be promoted to the old generation. This happens because the object survived previous collections, not because V8 knows that it will definitely be used again soon.
+
+</MarginNote>
 
 V8 uses different strategies for collecting the young generation and the complete heap. These strategies include marking, scavenging, sweeping, evacuation, and compaction.
 

@@ -75,7 +75,7 @@ The important detail is that different declarations are prepared differently:
 
 This is why a function declaration can usually be called before it appears in the file, while reading a `let` or `const` too early throws an error.
 
-People often call this behavior **hoisting**, but JavaScript does not physically move your code to the top. It prepares bindings before it begins evaluating the statements.
+People often call this behavior **hoisting**, but JavaScript does <Mark kind="circle">not physically move</Mark> your code to the top. It prepares bindings before it begins evaluating the statements.
 
 The full difference is covered in [JavaScript Hoisting Does Not Move Your Code](/articles/javascript-hoisting-does-not-move-code).
 
@@ -154,7 +154,7 @@ That last part is where the call stack becomes important.
 
 JavaScript is commonly described as **synchronous and single-threaded**.
 
-Single-threaded means one JavaScript thread executes one piece of JavaScript at a time.
+Single-threaded means one JavaScript thread executes <Mark kind="circle">one piece</Mark> of JavaScript at a time.
 
 Synchronous means that ordinary statements run in sequence. JavaScript does not casually skip a function call, execute the next line, and return whenever it feels like it. The caller waits for the called function to finish.
 
@@ -347,7 +347,11 @@ When `printMessage` runs, `caller` is directly below it on the stack. But `print
 
 It searches the scope where it was **defined**. Since `printMessage` was defined in the global scope, it finds the global `message`.
 
+<MarginNote note="two paths that answer two different questions">
+
 The stack records the path of calls. The lexical environment records the path of variable lookup.
+
+</MarginNote>
 
 ## A new scope does not always mean a new call
 
@@ -407,7 +411,7 @@ What remains reachable is the lexical environment containing `count`. The return
 
 When `counter()` is called, JavaScript creates a **new** execution context for `increment`. That new call can still reach the preserved `count` binding.
 
-Closures preserve access to bindings. They do not keep completed function calls permanently on the stack.
+Closures preserve access to bindings. <Mark kind="marker" wraps>They do not keep completed function calls permanently on the stack.</Mark>
 
 The complete closure model is explained in [Closures in JavaScript: The Function’s Backpack](/articles/closures-function-backpack).
 
@@ -490,7 +494,11 @@ Here is the broad sequence:
 5. After the delay, the callback becomes eligible to run as a task.
 6. When the event loop selects that task, JavaScript calls `showMessage` and creates a new execution context for it.
 
+<MarginNote note="the call ends now and the callback starts fresh later">
+
 The original `scheduleMessage` call does not remain on the stack for one second. It ends normally. The callback runs later on a new stack.
+
+</MarginNote>
 
 That is how JavaScript can remain single-threaded while the browser handles waiting in the background.
 

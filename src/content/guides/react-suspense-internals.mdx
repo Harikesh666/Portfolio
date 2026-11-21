@@ -76,7 +76,7 @@ The magic is a specific mechanism (a component _throws a promise_), and understa
 
 React catches that thrown promise, shows the nearest `<Suspense>` boundary's fallback, and, when the promise resolves, retries rendering the component, which now succeeds and replaces the fallback.
 
-So Suspense is a declarative loading-state mechanism built on "throw a promise to say I am not ready yet."
+<Mark kind="marker" wraps>So Suspense is a declarative loading-state mechanism built on "throw a promise to say I am not ready yet."</Mark>
 
 ### How it actually works
 
@@ -157,7 +157,11 @@ If the thrown value is an `Error`, it unwinds to the nearest _error boundary_ an
 
 If the thrown value is a _promise_ (a thenable), it unwinds to the nearest _`<Suspense>` boundary_ and shows that boundary's fallback _temporarily_, attaching a retry for when the promise resolves.
 
+<MarginNote note="errors take this same path up the tree">
+
 Same unwind, same "find the nearest boundary up the tree," distinguished only by the thrown value's type and the follow-up.
+
+</MarginNote>
 
 This guide is the promise branch.
 
@@ -256,7 +260,7 @@ Suspense-integrated data libraries (`useSuspenseQuery` in TanStack Query, Relay,
 
 All of them ultimately _throw a thenable_ (Section 2).
 
-The critical requirement across all of them: the promise must be _stable_ (cached, the same promise across renders for the same input), not created fresh on every render, or the component suspends forever in a loop.
+The critical requirement across all of them: the promise must be _stable_ (cached, the same promise across renders for the same input), not created fresh on every render, <Mark kind="underline" wraps>or the component suspends forever in a loop</Mark>.
 
 ### How it actually works
 
@@ -370,7 +374,7 @@ When a component suspends by throwing a promise, React attaches a callback to th
 
 On the retry, the data is now available (the promise resolved), so the component renders successfully instead of suspending, and React replaces the fallback with the real content.
 
-This is why a Suspense fallback is temporary and self-resolving: React listens for the promise and retries automatically.
+This is why a Suspense fallback is <Mark kind="circle">temporary and self-resolving</Mark>: React listens for the promise and retries automatically.
 
 No re-render in your code is needed because React wired up the promise itself.
 
@@ -462,7 +466,11 @@ A boundary high in the tree means a large region (maybe the whole page) shows on
 
 Boundaries lower mean smaller, independent regions show their own fallbacks.
 
+<MarginNote note="the shell paints first, slow parts wait">
+
 The standard pattern is to render an immediate _shell_ (header, nav, layout that needs no async data) outside any boundary, and place boundaries around the _slow subregions_ so each shows a local fallback while the shell is visible immediately.
+
+</MarginNote>
 
 Match boundaries to _data dependencies_: a region that waits on its own data is a natural boundary.
 
@@ -650,7 +658,7 @@ If React stopped, the second component's fetch would not start until the first r
 
 React 19, after a brief regression where it did waterfall, settled on **pre-warming for suspended trees**: when a tree suspends, React continues to _pre-render_ the suspended tree's siblings in a throwaway pass purely to trigger their async work, so their fetches start in _parallel_.
 
-The practical result in the React 19 line: siblings in the same boundary fetch in parallel, as you would want.
+The practical result in the React 19 line: <Mark kind="marker" wraps>siblings in the same boundary fetch in parallel</Mark>, as you would want.
 
 ### How it actually works
 
@@ -727,7 +735,11 @@ And when multiple nested or successive boundaries resolve in quick succession, R
 
 This throttling is built in and intentional.
 
+<MarginNote note="a short wait beats a flashing spinner">
+
 It trades a little reveal latency for a smoother, less flickery experience.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -809,7 +821,7 @@ When an update causes an _already-revealed_ Suspense boundary to suspend again (
 
 Wrapping that update in a _transition_ (`startTransition`, or via `useDeferredValue`) changes this: React keeps showing the _old_ content until the new content is ready, then swaps it in, with _no fallback flash_.
 
-So transitions are how you update or navigate without hiding content behind a spinner.
+<Mark kind="marker" wraps>So transitions are how you update or navigate without hiding content behind a spinner.</Mark>
 
 `isPending` (from `useTransition`) lets you show a subtle "updating" indicator meanwhile.
 
@@ -919,7 +931,11 @@ A subtree that fetches data has two non-success states: _pending_ (still loading
 
 Suspense handles _pending_ (a thrown promise shows the fallback), and an error boundary handles _failed_ (a thrown error shows the error fallback).
 
+<MarginNote note="one throw path, two catchers">
+
 Because they are the same throw-and-unwind mechanism distinguished by thrown value (Section 2), you handle both by wrapping the subtree in _both_: an error boundary (often outside) and a `<Suspense>` (often inside), so a thrown promise goes to Suspense (loading) and a thrown error goes to the error boundary (failed).
+
+</MarginNote>
 
 This is the standard pattern for Suspense data fetching.
 
