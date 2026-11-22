@@ -149,9 +149,18 @@ export function watchSketch(mark: Element) {
         return () => {};
     }
     const resizeObserver = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => refit(mark));
+    let isFirstReport = true;
     const observer = new IntersectionObserver(
         ([entry]) => {
-            if (!entry.isIntersecting) return;
+            // A mark scrolling in waits until it clears the bottom 15%, so the
+            // reader sees it draw. One already wholly on screen when the page
+            // opens draws anyway: near the bottom of a tall window it would
+            // otherwise wait for a scroll that may never come. The observer's
+            // first report carries the position, so nothing is measured here.
+            const box = entry.boundingClientRect;
+            const isOnScreenAtStart = isFirstReport && box.height > 0 && box.top >= 0 && box.bottom <= window.innerHeight;
+            isFirstReport = false;
+            if (!entry.isIntersecting && !isOnScreenAtStart) return;
             observer.disconnect();
             render(mark, !prefersReducedMotion());
             resizeObserver?.observe(mark);
