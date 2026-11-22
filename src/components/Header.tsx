@@ -353,6 +353,12 @@ export default function Header() {
     return (
         <header className="mx-auto w-full max-w-2xl">
             <div className={`relative min-w-0 ${headerHeightClassName[mode]}`}>
+                {/* First in the DOM, so keyboard focus meets the avatar's Home
+                    link where the eye does: at the left, before the name and links. */}
+                <SharedAvatar
+                    mode={mode}
+                    shouldReduceMotion={shouldReduceMotion}
+                />
                 <AnimatePresence initial={false}>
                     <motion.div
                         animate={{
@@ -386,10 +392,6 @@ export default function Header() {
                         )}
                     </motion.div>
                 </AnimatePresence>
-                <SharedAvatar
-                    mode={mode}
-                    shouldReduceMotion={shouldReduceMotion}
-                />
                 <ThemeToggle
                     mode={mode}
                     shouldReduceMotion={shouldReduceMotion}

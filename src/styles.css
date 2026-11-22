@@ -425,17 +425,26 @@
     }
 
     .toc-hook__row {
-        display: -webkit-box;
-        overflow: hidden;
+        display: block;
         border-radius: 0.5rem;
         padding: 0.375rem 0.5rem 0.375rem 1.25rem;
         font-size: 13px;
         line-height: 1.4;
         color: var(--muted);
         text-wrap: pretty;
+        transition: color 200ms ease;
+    }
+
+    /*
+     * Two lines at most. The clamp sits on the title, not the row: on the row,
+     * overflow clipped at the padding edge, and the top of a third line showed
+     * through the bottom padding.
+     */
+    .toc-hook__title {
+        display: -webkit-box;
+        overflow: hidden;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
-        transition: color 200ms ease;
     }
 
     @media (hover: hover) and (pointer: fine) {

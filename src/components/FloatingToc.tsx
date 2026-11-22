@@ -336,7 +336,7 @@ function FloatingTocView({
                                         else rowRefs.current.delete(item.id);
                                     }}
                                 >
-                                    {item.title}
+                                    <span className="toc-hook__title">{item.title}</span>
                                 </a>
                             );
                         })}
