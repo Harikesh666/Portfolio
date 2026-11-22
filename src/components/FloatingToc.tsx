@@ -152,6 +152,8 @@ export function FloatingTocHost({
 
 /** Height of the rail's rounded hook, from where it leaves the line to the row's center. */
 const hookCorner = 6;
+/** Space kept between the bottom of the list and the top of the site footer, in px. */
+const footerClearance = 24;
 const dashedRail =
     "repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 4px)";
 
@@ -226,6 +228,7 @@ function FloatingTocView({
     const shouldReduceMotion = useReducedMotion() ?? false;
     const scrollRef = useRef<HTMLDivElement>(null);
     const listRef = useRef<HTMLDivElement>(null);
+    const navRef = useRef<HTMLElement>(null);
     const rowRefs = useRef(new Map<string, HTMLAnchorElement>());
     const [centers, setCenters] = useState<Record<string, number>>({});
     const [previewId, setPreviewId] = useState<string | null>(null);
@@ -264,6 +267,39 @@ function FloatingTocView({
         }
     }, [activeId, shouldReduceMotion]);
 
+    // Past the article the footer rises into view. The list rides up with it
+    // and always ends a little above the footer, the way a sticky column lets
+    // go, instead of the footer's petals drawing over its last rows. Each
+    // scroll frame reads the list's resting bottom and the footer's top, then
+    // writes one translate: reads before the write, so no forced layout.
+    useEffect(() => {
+        const nav = navRef.current;
+        const footer = document.querySelector("[data-site-footer]");
+        if (!nav || !footer) return;
+        let lift = 0;
+        let frame = 0;
+        const place = () => {
+            frame = 0;
+            const restingBottom = nav.getBoundingClientRect().bottom + lift;
+            const next = Math.max(0, restingBottom + footerClearance - footer.getBoundingClientRect().top);
+            if (Math.abs(next - lift) < 0.5) return;
+            lift = next;
+            nav.style.translate = lift > 0 ? `0 ${-lift}px` : "";
+        };
+        const schedule = () => {
+            if (!frame) frame = window.requestAnimationFrame(place);
+        };
+        schedule();
+        window.addEventListener("scroll", schedule, { passive: true });
+        window.addEventListener("resize", schedule);
+        return () => {
+            window.cancelAnimationFrame(frame);
+            window.removeEventListener("scroll", schedule);
+            window.removeEventListener("resize", schedule);
+            nav.style.translate = "";
+        };
+    }, []);
+
     if (items.length === 0) return null;
 
     const activeY = activeId ? (centers[activeId] ?? null) : null;
@@ -277,6 +313,7 @@ function FloatingTocView({
             <nav
                 aria-label="Table of contents"
                 className="pointer-events-auto flex max-h-full flex-col"
+                ref={navRef}
                 onKeyDown={(event) => {
                     if (event.key !== "Escape") return;
                     (document.activeElement as HTMLElement | null)?.blur();

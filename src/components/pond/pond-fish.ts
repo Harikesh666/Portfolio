@@ -317,6 +317,8 @@ export function steer(fish: Fish, target: Vec, maxSpeed: number, dt: number, swi
     const maxTurn = Math.min(turnRate, fish.speed / arc + pivotRate) * agility;
     const wantedTurn = clamp(difference * turnGain * agility, -maxTurn, maxTurn);
     fish.turn += (wantedTurn - fish.turn) * Math.min(1, dt * turnEase * agility);
+    // The ease can trail a limit that just dropped (a gliding koi slowing down), so hold it to the limit outright.
+    fish.turn = clamp(fish.turn, -maxTurn, maxTurn);
     fish.heading += fish.turn * dt;
 
     // Fins flare to brake or hover, half open on a glide, and fold flat for a sprint.

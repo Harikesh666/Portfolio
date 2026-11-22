@@ -1,5 +1,29 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { bodyProfile, makeFish, poseOf, segments, steer, type Fish } from "./pond-fish";
+
+/**
+ * A koi's build and its glides come from Math.random. Seeding it makes every
+ * run test the same fish, so a result never depends on the draw; the turn
+ * test below still covers many fish by seeding each one itself.
+ */
+function seededRandom(seed: number) {
+    let state = seed >>> 0;
+    return () => {
+        state = (state + 0x6d2b79f5) >>> 0;
+        let t = state;
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+}
+
+beforeEach(() => {
+    vi.spyOn(Math, "random").mockImplementation(seededRandom(1));
+});
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 const koi = (): Fish => makeFish({ id: 1, kind: "task" }, { x: 200, y: 100 }, 0, 100, false);
 
@@ -84,22 +108,25 @@ describe("steer", () => {
     });
 
     it("never turns in a tighter arc than its body can hold, or faster than a fish can", () => {
-        const fish = koi();
         const targets = [
             { x: 40, y: 110 },
             { x: 320, y: 30 },
             { x: 210, y: 105 },
             { x: 60, y: 20 },
         ];
-        // A turn eases in and out, so it may trail a limit that has just dropped: judge it against the last half second's speed.
-        const recent: number[] = [];
-        for (const target of targets) {
-            for (let i = 0; i < 240; i++) {
-                recent.push(fish.speed);
-                if (recent.length > 30) recent.shift();
-                steer(fish, target, 46, 1 / 60, "cruise");
-                const limit = Math.min(2.4, Math.max(...recent, fish.speed) / (fish.length * 0.34) + 0.55);
-                expect(Math.abs(fish.turn)).toBeLessThanOrEqual(limit + 1e-6);
+        // Many koi, each with its own seeded build and glides: before the turn
+        // was held to its limit, about 3 in 100 trailed a falling limit by a hair.
+        for (let seed = 1; seed <= 200; seed++) {
+            vi.spyOn(Math, "random").mockImplementation(seededRandom(seed));
+            const fish = koi();
+            for (const target of targets) {
+                for (let i = 0; i < 240; i++) {
+                    // A step turns at the speed it starts with, then speeds up or slows down.
+                    const speed = fish.speed;
+                    steer(fish, target, 46, 1 / 60, "cruise");
+                    const limit = Math.min(2.4, speed / (fish.length * 0.34) + 0.55);
+                    expect(Math.abs(fish.turn), `koi ${seed}`).toBeLessThanOrEqual(limit + 1e-9);
+                }
             }
         }
     });
