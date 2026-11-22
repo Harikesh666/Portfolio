@@ -9,15 +9,11 @@ order: 8
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026). The error-boundary API (the `getDerivedStateFromError` and `componentDidCatch` class methods) is long-stable. React 19 added the root-level `onCaughtError`, `onUncaughtError`, and `onRecoverableError` options and changed error-logging behavior, both verified against current docs and noted inline. This is a Track A engine-internals guide.
+> Current as of React 19.2.x (latest patch 19.2.6, May 2026). The error-boundary API (the `getDerivedStateFromError` and `componentDidCatch` class methods) is long-stable. React 19 added the root-level `onCaughtError`, `onUncaughtError`, and `onRecoverableError` options and changed error-logging behavior.
 
-> **What this guide builds on.** This is a Track A (engine internals) guide. From the **rendering and reconciliation guide** it uses the render and commit phases, the work loop (React processes the tree in units of work), fibers (React's internal objects for components), and the idea of _unwinding_ the work-in-progress tree. It also touches **Suspense**, because error boundaries and Suspense share the same throw-and-unwind machinery (Section 10). From the **Scheduler and Lanes guide** it uses retry lanes lightly (for the Suspense comparison). Wherever it reaches for one of those, it recaps it in a line. The per-section **Prereqs** lines name what each section needs, drawn from earlier sections here, the other guides, and outside knowledge (JavaScript `throw` and `try`/`catch`, the call stack, and class components with lifecycle methods, since error boundaries are still classes).
->
-> **A note on Suspense.** Error boundaries and Suspense are built on the _same_ mechanism (a component throws, React unwinds to the nearest boundary), so this guide explains that shared machinery and shows how Suspense uses it. But it does **not** cover Suspense in full: Suspense gets its own dedicated guide next, which goes deep on suspending, fallbacks, boundary placement, transitions, and reveal order. Here, Suspense appears only where it illuminates the shared unwind.
+> Error boundaries and Suspense are built on the _same_ mechanism (a component throws, React unwinds to the nearest boundary), so this guide explains that shared machinery and shows how Suspense uses it. But it does **not** cover Suspense in full: Suspense gets its own dedicated guide. Here, Suspense appears only where it illuminates the shared unwind.
 
 ## Read this first
-
-Same method as the other guides.
 
 **You are not meant to absorb this in one sitting.**
 
@@ -44,7 +40,7 @@ Sections that need nothing past basic React and JavaScript say so.
 ### Two rules that multiply everything
 
 1. **Run the experiments.** Each section ends with a short **"Try it."** Error handling is best learned by deliberately throwing: make a component crash, watch the blast radius with and without a boundary, and watch what a boundary refuses to catch.
-2. **Trust the order.** The sections build one picture: why the default is to crash, what a boundary is, how the unwind works, the catch-and-don't-catch boundary, recovery, the React 19 additions, and the shared machinery with Suspense. Here is the spine:
+2. **Trust the order.** Here is the spine:
 
 <GuideSpine steps={[{"title": "Default: an uncaught render error crashes the whole app", "sections": [1, 2]}, {"title": "The boundary API and why it is a class", "sections": [3, 4]}, {"title": "The unwind-to-boundary mechanism", "sections": [5], "note": "the core internals"}, {"title": "What it catches and what it does not (and why)", "sections": [6, 7]}, {"title": "Recovery, the React 19 root options", "sections": [8, 9]}, {"title": "The same machinery powers Suspense", "sections": [10], "note": "sets up the Suspense guide"}, {"title": "Resilience architecture, SSR, debugging, source", "sections": [11, 12, 13, 14]}]} />
 
@@ -1072,8 +1068,6 @@ Outside React: the idea of server-rendered HTML.
 
 Error boundaries behave differently when your app is server-rendered, and you have seen "hydration mismatch" warnings (the `onRecoverableError` category from Section 9) that are not crashes but are clearly _something_.
 
-This area is framework-adjacent, so it deserves a clear but bounded treatment with pointers to where the full story lives.
-
 ### The short version
 
 When React renders on the server and _hydrates_ on the client (attaches to the server-rendered HTML), error handling has extra cases.
@@ -1082,13 +1076,9 @@ A hydration _mismatch_ (the client render does not match the server HTML) is a _
 
 Error boundaries still catch render errors during hydration, and Suspense boundaries participate in streaming SSR.
 
-The deep mechanics of hydration, streaming, and selective hydration belong to the dedicated Hydration and SSR Internals guide.
-
-This section gives you the error-handling-relevant picture and points there.
-
 ### How it actually works
 
-This section is deliberately bounded: SSR and hydration are framework-coupled and get their own guide, so here we cover only the parts that intersect _error handling_, and point to the Hydration guide for the rest.
+This section is deliberately bounded: SSR and hydration are framework-coupled, so here we cover only the parts that intersect _error handling_.
 
 Recall (lightly, from the rendering and RSC guides) that with server-side rendering, React renders your app to HTML on the _server_, sends that HTML so the user sees content quickly, and then on the _client_ React _hydrates_: it renders your components again and attaches to the existing server HTML, wiring up interactivity rather than recreating the DOM.
 
@@ -1124,15 +1114,9 @@ Suspense boundaries (Section 10) participate in _streaming_ SSR: the server can 
 
 And a Suspense boundary that cannot be resolved on the server can _fall back to client rendering_, which is another recoverable situation surfaced via `onRecoverableError`.
 
-The full mechanics of streaming, selective hydration (hydrating interactive parts first), and how Suspense drives both are the subject of the Hydration and SSR Internals guide.
-
 The error-handling-relevant takeaway is that Suspense fallbacks and server-to-client fallbacks show up in the recoverable-error category.
 
-The reason to keep this section bounded is the spec's own principle (and the reader's profile): SSR and hydration are framework-coupled and best learned once you are past surface-level Next.js, so a full treatment here would be premature and would duplicate the dedicated guide.
-
-What you need _for error handling_ is: hydration mismatches and server-to-client Suspense fallbacks are _recoverable_ errors (the app keeps working, report them via `onRecoverableError` and fix the underlying server/client difference), error boundaries protect client and hydration render errors as usual, and the deep streaming and hydration mechanics live in their own guide.
-
-When you reach that guide, this section's error-handling framing (the three error categories and where SSR fits) will connect to the full hydration story.
+What you need _for error handling_ is: hydration mismatches and server-to-client Suspense fallbacks are _recoverable_ errors (the app keeps working, report them via `onRecoverableError` and fix the underlying server/client difference), and error boundaries protect client and hydration render errors as usual.
 
 ### Try it
 
@@ -1140,7 +1124,7 @@ When you reach that guide, this section's error-handling framing (the three erro
 
 ### You've got this if
 
-You can explain why a hydration mismatch is a _recoverable_ error rather than a crash, and where the full SSR and hydration mechanics are covered (their own guide).
+You can explain why a hydration mismatch is a _recoverable_ error rather than a crash.
 
 ---
 
@@ -1306,8 +1290,6 @@ You opened `ReactFiberThrow.js` (or even just located it) and recognized that th
 
 ## Further reading (primary sources)
 
-When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
-
 ### The React docs on error handling
 
 The [`Component` reference](https://react.dev/reference/react/Component) documents `getDerivedStateFromError` and `componentDidCatch` (Section 3) (see the error-boundary sections).
@@ -1328,34 +1310,8 @@ This is the primary source for what React 19 changed about error handling.
 
 Its README is a practical primary source for the ergonomic patterns this guide describes, and it is actively maintained.
 
-### The React source (pass 3)
-
-The React source is in the `react-reconciler` package: `ReactFiberThrow.js` (the shared catch-and-route logic for errors and promises, Sections 5 and 10), `ReactFiberUnwindWork.js` (the unwind, Section 5), and `ReactFiberErrorLogger.js` (logging and root callbacks, Section 9), per Section 14.
-
-Reading `throwException` is the fastest way to confirm the shared mechanism with Suspense.
-
-### The rendering and reconciliation guide, and the upcoming Suspense guide (this series)
+### The rendering and reconciliation guide, and the Suspense guide (this series)
 
 The rendering guide's render/commit and work-loop material is the foundation for the unwind (Section 5), and the dedicated Suspense guide builds directly on Section 10's shared machinery, going deep on the promise side (suspending, fallbacks, transitions, reveal order, streaming).
 
 Read them together to see both halves of the throw-and-unwind mechanism.
-
-A good way to use all of these: read the relevant deep section here first so you have the model and the vocabulary, then read the primary source, then come back.
-
-This guide gives you the one core idea (throw, unwind to the nearest boundary) and traces error boundaries, the React 19 options, resilience architecture, and the Suspense connection all back to it.
-
-The primary sources give the exact API, the library ergonomics, and the source-level detail.
-
----
-
-Built to be climbed, not swallowed.
-
-Finish pass 1 and you are already ahead.
-
-Come back for the deep parts when a real crash, a boundary that did not catch, or a hydration warning gives you a reason to care, and learn by deliberately throwing, because watching the blast radius with and without a boundary is the fastest way to internalize the mechanism.
-
-Every version-specific claim (error boundaries still class-only, the React 19 root options and the changed default logging) reflects the React 19.2.x line in 2026.
-
-The core model (throw during render, unwind to the nearest boundary, contain the failure, with the same machinery powering Suspense via thrown promises) has been stable since React 16 and is not going anywhere.
-
-This is a Track A engine-internals guide, and it shares its backbone with the Suspense guide that follows: error boundaries are the throw-and-unwind mechanism for errors, Suspense is the same mechanism for promises.

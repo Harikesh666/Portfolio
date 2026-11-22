@@ -9,11 +9,11 @@ order: 2
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025) and `useEffectEvent` stable since 19.2. Companion to the rendering and reconciliation guide. This one sits directly on top of the hook storage, the update queue, and the render and commit split described there, so it helps to have at least skimmed that guide first.
+> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025) and `useEffectEvent` stable since 19.2.
 
 ## Read this first
 
-This guide goes deep, on purpose, and like the engine guide it is built to be climbed, not swallowed.
+This guide goes deep, on purpose, and it is built to be climbed, not swallowed.
 
 **You are not supposed to absorb all of it in one sitting.**
 
@@ -1495,8 +1495,6 @@ A connection worth noting: `useImperativeHandle` lets a parent's ref expose a cu
 
 It is a focused topic that belongs with refs.
 
-The engine-internals track's refs guide goes into the commit-phase timing in more depth if you want it.
-
 ### Try it
 
 > Make a ref, write to `ref.current` from a button handler, and `console.log` it, confirming the screen does not change but the logged value does. Then add a normal `useState` next to it and watch only the state change cause a re-render. Finally, try writing to the ref directly in the component body and turn on StrictMode to see why that is discouraged (the write runs twice).
@@ -1649,7 +1647,7 @@ You want a map, not a tutorial on each.
 
 Most of the modern hooks fall into three groups: reading external things (`use`, `useSyncExternalStore`), concurrency (`useTransition`, `useDeferredValue`), and forms and Server Functions (`useActionState`, `useFormStatus`, `useOptimistic`), plus a couple of utilities (`useId`, `useDebugValue`).
 
-Each connects to a mechanism you have already met in this guide or the two engine guides, so you can learn them on demand rather than all at once.
+Each connects to a mechanism you have already met in this guide, the rendering guide, or the RSC guide, so you can learn them on demand rather than all at once.
 
 ### How it actually works as a map, with where to go deeper
 
@@ -1888,8 +1886,6 @@ You opened `ReactFiberHooks.js`, found a function named in this guide, and recog
 
 ## Further reading (primary sources)
 
-When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
-
 ### A Complete Guide to useEffect, by Dan Abramov
 
 Available at [overreacted.io/a-complete-guide-to-useeffect](https://overreacted.io/a-complete-guide-to-useeffect/).
@@ -1932,21 +1928,3 @@ It is not optional tooling.
 It is the mechanical guardrail for Sections 1, 7, and 11.
 
 Keep it on and believe it.
-
-A good way to use all of these: read the relevant deep section of this guide first so you have the vocabulary, then read the primary source, then come back and reread the section.
-
-The primary sources go deeper on their one topic.
-
-This guide gives you the map that tells you where each one fits, and ties each rule back to the mechanism that makes it true.
-
----
-
-Built to be climbed, not swallowed.
-
-Finish pass 1 and you are already ahead.
-
-Come back for the deep parts when your work gives you a reason to care, and run the experiments so the knowledge sticks to something real.
-
-Every claim about the 2026 surface (the 19.2.x line, `useEffectEvent` going stable, the React Compiler 1.0) reflects React 19.2.x.
-
-The core model (the hook linked list, the snapshot, the update queue, effects as synchronization, the `Object.is` dependency check) has been stable across the React 18 to 19 era.

@@ -9,15 +9,13 @@ order: 4
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026) and TanStack Query v5 (the React package `@tanstack/react-query`, 5.100.x as of May 2026, note that the only "v6" in existence is the Svelte adapter, the React version is still v5). Version-specific and library-specific claims are noted inline and were verified against current docs.
+> Current as of React 19.2.x (latest patch 19.2.6, May 2026) and TanStack Query v5 (the React package `@tanstack/react-query`, 5.100.x as of May 2026, note that the only "v6" in existence is the Svelte adapter, the React version is still v5).
 
-> **What this guide builds on.** This is the Track B guide that leans on the most prior material, because it sits at the meeting point of several mechanisms. From the **State Management guide** it assumes the central distinction of Section 14: server state is a cache of remote data, not client state, and conflating the two is the root mistake this guide exists to fix. From the **Hooks and Effects guide** it uses the snapshot model, the stale-closure and fetch-race material (Sections 3 and 9), referential stability (Section 8), `useSyncExternalStore` (Section 15), and `use()` (Section 15). From the **rendering and reconciliation guide** it uses Suspense, concurrent rendering, and tearing. You can read this guide right after the State guide. Wherever it reaches for an engine concept, it defines that concept in one line at first use. The per-section **Prereqs** lines name exactly what each section needs, drawn from three wells: earlier sections here, the other guides, and outside knowledge (HTTP caching, promises, the browser focus and online events).
+> You can read this guide right after the State guide. Wherever it reaches for an engine concept, it defines that concept in one line at first use.
 
 > **A note on libraries.** Server state has a _model_ that is universal: every serious server-state library (TanStack Query, formerly React Query, SWR, RTK Query) implements the same core ideas (a keyed cache, stale-while-revalidate, deduplication, background synchronization, invalidation). This guide teaches that model as the thing to understand, and uses **TanStack Query v5** as the concrete reference implementation for APIs, because it is the one you have worked with. SWR and RTK Query are siblings built on the same model. The concepts transfer.
 
 ## Read this first
-
-Same method as the other guides.
 
 **You are not meant to absorb this in one sitting.**
 
@@ -44,7 +42,7 @@ Sections that need nothing past basic React say so.
 ### Two rules that multiply everything
 
 1. **Run the experiments.** Each section ends with a short **"Try it."** Install TanStack Query in a Vite scratch app, open the Devtools panel, and watch the cache entries change state as you interact. The caching behavior has to be seen in the Devtools to become real.
-2. **Trust the order.** The sections build one model, in order: server state is a cache, the manual approach reinvents that cache badly, the cache is addressed by keys, it has a status model and a freshness policy (`staleTime`) and a retention policy (`gcTime`), it deduplicates and shares, it refetches in the background, you gate it with `enabled`, you write to it with mutations and keep it honest with invalidation and optimistic updates, you page and prefetch, you integrate it with Suspense, and underneath it is an external store. Here is the spine:
+2. **Trust the order.** Here is the spine:
 
 <GuideSpine steps={[{"title": "Server state is a cache, not state", "sections": [1]}, {"title": "The manual approach reinvents the cache badly", "sections": [2]}, {"title": "The cache is a key-value store (query keys)", "sections": [3]}, {"title": "Its status model (two axes) and freshness: staleTime = stale-while-revalidate", "sections": [4, 5], "note": "the central mechanism"}, {"title": "Retention (gcTime), dedup, background refetch", "sections": [6, 7, 8]}, {"title": "Gating (enabled), writing (mutations, optimistic)", "sections": [9, 10, 11]}, {"title": "Pagination and prefetch, Suspense, the engine", "sections": [12, 13, 14]}, {"title": "Pitfalls, then debugging", "sections": [15, 16]}]} />
 
@@ -1402,7 +1400,7 @@ The client cache is seeded from that server data via hydration.
 
 From there it behaves like any client-side cache.
 
-This is where this guide meets the RSC guide, and the framework-coupled details (which the RSC guide and a future hydration guide cover) sit on top of this core relationship.
+This is where this guide meets the RSC guide, and the framework-coupled details (which the RSC guide covers) sit on top of this core relationship.
 
 Putting it together across the series: the rendering engine gives you Suspense, concurrent rendering, and the tearing problem.
 
@@ -1670,8 +1668,6 @@ You can take "the screen still shows the old data after I saved" and name the me
 
 ## Further reading (primary sources)
 
-When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
-
 ### The TanStack Query documentation
 
 At [tanstack.com/query/latest](https://tanstack.com/query/latest), current for v5.
@@ -1713,21 +1709,3 @@ Reading SWR's "Getting Started" through this guide's lens is a good way to confi
 In the `@tanstack/query-core` package, look at the `QueryCache` (the keyed store from Sections 3 and 7), the `Query` class (the entry, its status, and the gc timer from Sections 4 and 6), and the `QueryObserver` (the per-component subscription), and in `@tanstack/react-query`, look at how `useBaseQuery` subscribes via `useSyncExternalStore` (the bridge from Section 14).
 
 Seeing that the cache is a plain keyed store with observers, subscribed through `useSyncExternalStore`, is the fastest way to confirm that this is the external-store pattern (State guide, Section 12) specialized for server state, not a separate kind of magic.
-
-A good way to use all of these: read the relevant deep section of this guide first so you have the model and the vocabulary, then read the primary source, then come back.
-
-This guide gives you the cache model and ties it to the rest of React.
-
-The primary sources go deeper on the specific APIs and on the many smaller options this guide did not cover.
-
----
-
-Built to be climbed, not swallowed.
-
-Finish pass 1 and you are already ahead.
-
-Come back for the deep parts when a real staleness, flicker, or refetch problem gives you a reason to care, and run the experiments with the Devtools open so the cache becomes visible rather than magic.
-
-Every version and library claim (TanStack Query still on v5 for React, the `cacheTime` to `gcTime` and `loading` to `pending` renames, `useSuspenseQuery` stable, v5 requiring React 18 for `useSyncExternalStore`) reflects the state of things in 2026.
-
-The core model (server state is a cache, the key is its address, stale-while-revalidate, dedup through a shared keyed store, invalidation as the write-side, and the whole thing being an external store specialized for remote data) is stable and transfers to every server-state library you will meet.

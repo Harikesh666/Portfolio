@@ -9,13 +9,11 @@ order: 5
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025) as an opt-in build-time tool. Version-specific and library-specific claims are noted inline and were verified against current sources.
+> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025) as an opt-in build-time tool.
 
-> **What this guide builds on.** This is the capstone of Track B, so it draws on all of it. From the **rendering and reconciliation guide** it uses the render and commit phases, the work loop, the diff and keys, the bailout, concurrent rendering and lanes, and the React Compiler. From the **Hooks and Effects guide** it uses referential stability (Section 8) and `useMemo`/`useCallback` (Section 12) heavily, plus `useTransition` and `useDeferredValue` (Section 15). From the **State Management guide** it uses colocation (Section 2), the Context re-render cost (Sections 9 through 11), and the external-store model (Section 12). From the **Data Fetching guide** it uses the cache as a performance tool, and from the **RSC guide** it uses Server Components shipping zero client JavaScript. You can read this guide after the others. Wherever it reaches for a concept from one of them, it recaps it in a line or two. The per-section **Prereqs** lines name what each section needs, drawn from earlier sections here, the other guides, and outside knowledge (the browser DevTools, bundlers and tree-shaking, the DOM cost of many nodes).
+> **What this guide builds on.** You can read this guide after the others. Wherever it reaches for a concept from one of them, it recaps it in a line or two.
 
 ## Read this first
-
-Same method as the other guides.
 
 **You are not meant to absorb this in one sitting.**
 
@@ -1582,8 +1580,6 @@ You can take "the whole screen re-renders when I type" or "the initial load is s
 
 ## Further reading (primary sources)
 
-When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
-
 ### The official React docs (react.dev)
 
 The reference pages for the tools in this guide are accurate, current within the React 19 line, and worth reading: [`memo`](https://react.dev/reference/react/memo) for Sections 5 and 6, [`useMemo`](https://react.dev/reference/react/useMemo) and [`useCallback`](https://react.dev/reference/react/useCallback) for Section 7, [`useTransition`](https://react.dev/reference/react/useTransition) and [`useDeferredValue`](https://react.dev/reference/react/useDeferredValue) for Section 11, and [`lazy`](https://react.dev/reference/react/lazy) with [`Suspense`](https://react.dev/reference/react/Suspense) for Section 13.
@@ -1635,25 +1631,3 @@ Read each one's introduction through the Section 12 lens (render only the visibl
 For load performance beyond React, read [web.dev](https://web.dev).
 
 Load performance (Sections 13 and 14) is mostly a web-platform topic, not a React-specific one, and web.dev is the canonical source for what the browser actually spends time on (download, parse, execute, layout, paint) and how it is measured.
-
-A good way to use all of these: read the relevant deep section of this guide first so you have the model and the vocabulary, then read the primary source, then come back.
-
-This guide gives you the two axes, the mechanisms, and the ordered methodology.
-
-The primary sources go deeper on individual tools, and the Profiler and bundle analyzer are where you confirm any of it on your own app.
-
----
-
-Built to be climbed, not swallowed.
-
-Finish pass 1 and you are already ahead.
-
-Come back for the deep parts when a real lag, jank, or slow load gives you a reason to care, and run the experiments with the Profiler and bundle analyzer open, because performance is the topic where measuring beats guessing every single time.
-
-Every version and tool claim (the React Compiler 1.0 as an opt-in build tool that auto-memoizes, the 19.2.x line, the 2026 virtualization landscape of TanStack Virtual and react-virtuoso) reflects the state of things in 2026.
-
-The core model (two axes of load and runtime, rendering propagates downward, most renders are cheap so fix the expensive ones, prefer structural fixes over memoization, ship less JavaScript, and measure before and after everything) is stable and not going anywhere.
-
-This is the last guide in Track B.
-
-Together with the rendering, RSC, hooks, state, and data-fetching guides, it is a complete picture of how React works and how to make it fast.

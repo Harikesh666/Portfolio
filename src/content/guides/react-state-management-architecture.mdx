@@ -9,13 +9,11 @@ order: 3
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025). Version-specific and library-specific claims are noted inline.
+> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025).
 
-> **What this guide builds on.** This is a Track B guide, and it leans on two earlier ones. From the **Hooks and Effects guide** it assumes the snapshot model (a render is a frozen copy of props and state), referential stability (objects and functions are compared by identity), the update queue, and the difference between `useState` and `useReducer`. From the **rendering and reconciliation guide** it uses how a state change re-renders a component and its subtree, the bailout (how `React.memo` skips work), and how Context propagates. You can read this guide right after the Hooks guide. Wherever it reaches for an engine concept, it defines that concept in one line at first use and points you to the fuller treatment. The per-section **Prereqs** lines tell you exactly which earlier section, in which guide, a given section depends on.
+> You can read this guide right after the Hooks guide. Wherever it reaches for an engine concept, it defines that concept in one line at first use and points you to the fuller treatment.
 
 ## Read this first
-
-Same method as the other guides, because it works.
 
 **You are not meant to absorb this in one sitting.**
 
@@ -44,7 +42,7 @@ Sections that need nothing past basic React say so.
 ### Two rules that multiply everything
 
 1. **Run the experiments.** Each section ends with a short **"Try it."** Keep a throwaway React project open (a Vite scratch app, or any sandbox) and actually reproduce each one. The re-render behavior of Context, especially, has to be watched in the Profiler to be believed.
-2. **Trust the order.** The sections build a single argument, in order: keep state low, lift only when forced, do not store what you can derive, consolidate complex transitions in a reducer, reach for Context only as a transport, understand why Context cannot scale to large or fast-changing global state, and only then reach for an external store, all while keeping server state in its own world. Here is the spine:
+2. **Trust the order.** Here is the spine:
 
 <GuideSpine steps={[{"title": "The real question: where does state live, and who owns it?", "sections": [1]}, {"title": "Keep it low (colocation), lift only when forced", "sections": [2, 3]}, {"title": "Store the minimum: derive the rest, structure it well", "sections": [4, 5]}, {"title": "Consolidate complex transitions (reducers, state machines)", "sections": [6]}, {"title": "Sharing without drilling: Context as a transport", "sections": [7, 8]}, {"title": "Why Context re-renders too much, and how far you can push it", "sections": [9, 10, 11], "note": "the deep middle"}, {"title": "Stepping outside React: external stores and their archetypes", "sections": [12, 13]}, {"title": "The distinction that reorganizes everything: server state", "sections": [14]}, {"title": "A decision framework, then debugging", "sections": [15, 16]}]} />
 
@@ -1601,8 +1599,6 @@ You can take "the whole screen re-renders when I type" or "these two values keep
 
 ## Further reading (primary sources)
 
-When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
-
 ### The official React docs (react.dev), "Managing State" section, current within the React 19 line
 
 This is the primary source for most of the first half of this guide, and it is genuinely good:
@@ -1652,21 +1648,3 @@ Jotai is its maintained successor for the atomic model.
 The context propagation logic lives in `ReactFiberNewContext.js` in the `react-reconciler` package (how a Provider value change marks consumers for re-render, the basis of Section 9), and the external-store binding is `useSyncExternalStore` in `ReactFiberHooks.js` (the safe-subscription primitive behind Section 12).
 
 Reading the propagation code is the fastest way to see that "the whole value, every consumer" is not a limitation you can configure away but how the mechanism is built.
-
-A good way to use all of these: read the relevant deep section of this guide first so you have the vocabulary, then read the primary source, then come back.
-
-This guide gives you the ladder and the mechanisms that decide which rung each piece of state belongs on.
-
-The primary sources go deeper on individual rungs.
-
----
-
-Built to be climbed, not swallowed.
-
-Finish pass 1 and you are already ahead.
-
-Come back for the deep parts when a real re-render storm or desync gives you a reason to care, and run the experiments so the knowledge sticks to something real.
-
-Every library and version claim (Recoil archived in January 2025, Jotai as its successor, no native Context selector in the React 19 line, the React Compiler 1.0) reflects the state of things in 2026.
-
-The architectural core (location as blast radius, ownership as traceability, derive rather than store, Context as transport, the selectivity gap, server state as a separate axis) is stable and not going anywhere.

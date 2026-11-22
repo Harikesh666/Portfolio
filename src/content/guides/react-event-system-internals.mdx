@@ -9,13 +9,11 @@ order: 6
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026). The event system has been stable since React 17 (which moved delegation to the root container and removed event pooling). The facts here were verified against current sources and apply to the React 19 line. This is a Track A engine-internals guide, and it is pure React: nothing here needs a framework.
+> Current as of React 19.2.x (latest patch 19.2.6, May 2026). The event system has been stable since React 17 (which moved delegation to the root container and removed event pooling). It is pure React: nothing here needs a framework.
 
-> **What this guide builds on.** This is the first Track A (engine internals) guide, and it leans mainly on the rendering and reconciliation guide. From there it uses the **fiber tree** (React's internal tree of component instances, which the event system walks to find your handlers), **lanes and priority** (how React ranks updates by urgency, which events feed into), and **batching** and the **render and commit** split (events are where updates originate). It touches the **Hooks and Effects guide** lightly, for the update queue (how `setState` schedules work). It needs no framework knowledge at all. Wherever it reaches for one of those engine concepts, it defines it in a line at first use. The per-section **Prereqs** lines name what each section needs, drawn from earlier sections here, the rendering guide, and outside knowledge (the DOM event model: `addEventListener`, the capture and bubble phases, `target` and `currentTarget`, `stopPropagation`, `preventDefault`).
+> **What this guide builds on.** It leans mainly on the rendering and reconciliation guide. Wherever it reaches for one of that guide's engine concepts, it defines it in a line at first use.
 
 ## Read this first
-
-Same method as the other guides.
 
 **You are not meant to absorb this in one sitting.**
 
@@ -33,7 +31,7 @@ When a real problem appears (a handler that will not fire, a `stopPropagation` t
 
 ### Pass 3, when curious
 
-The further-reading section points at the primary sources and the files in React's own code where the event system lives.
+The further-reading section points at the primary sources, and Section 14 points at the files in React's own code where the event system lives.
 
 Each section opens with a one-line **Prereqs** note: the earlier sections (here or in the rendering guide) and any outside knowledge worth having first.
 
@@ -42,7 +40,7 @@ Sections that need nothing past basic React and the DOM say so.
 ### Two rules that multiply everything
 
 1. **Run the experiments.** Each section ends with a short **"Try it."** Keep a Vite scratch app open and the browser DevTools handy. Several of these are best understood by inspecting the real DOM (and noticing what listeners are and are not there) while events fire.
-2. **Trust the order.** The sections build one picture, in order: why the system exists, what a synthetic event is, how delegation and the root container work, how an event dispatches by walking the fiber tree, how propagation and `stopPropagation` behave, how events set update priority and batch, and where the system meets portals and native listeners. Here is the spine:
+2. **Trust the order.** The sections build one picture, in order. Here is the spine:
 
 <GuideSpine steps={[{"title": "Why React intercepts events at all", "sections": [1]}, {"title": "The synthetic event wrapper", "sections": [2]}, {"title": "Delegation: one listener, not thousands", "sections": [3]}, {"title": "Where the listener lives: the root container", "sections": [4]}, {"title": "Dispatch: native event to your handler", "sections": [5], "note": "the core path"}, {"title": "Capture and bubble by walking the fiber tree", "sections": [6], "note": "the key internals idea"}, {"title": "stopPropagation, priority, batching", "sections": [7, 8, 9]}, {"title": "Where it gets surprising: portals, native listeners", "sections": [10, 11]}, {"title": "Gotchas, debugging, the source", "sections": [12, 13, 14]}]} />
 
@@ -1159,7 +1157,7 @@ Each of these is a case where React's _logical_ event (Section 2) deliberately d
 
 Native `change` on a text input fires only when the input _loses focus_ after its value changed, which is rarely what React developers want.
 
-They want to react to every keystroke (for controlled inputs, Hooks and State guides).
+They want to react to every keystroke (for controlled inputs, State Management guide).
 
 So React's `onChange` is built on the native `input` event, which fires on _every_ change to the value.
 
@@ -1403,8 +1401,6 @@ You opened the `react-dom` events code (or even just inspected a node's `__react
 
 ## Further reading (primary sources)
 
-When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
-
 ### The React 17 announcement and its event-delegation section
 
 Available at [legacy.reactjs.org/blog/2020/10/20/react-v17.html](https://legacy.reactjs.org/blog/2020/10/20/react-v17.html) (and the release candidate post with the detailed delegation explanation at [legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html](https://legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html)).
@@ -1434,35 +1430,3 @@ Available at [react.dev/reference/react-dom/createPortal](https://react.dev/refe
 The reference for portals, which explicitly documents that events from a portal propagate to React-tree ancestors rather than DOM-tree ancestors (Section 10).
 
 Current.
-
-### The React source (pass 3)
-
-The source lives in the `react-dom` package under its events directory: `DOMPluginEventSystem.js`, `ReactDOMEventListener.js`, and the individual plugins (`SimpleEventPlugin`, `ChangeEventPlugin`, `EnterLeaveEventPlugin`), per Section 14.
-
-This is the ground truth.
-
-Everything above is a reading of it.
-
-The acdlite and React-team explanations of the fiber architecture (linked from the rendering guide's further reading) give the surrounding context for the fiber tree that dispatch walks.
-
-A good way to use all of these: read the relevant deep section here first so you have the model and the vocabulary, then read the primary source, then come back.
-
-This guide gives you the two load-bearing ideas (delegation at the root container, and dispatch by walking the fiber tree) and traces every behavior back to them.
-
-The primary sources give the per-event details and the historical reasoning.
-
----
-
-Built to be climbed, not swallowed.
-
-Finish pass 1 and you are already ahead.
-
-Come back for the deep parts when a real event surprise (a dead handler, a wrong order, a portal click, a stubborn `stopPropagation`) gives you a reason to care, and run the experiments with the DOM inspector open, because the geometry of where listeners live is the thing you have to see to believe.
-
-Every version-specific claim (delegation on the root container and no event pooling since React 17, `onScroll` not bubbling, `onFocus`/`onBlur` on `focusin`/`focusout`) reflects the React 19.2.x line in 2026.
-
-The core model (a small set of delegated listeners at the root, dispatching by walking the fiber tree, assigning priority and batching the resulting updates) has been stable since React 17 and is not going anywhere.
-
-This is the first Track A engine-internals guide.
-
-It is pure React, and it connects to the rendering guide's fiber tree, lanes, and batching at every turn.

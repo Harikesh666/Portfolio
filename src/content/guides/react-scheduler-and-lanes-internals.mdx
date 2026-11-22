@@ -9,13 +9,11 @@ order: 7
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026). The scheduler and the lane model have been stable since React 18, and the specifics here (the 31-lane bitmask, the MessageChannel work loop, the 5ms time slice) were verified against current sources and apply to the React 19 line. This is a Track A engine-internals guide and the deep companion to the rendering guide's concurrency sections.
+> Current as of React 19.2.x (latest patch 19.2.6, May 2026). The scheduler and the lane model have been stable since React 18, and the specifics here (the 31-lane bitmask, the MessageChannel work loop, the 5ms time slice) apply to the React 19 line.
 
-> **What this guide builds on.** This is a Track A (engine internals) guide that goes deeper than the rendering guide's concurrency overview. From the **rendering and reconciliation guide** it uses the work loop (React processes the tree in interruptible units of work), the render and commit split, fibers (React's internal objects for components), and the high-level idea of concurrent rendering and lanes. This guide is the detailed version of that lanes material. From the **Event System guide** it uses event priority (discrete versus continuous). The event system assigns a priority, and this guide is where that priority becomes a lane and gets scheduled. From the **Hooks and Effects guide** it uses the update queue (`setState` enqueues an update) and the concurrency hooks (`useTransition`, `useDeferredValue`). Wherever it reaches for one of those, it recaps it in a line. The per-section **Prereqs** lines name what each section needs, drawn from earlier sections here, the other guides, and outside knowledge (bitwise operations on integers, a priority queue or min-heap, and the browser event loop: macrotasks, the roughly 16ms frame budget, `requestAnimationFrame`, `requestIdleCallback`, and `setTimeout`'s 4ms clamp).
+> This guide goes deeper than the rendering guide's concurrency overview. Wherever it reaches for an idea from another guide, it recaps it in a line.
 
 ## Read this first
-
-Same method as the other guides.
 
 **You are not meant to absorb this in one sitting**, and this is one of the more internals-heavy guides, so the 3-pass approach matters even more.
 
@@ -33,7 +31,7 @@ When you hit something that makes you care (jank you traced to a long render, a 
 
 ### Pass 3, when curious
 
-The further-reading section points at the React working group discussions and the source files (the `scheduler` package and `ReactFiberLane.js`) where this all lives.
+The further-reading section points at the React working group discussions, and Section 14 points at the source files (the `scheduler` package and `ReactFiberLane.js`) where this all lives.
 
 Each section opens with a one-line **Prereqs** note: the earlier sections (here or in the other guides) and any outside knowledge worth having first.
 
@@ -42,7 +40,7 @@ Sections that need nothing past basic React say so.
 ### Two rules that multiply everything
 
 1. **Run the experiments.** Each section ends with a short **"Try it."** Some of these are best seen in the browser's Performance panel (watching the main thread yield in roughly 5ms slices) rather than in the React DevTools, because this is about timing and the main thread.
-2. **Trust the order.** The sections build one picture, in order: the two problems, the scheduler that solves "when," the lanes that solve "which," how lanes are assigned and chosen, and how starvation, consistency, and the concurrent features fall out. Here is the spine:
+2. **Trust the order.** Here is the spine:
 
 <GuideSpine steps={[{"title": "Two problems: WHEN to work, and WHICH work first", "sections": [1]}, {"title": "Cooperative scheduling: slice work, yield to browser", "sections": [2]}, {"title": "The scheduler: a priority queue + time slicing", "sections": [3, 4], "note": "solves WHEN"}, {"title": "Lanes: a bitmask of priorities", "sections": [5, 6], "note": "solves WHICH"}, {"title": "Assign a lane, choose lanes to render", "sections": [7, 8]}, {"title": "Starvation (expiration) and consistency (entanglement)", "sections": [9, 10]}, {"title": "How it powers batching and the concurrent features", "sections": [11]}, {"title": "Two priority systems, debugging, the source", "sections": [12, 13, 14]}]} />
 
@@ -1288,8 +1286,6 @@ You opened the `scheduler` package or `ReactFiberLane.js` and recognized a funct
 
 ## Further reading (primary sources)
 
-When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
-
 ### The React 18 Working Group discussions
 
 Available at [github.com/reactwg/react-18/discussions](https://github.com/reactwg/react-18/discussions).
@@ -1300,50 +1296,14 @@ The discussion on concurrent scheduling specifics (which states "we have 31 leve
 
 Start here for the _why_ behind lanes.
 
-### The React source, the primary primary source (pass 3)
-
-Read the `scheduler` package (`Scheduler.js`, `SchedulerMinHeap.js`, and the host loop with `performWorkUntilDeadline` and `shouldYieldToHost`) for Sections 3 and 4, and `react-reconciler`'s `ReactFiberLane.js` (and `ReactFiberWorkLoop.js`) for Sections 5 through 12.
-
-Per Section 14, `ReactFiberLane.js` is unusually readable and is the single best file to confirm the lane model against.
-
-Everything in this guide is a reading of these files.
-
 ### acdlite's (Andrew Clark's) original lanes pull request and design notes
 
 These (linked from the React repository and referenced in community write-ups) document the _transition from the expiration-time model to lanes_ and the reasoning for the bitmask, which is the history in Sections 5 and 9.
 
 It is from the React 18 development period and remains the design of record.
 
-### The rendering and reconciliation guide's concurrency and lanes sections (this series)
-
-That guide introduced the work loop, render and commit, concurrent rendering, and lanes at a high level.
-
-This guide is the deep version.
-
-Re-reading that guide's concurrency material alongside this one connects the two levels of detail.
-
 ### For the browser-platform background
 
 Documentation on the event loop, macrotasks versus microtasks, and `MessageChannel` (on [MDN](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel)) makes Section 4 concrete, since the scheduler's yield mechanism is built directly on these platform primitives.
 
 Understanding why a macrotask runs after paint and a microtask does not is the key to why React uses `MessageChannel`.
-
-A good way to use all of these: read the relevant deep section here first so you have the model and the vocabulary, then read the source or the working-group discussion, then come back.
-
-This guide gives you the two-mechanism split (scheduler for _when_, lanes for _which_) and traces every behavior to one side or the other.
-
-The primary sources give the exact constants, the design history, and the platform details.
-
----
-
-Built to be climbed, not swallowed.
-
-Finish pass 1 and you are already ahead.
-
-Come back for the deep parts when a real scheduling question (a jank you traced to a long task, a transition that surprised you, a profiler trace full of 5ms slices) gives you a reason to care, and observe it in the Performance panel, because scheduling is about main-thread timing and the timeline is where it is visible.
-
-Every version-specific claim (the 31-lane bitmask, the MessageChannel work loop, the roughly 5ms slice, the two priority systems and their mapping) reflects the React 19.2.x line in 2026 and has been stable since React 18.
-
-The core model (a scheduler answering when, lanes answering which, with expiration for starvation and entanglement for consistency) is the architecture of concurrent React and is not going anywhere.
-
-This is the deep companion to the rendering guide's concurrency sections and the downstream of the Event System guide's priority assignment: events assign priority, lanes carry it, the scheduler runs it.

@@ -9,13 +9,11 @@ order: 9
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026). Suspense for data fetching and the `use` API are stable in the React 19 line. `SuspenseList` is still experimental (exposed only as `unstable_SuspenseList`), and that is flagged where it appears. The React 19 "pre-warming for suspended trees" behavior and the transition/throttling behaviors were verified against current sources and noted inline. This is a Track A engine-internals guide.
+> Current as of React 19.2.x (latest patch 19.2.6, May 2026). Suspense for data fetching and the `use` API are stable in the React 19 line. `SuspenseList` is still experimental (exposed only as `unstable_SuspenseList`), and that is flagged where it appears.
 
-> **What this guide builds on.** This is the dedicated Suspense guide, and it is the promise side of the throw-and-unwind machinery introduced in the **Error Boundaries and resilience guide**: read that guide's Section 10 first if you can, because this one assumes the shared mechanism (a component throws, React unwinds to the nearest boundary) and goes deep on what happens when the thrown value is a _promise_. From the **rendering and reconciliation guide** it uses the render and commit phases, fibers, concurrent rendering, and the high-level Suspense introduction. From the **Scheduler and Lanes guide** it uses retry lanes and transition lanes (how a resolved promise schedules a re-render, and how transitions get a low-priority lane). From the **Data Fetching guide** it uses `use()` and `useSuspenseQuery` and the caching requirement. From the **Hooks and Effects guide** it uses `useTransition` and `useDeferredValue`. It is pure React. The _streaming SSR_ and _selective hydration_ parts of Suspense are deliberately scoped out and left to the framework-coupled Hydration and SSR Internals guide (Section 12 says what belongs there). The per-section **Prereqs** lines name what each section needs, drawn from earlier sections here, the other guides, and outside knowledge (promises and thenables, dynamic `import()` for code splitting, and caching).
+> This guide is pure React. The _streaming SSR_ and _selective hydration_ parts of Suspense are framework-coupled and deliberately scoped out, apart from the short picture in Section 12.
 
 ## Read this first
-
-Same method as the other guides.
 
 **You are not meant to absorb this in one sitting.**
 
@@ -42,7 +40,7 @@ Sections that need nothing past basic React and promises say so.
 ### Two rules that multiply everything
 
 1. **Run the experiments.** Each section ends with a short **"Try it."** Suspense is best learned by making something genuinely async (a cached promise, a lazy import, a Suspense-integrated query) and watching fallbacks appear, throttle, and get suppressed by transitions.
-2. **Trust the order.** The sections build one picture: what suspending is, the shared mechanism, how to suspend, how the retry works, placement and nesting, the sibling and throttling behaviors, the all-important transition interaction, the error-boundary pairing, and the experimental and SSR edges. Here is the spine:
+2. **Trust the order.** Here is the spine:
 
 <GuideSpine steps={[{"title": "Suspending = throwing a promise; the boundary shows a fallback", "sections": [1, 2]}, {"title": "How you suspend (use, lazy, libraries) and how the retry recovers", "sections": [3, 4]}, {"title": "Placement, nesting, sibling pre-warming, throttling", "sections": [5, 6, 7, 8]}, {"title": "Transitions stop fallbacks from hiding revealed content", "sections": [9], "note": "the key practical behavior"}, {"title": "Pairing with error boundaries; experimental + SSR edges", "sections": [10, 11, 12]}, {"title": "Debugging, the source", "sections": [13, 14]}]} />
 
@@ -779,7 +777,7 @@ A few practical consequences:
 
 React 19.2 also extended throttling-adjacent coordination to _server rendering_ with "Suspense batching," which batches the reveals of streamed boundaries during SSR for a smoother streamed experience.
 
-That is part of the streaming story scoped to the Hydration guide (Section 12).
+That is part of the streaming story (Section 12).
 
 The client-side throttling described here is the part relevant to ordinary Suspense use.
 
@@ -1097,23 +1095,15 @@ Outside React: the idea of streaming HTML (sending it in pieces).
 
 Suspense plays a big role on the _server_: it drives streaming SSR (sending HTML in pieces as it becomes ready) and selective hydration (making parts interactive in priority order).
 
-But that is a framework-coupled topic with its own guide, so this section gives you the Suspense-relevant picture and points you there, rather than going deep prematurely.
-
 ### The short version
 
 On the server, Suspense boundaries are the _unit of streaming_: React can send the HTML for the ready parts immediately and _stream_ the rest as each boundary's data resolves, sending the fallback first and the real content later (React 19.2 added "Suspense batching" to coordinate these streamed reveals).
 
 Suspense boundaries also drive _selective hydration_: React can hydrate (make interactive) the parts that are ready or that the user interacts with first, in priority order.
 
-These are powerful, but they are framework-coupled and belong to the dedicated Hydration and SSR Internals guide.
-
-Here, know that Suspense is the unit both build on, and look there for the mechanics.
+Here, know that Suspense is the unit both build on.
 
 ### How it actually works: scoped
-
-This section is deliberately bounded, because streaming SSR and selective hydration are framework-coupled (you encounter them through Next.js or another framework) and get a full treatment in the Hydration and SSR Internals guide.
-
-Here is the Suspense-relevant picture, enough to see where Suspense fits, with pointers for the rest.
 
 Recall (lightly, from the rendering and RSC guides) that with server-side rendering, React renders your app to HTML on the server, sends it so the user sees content fast, and then _hydrates_ on the client (attaches interactivity to the server HTML).
 
@@ -1141,21 +1131,15 @@ This makes a large page interactive in priority order rather than all-or-nothing
 
 Both of these are genuinely important to how Suspense is used in real (framework-based) apps, but they are _framework-coupled_: you configure and observe them through your framework's SSR setup, not through bare React, and they involve the server renderer, the streaming protocol, and hydration internals that are their own large topic.
 
-Per the series' scoping (and the reader's profile), that full story, attaching to server HTML, hydration mismatches as recoverable errors (which the Error Boundaries guide's Section 12 previewed), selective and progressive hydration, `hydrateRoot` versus `createRoot`, and the streaming mechanics, lives in the **Hydration and SSR Internals guide**.
-
-This section's job is only to place Suspense within it: Suspense boundaries are the unit of both streaming and selective hydration, and the client-side mechanics you learned here (suspend, fallback, reveal) have server-side analogs (stream the fallback, then the content) that the Hydration guide develops in full.
-
 So the scoped takeaway: on the server, Suspense boundaries are where React splits the stream (fallback first, content streamed in) and where it hydrates selectively (priority order, interaction-driven), with React 19.2 batching streamed reveals.
-
-The deep mechanics are the Hydration guide's, and this guide stays client-focused and pure-React otherwise.
 
 ### Try it
 
-> If you have a streaming-SSR framework (Next.js with the App Router, say), wrap a slow server component in `<Suspense fallback={<Skeleton />}>` and load the page with a throttled network: observe the shell and skeleton arriving first, then the real content streaming in to replace the skeleton, all in the initial HTML stream (visible in the network response). Seeing the fallback stream first and the content stream in later is Suspense driving streaming SSR. The full mechanics are the Hydration guide.
+> If you have a streaming-SSR framework (Next.js with the App Router, say), wrap a slow server component in `<Suspense fallback={<Skeleton />}>` and load the page with a throttled network: observe the shell and skeleton arriving first, then the real content streaming in to replace the skeleton, all in the initial HTML stream (visible in the network response). Seeing the fallback stream first and the content stream in later is Suspense driving streaming SSR.
 
 ### You've got this if
 
-You can explain that Suspense boundaries are the unit of streaming SSR (fallback first, content streamed in) and selective hydration, and that the full mechanics live in the Hydration and SSR guide.
+You can explain that Suspense boundaries are the unit of streaming SSR (fallback first, content streamed in) and selective hydration.
 
 ---
 
@@ -1245,7 +1229,7 @@ React 19 _pre-warms_ the siblings of a suspended tree (a discarded render that f
 
 The single most important practical behavior is that _transitions_ (`startTransition`, `useDeferredValue`) keep already-revealed content visible during an update instead of flashing a fallback over it, which is what makes navigation and filtering smooth.
 
-You pair every Suspense data fetch with an _error boundary_ (Suspense for pending, error boundary for failed, the two halves of the one mechanism), `SuspenseList` (still experimental) would coordinate multi-boundary reveal order, and on the server Suspense boundaries are the unit of streaming SSR and selective hydration (the Hydration guide's territory).
+You pair every Suspense data fetch with an _error boundary_ (Suspense for pending, error boundary for failed, the two halves of the one mechanism), `SuspenseList` (still experimental) would coordinate multi-boundary reveal order, and on the server Suspense boundaries are the unit of streaming SSR and selective hydration.
 
 Every Suspense behavior you will hit is one of these: a thrown promise unwinding to a boundary, the retry and its caching requirement, placement and nesting, pre-warming and throttling, or the all-important transition behavior.
 
@@ -1319,8 +1303,6 @@ You opened `ReactFiberThrow.js` (or located it) and recognized the thenable-vers
 
 ## Further reading (primary sources)
 
-When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
-
 ### The React docs on Suspense
 
 The [`<Suspense>` reference](https://react.dev/reference/react/Suspense) documents the boundary, fallbacks, the transition behavior (revealing content without hiding it, Section 9), and nesting (Section 6).
@@ -1351,38 +1333,10 @@ The foundational read for the _why_ behind Suspense's behaviors.
 
 Useful primary-adjacent context for the pre-warming story.
 
-### The React source (pass 3)
-
-The React source is in `react-reconciler`: `ReactFiberThrow.js` (the shared thenable-versus-error branch, Sections 2 and 14), `ReactFiberSuspenseComponent.js` (the boundary fiber and offscreen content), and the ping/retry-lane logic (Section 4), per Section 14.
-
-Reading the thenable branch in `throwException` confirms the shared mechanism with error boundaries.
-
-### The Error Boundaries and resilience guide, and the Data Fetching, Scheduler and Lanes, and (pending) Hydration guides in this series
+### The Error Boundaries and resilience guide, and the Data Fetching and Scheduler and Lanes guides in this series
 
 The Error Boundaries guide is the error half of this guide's shared mechanism (read its Section 10).
 
 The Data Fetching guide covers `use`/`useSuspenseQuery` and the caching that makes Suspense terminate (Section 3).
 
 The Scheduler and Lanes guide covers the retry lanes and transition lanes underneath Sections 4 and 9.
-
-The Hydration guide (pending) is the home for the streaming SSR and selective hydration that Section 12 scoped out.
-
-A good way to use all of these: read the relevant deep section here first so you have the model and the vocabulary, then read the primary source, then come back.
-
-This guide gives you the one core idea (a thrown promise unwinds to the nearest Suspense boundary, which shows a fallback and retries on resolution) and traces suspending, placement, pre-warming, throttling, and the transition behavior all back to it.
-
-The primary sources give the exact API, the behavior history, and the source-level detail.
-
----
-
-Built to be climbed, not swallowed.
-
-Finish pass 1 and you are already ahead.
-
-Come back for the deep parts when a real Suspense problem (a loading loop, a flashing fallback, a navigation that blanks content) gives you a reason to care, and learn by making something genuinely async and watching fallbacks appear, throttle, and get suppressed by transitions, because the transition behavior in particular is the thing you have to see to believe.
-
-Every version-specific claim (the stable `use` API, pre-warming for suspended trees, the transition fallback behavior, the still-experimental `unstable_SuspenseList`, React 19.2's Suspense batching for SSR) reflects the React 19.2.x line in 2026.
-
-The core model (suspend by throwing a promise, unwind to the nearest boundary, show a fallback, retry on resolution, with caching making it terminate and transitions keeping revealed content visible) is the architecture of Suspense and is not going anywhere.
-
-This is the promise side of the throw-and-unwind machinery the Error Boundaries guide set up: error boundaries catch thrown errors with a permanent fallback, Suspense catches thrown promises with a temporary fallback and a retry.

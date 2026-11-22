@@ -9,13 +9,11 @@ order: 10
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (2026), with Server Components stable in the React 19 line. Companion to the rendering and reconciliation guide. This one assumes you have at least skimmed that one, since RSC sits on top of the rendering engine described there.
+> Current as of React 19.2.x (2026), with Server Components stable in the React 19 line.
 
-> **What this guide builds on.** This guide sits on top of the rendering engine, so it leans on the **rendering and reconciliation guide**: the component tree, the render and commit phases, reconciliation, hydration, and Suspense (which RSC uses for streaming). You can read it after that guide. Wherever it reaches for an engine concept, it recaps it in a line. It is the one genuinely framework-coupled guide in the series (the model is React, but everything runnable is your framework, almost always Next.js), which the "React core versus your framework" table below makes precise. The per-section **Prereqs** lines name what each section needs, drawn from earlier sections here, the rendering guide, and outside knowledge (HTTP requests, the server/client split, serialization, and JavaScript bundlers).
+> **What this guide builds on.** This guide sits on top of the rendering engine, so it leans on the **rendering and reconciliation guide**: the component tree, the render and commit phases, reconciliation, hydration, and Suspense (which RSC uses for streaming). Wherever it reaches for an engine concept, it recaps it in a line.
 
 ## Read this first
-
-Same method as the rendering guide, because it works.
 
 **You are not meant to absorb this in one sitting.**
 
@@ -55,7 +53,7 @@ It shapes how you learn this.
 
 ### Trust the order
 
-The sections build one picture, in order: why RSC exists, the two-worlds model, the two kinds of component, the boundary between them, the wire format, how it meets SSR and hydration, Server Functions for writes, and how it all sits back on the rendering engine.
+The sections build one picture, in order.
 
 Here is the spine:
 
@@ -800,7 +798,7 @@ React Server Components split your tree into a server region and a client region
 
 Server Components run once on the server, ship zero JavaScript, can `await` data and touch server-only resources, but cannot be interactive.
 
-Client Components are shipped to the browser, render to HTML on the server first and then hydrate to become interactive, and are where the entire rendering engine from the companion guide still applies.
+Client Components are shipped to the browser, render to HTML on the server first and then hydrate to become interactive, and are where the entire rendering engine from the rendering guide still applies.
 
 The server describes its rendered output as a streamable RSC payload containing plain rendered data plus module references where client components go.
 
@@ -825,8 +823,6 @@ You can take a confusing RSC error and immediately ask "which side of the bounda
 ---
 
 ## 11. Further reading
-
-These are the canonical current sources, with notes on how each relates to this guide.
 
 ### Official Server Components reference
 
@@ -865,19 +861,3 @@ Read these when you start handling real mutations and forms (Section 8).
 Because RSC only runs through a framework, the Next.js documentation on Server and Client Components, data fetching, and Server Actions is where the concepts here become concrete commands and file conventions.
 
 Read the React docs for the _why_ and the framework docs for the _how_.
-
-A good loop, same as the other guide: read the relevant section here for the map, then the primary source for depth, then come back and reread.
-
-The React docs go deep on one piece.
-
-This guide gives you the boundary-shaped mental model that tells you where each piece fits.
-
----
-
-Part of a series with the rendering and reconciliation guide.
-
-Same method: finish pass 1 first, let real work pull you into the deep parts, and remember that RSC only truly makes sense when you run it through your framework.
-
-The user-facing model here is stable in React 19.
-
-The deepest wire-format details are framework-facing internals that can shift within 19.x, so understand the shapes and pin your versions.

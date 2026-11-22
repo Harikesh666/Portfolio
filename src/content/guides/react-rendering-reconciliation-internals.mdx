@@ -9,9 +9,9 @@ order: 1
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025). Version-specific behavior is noted inline.
+> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025).
 
-> **What this guide builds on.** This is the foundational guide of the series, the rendering engine every other guide stands on, so it assumes no earlier guide. It builds only on outside knowledge: JavaScript (functions, closures, objects, `Object.is`), the DOM (nodes, the document tree, and the fact that changing it is expensive), and a few general computer-science ideas (trees, linked lists, queues, and a little bitwise arithmetic when lanes arrive). Everything React-specific is built from scratch here. The later guides (Hooks and Effects, State Management, Data Fetching, Performance, the Event System, Scheduler and Lanes, Error Boundaries, Suspense, and Server Components) reach back to the concepts defined here, so this is the guide they name in their own "What this guide builds on" blocks. The per-section **Prereqs** lines name what each section needs, drawn from earlier sections here and from outside knowledge.
+> This guide assumes no earlier guide. It builds only on outside knowledge: JavaScript (functions, closures, objects, `Object.is`), the DOM (nodes, the document tree, and the fact that changing it is expensive), and a few general computer-science ideas (trees, linked lists, queues, and a little bitwise arithmetic when lanes arrive). Everything React-specific is built from scratch here.
 
 ## Read this first (it will save you from drowning)
 
@@ -1480,8 +1480,6 @@ You opened one of these files, found a function named in this guide, and recogni
 
 ## Further reading (primary sources)
 
-When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you have read here and how current it is.
-
 ### React Fiber Architecture, by Andrew Clark (acdlite)
 
 Available at [github.com/acdlite/react-fiber-architecture](https://github.com/acdlite/react-fiber-architecture).
@@ -1507,21 +1505,3 @@ Two current references plus one architecture deep dive:
 1. The official [`<Suspense>` reference](https://react.dev/reference/react/Suspense), kept current within the React 19 line. Good for the everyday API and the patterns around it.
 2. The [`use` hook reference](https://react.dev/reference/react/use). This is the modern, ergonomic way to suspend on a promise, and it is the surface behind much of Section 15.
 3. ["New Suspense SSR Architecture in React 18,"](https://github.com/reactwg/react-18/discussions/37) by Dan Abramov. This is the clearest explanation of streaming server rendering and selective hydration, which is the mechanism behind the second half of Section 15. Think of it as the Suspense equivalent of the Fiber doc above: a primary-source architectural explainer. It predates the React 19 `use` hook and the 19.2 reveal-batching refinement, so pair it with the two react.dev pages for the current API surface.
-
-A good way to use all of these: read the relevant deep section of this guide first so you have the vocabulary, then read the primary source, then come back and reread the section.
-
-The primary sources go deeper on their one topic.
-
-This guide gives you the map that tells you where each one fits.
-
----
-
-Built to be climbed, not swallowed.
-
-Finish pass 1 and you are already ahead.
-
-Come back for the deep parts when your work gives you a reason to care, and run the experiments so the knowledge sticks to something real.
-
-Every claim about the 2026 layer (versions, the Compiler 1.0 date, the 19.2 feature set) reflects the React 19.2.x line.
-
-The architectural core (Fiber, the two phases, lanes, hook storage) has been stable since the React 16 to 18 era.
