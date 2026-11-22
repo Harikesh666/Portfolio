@@ -2,7 +2,7 @@
 title: "React's Scheduler and Lanes"
 description: "How React decides when to work and which update goes first: the scheduler's 5ms slices, the 31-lane bitmask, and the path from a click or a transition to a render in React 19."
 category: "Internals"
-readTime: "37 min read"
+readTime: "31 min read"
 date: "May 2026"
 publishedAt: "2026-05-01"
 order: 7
@@ -34,25 +34,25 @@ function Search() {
 
 Two `setState` calls sit in one handler, yet React treats them very differently. The first commits before the browser's next turn. The second renders in pieces of about 5ms and gives way if you type again. Nothing in the code says "5ms" or "give way".
 
-This guide shows the two mechanisms that supply both. The scheduler cuts work into slices and hands the **main thread** back to the browser. **Lanes** turn "urgent" and "can wait" into bits that React compares in one instruction. By the end you can follow any update from the event that caused it to the render that shows it.
+This guide shows the two mechanisms that supply both. The scheduler cuts work into slices and hands the **main thread** back to the browser. **Lanes** turn "urgent" and "can wait" into bits that React compares in one instruction. By the end you can follow any update from its event to its render.
 
 > Current as of React 19.2 and 19.3. The scheduler and the lane model have been public since React 18, and lanes have been internal since React 17.
 
 ## Before you start
 
-- One main thread runs JavaScript, input, layout and paint. See [the event loop guide](/articles/asynchronous-javascript-event-loop) for tasks and microtasks.
-- Nested `setTimeout(fn, 0)` calls wait about 4ms. See [the setTimeout guide](/articles/settimeout-minimum-not-deadline).
-- A fiber is React's object for one component instance. See [the rendering guide](/articles/react-rendering-reconciliation-internals) for the work loop, render versus commit, and bailouts.
-- React gives each event a priority: discrete, continuous or default. See [the event system guide](/articles/react-event-system-internals).
-- `setState` queues an update instead of rendering. See [the hooks guide](/articles/react-hooks-and-effects-internals) for batching and transitions.
-- A component suspends by throwing a promise. See [the Suspense guide](/articles/react-suspense-internals).
-- You can read `&`, `|`, `~` and `0b` literals. Section 4 recaps two's complement.
+- Tasks, microtasks and the main thread: [the event loop guide](/articles/asynchronous-javascript-event-loop).
+- The 4ms `setTimeout` clamp: [the setTimeout guide](/articles/settimeout-minimum-not-deadline).
+- A fiber is React's object for one component instance, and the work loop processes one fiber at a time. Bailouts and more: [the rendering guide](/articles/react-rendering-reconciliation-internals).
+- Discrete, continuous and default event priorities: [the event system guide](/articles/react-event-system-internals).
+- Update queues, batching and transitions: [the hooks guide](/articles/react-hooks-and-effects-internals).
+- Suspending by throwing a promise: [the Suspense guide](/articles/react-suspense-internals).
+- Reading `&`, `|`, `~` and `0b` literals. Section 4 recaps two's complement.
 
 <GuideSpine steps={[{"title": "Why React must pause, and the two questions", "sections": [1]}, {"title": "The scheduler: a heap of timed tasks and a 5ms yield", "sections": [2, 3], "note": "answers WHEN"}, {"title": "Lanes: priorities as bits, laid out for React 19", "sections": [4, 5], "note": "answers WHICH"}, {"title": "Give an update a lane, then pick the batch", "sections": [6, 7]}, {"title": "Where lanes meet the scheduler", "sections": [8]}, {"title": "Safety nets: expiration and entanglement", "sections": [9, 10]}, {"title": "The features built on lanes, and how to debug them", "sections": [11, 12]}]} />
 
 ## 1. Why React needs a scheduler and lanes
 
-Why can't React just render every update as fast as it can, all at once? Because "all at once" is exactly what freezes a page.
+Why can't React just render every update at once? Because "all at once" is exactly what freezes a page.
 
 ### The short version
 
@@ -74,15 +74,13 @@ busy(300);
 console.log("done");
 ```
 
-For 300ms the page cannot scroll, paint or answer a click. The browser has one main thread, and it runs your JavaScript, input handling, layout and paint one at a time.
+For 300ms the page cannot scroll, paint or answer a click, because one main thread does all of that, one job at a time.
 
-At 60 frames per second the browser has roughly 16ms per frame. If one task holds the thread longer, everything else waits. A 50ms render means about three frames with no paint and no input. Users feel that as a stutter, which developers call **jank**.
-
-The Performance panel flags any task over 50ms as a long task. That threshold leaves time to answer input within about 100ms, roughly where people start to notice a delay.
+At 60 frames per second the browser has roughly 16ms per frame. A 50ms render means about three frames with no paint and no input, a stutter developers call **jank**. The Performance panel flags any task over 50ms as a long task. That limit still leaves time to answer input within 100ms, where people notice delay.
 
 ### What synchronous React did
 
-React renders through a work loop. It walks the fiber tree and does one fiber's work at a time, called a **unit of work**, building the new tree as it goes. Before concurrent rendering, that loop ran over the whole affected tree and committed the changes in one run.
+React renders through a work loop. It does one fiber's work at a time, a **unit of work**. Before concurrent rendering, that loop ran over the whole affected tree and committed in one run.
 
 ```js
 // Simplified teaching version: a render that cannot stop.
@@ -95,13 +93,11 @@ function renderSync(root) {
 }
 ```
 
-Small updates finish inside a frame, so they are fine. A large one blows the budget, and React cannot pause it for an urgent click or an animation frame. <Mark kind="marker" wraps>It holds the main thread for that whole time</Mark>.
+Small updates finish inside a frame. A large one cannot pause for an urgent click or an animation frame. <Mark kind="marker" wraps>It holds the main thread for that whole time</Mark>.
 
-The old stack-based reconciler simply could not stop mid-render. Debouncing and memoization cut how often or how much React rendered. They could not make a necessary large render non-blocking.
+The old stack-based reconciler simply could not stop mid-render. Debouncing and memoization cut how often or how much React rendered, but could not make a necessary large render non-blocking.
 
 ### Cooperative scheduling
-
-The fix turns "run to completion" into "run in slices".
 
 ```js
 // Simplified teaching version: the same loop, now able to pause.
@@ -115,24 +111,22 @@ function renderConcurrent() {
 }
 ```
 
-This is **cooperative scheduling**. React does a little work and checks whether its slice, about 5ms, is used up. If so, it yields and arranges to be called again. Fibers make this possible. React builds the work-in-progress tree one fiber at a time and keeps a pointer to where it stopped.
+This is **cooperative scheduling**: work until the 5ms slice is used up, yield, then resume. Fibers make it possible, because React builds the work-in-progress tree one fiber at a time and keeps a pointer to where it stopped.
 
-"Cooperative" means neither side can force the other. React cannot make the browser give it time, and the browser cannot make React stop. An operating system can preempt a thread at any moment. JavaScript on the main thread cannot be preempted, so React checks the clock and yields by choice, as in classic cooperative multitasking.
+"Cooperative" means neither side can force the other. An operating system can preempt a thread, but nothing preempts JavaScript on the main thread. So React checks the clock and yields by choice, as in classic cooperative multitasking.
 
-The payoff: a big list rendered in a transition goes in 5ms slices with browser turns between them, so typing stays smooth. And a render that can stop can also be abandoned when something urgent arrives.
+The payoff: a big list rendered in a transition goes in 5ms slices, so typing stays smooth. And a render that can stop can also be abandoned when something urgent arrives.
 
 ### Two questions: when and which
 
-Slicing alone is not enough. Several updates can be pending at once: a click the user waits on, a transition rendering a big list, a Suspense retry, an idle update. React must do urgent work first and interrupt a low-priority render when an urgent update arrives.
-
-React splits this into two mechanisms with confusing names. "Scheduler" and "lanes" both sound like "priority and timing", but they do different jobs.
+Several updates can be pending at once: a click, a big transition, a Suspense retry, an idle update. React must do urgent work first and interrupt low-priority renders. It splits this between two mechanisms whose names both sound like "priority and timing", though their jobs differ.
 
 | Question | Mechanism | Knows about | Knows nothing about |
 |---|---|---|---|
 | When should React work, and when should it pause? | The scheduler | Time, the frame budget, the event loop | What the work is |
 | Which pending work goes first? | Lanes | Priority, and which updates are pending where | Time |
 
-The scheduler schedules a chunk, measures it, decides when to stop and arranges to be called again. Lanes label each update, compare and combine labels cheaply, and pick the most urgent set to render.
+The scheduler runs, measures, stops and resumes chunks. Lanes label updates so React can compare and combine them cheaply.
 
 ```js
 // Simplified teaching version of one update's journey.
@@ -150,11 +144,9 @@ queueMicrotask(() => {
 });
 ```
 
-`renderLanes` is the set of lanes one render pass processes. Section 7 shows how React picks it. Urgent `SyncLane` work, like a click, renders at the end of a microtask and never reaches the scheduler. Everything else becomes a scheduler task. Of those, only transition-like work is sliced.
+`renderLanes` is the set of lanes one render pass processes. A click's `SyncLane` work never reaches the scheduler, and only transition-like work is sliced.
 
-Lanes govern what renders and whether to interrupt. The scheduler governs when rendering runs and when it yields. Concurrent rendering is the two together: render the most urgent lanes first, slice the work that can wait, and yield to the browser between slices.
-
-Lanes alone would rank updates but still block on a big render. The scheduler alone could yield but would not know what is urgent.
+Lanes govern what renders and whether to interrupt. The scheduler governs when it runs and yields. Concurrent rendering is the two together, since lanes alone would block on a big render and the scheduler alone would not know what is urgent.
 
 <MarginNote note="the question to ask about any scheduling symptom">
 
@@ -164,7 +156,7 @@ When something feels slow or out of order, ask first whether it is about timing 
 
 ### Try it
 
-Record the Performance panel while you run `busy(300)`. You should find one long task with a red corner and no paint inside. Then record this version, which does the same work in 5ms slices.
+Record the Performance panel while you run `busy(300)`. You should find one long task with a red corner and no paint inside. Then record this sliced version.
 
 ```js
 function sliced(totalMs) {
@@ -182,7 +174,7 @@ function sliced(totalMs) {
 sliced(300);
 ```
 
-The second trace shows many short tasks, and the page stays scrollable. Section 3 explains the `MessageChannel`.
+The second trace shows many short tasks, and the page stays scrollable.
 
 ## 2. The scheduler: a min-heap of timed tasks
 
@@ -195,8 +187,6 @@ The scheduler is its own npm package, `scheduler`, a small cooperative task runn
 Tasks sit in a **min-heap** ordered by that time, so the soonest-expiring task runs first. As time passes, an old low-priority task becomes the soonest, so it cannot starve. A callback can return a function meaning "not finished". That is how one long render spans many slices.
 
 ### Five levels, five timeouts
-
-React schedules work through one exported function.
 
 ```js
 // How React calls the scheduler package.
@@ -220,13 +210,11 @@ A scheduler **task** is a callback plus a priority level.
 | `LowPriority` | 10,000ms | Work that can wait |
 | `IdlePriority` | 1,073,741,823ms, about 12.4 days | Work for when nothing else is pending. The source says it never times out. |
 
-Immediate does not mean synchronous. Its task is expired from birth, so it goes to the top of the heap and skips the yield check. It still runs in the scheduler's next **macrotask**, meaning a new task on the browser's event loop. React 19 renders sync work through microtasks, so it uses Immediate only in a few edge cases.
+Immediate does not mean synchronous. Its task is expired from birth, so it tops the heap and skips the yield check. It still waits for the next **macrotask**, a new task on the event loop. React 19 uses it only in edge cases.
 
-The scheduler is <Mark kind="circle">deliberately generic</Mark>. That keeps timing and task order apart from fibers, lanes and reconciliation. It is also why React has two priority systems, which meet in section 8.
+The scheduler is <Mark kind="circle">deliberately generic</Mark>, which keeps timing apart from fibers, lanes and reconciliation. It is also why React has two priority systems, which meet in section 8.
 
 ### One number for priority and age
-
-When you schedule a task, the scheduler turns its priority into a deadline.
 
 ```js
 // Simplified teaching version of unstable_scheduleCallback.
@@ -242,7 +230,7 @@ function scheduleCallback(priority, callback) {
 }
 ```
 
-The rule is `expirationTime = currentTime + timeout`. Watch an old Normal task meet a new urgent one.
+Watch an old Normal task meet a new urgent one.
 
 ```js
 now = 0;
@@ -254,8 +242,6 @@ scheduleCallback("UserBlocking", () => console.log("new click")); // expires at 
 The old Normal task now runs first. One number unifies priority and starvation prevention, because a waiting task's deadline only gets nearer.
 
 ### The min-heap
-
-Tasks sit in a min-heap ordered by expiration time.
 
 ```js
 // Simplified teaching version of SchedulerMinHeap.js.
@@ -295,11 +281,9 @@ function pop(heap) {
 }
 ```
 
-A min-heap keeps the smallest key on top, with O(log n) insertion and O(1) access to the most urgent task. The real heap sorts by `sortIndex` and breaks ties by task id, so equal deadlines run in arrival order. A second heap, `timerQueue`, holds tasks scheduled with a `delay` until their start time arrives.
+A min-heap gives O(log n) insertion and O(1) access to the most urgent task. The real heap sorts by `sortIndex` and breaks ties by task id, so equal deadlines run in arrival order. A second heap, `timerQueue`, holds delayed tasks until their start time.
 
 ### The run loop and continuations
-
-The loop runs the most urgent task and keeps going until the heap is empty or the slice is used up.
 
 ```js
 // Simplified teaching version of workLoop in Scheduler.js.
@@ -320,9 +304,7 @@ function workLoop(startTime) {
 }
 ```
 
-A callback that returns a function means "not finished, here is the rest". The scheduler keeps the task with its new callback and yields at once, whatever time is left.
-
-React's render task works this way, at a priority derived from its lanes. The callback also learns whether its task expired, and React then finishes without yielding.
+A returned function means "not finished, here is the rest", and the scheduler yields at once, whatever time is left. React's render task works this way, at a priority derived from its lanes. When the callback learns its task expired, React finishes without yielding.
 
 ### Try it
 
@@ -343,7 +325,7 @@ normal
 low
 ```
 
-Now schedule a Normal task at `now = 0`, set `now = 4900`, schedule a UserBlocking task, and run the loop. The Normal task should win. Try 4000 and the order flips back.
+Now add a Normal task at `now = 0` and a UserBlocking task at `now = 4900`, then run the loop. The Normal task should win, and at 4000 the order flips back.
 
 ## 3. Yielding: MessageChannel and shouldYield
 
@@ -378,9 +360,9 @@ run one chunk
 run one chunk
 ```
 
-A `MessageChannel` has two ports. Posting on one fires a `message` event on the other, and the browser delivers it as a macrotask. Between tasks, the browser can handle input and render.
+Posting on one port of a `MessageChannel` fires a `message` event on the other, delivered as a macrotask. Between tasks, the browser can handle input and render.
 
-### Why not setTimeout?
+### Why MessageChannel
 
 Measure how long each kind of "come back" takes.
 
@@ -407,11 +389,7 @@ measure("MessageChannel", (fn) => {
 });
 ```
 
-On most machines `setTimeout` settles near 4ms per hop, and `MessageChannel` stays well under 1ms. Browsers clamp nested `setTimeout` calls. Yielding that way would add about 4ms of idle waiting to every 5ms slice. The scheduler's source gives this as its reason, preferring `MessageChannel` "because of the 4ms setTimeout clamping".
-
-### Why not a microtask, or the idle and frame callbacks?
-
-A microtask looks fast, but it never lets the browser in.
+On most machines `setTimeout` settles near 4ms per hop, and `MessageChannel` stays well under 1ms. The scheduler's source gives this as its reason, preferring `MessageChannel` "because of the 4ms setTimeout clamping". A microtask is faster still, but it never lets the browser in.
 
 ```js
 // A "yield" through microtasks freezes the page like busy(500).
@@ -423,23 +401,19 @@ function chunk() {
 chunk();
 ```
 
-The browser drains every microtask before it renders or handles more input. So React would get control back before the browser had any turn.
-
-| Option | When the callback runs | Problem for time slicing |
+| Option | What goes wrong | Why |
 |---|---|---|
-| `setTimeout(fn, 0)` | A later task, but nested calls wait about 4ms | About 4ms lost per slice |
-| `queueMicrotask` or a promise | Before the current task ends | The browser never gets a turn |
-| `requestIdleCallback` | Only when the browser judges itself idle | Under load it may not fire for a long time |
-| `requestAnimationFrame` | Right before the next paint, about every 16ms | Ties work to frames, the wrong granularity |
-| `MessageChannel` | A new task, promptly, with no clamp | None, so React uses it |
+| `setTimeout(fn, 0)` | About 4ms of idle waiting per 5ms slice | Browsers clamp nested timers |
+| `queueMicrotask` or a promise | The browser never gets a turn | Microtasks drain before the browser renders or reads input |
+| `requestIdleCallback` | Work can starve under load | It fires only when the browser judges itself idle |
+| `requestAnimationFrame` | Work is tied to frames | It fires right before a paint, about every 16ms |
+| `MessageChannel` | Nothing | A new task, promptly, with no clamp |
 
-React did not start here. Early Fiber builds used scheduling in the style of `requestIdleCallback`. Later the scheduler aligned its work to `requestAnimationFrame`. Around 2019 it moved to a plain `MessageChannel` loop with a 5ms slice.
+React did not start here. Early Fiber builds scheduled in the style of `requestIdleCallback`, and later aligned to `requestAnimationFrame`. Around 2019 the scheduler moved to a plain `MessageChannel` loop with a 5ms slice.
 
-A yield gives the browser a chance to handle input, and to paint if a frame is due. It does not guarantee a paint. At 60fps a frame is due about every 16ms, so most 5ms yields end with no paint at all.
+A yield does not guarantee a paint. At 60fps a frame is due about every 16ms, so most 5ms yields only give the browser a chance to handle input.
 
 ### The loop: performWorkUntilDeadline
-
-The scheduler creates one `MessageChannel` and drives everything from its handler.
 
 ```js
 // Simplified teaching version of performWorkUntilDeadline in Scheduler.js.
@@ -454,12 +428,7 @@ channel.port1.onmessage = function performWorkUntilDeadline() {
 };
 ```
 
-1. Record when the slice started.
-2. Run work, checking the elapsed time after each unit.
-3. After 5ms with work left, post a message and return.
-4. The browser takes its turn, then the message starts the next slice.
-
-The real code stores no deadline. It compares the time since `startTime` with `frameInterval`, which is 5. A page can change that with `unstable_forceFrameRate(fps)`, which sets it to `Math.floor(1000 / fps)`.
+The real code stores no deadline. It compares the time since `startTime` with `frameInterval`, which is 5, and `unstable_forceFrameRate(fps)` can reset it to `Math.floor(1000 / fps)`.
 
 <GuideFigure figure="sc-slices" />
 
@@ -477,11 +446,9 @@ if (typeof setImmediate === "function") {
 }
 ```
 
-`setImmediate` wins where it exists because it runs earlier, and because an open `MessageChannel` would keep Node.js alive. Browsers use `MessageChannel`. Only an environment with neither falls back to `setTimeout`.
+`setImmediate` wins where it exists because it runs earlier, and because an open `MessageChannel` would keep Node.js alive.
 
 ### shouldYield: the link to the render loop
-
-One small function decides when a slice is over.
 
 ```js
 // Simplified teaching version of shouldYieldToHost in Scheduler.js.
@@ -505,17 +472,17 @@ function workLoopConcurrentByScheduler() {
 }
 ```
 
-This is the literal link between the work loop and the scheduler, and it is how an interruptible render actually interrupts. React sets `needsPaint` through `requestPaint()` after a commit, so the browser can show the new UI soon. Older versions also asked whether input was pending. The scheduler dropped that check in 2023, and React 19 never calls `isInputPending`.
+This is how an interruptible render actually interrupts. React sets `needsPaint` through `requestPaint()` after a commit, so the new UI shows soon. The scheduler dropped its old pending-input check in 2023, and React 19 never calls `isInputPending`.
 
-A separate `workLoopConcurrent` yields every 25ms for transitions, but only behind the `enableThrottledScheduling` flag. That flag is off in open source builds, so stable React uses the 5ms loop. In a Performance trace, the result is the main thread chopped into roughly 5ms pieces.
+A separate `workLoopConcurrent` yields every 25ms for transitions, but only behind the `enableThrottledScheduling` flag, off in open source builds. In a trace, stable React's loop chops the main thread into roughly 5ms pieces.
 
 ### Try it
 
-Build a component that renders about 3,000 moderately expensive items. Update it inside `startTransition`, and record with 4x CPU throttling. The render should appear as slices of about 5ms with gaps. Then make the same update from a click without `startTransition`. You should see one long task, because a click's update is never time-sliced.
+Render about 3,000 moderately expensive items, update them inside `startTransition`, and record with 4x CPU throttling. You should see slices of about 5ms with gaps. Make the same update from a click without `startTransition`, and you should see one long task, because a click's update is never time-sliced.
 
 ## 4. Lanes: priorities as bits
 
-The scheduler orders tasks by time. React must also rank updates: a click, a transition, a retry. How does it label them so it can compare and combine labels fast?
+React must also rank updates: a click, a transition, a retry. How does it label them so it can compare labels fast?
 
 ### The short version
 
@@ -550,7 +517,7 @@ true
 0100000000
 ```
 
-A lane is one bit in a bitmask. A single `Lane` has exactly one bit set, and a `Lanes` set can have any number. Why not a priority number from 1 to 31? React performs set operations on priorities constantly, and each bitwise operator does one in a single instruction.
+Why bits and not a priority number from 1 to 31? React performs set operations on priorities constantly, and each bitwise operator does one in a single instruction.
 
 ```js
 // Simplified teaching versions of helpers in ReactFiberLane.js.
@@ -561,11 +528,9 @@ const isSubsetOfLanes = (set, subset) => (set & subset) === subset;
 const getHighestPriorityLane = (lanes) => lanes & -lanes;
 ```
 
-The real helpers are almost exactly these one-liners. They run all over the reconciler, on the hot path of every render, so their cost matters.
+The real helpers are almost exactly these one-liners, and they run on the hot path of every render.
 
 ### Why lanes & -lanes finds the most urgent lane
-
-The most urgent lane in a set is its lowest set bit. Two's complement isolates it.
 
 ```text
            lanes   0100000010
@@ -574,7 +539,7 @@ The most urgent lane in a set is its lowest set bit. Two's complement isolates i
   lanes & -lanes   0000000010
 ```
 
-In two's complement, `-x` equals `~x + 1`. That keeps the lowest 1 and flips every bit above it, so the AND keeps only that rightmost 1. React puts urgent lanes on low bits, so the rightmost 1 is the most urgent lane.
+In two's complement, `-x` equals `~x + 1`, which keeps the lowest 1 and flips every bit above it. The AND keeps only that bit, and because urgent lanes sit on low bits, it is the most urgent lane.
 
 ### Why 31 lanes
 
@@ -585,13 +550,11 @@ console.log(1 << 30); // 1073741824
 console.log(1 << 31); // -2147483648, the sign bit
 ```
 
-Setting the top bit makes the value negative. React's source sets `TotalLanes = 31` without saying why.
-
-The likely reason is that its code compares lanes with `>` and loops `while (lanes > 0)`, which break on negative values. Another common explanation is V8's fast 31-bit small integers. The React 18 Working Group put it simply: 31 levels, because that is how many fit in one bitmask.
+The source sets `TotalLanes = 31` without saying why. The likely reason is that its code compares lanes with `>` and loops `while (lanes > 0)`, which break on negative values. V8's fast 31-bit small integers are another common explanation. The React 18 Working Group put it simply: 31 levels, because that is how many fit in one bitmask.
 
 ### childLanes: skipping whole subtrees
 
-Every fiber carries `lanes`, for updates scheduled on it, and `childLanes`, the union of lanes pending anywhere below it. Scheduling an update ORs its lane into each ancestor's `childLanes`.
+Every fiber carries `lanes`, for its own updates, and `childLanes`, the union of lanes pending below it. Scheduling an update ORs its lane into each ancestor's `childLanes`.
 
 ```js
 // Simplified teaching version of the bailout check in beginWork.
@@ -600,7 +563,7 @@ function canSkipSubtree(fiber, renderLanes) {
 }
 ```
 
-Recall that `renderLanes` is the set of lanes the current render processes. If `fiber.childLanes & renderLanes` is zero, nothing below matches this render, and React skips the whole subtree. That skip is a bailout. The check runs at every fiber, so it must be one cheap instruction.
+When nothing below matches `renderLanes`, React skips the whole subtree, a bailout. The check runs at every fiber, so it must be one cheap instruction.
 
 <MarginNote note="why bits beat a single number">
 
@@ -610,17 +573,15 @@ A single priority number cannot say "this subtree has work at priorities 3, 7 an
 
 ### Before lanes: one expiration number
 
-In React 16's experimental concurrent work, each update carried one number.
-
 ```js
 // The old model, simplified: one number per update.
 update.expirationTime = currentTime + timeoutForPriority;
 // No cheap way to ask: "is there transition work AND retry work below this fiber?"
 ```
 
-The update's priority was its expiration time: the longer it had waited, the higher its priority. That handled one linear notion of priority. It could not keep several kinds of work in separate streams that do not block each other. An urgent update, an in-progress transition and a Suspense retry each need their own tracking.
+In React 16's experimental concurrent work, an update's priority was its expiration time: the longer it waited, the higher its priority. That handled one linear notion of priority. It could not keep an urgent update, an in-progress transition and a Suspense retry in separate streams that do not block each other.
 
-Andrew Clark's "Initial Lanes implementation" landed in May 2020 and shipped inside React 17.0. React 18 made the concurrent features built on lanes public. Lanes kept expiration, but only as a safety net, which section 9 covers.
+Andrew Clark's "Initial Lanes implementation" landed in May 2020 and shipped inside React 17.0. React 18 made the features built on lanes public. Lanes kept expiration only as a safety net (section 9).
 
 ### Try it
 
@@ -649,56 +610,32 @@ Lane constants live in `ReactFiberLane.js`, and a lower bit means a higher prior
 
 Ranges let React track several transitions or retries separately. Two facts from this layout drive the rest of the guide. Sync, InputContinuous and Default renders are blocking and never time-sliced. Transition, retry, idle and offscreen renders are time-sliced, and a more urgent lane can interrupt them.
 
-### The constants
+### The layout
 
-This is the lane list in React 19.2.
+An Action is a transition whose callback is `async`. Hydration is React attaching its handlers to HTML the server already rendered. Hydration twins sit one bit below their lane and serve hydration at that priority.
 
-```js
-// From ReactFiberLane.js, React 19.2 (types removed, binary shortened).
-export const NoLane = 0b0;
-export const SyncHydrationLane = 0b1;
-export const SyncLane = 0b10;
-export const InputContinuousHydrationLane = 0b100;
-export const InputContinuousLane = 0b1000;
-export const DefaultHydrationLane = 0b10000;
-export const DefaultLane = 0b100000;
-export const GestureLane = 0b1000000;
-export const TransitionHydrationLane = 0b10000000;
-// bits 8 to 21: 14 transition lanes
-// bits 22 to 25: 4 retry lanes
-export const SelectiveHydrationLane = 1 << 26;
-export const IdleHydrationLane = 1 << 27;
-export const IdleLane = 1 << 28;
-export const OffscreenLane = 1 << 29;
-export const DeferredLane = 1 << 30;
-```
+`flushSync(fn)` runs `fn` and renders its updates synchronously before it returns.
 
-Several lanes have a hydration twin one bit below them, used while React hydrates server HTML at that priority. The table also mentions Actions. An Action is a transition whose callback is an `async` function, and its updates use transition lanes too.
-
-| Bits | Lane | Used for | Render style | Expires after (section 9) |
+| Lane | Bit | What uses it | Blocking or sliced | Expiry (section 9) |
 |---|---|---|---|---|
-| 0 and 1 | `SyncHydrationLane`, `SyncLane` | Clicks, key presses, `flushSync` | Blocking, in a microtask (section 8) | 250ms |
-| 2 and 3 | `InputContinuousHydrationLane`, `InputContinuousLane` | `mousemove`, `scroll`, drag | Blocking | 250ms |
-| 4 and 5 | `DefaultHydrationLane`, `DefaultLane` | Timers, network responses | Blocking | 5s |
-| 6 | `GestureLane` | Experimental gesture transitions | Blocking | 250ms |
-| 7 | `TransitionHydrationLane` | Hydration in a transition | Time-sliced | 5s |
-| 8 to 17 | 10 transition update lanes | `startTransition`, Actions | Time-sliced | 5s |
-| 18 to 21 | 4 transition deferred lanes | `useDeferredValue` | Time-sliced | 5s |
-| 22 to 25 | 4 retry lanes | Suspense retries | Time-sliced | Never |
-| 26 | `SelectiveHydrationLane` | Hydrating the part a user interacts with first | Time-sliced | Never |
-| 27 and 28 | `IdleHydrationLane`, `IdleLane` | Work for when nothing else is pending | Time-sliced | Never |
-| 29 | `OffscreenLane` | Hidden `<Activity>`, prerendering | Time-sliced | Never |
-| 30 | `DeferredLane` | A marker, never rendered alone | n/a | Never |
+| `SyncHydrationLane`, `SyncLane` | 0, 1 | Clicks, key presses, `flushSync` | Blocking, in a microtask (section 8) | 250ms |
+| `InputContinuousHydrationLane`, `InputContinuousLane` | 2, 3 | `mousemove`, `scroll`, drag | Blocking | 250ms |
+| `DefaultHydrationLane`, `DefaultLane` | 4, 5 | Timers, network responses | Blocking | 5s |
+| `GestureLane` | 6 | Experimental gesture transitions | Blocking | 250ms |
+| `TransitionHydrationLane` | 7 | Hydration in a transition | Sliced | 5s |
+| 10 transition update lanes | 8 to 17 | `startTransition`, Actions | Sliced | 5s |
+| 4 transition deferred lanes | 18 to 21 | `useDeferredValue` | Sliced | 5s |
+| 4 retry lanes | 22 to 25 | Suspense retries | Sliced | Never |
+| `SelectiveHydrationLane` | 26 | Hydrating a boundary the user hovers or focuses | Sliced | Never |
+| `IdleHydrationLane`, `IdleLane` | 27, 28 | Work for when nothing else is pending | Sliced | Never |
+| `OffscreenLane` | 29 | Hidden `<Activity>`, prerendering | Sliced | Never |
+| `DeferredLane` | 30 | A marker, never rendered alone | n/a | Never |
 
-`NoLane` is `0`, the "no work" sentinel. `<Activity mode="hidden">` keeps a subtree mounted but hidden, and React renders it at `OffscreenLane` so it can prerender in the background.
+`NoLane` is `0`, the "no work" sentinel. `<Activity mode="hidden">` keeps a subtree mounted but hidden, and React prerenders it at `OffscreenLane`. The layout and the `lanes & -lanes` trick were designed together, so the most urgent lane is always the lowest set bit. You never assign lanes yourself, but the layout shows how urgently React treats your work.
 
-Older material shows a different layout. React 18.0 to 18.2 put `SyncLane` on bit 0 and `OffscreenLane` on top. React 18 already had the InputContinuous, Default, transition, selective hydration and idle hydration lanes. React 19 added `SyncHydrationLane`, `GestureLane` and `DeferredLane`. It also cut the transition lanes from 16 to 14 and the retry lanes from 5 to 4.
-
-The layout and the bit trick were designed together, so the most urgent pending lane is always the rightmost 1. You never assign lanes in app code. But the layout tells you how urgently React treats work "at `DefaultLane`" or "in a transition lane".
+React 18 put `SyncLane` on bit 0 and `OffscreenLane` on top. It already had the InputContinuous, Default, transition, selective hydration and idle hydration lanes. React 19 added `SyncHydrationLane`, `GestureLane` and `DeferredLane`, and cut transition lanes from 16 to 14 and retry lanes from 5 to 4.
 
 ### Ranges, and where 19.2 and 19.3 differ
-
-Transitions and retries get ranges of bits, and React cycles through them.
 
 ```js
 // Simplified teaching version of claimNextTransitionUpdateLane.
@@ -716,15 +653,11 @@ function claimNextTransitionUpdateLane() {
 }
 ```
 
-Ranges let React track several things of the same kind independently. With one transition lane, React could never tell two transitions apart.
-
-What React does with that depends on the version. In React 19.2, React renders every pending transition update lane together, so unrelated transitions share a batch. The separate lanes still let React suspend, ping and entangle each transition on its own.
-
-React 19.3 turns on `enableParallelTransitions` and picks only the single most urgent transition lane. So in 19.3, one slow transition no longer holds back an unrelated one.
+A range lets React track several transitions or retries independently. React 19.2 still renders all pending transition update lanes together, but can suspend, ping and entangle each one. React 19.3 turns on `enableParallelTransitions` and picks only the most urgent transition lane, so one slow transition no longer holds back another.
 
 ### Blocking lanes and time-sliced lanes
 
-The "Render style" column comes from one line in `performWorkOnRoot`.
+The "Blocking or sliced" column comes from one line in `performWorkOnRoot`.
 
 ```js
 // From performWorkOnRoot in ReactFiberWorkLoop.js, React 19.2 (simplified).
@@ -735,7 +668,7 @@ const exitStatus = shouldTimeSlice
     : renderRootSync(root, lanes); // runs to the end
 ```
 
-The blocking lanes are Sync, InputContinuous, Default, their hydration twins, and Gesture. A common misreading says everything except `SyncLane` is time-sliced. In React 19, a `setState` in a `setTimeout` gets `DefaultLane` and renders in one blocking pass. An expired lane also turns slicing off, as does `forceSync`, set when the scheduler reports that the render task timed out.
+So a `setState` in a `setTimeout` gets `DefaultLane` and renders in one blocking pass, not in slices. An expired lane also turns slicing off, as does `forceSync`, set when the scheduler reports that the render task timed out.
 
 ### Try it
 
@@ -765,7 +698,7 @@ describeLanes(42);
 ["Sync", "InputContinuous", "Default"]
 ```
 
-Section 7 shows why React treats this mask as one group. Now guess the lanes for a click, a slider drag, a `setState` in `fetch().then()` and a `startTransition` update. Decode masks to check. The answers are bits 1, 3 and 5, then one bit from 8 to 17.
+Section 7 shows why this mask is one group. Guess the lanes for a click, a slider drag, a `fetch().then()` update and a transition. They are bits 1, 3, 5, and one of 8 to 17.
 
 ## 6. Giving an update its lane
 
@@ -802,7 +735,7 @@ function resolveUpdatePriority() {
 }
 ```
 
-In React 19 an event priority is a lane value, so the second check returns a lane directly. The `window.event` fallback matters for code that runs outside React's dispatcher.
+In React 19 an event priority is a lane value. The `window.event` fallback covers code outside React's dispatcher.
 
 ```js
 // Neither callback runs inside a React event handler.
@@ -830,7 +763,7 @@ The lane belongs to the moment, not to the state. One setter called from a click
 
 ### From a click to a lane
 
-Why is `setState` in `onClick` urgent? Because of what React does around your handler.
+Why is `setState` in `onClick` urgent?
 
 ```js
 // Simplified teaching version of React's discrete event dispatch.
@@ -845,7 +778,7 @@ function dispatchDiscreteEvent(nativeEvent) {
 }
 ```
 
-`requestUpdateLane` runs inside your handler, reads the discrete priority and assigns `SyncLane`. The event guide shows where the priority is set, and this is where it becomes a lane. `startTransition` works the same way with a different variable.
+Inside your handler, `requestUpdateLane` reads that discrete priority and assigns `SyncLane`. The event guide sets the priority, and this is where it becomes a lane. `startTransition` works the same way.
 
 ```js
 // Simplified teaching version of startTransition.
@@ -860,9 +793,9 @@ function startTransition(callback) {
 }
 ```
 
-So "mark this update as non-urgent" mechanically means "assign a transition lane". Every transition inside one event gets the same lane, so distinct lanes come only across events. Inside an async Action, updates made while the Action is still pending reuse its lane. Suspense retries skip this path and get their lane from `requestRetryLane`.
+So "mark this update as non-urgent" means "assign a transition lane". Every transition inside one event shares a lane, so distinct lanes come only across events. Updates made while an async Action is pending reuse its lane. Suspense retries skip this path and use `requestRetryLane`.
 
-In the opening search box, the keystroke gives the input update `SyncLane`. The results update gets a transition lane, so React renders the input first and can defer or interrupt the list.
+In the opening search box, the input update gets `SyncLane` and the results a transition lane, so React renders the input first.
 
 ### After the lane: ensureRootIsScheduled
 
@@ -906,11 +839,11 @@ render { clicks: 1, slow: 0 }
 render { clicks: 1, slow: 1 }
 ```
 
-One handler, two lanes. The `SyncLane` render commits first and skips the transition update. The transition lane renders afterward. StrictMode in development may print each line twice, but the order holds.
+One handler, two lanes: the `SyncLane` render commits first and skips the transition update. StrictMode in development may print each line twice.
 
 ## 7. Choosing the batch with getNextLanes
 
-Several lanes can be pending at once, and React does not render them all in one pass. Which ones go next, and what happens when a more urgent one arrives mid-render?
+Several lanes can be pending at once. Which go into the next render, and what happens when a more urgent one arrives mid-render?
 
 ### The short version
 
@@ -919,8 +852,6 @@ Each root keeps `pendingLanes`, the union of lanes with unrendered work. Before 
 A lane is suspended when its render threw a promise for data that is not ready. React skips it until a ping, the signal that the data arrived. The chosen set is `renderLanes`, and other lanes stay pending. If a strictly more urgent lane arrives mid-render, React throws the half-built tree away and starts the urgent one.
 
 ### A toy getNextLanes
-
-Here is a runnable model of the selection rules in React 19.2.
 
 ```js
 // Simplified teaching version of getNextLanes and getHighestPriorityLanes (ReactFiberLane.js, React 19.2).
@@ -969,23 +900,21 @@ console.log(getNextLanes(root, 0).toString(2));
 100000
 ```
 
-React renders `DefaultLane` now and leaves the transition for a later pass. Urgent work jumps ahead every time React chooses.
+React renders `DefaultLane` now and leaves the transition for later. Urgent work jumps ahead every time React chooses.
 
 ### pendingLanes and renderLanes
 
-A root adds each new update's lane to `pendingLanes` by union. Each render pass handles one batch from it. The real signature is `getNextLanes(root, wipLanes, rootHasPendingCommit)`, and it has a few rules the toy skips.
+The real signature is `getNextLanes(root, wipLanes, rootHasPendingCommit)`, and it has a few rules the toy skips.
 
 - Suspended lanes are skipped until a ping marks them as pinged, meaning their data is ready.
 - When every candidate is suspended, React may pick lanes it has not prerendered yet, to warm their data.
 - Idle work waits until all other work is done, even suspended work.
 
-The result is `renderLanes`. An update is included if and only if its lane is in `renderLanes`, and the per-fiber `childLanes` check compares against the same set. Other updates stay in `pendingLanes` for a later pass, like the transition update in section 6.
+An update is included if and only if its lane is in `renderLanes`, and the `childLanes` check compares against the same set. Other updates stay in `pendingLanes`, like the transition update in section 6.
 
-Older descriptions say `getNextLanes` also adds expired and entangled lanes. React 17's first lanes code did. In React 19.2, expiration switches time slicing off (section 9), and entangled lanes join when the render starts (section 10).
+React 17's first lanes code also added expired and entangled lanes here. In React 19.2, expiration switches time slicing off (section 9), and entangled lanes join when the render starts (section 10).
 
 ### Interruption
-
-Pass the lanes of a render in progress as `wipLanes` to see the interruption rule.
 
 ```js
 const T1 = 1 << 8; // a transition render is in progress
@@ -999,11 +928,9 @@ console.log(getNextLanes(root, T1) === T1); // true: Default waits
 
 <GuideFigure figure="react-lanes-interrupt" />
 
-Picture a transition render under way in 5ms slices. In one gap, the browser dispatches a click. Its `setState` gets `SyncLane`, which joins `pendingLanes`, and `ensureRootIsScheduled` queues a microtask.
+Picture a transition render under way in 5ms slices. In one gap, the browser dispatches a click, whose `setState` gets `SyncLane` and queues a microtask. There `getNextLanes` returns `SyncLane`, so React throws away the half-built tree and starts again. The transition lanes stay pending and render afterward, from scratch.
 
-In that microtask, `getNextLanes` sees `SyncLane`, strictly more urgent than the transition in progress, and returns it. React throws away the half-built tree and starts again at `SyncLane`. The transition lanes stay pending and render afterward, from scratch.
-
-Yielding through `shouldYield` is what lets the click run at all. `getNextLanes` decides to switch. React switches only for a strictly more urgent lane, and a `DefaultLane` update never interrupts a transition. A source comment explains why: continuous input should interrupt transitions, but default updates should not.
+Yielding through `shouldYield` is what lets the click run at all, and `getNextLanes` decides to switch. A `DefaultLane` update never interrupts a transition. A source comment explains why: continuous input should interrupt transitions, but default updates should not.
 
 ### Try it
 
@@ -1029,7 +956,7 @@ Type a word quickly. "list render started" should climb well past "list committe
 
 ## 8. Where lanes meet the scheduler
 
-Lanes have chosen a batch, and something has to run it. How do 31 lanes become one of five scheduler levels? And why does a click's render skip the scheduler entirely?
+Lanes have chosen a batch. How do 31 lanes become one of five scheduler levels, and why does a click skip the scheduler entirely?
 
 ### The short version
 
@@ -1039,13 +966,11 @@ Any other batch is reduced to an event priority, mapped to a scheduler level, an
 
 ### Two layers, two priority systems
 
-React has two priority systems because it has two layers. The generic scheduler has five levels for any kind of work. The reconciler's lanes are a 31-way model built around rendering, transitions, retries and set operations.
+The generic scheduler has five levels for any work. The reconciler's 31 lanes are built for rendering, transitions, retries and set operations. Lanes would cost the scheduler its generality, and five levels are too coarse for the reconciler.
 
-Neither could use the other's model. Lanes would cost the scheduler its generality, and five levels are far too coarse for the reconciler. The systems are not redundant. `UserBlockingPriority` and `InputContinuousLane` express the same idea, urgent continuous input, in two vocabularies.
+So the systems are not redundant. `UserBlockingPriority` and `InputContinuousLane` express one idea, urgent continuous input, in two vocabularies.
 
 ### The microtask step
-
-In React 19, scheduling a root does not create a scheduler task right away.
 
 ```js
 // Simplified teaching version of ReactFiberRootScheduler.js, React 19.
@@ -1067,7 +992,7 @@ function processRootScheduleInMicrotask() {
 }
 ```
 
-Ten `setState` calls in one handler still queue one microtask. The decision happens inside it.
+In React 19, scheduling a root creates no scheduler task right away, and ten `setState` calls in one handler still queue one microtask. The decision happens inside it.
 
 ```js
 // Simplified teaching version of scheduleTaskForRootDuringMicrotask.
@@ -1081,11 +1006,9 @@ function scheduleTaskForRootDuringMicrotask(root, now) {
 }
 ```
 
-`SyncLane` work renders at the end of the microtask, or at once inside `flushSync`. It never becomes a scheduler task.
+`flushSync` also renders `SyncLane` work, at once.
 
 ### The translation
-
-React first reduces the batch to an event priority with `lanesToEventPriority`, in `ReactEventPriorities.js`.
 
 ```js
 // Simplified teaching version of lanesToEventPriority (ReactEventPriorities.js).
@@ -1098,7 +1021,7 @@ function lanesToEventPriority(lanes) {
 }
 ```
 
-These are the tiers the event system guide assigns to events, and in React 19 they are lane values. `DiscreteEventPriority` is `SyncLane`, `ContinuousEventPriority` is `InputContinuousLane`, `DefaultEventPriority` is `DefaultLane`, and `IdleEventPriority` is `IdleLane`. `NoEventPriority` means none.
+`lanesToEventPriority`, in `ReactEventPriorities.js`, reduces the batch to the event system's tiers. In React 19 those tiers are lane values: Discrete is `SyncLane`, Continuous is `InputContinuousLane`, Default is `DefaultLane`, Idle is `IdleLane`, and `NoEventPriority` means none. React then maps the tier to a scheduler level.
 
 <MarginNote note="the one place the two systems touch">
 
@@ -1118,8 +1041,6 @@ React 18 mapped discrete priority to `ImmediatePriority`. React 19 maps discrete
 
 ### The scheduler task
 
-The callback is `performWorkOnRootViaSchedulerTask`. React 18 called it `performConcurrentWorkOnRoot`.
-
 ```js
 // Simplified teaching version of performWorkOnRootViaSchedulerTask.
 function performWorkOnRootViaSchedulerTask(root, didTimeout) {
@@ -1134,13 +1055,7 @@ function performWorkOnRootViaSchedulerTask(root, didTimeout) {
 }
 ```
 
-The scheduler orders this task by expiration time. `performWorkOnRoot` picks a blocking or time-sliced render. A sliced render yields through `shouldYield`, and this function returns itself as the continuation.
-
-1. An update gets a lane from its context.
-2. The lane joins `root.pendingLanes`.
-3. A microtask marks starved lanes and calls `getNextLanes`.
-4. A `SyncLane` batch renders right there. Any other batch becomes a scheduler task.
-5. The render checks `renderLanes` at each fiber and, when sliced, `shouldYield` after each unit.
+React 18 called this callback `performConcurrentWorkOnRoot`. `performWorkOnRoot` picks a blocking or sliced render, which checks `renderLanes` at each fiber and, when sliced, `shouldYield` after each unit.
 
 ### Try it
 
@@ -1172,7 +1087,7 @@ my microtask
 next task
 ```
 
-`setN` queued React's microtask before yours, so the render comes first. Now wrap `setN(n + 1)` in `startTransition`. The render should move after "my microtask", into a scheduler task.
+`setN` queued React's microtask before yours, so the render comes first. Wrap `setN(n + 1)` in `startTransition`, and the render should move after "my microtask", into a scheduler task.
 
 ## 9. Expiration: no lane waits forever
 
@@ -1195,7 +1110,7 @@ t = 200ms   another keystroke, another restart
 t = 300ms   and again: the transition never reaches its end
 ```
 
-Each keystroke arrives in a gap, gets `SyncLane`, and interrupts the transition, which restarts from scratch. The user sees every keystroke, but the list never updates.
+The user sees every keystroke, but the list never updates.
 
 ### A toy markStarvedLanesAsExpired
 
@@ -1232,9 +1147,9 @@ function markStarvedLanesAsExpired(root, now) {
 }
 ```
 
-The windows follow priority only roughly, since Default and every transition lane share 5 seconds. Retry lanes never expire, because the source says they must always be time-sliced. The root keeps each deadline in `expirationTimes`, an array of 31 slots indexed by lane.
+Default and every transition lane share 5 seconds, so the windows follow priority only roughly. Retry lanes never expire, because the source says they must always be time-sliced. Deadlines live in `root.expirationTimes`, one slot per lane.
 
-The clock starts lazily, on the first pass where the lane is pending and not suspended, or is pinged. The check runs on every scheduling pass, before React chooses lanes. Its source comment says it runs every time React yields.
+The clock starts lazily. The check runs on every scheduling pass, before React chooses lanes, or as its source comment puts it, every time React yields.
 
 ```js
 const T1 = 1 << 8;
@@ -1249,7 +1164,7 @@ console.log(root.expiredLanes === T1); // true
 
 ### What "expired" changes
 
-`getNextLanes` in React 19.2 never reads `expiredLanes`, so an expired lane does not move ahead of more urgent ones. It acts through the time-slicing switch from section 5.
+`getNextLanes` in React 19.2 never reads `expiredLanes`, so an expired lane does not move ahead of more urgent ones. It acts through the switch from section 5.
 
 ```js
 // The expired check inside performWorkOnRoot, React 19.2.
@@ -1258,21 +1173,19 @@ const shouldTimeSlice =
     checkIfRootIsPrerendering(root, lanes); // prerendering suspended content is always sliced
 ```
 
-A render that includes an expired lane calls `renderRootSync`. It stops yielding and runs to completion, so no keystroke can interrupt it. Low-priority work is <Mark kind="marker" wraps>deferred, but only up to a deadline</Mark>, and that bounds the delay any update can see.
+A render with an expired lane runs to completion, so no keystroke can interrupt it. Low-priority work is <Mark kind="marker" wraps>deferred, but only up to a deadline</Mark>, and that bounds the delay any update can see.
 
-This is the scheduler's expiration ordering from section 2, applied to lanes. Priority sets the initial urgency, and elapsed time sets a deadline. React uses the idea in both layers because both face the same starvation risk.
+This is the scheduler's expiration ordering from section 2, applied to lanes: priority sets the initial urgency, and elapsed time sets a deadline. Both layers face the same starvation risk. When the render task itself has expired, the scheduler passes `didTimeout`, and React renders synchronously.
 
-The scheduler layer backs it up. If React's render task has expired by the time it runs, the scheduler passes `didTimeout`, and React renders synchronously.
-
-Expiration also changed roles. Before lanes, it was the whole priority mechanism. Now it is the safety net: the bitmask decides the normal order, and expiration puts a deadline on it.
+Before lanes, expiration was the whole priority mechanism. Now it is the safety net: the bitmask decides the normal order, and expiration puts a deadline on it.
 
 <GuideFigure figure="sc-starvation" />
 
-You will rarely see expiration fire, because normal deferral resolves well inside 5 seconds. When it does, a long-deferred transition suddenly renders synchronously, with a brief jank. React trades a moment of responsiveness for guaranteed completion.
+Expiration rarely fires, because normal deferral resolves well inside 5 seconds. When it does, a long-deferred transition suddenly renders synchronously with a brief jank, trading a moment of responsiveness for guaranteed completion.
 
 ### Try it
 
-Make each `SlowItem` from section 7 cost 2ms, so the list takes about 500ms. Record with Performance Tracks, then hold a key down in the input for ten seconds. On the Scheduler ⚛ track, the Transition subtrack should show short restarts for about 5 seconds. Then one long unbroken render should appear: the expired transition finishing in one blocking pass.
+Make each `SlowItem` from section 7 cost 2ms, record with Performance Tracks, and hold a key down in the input for ten seconds. The Transition subtrack on the Scheduler ⚛ track should show short restarts for about 5 seconds. Then one long unbroken render should appear: the expired transition finishing in one blocking pass.
 
 ## 10. Entanglement: lanes that render together
 
@@ -1286,11 +1199,9 @@ The root keeps an `entangledLanes` set and a per-lane `entanglements` array. Whe
 
 ### What goes wrong without it
 
-The rendering guide defines **tearing**: one visible UI showing two versions of state, because different parts rendered against different values. Lanes can cause a form of it. If two updates that must apply together land in different batches, the user sees an in-between state.
+The rendering guide defines **tearing**: one visible UI showing two versions of state, because different parts rendered against different values. If two updates that must apply together land in different batches, the user sees such an in-between state.
 
 ### A toy entanglement model
-
-Entangling two lanes declares that if either renders, the other renders in the same batch.
 
 ```js
 // Simplified teaching version of markRootEntangled and getEntangledLanes (ReactFiberLane.js).
@@ -1343,7 +1254,7 @@ The figure's two transitions split into separate passes. In 19.2 that happens on
 
 React applies entanglements after it checks for partial work. So it will not throw away a render in progress to honor an entanglement that arrived mid-render. Entangled lanes usually render together, but not always.
 
-That is the trade-off. Lanes <Mark kind="marker" wraps>split for responsiveness, entangle where splitting would break consistency</Mark>, and give up a little flexibility for it. Bits express independent priorities, and the entanglement set expresses required togetherness. With it, lanes encode consistency constraints, not just priority. This is the most internal lane mechanism, and you will rarely touch it.
+That is the trade-off. Lanes <Mark kind="marker" wraps>split for responsiveness, entangle where splitting would break consistency</Mark>, and give up a little flexibility for it. Bits express independent priorities, and entanglement expresses required togetherness, a consistency constraint. You will rarely touch this most internal mechanism.
 
 ### Try it
 
@@ -1355,7 +1266,7 @@ markRootEntangled(root, B | C);
 console.log(getEntangledLanes(root, A).toString(2));
 ```
 
-Predict the output first. The toy brings in `B`, but not `C`, because `C` is entangled with `B`, not `A`. The real `markRootEntangled` widens partner sets as entanglements chain, so React would bring in `C` too. Change the toy so it does.
+Predict the output first. The toy brings in `B` but not `C`, which is entangled with `B`, not `A`. The real `markRootEntangled` widens partner sets as entanglements chain, so React would bring in `C`. Change the toy so it does.
 
 ## 11. Lanes in disguise: the concurrent features
 
@@ -1369,8 +1280,6 @@ The concurrent features are friendly handles on lanes. Batching happens because 
 
 ### Batching
 
-Three updates in a timer give one render under `createRoot`.
-
 ```jsx
 setTimeout(() => {
     setCount((c) => c + 1);
@@ -1380,9 +1289,9 @@ setTimeout(() => {
 // createRoot (React 18 and later): one render. Legacy roots: three.
 ```
 
-The concurrent features you use are <Mark kind="circle">lanes in disguise</Mark>. All three updates get `DefaultLane`, one bit in `pendingLanes`, so they render in one pass. But the shared lane is only half of React 18's change. Legacy roots gave such updates `SyncLane` and rendered at once. Under `createRoot`, React waits for its microtask or task, so updates pile up first.
+The concurrent features you use are <Mark kind="circle">lanes in disguise</Mark>. All three updates get `DefaultLane`, one bit in `pendingLanes`, so they render in one pass. The shared lane is only half of React 18's change. Legacy roots rendered such updates at once on `SyncLane`, while `createRoot` waits for its microtask or task, so updates pile up first.
 
-In React 19, separate batches mostly mean urgent versus transition. Sync, InputContinuous and Default render as one group, and in 19.2 so do transition update lanes. Updates split across ticks also render separately.
+In React 19, separate batches mostly mean urgent versus transition, since Sync, InputContinuous and Default render as one group. Updates split across ticks also render separately. [The hooks guide](/articles/react-hooks-and-effects-internals) covers batching in full.
 
 ```jsx
 async function save() {
@@ -1395,7 +1304,7 @@ async function save() {
 
 ### Transitions and isPending
 
-A transition lane ranks below the lane of the click that started it, so `getNextLanes` renders the urgent work first. The transition lane is not blocking, so its render is time-sliced and an urgent update can preempt it. `isPending` is not read from the lanes. It is its own optimistic state.
+A transition lane ranks below the click that started it and is not blocking. So it renders second, in slices, and an urgent update can preempt it. `isPending` is not read from the lanes. It is its own optimistic state.
 
 ```js
 // Simplified teaching version of startTransition inside useTransition (ReactFiberHooks.js).
@@ -1411,11 +1320,9 @@ function startTransitionFromHook(setPending, callback) {
 }
 ```
 
-React sets `isPending` at a priority of at least `ContinuousEventPriority`, so it renders urgently first, and it reverts when the transition commits.
-
 ### useDeferredValue
 
-`useDeferredValue` is the same machinery, phrased as "let this value lag".
+The input that drives a deferred value still updates at once. The render with the new value then runs on a deferred lane, which is time-sliced and interruptible, the same machinery as a transition.
 
 ```js
 // Simplified teaching version of useDeferredValue on update (ReactFiberHooks.js).
@@ -1428,13 +1335,11 @@ function updateDeferredValue(value, previousValue) {
 }
 ```
 
-The urgent render shows the old value, so the input updates at once. React spawns a second render on a `TransitionDeferredLanes` lane, or on `OffscreenLane` while prerendering, and that render can be interrupted. All `useDeferredValue` hooks in one render share a lane. The `DeferredLane` marker prevents a waterfall, so only the first level of nesting defers.
+The spawned render uses a `TransitionDeferredLanes` lane, or `OffscreenLane` while prerendering. All `useDeferredValue` hooks in one render share a lane, and the `DeferredLane` marker stops a waterfall, so only the first level of nesting defers. The hooks guide covers the API.
 
 ### Suspense: pings and retries
 
-A component suspends by throwing a promise. React has two separate paths back, depending on whether the suspended render committed.
-
-If the render suspended without committing, as in a transition that keeps the old screen, React attaches a ping. `pingSuspendedRoot` marks the original lane as pinged, and `getNextLanes` picks that same lane again (section 7).
+React has two paths back from a suspended render, and [the Suspense guide](/articles/react-suspense-internals) covers the rest. If the render suspended without committing, as in a transition that keeps the old screen, a ping marks the original lane as pinged.
 
 ```js
 // Simplified teaching version of pingSuspendedRoot (ReactFiberWorkLoop.js).
@@ -1444,7 +1349,7 @@ thenable.then(() => {
 });
 ```
 
-If the boundary already committed its fallback, React attaches a retry listener instead. The retry gets a new lane.
+If the boundary already committed its fallback, a retry listener gets a new lane instead.
 
 ```js
 // Simplified teaching version of resolveRetryWakeable and retryTimedOutBoundary (ReactFiberWorkLoop.js).
@@ -1455,17 +1360,7 @@ thenable.then(() => {
 });
 ```
 
-The retry lane's priority governs how the content is revealed. Retry lanes are time-sliced and never expire. So "show a fallback, then reveal" means suspend, get a retry lane when the data resolves, and render that lane.
-
-| Feature | Lane | Time-sliced | A click can interrupt it |
-|---|---|---|---|
-| `setState` in a click | `SyncLane` | No | Not applicable |
-| `setState` in a timer | `DefaultLane` | No | No, it blocks |
-| `startTransition` update | A transition lane | Yes | Yes |
-| `isPending` becoming true | At least `InputContinuousLane` | No | Not applicable |
-| `useDeferredValue` second render | A deferred transition lane | Yes | Yes |
-| Suspense retry | A retry lane | Yes | Yes |
-| Hidden `<Activity>` content | `OffscreenLane` | Yes | Yes |
+Retry lanes are time-sliced, never expire, and govern how the content is revealed. So "show a fallback, then reveal" means suspend, get a retry lane when the data resolves, and render that lane.
 
 ### Try it
 
@@ -1502,7 +1397,7 @@ React 19.2 adds Performance Tracks to Chrome. The Scheduler ⚛ track shows each
 
 ### Reading a trace
 
-Record an interaction with 4x CPU throttling, so problems that hide on a fast laptop show up.
+Record an interaction with 4x CPU throttling, so hidden problems show up.
 
 | Pattern in the trace | What it means | What to check |
 |---|---|---|
@@ -1522,29 +1417,27 @@ performance.measure("filter rows", "filter-start");
 
 Performance Tracks appear automatically in traces of development builds. Profiling builds, from `react-dom/profiling`, show the Scheduler track too.
 
-| Tool | What it shows | Use it to answer |
-|---|---|---|
-| Main thread flame chart | Long tasks, slices, paints | Did this render block or slice? |
-| Scheduler ⚛ track | Each render on a priority subtrack, with its phases | What priority did it run at? |
-| Components ⚛ track | Render and effect time per component | Where did the time go? |
-| React DevTools Profiler | Which components rendered, and why | Why did this render? |
-| React DevTools Timeline profiler | Scheduled updates labeled by lane | Which lane did it get? |
+| Tool | What it shows |
+|---|---|
+| Main thread flame chart | Long tasks, slices, paints |
+| Scheduler ⚛ track | Each render on a priority subtrack, with its phases |
+| Components ⚛ track | Render and effect time per component |
+| React DevTools Profiler | Which components rendered, and why |
+| React DevTools Timeline profiler | Scheduled updates labeled by lane |
 
-The Blocking subtrack covers every blocking lane, which makes it the quickest check for heavy work outside a transition. The Scheduler track also marks cascading updates, scheduled during a render, that can make React restart.
+The Blocking subtrack is the quickest check for heavy work outside a transition. The Scheduler track also marks cascading updates, which can make React restart.
 
 ### Symptoms and mechanisms
 
 | Symptom | Likely mechanism | What to do |
 |---|---|---|
 | A heavy update freezes the UI | It is on a blocking lane | Wrap it in `startTransition` |
-| A transition still janks | An update escaped to an urgent lane, or one unit is too slow | Move the update inside, or make the component cheaper |
-| A deferred update renders late with a stall | Expiration turned slicing off | Usually fine. If frequent, urgent load is starving it |
-| Related updates show an inconsistent frame | They are not in one lane or entangled, or the bug is yours | Put them in one transition, or derive one from the other |
+| A transition still janks | An update escaped to an urgent lane, or one unit is too slow | Move the update inside, or make it cheaper |
+| A deferred update renders late with a stall | Expiration turned slicing off | Usually fine, unless urgent load starves it often |
+| Related updates show an inconsistent frame | Not in one lane or entangled, or your own bug | Put them in one transition |
 | Expected batching renders several times | Urgent versus transition, or split across ticks | Make them in one event, before any `await` |
 
-Time slicing helps when a render has many units of work. It cannot split one giant computation inside a single component. That is a render-cost problem, not a scheduling problem, and the fix is to make that unit cheaper.
-
-An escaped update is common with async transitions.
+Time slicing helps when a render has many units of work, but it cannot split one giant computation inside a component. That is a render-cost problem, and the fix is to make that unit cheaper. An escaped update is common with async transitions.
 
 ```jsx
 // Escaped: the update after await runs outside the transition.
@@ -1560,32 +1453,30 @@ startTransition(async () => {
 });
 ```
 
-After the `await`, the code is outside `startTransition` and `window.event` is gone. So the first `setResults` gets `DefaultLane`, a blocking lane. Wrapping it again puts it back on the Action's lane.
+After the `await`, the code is outside `startTransition` and `window.event` is gone, so the first `setResults` gets the blocking `DefaultLane`. Wrapping it again puts it back on the Action's lane.
 
-### Try it
-
-Record one janky interaction in your own app with throttling and Performance Tracks. Classify it. A long block on the Blocking subtrack is synchronous work that belongs in a transition. Sliced work on the Transition subtrack with one slice far over 5ms is a slow component to make cheaper.
-
-## Reading the source
+### Reading the source
 
 Paths are relative to `packages/` in the React repository.
 
-| File | What to look for | Section |
-|---|---|---|
-| `scheduler/src/forks/Scheduler.js` | `unstable_scheduleCallback`, `workLoop`, `performWorkUntilDeadline`, `shouldYieldToHost`, the host setup, `timerQueue` | 2 and 3 |
-| `scheduler/src/SchedulerFeatureFlags.js` | The timeouts and `frameYieldMs` | 2 and 3 |
-| `scheduler/src/SchedulerMinHeap.js` | `push`, `pop`, `peek` and the sift operations | 2 |
-| `react-reconciler/src/ReactFiberLane.js` | Lane constants, set helpers, `getNextLanes`, `markStarvedLanesAsExpired`, `getEntangledLanes` | 4, 5, 7, 9, 10 |
-| `react-reconciler/src/ReactFiberWorkLoop.js` | `requestUpdateLane`, `performWorkOnRoot`, `workLoopConcurrentByScheduler`, `prepareFreshStack` | 3, 5, 6, 7 |
-| `react-reconciler/src/ReactFiberRootScheduler.js` | `ensureRootIsScheduled`, `scheduleTaskForRootDuringMicrotask`, `performWorkOnRootViaSchedulerTask` | 8 |
-| `react-reconciler/src/ReactEventPriorities.js` | Event priorities and `lanesToEventPriority` | 8 |
-| `react-reconciler/src/ReactFiberHooks.js` | `entangleTransitionUpdate`, `startTransition`, `useDeferredValue` | 10 and 11 |
+| File | What to look for |
+|---|---|
+| `scheduler/src/forks/Scheduler.js` | `unstable_scheduleCallback`, `workLoop`, `performWorkUntilDeadline`, `shouldYieldToHost`, the host setup, `timerQueue` |
+| `scheduler/src/SchedulerFeatureFlags.js` | The timeouts and `frameYieldMs` |
+| `scheduler/src/SchedulerMinHeap.js` | `push`, `pop`, `peek` and the sift operations |
+| `react-reconciler/src/ReactFiberLane.js` | Lane constants, set helpers, `getNextLanes`, `markStarvedLanesAsExpired`, `getEntangledLanes` |
+| `react-reconciler/src/ReactFiberWorkLoop.js` | `requestUpdateLane`, `performWorkOnRoot`, `workLoopConcurrentByScheduler`, `prepareFreshStack` |
+| `react-reconciler/src/ReactFiberRootScheduler.js` | `ensureRootIsScheduled`, `scheduleTaskForRootDuringMicrotask`, `performWorkOnRootViaSchedulerTask` |
+| `react-reconciler/src/ReactEventPriorities.js` | Event priorities and `lanesToEventPriority` |
+| `react-reconciler/src/ReactFiberHooks.js` | `entangleTransitionUpdate`, `startTransition`, `useDeferredValue` |
 
-`ReactFiberLane.js` is the heart of the lane model, unusually readable, and the single best file to read. It was once split into `ReactFiberLane.old.js` and `ReactFiberLane.new.js`, but that fork is gone. Older write-ups mention `SchedulerHostConfig`, which was removed years ago. The host setup now lives in `Scheduler.js`.
+`ReactFiberLane.js` is the heart of the lane model, unusually readable, and the single best file to read. Its old split into `ReactFiberLane.old.js` and `ReactFiberLane.new.js` is gone. So is `SchedulerHostConfig`, which older write-ups mention, and the host setup now lives in `Scheduler.js`.
 
 ### Try it
 
-Open `ReactFiberLane.js` and find `getHighestPriorityLane`.
+Record one janky interaction in your app with throttling and Performance Tracks, and classify it. A long Blocking block is synchronous work that belongs in a transition. A Transition slice far over 5ms is a slow component to make cheaper.
+
+Then open `ReactFiberLane.js` and find `getHighestPriorityLane`.
 
 ```js
 export function getHighestPriorityLane(lanes: Lanes): Lane {
@@ -1612,24 +1503,24 @@ Confirm it is the two's complement trick from section 4. Then confirm that `Sync
 
 ### React Performance Tracks
 
-The [React Performance Tracks reference](https://react.dev/reference/dev-tools/react-performance-tracks) describes the Scheduler and Components tracks and the builds that show them.
+The [React Performance Tracks reference](https://react.dev/reference/dev-tools/react-performance-tracks) describes the Scheduler and Components tracks.
 
 ### The React 19.2 release post
 
-The [React 19.2 announcement](https://react.dev/blog/2025/10/01/react-19-2) introduces Performance Tracks alongside the other 19.2 changes.
+The [React 19.2 announcement](https://react.dev/blog/2025/10/01/react-19-2) introduces Performance Tracks.
 
 ### The React 18 Working Group discussions
 
-The [Working Group discussions](https://github.com/reactwg/react-18/discussions) are the React team's closest thing to a primary explanation of the concurrent model. They cover transitions, Suspense and tearing.
+The [Working Group discussions](https://github.com/reactwg/react-18/discussions) are the React team's closest primary explanation of the concurrent model.
 
 ### The original lanes pull request
 
-Andrew Clark's [Initial Lanes implementation](https://github.com/facebook/react/pull/18796) records the move from expiration times to lanes. It landed in May 2020 and shipped in React 17.
+Andrew Clark's [Initial Lanes implementation](https://github.com/facebook/react/pull/18796) records the move from expiration times to lanes.
 
 ### The source files
 
-[ReactFiberLane.js](https://github.com/facebook/react/blob/main/packages/react-reconciler/src/ReactFiberLane.js) and [Scheduler.js](https://github.com/facebook/react/blob/main/packages/scheduler/src/forks/Scheduler.js) are the primary sources. This guide is a reading of them and their neighbors.
+[ReactFiberLane.js](https://github.com/facebook/react/blob/main/packages/react-reconciler/src/ReactFiberLane.js) and [Scheduler.js](https://github.com/facebook/react/blob/main/packages/scheduler/src/forks/Scheduler.js) are the primary sources this guide reads.
 
 ### MessageChannel and microtasks on MDN
 
-MDN's [MessageChannel](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel) page and [microtask guide](https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide) make section 3 concrete. The difference between a task and a microtask explains React's choice.
+MDN's [MessageChannel](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel) page and [microtask guide](https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide) make section 3 concrete, since the task versus microtask difference explains React's choice.

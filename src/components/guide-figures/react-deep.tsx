@@ -373,13 +373,13 @@ export function StarvationFigure() {
     return (
         <BitsFigure
             spec={{
-                bits: ["DefaultLane", "TransitionLane"],
+                bits: ["SyncLane", "TransitionLane"],
                 steps: [
                     {
                         caption: "Each lane gets an expiration time when it first becomes pending: 250ms for sync and continuous lanes, 5 seconds for default and transition lanes.",
                         rows: [pending([0, 1]), expired([]), render([])],
                     },
-                    { caption: "The transition renders in time slices. An urgent update arrives, and `getNextLanes` picks the higher priority DefaultLane first.", rows: [pending([0, 1]), expired([]), render([0])] },
+                    { caption: "The transition renders in time slices. A keystroke arrives on SyncLane, and `getNextLanes` picks it first, interrupting the transition.", rows: [pending([0, 1]), expired([]), render([0])] },
                     {
                         caption: "Urgent updates keep arriving, so the transition render is interrupted and restarted again and again. This is starvation.",
                         rows: [pending([0, 1]), expired([]), render([0])],
@@ -396,7 +396,7 @@ export function StarvationFigure() {
                 ],
                 overview: "A transition lane keeps getting interrupted by urgent updates until its expiration time passes. Press Play to see it finish.",
                 figcaption: "Priority sets the normal order, and expiration stops a lane from being interrupted forever.",
-                description: ["The transition keeps losing to the default lane until it expires, then it renders synchronously without yielding."],
+                description: ["The transition keeps losing to urgent sync updates until it expires, then it renders synchronously without yielding."],
             }}
         />
     );
