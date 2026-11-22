@@ -174,6 +174,7 @@ The JavaScript guides define the house style. It is Orwell's six rules plus ASD-
 ### Preserve the reader's mental model
 
 - **Existing guide prose is immutable during this restructuring.** Preserve every sentence's wording and order. You may promote structural labels to headings and split paragraphs at existing sentence boundaries for formatting, but do not rephrase, shorten, simplify, or substitute prose.
+- **Approved exception (2026-11-23): redundancy removal in the ten React guides.** The owner approved cutting repetition past the 5% cap: series boilerplate, Track labels, duplicate explanations, recap paragraphs (now one numbered list per guide), and signposts. Do not restore the removed text. The rule above still binds every surviving sentence.
 - **Avoid semicolons in guide prose.** Prefer an ordinary conjunction when the thought should stay together, or a period when two thoughts genuinely need separation. Do not use punctuation patterns that make the prose feel machine-generated.
 - **Understanding is the primary goal.** Assume the reader is a complete beginner to the topic. Never trade motivation, context, causal explanation, or a useful analogy for brevity, metrics, or technical density.
 - **Define before relying.** Introduce every mechanism in plain language before using its name as shorthand. Explain what problem it solves, how it works, and why the reader should care.
