@@ -84,7 +84,11 @@ The `fs` API lets JavaScript work with files, but browser JavaScript does not re
 
 Some names, such as `setTimeout` and `console`, exist in both browsers and Node.js. That does not make them core JavaScript features. The environments provide their own implementations.
 
+<MarginNote note="the host decides what JavaScript can reach">
+
 This separation is what makes JavaScript portable. An environment can embed an engine and expose the capabilities that make sense for that environment, even if the environment is a water cooler.
+
+</MarginNote>
 
 ## A short history of JavaScript engines
 
@@ -104,7 +108,7 @@ The more interesting question is how an engine balances fast startup with fast l
 
 ## A JavaScript engine is a program
 
-A JavaScript engine is not special hardware. It is a large program, commonly implemented in lower-level languages such as C++.
+A JavaScript engine is <Mark kind="circle">not special hardware</Mark>. It is a large program, commonly implemented in lower-level languages such as C++.
 
 Its job is to take this:
 
@@ -252,7 +256,7 @@ But the assumption must remain safe. If the program later passes strings, the en
 
 The engine checks its assumptions. If an assumption fails, it can abandon the optimized path and continue in a more general tier. This process is called **deoptimization**, or a bailout in some engines.
 
-Optimization must never change the meaning of the JavaScript program. It can only change how efficiently the engine produces that meaning.
+<Mark kind="marker" wraps>Optimization must never change the meaning of the JavaScript program</Mark>. It can only change how efficiently the engine produces that meaning.
 
 ## Common engine optimizations
 
@@ -280,7 +284,7 @@ The source file does not change. Inlining is an internal decision made by the en
 
 The engine uses runtime feedback to specialize code for likely value types or object shapes. Guards check whether those assumptions still hold.
 
-Speculation is one reason unpredictable changes in value shapes can affect performance. It is not a reason to write unnatural code without measurements. Engine strategies change, and readable application code matters more than guessing at an optimizer.
+Speculation is one reason unpredictable changes in value shapes can affect performance. <Mark kind="underline" wraps>It is not a reason to write unnatural code without measurements</Mark>. Engine strategies change, and readable application code matters more than guessing at an optimizer.
 
 ## Phase 3: Execution, the stack, and the heap
 
@@ -339,7 +343,11 @@ let user = {
 user = null;
 ```
 
+<MarginNote note="null drops one reference, not the object">
+
 If nothing else references the original object, that object becomes unreachable and is eligible for garbage collection.
+
+</MarginNote>
 
 ### Mark and sweep as the core idea
 

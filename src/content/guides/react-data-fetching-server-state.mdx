@@ -70,7 +70,7 @@ The reframe that fixes all of it is to stop calling it state and start calling i
 
 ### The short version
 
-The data you fetch from a server is not your application's state.
+<Mark kind="marker" wraps>The data you fetch from a server is not your application's state.</Mark>
 
 It is a _cache_, a local copy of data whose real home is the server.
 
@@ -156,7 +156,11 @@ That single limitation forces you to hand-build everything a cache provides: loa
 
 A server-state library replaces all of that with one shared cache.
 
+<MarginNote note="the problem is the storage, not the effect">
+
 The lesson is not "never use effects," it is "fetching is a caching problem, and local state is not a cache."
+
+</MarginNote>
 
 ### How it actually works
 
@@ -368,7 +372,7 @@ They describe two different things.
 
 ### The short version
 
-A query's state lives on two orthogonal axes, because "do I have data" and "is a request in flight right now" are independent questions.
+A query's state lives on <Mark kind="circle">two orthogonal axes</Mark>, because "do I have data" and "is a request in flight right now" are independent questions.
 
 The `status` axis (`pending`, `error`, `success`) answers whether you have data.
 
@@ -530,7 +534,11 @@ It does nothing you expect, because it governs a completely different phase of a
 
 `gcTime` controls how long an _inactive_ cache entry (one that no mounted component is currently observing) is kept in memory before it is garbage collected and removed.
 
+<MarginNote note="how long to keep, not how long to trust">
+
 It is a _retention_ policy, not a freshness policy.
+
+</MarginNote>
 
 The default is 5 minutes.
 
@@ -610,7 +618,7 @@ So N components asking for `['user', 5]` get one shared cache entry and trigger 
 
 In-flight requests are deduplicated too: a second request for a key whose fetch is already running attaches to the existing promise rather than starting a new one.
 
-This sharing-and-deduplication is automatic, and it is the thing component-local state fundamentally could not do.
+<Mark kind="marker" wraps>This sharing-and-deduplication is automatic, and it is the thing component-local state fundamentally could not do.</Mark>
 
 ### How it actually works
 
@@ -690,7 +698,11 @@ It feels like magic, or, if you did not expect it, like the app is "refetching f
 
 Stale data (Section 5) is automatically revalidated in the background on a set of triggers: a component mounting with that key, the window regaining focus, the network reconnecting, and optionally a polling interval.
 
+<MarginNote note="the triggers only wake up stale data">
+
 Fresh data (within `staleTime`) is _not_ refetched on these triggers.
+
+</MarginNote>
 
 So the freshness policy (`staleTime`) and the triggers together define how current your cache stays.
 
@@ -884,7 +896,7 @@ Their job is to perform the write and then _make the cache honest again_, becaus
 
 You reconcile in one of two ways: **invalidate** the affected queries (mark them stale so they refetch from the server, the safe default), or **write the result directly into the cache** with `setQueryData` (when you already know the new value).
 
-Invalidation is how a write tells every relevant read "you are out of date now."
+<Mark kind="marker" wraps>Invalidation is how a write tells every relevant read "you are out of date now."</Mark>
 
 ### How it actually works
 
@@ -998,7 +1010,7 @@ In `onSettled`, invalidate to reconcile with the real server result.
 
 React 19's `useOptimistic` hook provides the same idea at the React level for Actions.
 
-The thing to get right is the rollback, because an optimistic update that cannot undo itself leaves the UI lying after a failure.
+The thing to get right is the rollback, because <Mark kind="underline" wraps>an optimistic update that cannot undo itself leaves the UI lying after a failure</Mark>.
 
 ### How it actually works
 
@@ -1219,7 +1231,11 @@ React 19's `use()` is the lower-level primitive that suspends on a promise.
 
 `useSuspenseQuery` builds the full caching machinery on top of that suspend-on-promise mechanism.
 
+<MarginNote note="the component stops owning its spinner">
+
 The trade is that loading and error states move from inside the component to boundaries around it, which is cleaner but requires placing those boundaries deliberately.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -1326,7 +1342,7 @@ The `select` option is a _selector_ in the external-store sense: it lets a compo
 
 And in a Server Components world, server components can fetch directly on the server, while the client cache is hydrated from server-fetched data so the client starts warm.
 
-This section ties the whole series together: the cache is the external-store pattern, realized for server state.
+This section ties the whole series together: <Mark kind="marker" wraps>the cache is the external-store pattern, realized for server state</Mark>.
 
 ### How it actually works
 
@@ -1540,7 +1556,11 @@ Most data-fetching bugs are one of a small set, and each maps to a section.
 
 The procedure: open the Devtools to see the actual cache state, identify which mechanism the symptom implicates (a key problem, a freshness problem, a status-flag problem, an invalidation problem), and fix at that level.
 
+<MarginNote note="look at the cache before changing code">
+
 The Devtools panel, which shows every query, its key, status, freshness, and observer count, is your primary instrument, because it makes the cache visible.
+
+</MarginNote>
 
 ### How it actually works
 

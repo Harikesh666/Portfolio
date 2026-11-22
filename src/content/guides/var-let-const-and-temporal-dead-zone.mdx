@@ -70,7 +70,7 @@ Then the statements run in order:
 1. `console.log(score)` reads `undefined`.
 2. `var score = 10` assigns `10` to the existing binding.
 
-The value `10` is not hoisted. Only the binding exists early.
+The value `10` is not hoisted. <Mark kind="circle">Only the binding</Mark> exists early.
 
 ## let and const are created but not initialized
 
@@ -122,7 +122,7 @@ The log does not print `"outer"`. The block has its own `value` binding, and tha
 
 At the log line, the inner binding is still uninitialized, so JavaScript throws a `ReferenceError`.
 
-The TDZ starts when execution enters the scope and ends when the declaration is evaluated.
+<Mark kind="marker" wraps>The TDZ starts when execution enters the scope and ends when the declaration is evaluated.</Mark>
 
 ```js
 {
@@ -235,7 +235,11 @@ console.log(x); // 2
 
 Both declarations refer to one binding in the same variable scope.
 
+<MarginNote note="the quiet reuse is the danger here">
+
 This flexibility can hide mistakes. If two distant parts of a function declare the same `var`, JavaScript does not warn us that the name was reused.
+
+</MarginNote>
 
 `var` also allows reassignment:
 
@@ -390,7 +394,11 @@ Another useful habit is to avoid using a variable inside its own initializer:
 const value = value + 1;
 ```
 
+<MarginNote note="same shadowing trap as the block example above">
+
 The right-side `value` refers to the new binding, which is still in the TDZ. It does not reach an outer variable with the same name.
+
+</MarginNote>
 
 ## 6. Differences between let and const in practice
 
@@ -417,7 +425,7 @@ const b = 100;
 
 `const` requires an initializer and the binding cannot later point to another value.
 
-That does not make the value itself deeply immutable.
+<Mark kind="underline" wraps>That does not make the value itself deeply immutable.</Mark>
 
 ## const protects the binding, not the object
 

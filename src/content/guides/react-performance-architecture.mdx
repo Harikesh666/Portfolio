@@ -78,7 +78,7 @@ React performance splits into two largely separate problems.
 
 These have different symptoms, different measurements, and different fixes (memoization, virtualization, and concurrency for the first, code splitting, bundle trimming, and moving work to the server for the second).
 
-And over both sits one rule: measure before you optimize.
+And over both sits one rule: <Mark kind="marker">measure before you optimize</Mark>.
 
 ### How it actually works
 
@@ -158,7 +158,7 @@ A component re-renders for exactly these reasons: its own state changed, its par
 
 The one that surprises everyone: **a parent re-rendering re-renders all its children by default, whether or not their props changed.** Props changing is not what triggers a child's render.
 
-The parent rendering is.
+The <Mark kind="circle">parent rendering</Mark> is.
 
 `React.memo` is the opt-in tool that makes a child _skip_ re-rendering when its props are unchanged, which is only necessary because the default is to render regardless of props.
 
@@ -235,7 +235,7 @@ The actual cost was somewhere else, and you optimized a thing that was already c
 
 ### The short version
 
-A re-render is usually cheap.
+<Mark kind="marker" wraps>A re-render is usually cheap.</Mark>
 
 React calling a component function and diffing its output is fast, and a few extra re-renders of simple components cost essentially nothing.
 
@@ -349,7 +349,11 @@ The browser's own Performance panel shows you the bigger picture (scripting, lay
 
 The discipline is a loop: measure to find the real bottleneck, make one change, measure again to confirm it helped.
 
+<MarginNote note="those two steps are both measuring">
+
 Most failed performance work skips the first and last steps.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -427,7 +431,7 @@ A _bailout_ is when React skips rendering a component and its subtree because no
 
 So `React.memo` is a _boundary_ in the tree that stops the downward render propagation when props are unchanged.
 
-Understanding it as a boundary, not a per-component speedup, is what lets you place it where it actually helps.
+Understanding it as <Mark kind="circle">a boundary</Mark>, not a per-component speedup, is what lets you place it where it actually helps.
 
 ### How it actually works
 
@@ -508,7 +512,11 @@ It is doing precisely what it was told, and the problem is the props you are fee
 
 ### The short version
 
+<MarginNote note="new identity means changed, even with equal contents">
+
 The number one reason `React.memo` does nothing is that the parent passes it a prop with a new identity every render: an inline object (`style={{...}}`), an inline array, or an inline function (`onClick={() => ...}`).
+
+</MarginNote>
 
 The memo comparison uses `Object.is`, which sees a new object or function as "changed," so the bailout never fires.
 
@@ -633,7 +641,7 @@ Both exist mostly to provide _referential stability_ so that memo boundaries (Se
 
 The React Compiler 1.0 (stable October 2025) is an opt-in build-time tool that automatically inserts this memoization for you at a fine grain, so in a project with the Compiler enabled, most hand-written `useMemo` and `useCallback` (and many `React.memo` wrappers) become unnecessary.
 
-The 2026 guidance: enable the Compiler and stop hand-memoizing defensively.
+The 2026 guidance: <Mark kind="marker" wraps>enable the Compiler and stop hand-memoizing defensively</Mark>.
 
 Without it, the manual rules from the Hooks guide still fully apply.
 
@@ -707,7 +715,11 @@ Two composition patterns prevent unnecessary re-renders structurally.
 
 **Lift content up and pass it as children**: a component that receives JSX through `children` (or any element prop) does _not_ re-render that child content when the component itself re-renders, because the child elements were created by the parent and keep their identity.
 
+<MarginNote note="fix the structure before reaching for memo">
+
 Both avoid re-renders without a single `React.memo`, and both are usually preferable to memoization because they remove the cause rather than blocking the symptom.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -826,7 +838,7 @@ React matches elements across renders by their _type and key_ (rendering guide).
 
 Good keys (stable, unique identifiers tied to the data) let React recognize that an item moved rather than being destroyed and recreated, so it reuses DOM and preserves state, which is both correct and cheap.
 
-Bad keys (especially the array index) make React mismatch items on reorder or insert, causing wasted DOM work, lost or swapped component state, and subtle bugs.
+Bad keys (<Mark kind="underline">especially the array index</Mark>) make React mismatch items on reorder or insert, causing wasted DOM work, lost or swapped component state, and subtle bugs.
 
 You can also use a key _deliberately_ to force a remount (reset state) when you actually want that.
 
@@ -1014,7 +1026,11 @@ Concurrent rendering lets React treat some updates as _non-urgent_, so it can ke
 
 `useDeferredValue` produces a _lagging copy_ of a value so an expensive subtree can render against the old value while the input stays snappy.
 
+<MarginNote note="this changes priority, not speed">
+
 These do not make the expensive work _less_.
+
+</MarginNote>
 
 They make it _not block_ the urgent work, which is a different and sometimes the only available kind of performance win.
 
@@ -1406,7 +1422,7 @@ For load, analyze the bundle, then split by route, trim dependencies, and move r
 
 Measure again after each change.
 
-The order is cheapest-and-most-structural first, targeted-and-heavier last.
+<Mark kind="marker" wraps>The order is cheapest-and-most-structural first, targeted-and-heavier last.</Mark>
 
 ### How it actually works
 

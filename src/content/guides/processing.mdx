@@ -35,7 +35,11 @@ With some mechanism, we will try to run the program. What actually happens is th
 
 ## What Is a Process?
 
+<MarginNote note="on disk it is a program, in RAM a process">
+
 A program under execution is a process. It is technically loaded into your RAM. The program we write stays on the HDD, while the process stays in RAM. A process is a complete entity in the OS.
+
+</MarginNote>
 
 The process has a lot of important information. You might have heard about the call stack. The process contains the call stack, heap memory, and a few more things, for example, a text area (where the actual instructions are stored).
 
@@ -71,7 +75,7 @@ The task in multitasking is the process that is being executed by the CPU.
 
 For these examples, assume each process has one thread, meaning one path of execution. We are also leaving Hyper-Threading aside for now. We will come back to both kinds of threads later.
 
-So, actually, at a single instant in time, a core can only execute a single process.
+So, actually, at a single instant in time, a core can only execute <Mark kind="circle">a single process</Mark>.
 
 At any point in time, a single core in this example can only execute one of our processes. The processes need to take turns.
 
@@ -125,7 +129,7 @@ Within a complete time frame of 1 second, you divide the time into smaller time 
 
 <GuideFigure figure="process-time-slices" />
 
-This sharing of CPU time uses context switching. At each switch, the OS saves the outgoing execution state and restores the incoming one.
+This sharing of CPU time uses context switching. <Mark kind="marker" wraps>At each switch, the OS saves the outgoing execution state and restores the incoming one.</Mark>
 
 How does the system choose which process to run next? The OS has a scheduler that uses CPU scheduling algorithms for this.
 
@@ -227,7 +231,7 @@ Why is this lightweight? Because to create a thread, we do not do everything we 
 
 When will the process spawn a thread? We give instructions for it.
 
-Because threads share a lot of resources with the parent process, they need less duplication. But if they change the same data, we need to coordinate those changes.
+Because threads share a lot of resources with the parent process, they need less duplication. <Mark kind="underline" wraps>But if they change the same data, we need to coordinate those changes.</Mark>
 
 Let's say the parent process p is written in Java, and the Java code has 2 functions, f1 and f2. On a single CPU core, we load the program as process p. There is no provision to run the functions f1 and f2 in parallel.
 
@@ -247,7 +251,11 @@ But for a thread, we do not need to create new heap memory, space for global var
 
 But we still create new stack memory and saved execution state for the thread. Its register values and program counter are loaded into the CPU when it runs.
 
+<MarginNote note="shared code, but each thread keeps its own place">
+
 Threads work like this: there is a shared text section, and every thread has its own program counter and stack memory. The program counter of t1 can point somewhere different from that of t2. The stack memory of each will be different.
+
+</MarginNote>
 
 If function f1 is running on t1 and the same function f1 is running on t2, their local variables will be different. So you can execute logic differently. Also, a thread can spawn another process depending on the programming language interface.
 

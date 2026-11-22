@@ -39,7 +39,7 @@ JavaScript programs commonly use three kinds of scope:
 2. Function scope
 3. Block scope
 
-They are not three unrelated rules. They are boundaries around different sets of bindings.
+They are not three unrelated rules. They are <Mark kind="circle">boundaries</Mark> around different sets of bindings.
 
 ## Global scope
 
@@ -153,7 +153,11 @@ The first part answers, "Do I have this name?" The second answers, "If I do not,
 
 The word *lexical* tells us how that outer link is chosen. It follows where the code was written.
 
+<MarginNote note="scope is the rule, the environment is the machinery">
+
 Scope is the rule you experience as a programmer. A lexical environment is part of how JavaScript represents the bindings and outer links needed to apply that rule while the program runs.
+
+</MarginNote>
 
 ## Execution context is another piece of the picture
 
@@ -239,7 +243,7 @@ run(); // global
 
 `printLabel` is called inside `run`, but it was created in the global scope. Its lookup path does not pass through `run`'s local scope, so it prints `"global"`.
 
-The caller decides when the function runs. The creation location decides which outer bindings the function can reach.
+The caller decides when the function runs. <Mark kind="marker" wraps>The creation location decides which outer bindings the function can reach.</Mark>
 
 ## The scope chain is the lookup route
 
@@ -398,7 +402,7 @@ The call to `createCounter` finishes, but the returned function still needs the 
 
 The binding's scope has not expanded. Code outside still cannot write `count` directly. The returned function can reach it because that function was created inside the scope where `count` lives.
 
-Scope tells us who can reach the binding. Reachability helps the engine decide how long the required environment data must remain available.
+<Mark kind="marker" wraps>Scope tells us who can reach the binding.</Mark> Reachability helps the engine decide how long the required environment data must remain available.
 
 That difference is explored fully in [Closures in JavaScript: The Function's Backpack](/articles/closures-function-backpack).
 
@@ -416,7 +420,11 @@ Draw the lookup route if necessary:
 
 <GuideFigure figure="scope-route" />
 
+<MarginNote note="nesting in the source, not the call order">
+
 Do not follow the order in which functions happened to call one another. That is the call stack. For scope, follow where the functions are nested in the source.
+
+</MarginNote>
 
 ## What to remember
 

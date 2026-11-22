@@ -34,7 +34,13 @@ const filter = process.argv[2] ?? "";
 
 function stripFrontmatter(text) {
     // Also drop lines that are only an MDX component, like `<EventLoopFigure example="…" />`: they are not prose.
-    return text.replace(/^---\n[\s\S]*?\n---\n/, "").replace(/^<[A-Z][^\n]*\/>[ \t]*$/gm, "");
+    // Hand-drawn marks and margin notes wrap prose without changing it, so their tags go too
+    // (a note's own text is held to the house style by src/lib/guide-annotations.test.ts).
+    return text
+        .replace(/^---\n[\s\S]*?\n---\n/, "")
+        .replace(/^<[A-Z][^\n]*\/>[ \t]*$/gm, "")
+        .replace(/^<\/?MarginNote\b[^\n]*>[ \t]*\n\n?/gm, "")
+        .replace(/<Mark\b[^>]*>|<\/Mark>/g, "");
 }
 
 function countWords(text) {

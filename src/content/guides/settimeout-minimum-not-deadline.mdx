@@ -77,7 +77,7 @@ setTimeout(function callback() {
 
 The browser starts tracking a timer for at least 5000 milliseconds. JavaScript does not keep the callback on the call stack while it waits, and the timer does not block the next line.
 
-This is the important part: registering a timer and executing its callback are two different events.
+This is the important part: registering a timer and executing its callback are <Mark kind="circle">two different</Mark> events.
 
 ### Step 4: JavaScript logs End
 
@@ -162,7 +162,11 @@ The timer delay has passed. The browser can queue the timer task.
 
 But the callback cannot run because the `while` loop still occupies the main thread. The event loop does not interrupt the current JavaScript job halfway through.
 
+<MarginNote note="the timer is done, the stack is not">
+
 The callback has become eligible, but it is still waiting.
+
+</MarginNote>
 
 ### At the ten-second mark
 
@@ -220,7 +224,7 @@ Why?
 5. The event loop can then select the timer task.
 6. The callback runs and logs `"Callback"`.
 
-A delay of zero removes an intentional wait, but it does not remove the queue. The callback still runs in a later task.
+A delay of zero removes an intentional wait, but <Mark kind="marker" wraps>it does not remove the queue.</Mark> The callback still runs in a later task.
 
 ## Why would anyone use setTimeout(0)?
 
@@ -234,7 +238,11 @@ That can be useful when a task should happen later but does not need a meaningfu
 
 ### To split long work
 
+<MarginNote note="many short turns keep the page responsive">
+
 A long calculation can freeze input and rendering because it keeps the main thread busy. Dividing that calculation into smaller tasks can give the browser opportunities to respond between them.
+
+</MarginNote>
 
 `setTimeout(0)` is one way to schedule those later chunks, although it is not a precision tool and it is not always the best modern scheduling API.
 

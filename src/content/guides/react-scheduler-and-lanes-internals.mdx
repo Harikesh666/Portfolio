@@ -80,7 +80,11 @@ _Which_ pending work should React do first, and which can wait?
 
 That is **lanes**: a priority system that tags every update with an urgency.
 
+<MarginNote note="the map for the rest of this guide">
+
 The scheduler answers "when," lanes answer "which," and concurrent rendering is the two working together: render the highest-priority lanes, in interruptible chunks, yielding to the browser as you go.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -170,7 +174,7 @@ The root cause is that a synchronous render runs to completion on the one main t
 
 The browser has a single main thread that does everything: running your JavaScript, handling input, laying out, and painting.
 
-If React renders synchronously and the render takes longer than a frame (roughly 16ms for 60fps), it monopolizes the main thread for that whole time, during which the browser cannot paint or respond to input, so the page janks or freezes.
+If React renders synchronously and the render takes longer than a frame (roughly 16ms for 60fps), <Mark kind="marker" wraps>it monopolizes the main thread for that whole time</Mark>, during which the browser cannot paint or respond to input, so the page janks or freezes.
 
 Cooperative scheduling is the fix: instead of rendering in one uninterruptible burst, React does a small slice of work, _yields_ the main thread back to the browser so it can paint and handle input, then resumes the render.
 
@@ -255,7 +259,7 @@ It maintains a priority queue of callbacks (tasks), each with one of five priori
 
 Each priority level has a _timeout_, and the scheduler orders tasks by their resulting expiration time in a min-heap, so the most urgent (soonest-expiring) task runs first.
 
-It is deliberately generic: it knows nothing about React, lanes, or fibers, and it just runs prioritized callbacks cooperatively.
+It is <Mark kind="circle">deliberately generic</Mark>: it knows nothing about React, lanes, or fibers, and it just runs prioritized callbacks cooperatively.
 
 ### How it actually works
 
@@ -440,9 +444,13 @@ Each bit position is a distinct priority or category of work.
 
 A _set_ of lanes is just an integer with those bits set, called `Lanes`.
 
+<MarginNote note="why bits beat a single expiration number">
+
 React uses bits because it constantly needs to operate on _sets_ of priorities (which lanes are pending on this fiber, is this update's lane part of the batch being rendered, what is the highest-priority pending lane), and bitwise operations do those set operations (union, intersection, membership, subset) in single, O(1) instructions.
 
 This replaced the older model where each update had a single expiration-time number, which could not represent multiple distinct priorities at once.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -613,7 +621,11 @@ Otherwise, if there is a current event priority (set by the event system when it
 
 Otherwise it gets `DefaultLane`.
 
+<MarginNote note="the same setState can land in different lanes">
+
 So the lane is determined by _what is happening when the update is scheduled_, which is how a click's update becomes urgent and a transition's update becomes low priority.
+
+</MarginNote>
 
 ### How it actually works
 
@@ -785,7 +797,7 @@ React prevents this by giving each pending lane an _expiration time_.
 
 As real time passes, if a lane has been pending past its expiration, React marks it _expired_, and an expired lane is treated as urgent (synchronous) and forced into the next render batch regardless of its nominal priority.
 
-So low-priority work is deferred, but only up to a deadline, after which it is forced through.
+So low-priority work is <Mark kind="marker" wraps>deferred, but only up to a deadline</Mark>, after which it is forced through.
 
 This is the same starvation-prevention idea as the scheduler's timeouts (Section 3), applied to lanes.
 
@@ -887,7 +899,7 @@ _Entanglement_ is React marking a set of lanes as "these must render together": 
 
 React entangles lanes in specific situations, notably across transitions that share state and certain Suspense and `useDeferredValue` cases, to guarantee consistency.
 
-It is the counterweight to lanes' ability to split work: split for responsiveness, but entangle where splitting would break consistency.
+It is the counterweight to lanes' ability to split work: <Mark kind="marker" wraps>split for responsiveness, but entangle where splitting would break consistency</Mark>.
 
 ### How it actually works
 
@@ -952,7 +964,7 @@ This section closes the loop by showing they are all _the same lane machinery_ v
 
 ### The short version
 
-The concurrent features you use are lanes in disguise.
+The concurrent features you use are <Mark kind="circle">lanes in disguise</Mark>.
 
 _Batching_ is "updates in the same lane render in the same pass," so multiple `setState` calls that get the same lane fold into one render.
 
@@ -1052,7 +1064,11 @@ The **scheduler** (a generic package, Section 3) has its own five priority level
 
 The **reconciler** has lanes (Section 6), a React-specific, finer-grained priority model tuned for rendering.
 
+<MarginNote note="the one place the two systems touch">
+
 They meet at the boundary where React asks the scheduler to run a render: React takes the lanes it is about to render, derives an _event priority_ from them, maps that to one of the scheduler's five priority levels, and schedules the render task at that level.
+
+</MarginNote>
 
 So lanes are the detailed, internal priority.
 
@@ -1130,7 +1146,7 @@ The main instrument is the browser's Performance panel, where you can see the ma
 
 The React Profiler shows which renders happened and why.
 
-The symptoms map to mechanisms from this guide: a long blocking task means synchronous work that should be lower priority.
+The symptoms map to mechanisms from this guide: <Mark kind="underline" wraps>a long blocking task means synchronous work that should be lower priority</Mark>.
 
 A transition that janks anyway means the work is not actually in a transition lane or expired.
 
