@@ -1384,7 +1384,7 @@ In a Server Components architecture, keeping heavy, render-only dependencies in 
 
 The framing, tying back to Section 1: this is all load performance, and the principle is to ship less JavaScript, in order of leverage: see what you ship (analyze), cut the heavy dependencies (swap, import narrowly, remove), make sure tree-shaking actually works (verify), split what is left so the initial load ships only what the first screen needs (Section 13), and move render-only code to the server so it is never shipped (RSC).
 
-None of this touches runtime rendering.
+None of these techniques touches runtime rendering.
 
 It all touches the bytes the browser must process before your app runs, which for many apps is the larger performance problem.
 
@@ -1458,21 +1458,17 @@ Confirm the change helped, and revert it if it did not (you learned the bottlene
 
 The loop is the method.
 
-#### The whole thing in one paragraph
+#### The whole thing in one list
 
-React performance is two separate problems: rendering too much at runtime, and shipping too much code at load, and the first move is always to measure and decide which one you have, because the fixes do not transfer.
-
-Runtime performance rests on understanding that a render propagates downward from whoever rendered, regardless of props, so a parent rendering re-renders its children by default, and that most renders are cheap, so the real costs are expensive work inside a render, a re-render cascading into a huge subtree, or a commit touching many DOM nodes.
-
-You therefore fix the slow render before the re-render: make the single render cheap, then shrink what re-renders by moving state down and lifting content up as children (structural fixes that beat memoization), then rely on the React Compiler to insert the memoization that stabilizes props and bails out components, falling back to manual `React.memo` with stable props only where measurement shows a parent-render cascade is the cost and remembering that memo bypasses neither its own state nor Context.
-
-Context re-renders all consumers and ignores memo, so you stabilize and split it and reach for an external store with selectors when shared state is large or fast-changing.
-
-Concurrency (`useTransition`, `useDeferredValue`) keeps the UI responsive when expensive work is unavoidable without making it cheaper, and virtualization is the only real fix for a genuinely large list, because it bounds rendered nodes by the viewport rather than the list.
-
-Load performance is about shipping less JavaScript: analyze the bundle, split it by route so the first screen ships only what it needs, trim and narrowly import dependencies while verifying tree-shaking actually worked, and move render-only code into Server Components so it is never shipped to the client at all.
-
-And throughout, the discipline that makes all of it work is the measure-change-measure loop, because performance intuition is unreliable and the Profiler and bundle analyzer are what keep the work honest.
+1. React performance is two problems, rendering too much and shipping too much, so measure first to learn which one you have (Sections 1 and 4).
+2. A render propagates downward from whoever rendered, regardless of props, so a parent rendering re-renders its children by default (Section 2).
+3. Most renders are cheap, so the costs are expensive work inside a render, a cascade into a huge subtree, or many DOM changes (Section 3).
+4. Fix the slow render before the re-render, then shrink what re-renders by moving state down and lifting content up as children (Sections 3 and 8).
+5. Rely on the React Compiler to memoize, and use manual `React.memo` with stable props only where measurement shows a parent-render cascade (Sections 5 to 7).
+6. Context re-renders every consumer and ignores memo, so stabilize and split it, or move large, fast-changing state to a store with selectors (Section 10).
+7. Concurrency (`useTransition`, `useDeferredValue`) keeps the UI responsive when expensive work is unavoidable, without making it cheaper (Section 11).
+8. Virtualization is the only real fix for a genuinely large list, because it bounds rendered nodes by the viewport rather than the list (Section 12).
+9. Load performance means shipping less JavaScript: analyze the bundle, split by route, trim dependencies, and move render-only code into Server Components (Sections 13 and 14).
 
 ### Try it
 
@@ -1557,16 +1553,6 @@ Either it is memoizing trivial work (net loss, Section 3 and Hooks Section 12), 
 Measure whether it helps.
 
 If not, remove it.
-
-#### The closing synthesis
-
-Performance work is the discipline of not doing unnecessary work, and it splits cleanly into not _rendering_ too much at runtime and not _shipping_ too much code at load, with measurement as the constant that keeps both honest.
-
-At runtime, the foundation is that rendering propagates downward from whoever rendered regardless of props, so the questions are always "is this render expensive or merely frequent," "can I shrink what re-renders by relocating state or lifting content," and "is the cost coming from props, from Context, or from sheer quantity," each of which points at a specific fix, from making the render cheap, to composition, to the Compiler-or-memo, to a store, to virtualization, to concurrency.
-
-At load, the foundation is that bytes of JavaScript dominate, so the questions are "what am I shipping," "what can I ship later (split)," "what can I ship less of (trim and tree-shake)," and "what can I never ship to the client at all (Server Components)." None of these are guesses: the Profiler tells you why a component rendered and how long it took, and the bundle analyzer tells you what occupies your bundle, and the entire method is to measure, apply the cheapest structural fix the measurement justifies, and measure again.
-
-The techniques are many, but the discipline is one: look before you optimize, fix the cause the measurement reveals, and prefer removing work over guarding against it.
 
 ### Try it
 

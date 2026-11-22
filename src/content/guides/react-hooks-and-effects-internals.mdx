@@ -1788,25 +1788,17 @@ A flicker where an element paints in the wrong place for one frame is a layout r
 
 Move it to `useLayoutEffect` (Section 10).
 
-#### The whole thing in one paragraph
+#### The whole thing in one list
 
-Hooks are an ordered linked list on a component's fiber, bound by call order, which is why their order is sacred (Section 1).
-
-Each render is a frozen snapshot of props, state, and the closures defined in it, so state never mutates in place.
-
-Setters enqueue updates and schedule a new render that recomputes the value (Sections 2 and 4).
-
-Effects are not lifecycle callbacks but synchronizations: you describe how to bring an external system into agreement with the current render and how to undo that, and React keeps reality matching your latest render by pairing cleanup with setup, gated by a dependency array that is nothing more than an `Object.is` comparison of the values the synchronization depends on (Sections 6, 7, 9).
-
-That same `Object.is` comparison is why referential identity governs effects, memoization, and memo boundaries alike: a fresh object or function every render reads as "changed," which over-fires effects, defeats `React.memo`, and, in the extreme, remounts whole subtrees (Section 8).
-
-`useLayoutEffect` runs before paint and `useEffect` after it (Section 10).
-
-`useEffectEvent` carves the non-reactive part out of an effect so you can read the latest value without making it a trigger (Section 11).
-
-`useMemo` and `useCallback` exist mostly to preserve identity, a job the React Compiler now largely automates (Section 12).
-
-`useRef` is a mutable box that deliberately sidesteps the update queue so changing it does not render (Section 13), and custom hooks reuse logic, not state, because their hooks inline into each caller's own list (Section 14).
+1. Hooks are an ordered linked list on a component's fiber, bound by call order, which is why their order is sacred (Section 1).
+2. Each render is a frozen snapshot of props, state, and closures, and setters schedule a new render instead of mutating it (Sections 2 and 4).
+3. Effects are synchronizations, not lifecycle callbacks: React pairs cleanup with setup, gated by an `Object.is` comparison of the dependency array (Sections 6, 7, and 9).
+4. A fresh object or function every render reads as "changed," which over-fires effects, defeats `React.memo`, and, in the extreme, remounts whole subtrees (Section 8).
+5. `useLayoutEffect` runs before paint and `useEffect` after it (Section 10).
+6. `useEffectEvent` carves the non-reactive part out of an effect, so you can read the latest value without making it a trigger (Section 11).
+7. `useMemo` and `useCallback` exist mostly to preserve identity, a job the React Compiler now largely automates (Section 12).
+8. `useRef` is a mutable box that deliberately sidesteps the update queue, so changing it does not render (Section 13).
+9. Custom hooks reuse logic, not state, because their hooks inline into each caller's own list (Section 14).
 
 Every rule you were told to memorize is a consequence of one of these mechanisms, which is why understanding the mechanism lets you derive the rule instead of reciting it.
 

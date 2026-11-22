@@ -1313,19 +1313,17 @@ Second, _think in two trees_: the DOM tree (where native propagation and native 
 
 Almost every confusing event behavior is the two trees, or the two propagation systems, diverging, and naming which one you are in resolves it.
 
-#### The closing synthesis
+#### The whole thing in one list
 
-React's event system is a layer between the browser's native events and your components, and almost everything it does follows from two facts: it _delegates_ (a small set of real listeners at the root container, not one per node, since React 17), and it _dispatches by walking the fiber tree_ (reconstructing capture and bubble propagation over the component hierarchy you wrote, rather than relying on the DOM).
-
-From the first fact come delegation's efficiency, the root-container location and its isolation benefits, and the ordering geometry when you mix in native listeners (React at the root, native at the node).
-
-From the second come capture-and-bubble ordering, the behavior of `stopPropagation` within React, and the portal behavior that is the rule's clearest demonstration (events follow the fiber tree even when the DOM tree diverges).
-
-On top of those, the synthetic event gives you a consistent cross-browser object (no longer pooled, so freely usable asynchronously) with sometimes-more-useful semantics than the raw native event (`onChange` as `input`, `onFocus` as `focusin`, non-bubbling `onScroll` and `onMouseEnter`).
-
-And the system is not just routing: it is where each interaction is assigned a _priority_ (discrete versus continuous) that feeds React's lanes, and where the resulting `setState` updates are _batched_ into a single prioritized render.
-
-So the event system is the front door to React's update pipeline, turning a user gesture into a consistent, prioritized, batched update that flows into the renderer, and every event surprise you will hit is one of these mechanisms (delegation location, fiber-tree propagation, the two `stopPropagation` worlds, or chosen semantics) showing through.
+1. The synthetic event is a consistent cross-browser object, no longer pooled, so you can use it freely asynchronously (Section 2).
+2. React delegates: a small set of real listeners sits at the root container, not one per node, since React 17 (Sections 3 and 4).
+3. The root-container location isolates each React root from other roots, other React versions, and the host page (Section 4).
+4. React dispatches by walking the fiber tree, reconstructing capture and bubble propagation over the component hierarchy you wrote (Sections 5 and 6).
+5. Inside React, `stopPropagation` halts the fiber walk, while native listeners run in a second, separate `stopPropagation` world (Section 7).
+6. Each interaction gets a priority, discrete or continuous, that feeds React's lanes, and its updates batch into one prioritized render (Sections 8 and 9).
+7. Portal events follow the fiber tree even when the DOM tree diverges, which makes portals the rule's clearest demonstration (Section 10).
+8. When you mix in native listeners, ordering follows geometry: React at the root, native at the node (Section 11).
+9. Some React events choose more useful semantics than the raw native event: `onChange` as `input`, `onFocus` as `focusin`, non-bubbling `onScroll` and `onMouseEnter` (Section 12).
 
 ### Try it
 

@@ -1402,14 +1402,6 @@ From there it behaves like any client-side cache.
 
 This is where this guide meets the RSC guide, and the framework-coupled details (which the RSC guide covers) sit on top of this core relationship.
 
-Putting it together across the series: the rendering engine gives you Suspense, concurrent rendering, and the tearing problem.
-
-The Hooks guide gives you `useSyncExternalStore` and `use()`.
-
-The State guide gives you the external-store-with-selectors model and the server-versus-client distinction, and a server-state cache is the synthesis, an external store, subscribed through `useSyncExternalStore`, with selectors (`select`), specialized for the one kind of state that is a cache of something you do not own.
-
-Seeing it as "the external-store pattern for server state" is what makes every behavior in this guide a consequence rather than a feature.
-
 ### Try it
 
 > Add `@tanstack/react-query-devtools` and watch a cache entry's observer count rise and fall as components mount and unmount: that is the external-store subscription. Add a `select` that picks one field and update an unrelated field of the response (via `setQueryData`): watch the selecting component _not_ re-render, the selector-based subscription closing the selectivity gap. If you have a Next.js app, prefetch on the server and hydrate, and watch the client render with data and no initial client fetch.
@@ -1524,10 +1516,6 @@ Keys are hashed, so they must be serializable (no functions, class instances, or
 
 The fix is to key by serializable identifiers (ids, primitive params, plain objects).
 
-The thread through all of these: a server-state cache is a precise mechanism (a keyed external store with a freshness policy and a synchronization model), and each anti-pattern is what happens when you act against one of those mechanics, store server state where there is no cache, address an entry with an incomplete key, confuse the freshness knob with the retention knob, or read the wrong status axis.
-
-Fixing them is always a matter of naming which mechanism you violated, which is why the earlier sections are worth the depth: they are the diagnostic vocabulary.
-
 ### Try it
 
 > Audit one feature in your codebase against this list. Look specifically for a `useEffect` that copies query `data` into `useState`, and for any query key that does not contain every variable its `queryFn` reads. Those two are the most common and the most quietly damaging, and finding one in your own code is more convincing than any explanation.
@@ -1636,25 +1624,17 @@ A `gcTime` problem (Section 6): too high holds more memory, too low prunes data 
 
 Tune `gcTime` to your navigation patterns.
 
-#### The closing synthesis
+#### The whole thing in one list
 
-Server state is a cache, and the entire library is the management of that cache.
-
-The query key is the address of each entry, and it must contain every input the fetch depends on, exactly as a `useEffect` dependency array must, because the key is how the cache tells two requests apart.
-
-The behavior is stale-while-revalidate: serve the cached copy instantly, and revalidate it in the background when it is stale, where `staleTime` is the freshness line that decides "stale" and `gcTime` is the unrelated retention line that decides how long unused data is kept.
-
-Because the cache is a single keyed external store, many components share one entry and one in-flight request, and they subscribe through `useSyncExternalStore`, which is why the cache is correct under concurrent rendering and why v5 requires React 18.
-
-The `select` option is a selector over that store, closing for server data the selectivity gap that Context could not close for client state.
-
-Reads come from `useQuery`.
-
-Writes come from `useMutation`, whose real job is to make the cache honest again afterward, by invalidating the affected queries (refetch from the server) or writing the cache directly (and, for instant feedback, optimistically updating and rolling back on error).
-
-Pagination, infinite scroll, and prefetching are the same cache through different access patterns, and Suspense (via `useSuspenseQuery`, built on the same suspend-on-promise mechanism as React 19's `use()`) moves loading and error states from inside components to boundaries around them.
-
-Every behavior is a consequence of the one reframe in Section 1: fetched data is not state, it is a cache, and once you manage it as a cache instead of rebuilding one badly on top of `useState`, the loading flags, the races, the duplicate requests, the staleness, and the refetch logic all become things the cache handles rather than things you write by hand.
+1. Server state is a cache, and the entire library is the management of that cache (Section 1).
+2. The query key is the address of each entry, and it must contain every input the fetch depends on (Section 3).
+3. The behavior is stale-while-revalidate: serve the cached copy instantly, and revalidate it in the background when it is stale (Section 5).
+4. `staleTime` is the freshness line that decides "stale," and `gcTime` is the unrelated retention line that decides how long unused data is kept (Sections 5 and 6).
+5. Because the cache is a single keyed external store, many components share one entry and one in-flight request (Section 7).
+6. Components subscribe through `useSyncExternalStore`, which is why the cache is correct under concurrent rendering and why v5 requires React 18 (Section 14).
+7. Writes come from `useMutation`, whose real job is to make the cache honest again by invalidating queries or writing the cache directly (Sections 10 and 11).
+8. Pagination, infinite scroll, and prefetching are the same cache through different access patterns (Section 12).
+9. Suspense, via `useSuspenseQuery`, moves loading and error states from inside components to boundaries around them (Section 13).
 
 ### Try it
 

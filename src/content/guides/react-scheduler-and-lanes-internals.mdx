@@ -1198,19 +1198,17 @@ Same lane batches.
 
 Different lanes may not.
 
-#### The closing synthesis
+#### The whole thing in one list
 
-React's responsiveness rests on two cooperating mechanisms with cleanly separated jobs.
-
-The _scheduler_, a generic package, answers _when_: it runs work as prioritized tasks in a min-heap ordered by timeout-derived expiration, and it makes long work non-blocking by slicing it into roughly 5-millisecond pieces and yielding the main thread between them via a `MessageChannel` macrotask (chosen over `setTimeout`'s 4ms clamp, a paint-preceding microtask, and unreliable `requestIdleCallback`), checking `shouldYield` between units of work.
-
-_Lanes_ answer _which_: each update is assigned a single bit in a 31-lane bitmask based on its context (a transition lane inside `startTransition`, the event's lane inside an event, `DefaultLane` otherwise), bits are used because scheduling is constantly doing cheap set operations on priorities at every fiber (is this update in the render batch, does this subtree have matching work), React renders the highest-priority pending lanes chosen by `getNextLanes`, and a higher-priority update arriving lets React interrupt and restart at the more urgent lanes.
-
-Two safety mechanisms refine pure priority ordering: expiration gives every lane a deadline so low-priority work cannot be starved forever (a stale lane is forced through synchronously), and entanglement forces related lanes to render together so splitting never produces an inconsistent intermediate UI.
-
-The application-facing concurrent features (automatic batching, `useTransition`, `useDeferredValue`, Suspense retries) are all handles on this one lane system, and the two priority models (the scheduler's five levels and the reconciler's lanes) meet at `ensureRootIsScheduled`, where React translates the fine-grained lanes into a coarse scheduler priority to hand the render to the generic scheduler.
-
-So every scheduling behavior you observe (a transition staying responsive, a click preempting a render, work sliced into 5ms pieces, a stale update eventually forced through) is one of these mechanisms, and the question to ask of any scheduling symptom is whether it is about _when_ (the scheduler and yielding) or _which_ (lanes and priority).
+1. The _scheduler_, a generic package, answers _when_: it runs prioritized tasks from a min-heap ordered by timeout-derived expiration (Section 3).
+2. It slices long work into roughly 5-millisecond pieces and yields the main thread between them via a `MessageChannel` macrotask (Section 4).
+3. _Lanes_ answer _which_: each update gets a single bit in a 31-lane bitmask based on its context (Sections 5 and 7).
+4. React uses bits because scheduling constantly does cheap set operations on priorities at every fiber (Section 5).
+5. React renders the highest-priority pending lanes chosen by `getNextLanes`, and a higher-priority update lets React interrupt and restart (Section 8).
+6. Expiration gives every lane a deadline, so low-priority work cannot be starved forever (Section 9).
+7. Entanglement forces related lanes to render together, so splitting never produces an inconsistent intermediate UI (Section 10).
+8. Automatic batching, `useTransition`, `useDeferredValue`, and Suspense retries are all handles on this one lane system (Section 11).
+9. The two priority models meet at `ensureRootIsScheduled`, where React translates the fine-grained lanes into a coarse scheduler priority (Section 12).
 
 ### Try it
 

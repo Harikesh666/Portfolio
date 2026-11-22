@@ -114,9 +114,9 @@ So the framing for the whole guide is a ladder, and you climb it only as far as 
 
 1. **Local state**, owned by the component that uses it. The default. Cheapest, most traceable, smallest blast radius.
 2. **Lifted state**, owned by the nearest common ancestor of the components that need it. The standard answer to "two siblings need to share." (Section 3.)
-3. **Context**, when the consumers are far apart and passing props through many intermediate layers becomes noise. A transport, not a store. (Sections 8 through 11.)
-4. **An external store**, when the shared state is large or changes frequently enough that Context's re-render behavior becomes a problem, or when you want selector-based subscriptions. (Sections 12 and 13.)
-5. **A server-state cache** (a query library), which is a separate axis entirely, for data that actually lives on your server. (Section 14.)
+3. **Context**, when the consumers are far apart and passing props through many intermediate layers becomes noise. A transport, not a store (Sections 8 through 11.).
+4. **An external store**, when the shared state is large or changes frequently enough that Context's re-render behavior becomes a problem, or when you want selector-based subscriptions (Sections 12 and 13.).
+5. **A server-state cache** (a query library), which is a separate axis entirely, for data that actually lives on your server (Section 14.).
 
 Each rung is more powerful and more expensive than the one below.
 
@@ -1467,23 +1467,17 @@ The reason the order is cheap-to-expensive is the cost structure from Section 1:
 
 Climbing only as far as a real constraint forces you keeps your architecture at the lowest-cost rung that actually works, which is almost always lower than the instinct to "just use Redux" would put it.
 
-#### The whole thing in one paragraph
+#### The whole thing in one list
 
-State management is the discipline of deciding, for each piece of state, where it lives and who owns it, because the location of state is the blast radius of its changes and the clarity of its ownership is the traceability of your data flow.
-
-Keep state as low as it will go (colocation), lift it only to the nearest common ancestor that needs it, and never store what you can derive, because a derived value computed during render cannot desync while a stored one synced by an effect always can.
-
-Shape what state remains so illegal combinations are unrepresentable, and consolidate complex transitions in a reducer or state machine so the legal transitions are explicit.
-
-To share without drilling, use Context as a transport for state you still manage with React's own primitives, remembering that Context delivers the whole value to every consumer and bypasses `React.memo`, so an unstable Provider value or one-big-context re-renders everyone.
-
-Stabilize and split to contain it.
-
-But Context has no slice-level subscriptions, a gap React 19 still does not close, so when shared state is large or fast-changing and sliced differently by many consumers, step outside the tree to an external store, which holds state outside React, lets components subscribe to exactly the slice they read via a selector, and binds to React safely through `useSyncExternalStore`.
-
-The libraries (Redux Toolkit, Zustand, Jotai, the proxy ones) are ergonomic variations on that one model.
-
-Above all, separate server state, a cache of remote data that is async, shared, and goes stale, from client state, and keep it in a query library rather than your client-state tools, because that single distinction removes most of what tempts people toward heavyweight global state in the first place.
+1. The location of state is the blast radius of its changes, and the clarity of its ownership is the traceability of your data flow (Section 1).
+2. Keep state as low as it will go, and lift it only to the nearest common ancestor that needs it (Sections 2 and 3).
+3. Never store what you can derive, because a derived value computed during render cannot desync (Section 4).
+4. Shape state so illegal combinations are unrepresentable, and consolidate complex transitions in a reducer or state machine (Sections 5 and 6).
+5. Use Context as a transport for state you still manage with React's own primitives (Sections 7 and 8).
+6. Context delivers the whole value to every consumer and bypasses `React.memo`, so stabilize and split to contain it (Sections 9 and 10).
+7. Context has no slice-level subscriptions, a gap React 19 still does not close (Section 11).
+8. An external store holds state outside React, lets components subscribe to the slice they read, and binds through `useSyncExternalStore` (Sections 12 and 13).
+9. Keep server state, a cache of remote data that is async, shared, and goes stale, in a query library, not your client-state tools (Section 14).
 
 ### Try it
 
@@ -1574,18 +1568,6 @@ You may have escalated past the rung the problem needed (Section 15).
 Re-run the decision framework: how much of that state is server state (a query library), derivable (delete it), local (push it down), or ambient-and-rare (Context)?
 
 Often what remains does not justify a store at all.
-
-#### The closing synthesis
-
-The thread through every one of these is the two ideas from Section 1: _location is blast radius_ and _ownership is traceability._ Re-render problems are almost always state sitting too high, or in a transport (Context) used for a job that needs a store.
-
-Desync problems are almost always redundant state that should have been a single source of truth with the rest derived.
-
-Impossible-state problems are shape and transition problems, and the biggest simplification available is almost always separating server state into its own cache.
-
-You do not debug state architecture by reaching for tools.
-
-You debug it by asking, for the offending piece of state, "is this on the right rung, is it the only copy of its truth, and is it even client state at all," and then moving it to where the mechanics of rendering and sourcing want it to be.
 
 ### Try it
 

@@ -792,25 +792,17 @@ The high-value pitfalls, each tied to the section that explains it:
 | Forgetting that a Server Function is a real, callable network endpoint, and skipping input validation and authorization on it. | 8 |
 | Putting a data fetch in a Client Component's `useEffect` out of habit, when a Server Component could fetch it directly during render with no spinner and no API route. | 1 and 3 |
 
-#### The whole thing in one paragraph
+#### The whole thing in one list
 
-React Server Components split your tree into a server region and a client region, divided by the `"use client"` boundary that the bundler resolves at build time.
-
-Server Components run once on the server, ship zero JavaScript, can `await` data and touch server-only resources, but cannot be interactive.
-
-Client Components are shipped to the browser, render to HTML on the server first and then hydrate to become interactive, and are where the entire rendering engine from the rendering guide still applies.
-
-The server describes its rendered output as a streamable RSC payload containing plain rendered data plus module references where client components go.
-
-The browser assembles the final tree from that payload plus the client component code.
-
-Props crossing the boundary must be serializable, which is why you pass data rather than functions, and why the `children` pattern is how server content lives inside a client shell.
-
-Server Functions marked `"use server"` let client code call server logic as if it were a local function, really a network round-trip, collapsing API boilerplate for mutations.
-
-RSC is a layer that decides where components run and how their output reaches the browser.
-
-Reconciliation is still the engine that processes the result.
+1. RSC splits your tree into server and client regions, divided by the `"use client"` boundary that the bundler resolves at build time (Section 2).
+2. Server Components run once on the server, ship zero JavaScript, can `await` data and touch server-only resources, but cannot be interactive (Sections 1 and 3).
+3. Client Components ship to the browser, render to HTML on the server first, and then hydrate to become interactive (Sections 4 and 7).
+4. The server describes its rendered output as a streamable RSC payload of plain rendered data plus module references where client components go (Section 6).
+5. The browser assembles the final tree from that payload plus the client component code (Section 6).
+6. Props crossing the boundary must be serializable, which is why you pass data rather than functions (Section 5).
+7. The `children` pattern is how server content lives inside a client shell (Section 5).
+8. Server Functions marked `"use server"` let client code call server logic like a local function, but each call is really a network round-trip (Section 8).
+9. RSC decides where components run and how their output reaches the browser, and reconciliation is still the engine that processes the result (Section 9).
 
 ### Try it
 

@@ -1384,19 +1384,17 @@ Conditionally unmounting tabs to "save resources" throws away their state and re
 
 `<Activity mode="hidden">` preserves state and can pre-render (17).
 
-#### The whole thing in one paragraph
+#### The whole thing in one list
 
-React turns `UI = f(state)` into minimal DOM changes by diffing its previous tree against a new one with two linear-time rules (same type reuse, different type rebuild, keys identify siblings).
-
-It stores the tree as fibers, heap objects that reify the call stack so work can pause, prioritize, and be discarded.
-
-It keeps two trees (a committed one on screen, a disposable work-in-progress one) so an interrupted render is always safe, and commits with a single pointer swap.
-
-Work splits into a pure interruptible render phase and a synchronous commit phase, scheduled cooperatively by a `MessageChannel`-driven scheduler and prioritized by a bitmask of lanes.
-
-Hooks are a positional linked list on the fiber, which is why their call order is non-negotiable.
-
-On top sit the Compiler (auto-memoization), Activity (state-preserving hidden UI), and View Transitions (animated swaps), all relying on the same purity and cleanup contracts StrictMode trains into your code.
+1. React turns `UI = f(state)` into minimal DOM changes by diffing its previous tree against a new one (Sections 1 and 3).
+2. Two linear-time rules drive the diff: same type reuses, different type rebuilds, and keys identify siblings (Sections 5 and 6).
+3. React stores the tree as fibers, heap objects that reify the call stack so work can pause, prioritize, and be discarded (Section 7).
+4. React keeps a committed tree on screen and a disposable work-in-progress tree, so an interrupted render is always safe (Section 8).
+5. Work splits into a pure interruptible render phase and a synchronous commit phase, and React commits with a single pointer swap (Sections 8 and 9).
+6. A `MessageChannel`-driven scheduler runs the work cooperatively, and a bitmask of lanes prioritizes it (Sections 11 and 12).
+7. Hooks are a positional linked list on the fiber, which is why their call order is non-negotiable (Section 13).
+8. The Compiler (auto-memoization), Activity (state-preserving hidden UI), and View Transitions (animated swaps) sit on top (Section 17).
+9. All three rely on the same purity and cleanup contracts that StrictMode trains into your code (Section 16).
 
 ### Try it
 

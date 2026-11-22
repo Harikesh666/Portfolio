@@ -1198,27 +1198,17 @@ React 19 changed default logging (Section 9): uncaught errors go to `window.repo
 
 If you set the root options, you _override_ these defaults, so make sure you still surface errors in development.
 
-#### The closing synthesis
+#### The whole thing in one list
 
-Error boundaries are a _render-time resilience_ mechanism built on one core idea: when a component throws during rendering, React catches the throw in its work loop and _unwinds_ up the fiber tree to the nearest boundary that can handle what was thrown, discarding the failed subtree and showing the boundary's fallback instead, which contains the failure to that subtree rather than letting it blank the whole app (React's deliberately drastic default for uncaught errors, chosen because a corrupt partial UI is worse than a blank one).
-
-A boundary is a class component (the one place modern React still requires a class, with no settled hook equivalent) defined by `getDerivedStateFromError` (pure, render-phase, decides the fallback) and `componentDidCatch` (commit-phase, performs side effects like logging with a `componentStack`).
-
-Because the mechanism is render-time, boundaries catch errors in rendering, lifecycles, and constructors, but _not_ in event handlers, async code, SSR, or the boundary's own render, since those are not the subtree's render React can unwind.
-
-For those you use `try`/`catch` or forward the error into a boundary by turning it into a render-time throw.
-
-A caught boundary stays on its fallback until reset, and resets must be paired with a change in conditions to avoid an error-reset loop.
-
-React 19 added root-level `onCaughtError`, `onUncaughtError`, and `onRecoverableError` for centralized reporting that complements (does not replace) the per-subtree UI decisions boundaries make, and changed default logging so uncaught errors go to `window.reportError`.
-
-The same throw-and-unwind machinery powers Suspense: throw an `Error` and React unwinds to an error boundary with a permanent fallback.
-
-Throw a _promise_ and React unwinds to a Suspense boundary with a _temporary_ fallback that retries when the promise resolves.
-
-And resilient architecture is the practice of placing boundaries at the seams of independent UI regions (a top-level net, section and route boundaries, tight boundaries around risky components) so failures are contained to the smallest sensible blast radius.
-
-Every error-handling behavior you will hit is one of these: the unwind finding (or not finding) a boundary, the render-time-only scope, the reset conditions, the React 19 reporting, or the shared mechanism with Suspense.
+1. When a component throws during render, React unwinds up the fiber tree to the nearest boundary that can handle the throw (Section 5).
+2. With no boundary, React unmounts the whole tree, because a corrupt partial UI is worse than a blank one (Section 2).
+3. A boundary is a class with `getDerivedStateFromError` for the render-phase fallback and `componentDidCatch` for commit-phase logging (Sections 3 and 4).
+4. Boundaries catch errors in rendering, lifecycles, and constructors, but not in event handlers, async code, SSR, or their own render (Section 6).
+5. For those errors, you use `try`/`catch` or forward the error into a boundary as a render-time throw (Section 7).
+6. A caught boundary stays on its fallback until reset, and each reset needs a change in conditions to avoid a loop (Section 8).
+7. React 19's root options give centralized reporting, and uncaught errors now go to `window.reportError` (Section 9).
+8. The same unwind powers Suspense: a thrown promise gets a temporary fallback that retries when the promise resolves (Section 10).
+9. Place boundaries at independent UI regions: a top-level net, section and route boundaries, and tight boundaries around risky components (Section 11).
 
 ### Try it
 
