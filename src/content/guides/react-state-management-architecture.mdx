@@ -198,8 +198,6 @@ Local state is self-documenting.
 
 Lifted state is a scavenger hunt.
 
-So colocation is not only the performance default, it is the comprehension default.
-
 The rule that falls out: **start every piece of state local, and lift it only at the exact moment a second component genuinely needs it, and only as high as their nearest common ancestor (Section 3).** Do not pre-lift "in case." Do not lift to a convenient central place.
 
 Lifting is a response to a concrete sharing requirement, not a default posture, because every level you lift widens the blast radius and dilutes ownership.
@@ -265,8 +263,6 @@ Lift higher "to be safe" and you have enlarged the blast radius for no benefit, 
 <GuideFigure figure="sm-lift" />
 
 "As high as necessary, no higher" is the same discipline as colocation, applied in the other direction.
-
-Now the costs, stated honestly because they are what later sections exist to address:
 
 #### Cost one: the owner and its subtree re-render on every change
 
@@ -339,8 +335,6 @@ The fix is to compute the derived value inline during render (and memoize it onl
 This single principle eliminates more state-synchronization bugs than any library ever will.
 
 ### How it actually works
-
-Here is the core insight, and it connects directly to the Hooks guide's "you might not need an effect" point.
 
 Your component re-renders whenever its state or props change.
 
@@ -491,8 +485,6 @@ Now "loading and error at the same time" is not a bug you have to prevent.
 
 It is a state that cannot be written down.
 
-This is the same idea you will see again in Section 6 (state machines) and in the server-state section (14), where good query libraries hand you exactly this kind of status value instead of loose booleans.
-
 The general principle is "make illegal states unrepresentable": choose a shape where the only values you can construct are valid ones.
 
 #### Keep state flat and avoid deep nesting
@@ -537,8 +529,6 @@ Prereqs: Section 5.
 
 From the Hooks guide: `useState` vs `useReducer` and `dispatch` stability (Section 5).
 
-This section extends that from "when to switch" to "how to architect."
-
 ### The itch
 
 Your component's update logic has sprawled across a dozen handlers, each calling several setters, and you keep introducing bugs where one update fires and a related one does not.
@@ -560,8 +550,6 @@ This section is about using it as an architectural tool for complex state.
 ### How it actually works
 
 Recall from the Hooks guide that `useState` and `useReducer` are mechanically almost the same (both use the update queue, `useState` is `useReducer` with a built-in reducer), and that the choice is about where transition logic lives, not performance.
-
-Here we push on the architecture.
 
 A reducer's value is that it turns "the set of all ways this state can change" from an emergent property of your scattered handlers into a single function you can read top to bottom.
 
@@ -646,8 +634,6 @@ You can explain how modeling transitions explicitly (a state machine) prevents i
 
 Prereqs: Section 3 (lifting state).
 
-This section is the bridge from lifting to Context.
-
 ### The itch
 
 You lifted some state to a common ancestor, and now you are threading the same `value` and `onChange` through five intermediate components that do nothing with them but pass them along.
@@ -704,11 +690,9 @@ The signal is qualitative: you find yourself adding a prop to several components
 
 At that point the noise outweighs the clarity benefit, and the value is genuinely "ambient" (a theme, the current user, a locale) rather than specific to one path.
 
-That is the case Context was designed for, and the next section is about what Context actually is before you use it.
+That is the case Context was designed for.
 
 A useful intermediate move before Context, which the docs also recommend, is component composition: instead of drilling props down to a deep child, pass the deep child itself _in_ as a prop (often `children`) from higher up, where the data already lives.
-
-This is the same "children pattern" that appears in the RSC guide for a different reason.
 
 If a layout component is only drilling props to render a child, consider whether the parent that has the data can render that child and pass it down as an element, removing the need to drill at all.
 
@@ -754,17 +738,11 @@ Treating it as a delivery mechanism for state you manage elsewhere is how to use
 
 ### How it actually works
 
-Here is the one-line definition, in case you are coming straight from the Hooks guide.
-
 A Context is a channel you create with `createContext`.
 
 A `Provider` component places a value onto that channel for everything in its subtree, and any descendant can read that value with `useContext` (or `use(Context)`) without it being passed as a prop through the intervening components.
 
 That is all Context is: a way for a deep component to read a value from an ancestor without the layers in between having to carry it.
-
-The rendering guide covers how the read and the propagation are wired.
-
-Here the important thing is what Context _is for_.
 
 The category error is expecting Context to do the jobs a state library does.
 
@@ -806,10 +784,6 @@ function useTheme() {
 ```
 
 Notice the division of labor: `useState` _manages_ the theme, Context _delivers_ it, and the custom hook (`useTheme`, an application of the Hooks guide's Section 14) gives consumers a clean way to read it with a helpful error if the Provider is missing.
-
-The state management is React's normal machinery.
-
-Context only removes the drilling.
 
 This is why Context is excellent for genuinely ambient, rarely-changing values, theme, current user, locale, feature flags, where the win is "deep components can read this without every layer carrying it" and the rare-change part keeps the re-render cost (next section) a non-issue.
 
@@ -917,8 +891,6 @@ Even with a stabilized value, if you put many unrelated pieces of state into a s
 A consumer that reads only `theme` re-renders when `cart` changes, because they share one value and context cannot distinguish which field a consumer uses.
 
 So the size and heterogeneity of a context's value is itself a re-render hazard, independent of the identity bug above.
-
-The fixes for both are in the next section.
 
 <GuideFigure figure="react-context-value" />
 
@@ -1034,7 +1006,7 @@ Together these three fixes make Context perform well for ambient and moderately-
 
 What they cannot do is give a single context slice-level subscriptions, so that a consumer re-renders only when the specific field it reads changes.
 
-That is the hard ceiling, and it is the subject of the next section.
+That is the hard ceiling.
 
 ### Try it
 
@@ -1106,15 +1078,11 @@ Under concurrency it can be extra _speculative_ re-renders, repeated.
 
 The broader the broadcast, the more this costs.
 
-The structural consequence is the bridge to the next section.
-
 When you have shared state that is (a) read by many components, (b) sliced differently by different consumers, and (c) changing frequently, Context's "notify every consumer of the whole value" model is fundamentally the wrong shape, and the workarounds (split contexts, memoize) cannot close the gap because the gap is the lack of slice subscriptions, not a tuning problem.
 
 The right move is to put that state in a store that lives _outside_ React's tree, where components can subscribe to exactly the slice they read via a selector, so updating one slice re-renders only the components that read that slice.
 
 That is precisely what external state libraries provide, and the mechanism React gives them to do it correctly is `useSyncExternalStore` (Hooks guide, Section 15).
-
-The next section is the shared mental model behind all of them.
 
 ### Try it
 
@@ -1201,8 +1169,6 @@ So the mental model, library-agnostic, is three parts: **state outside the tree*
 Hold that, and every store library is a variation on it.
 
 They differ in how you declare the state (one big store object, a set of small atoms, a proxy you mutate), how you write selectors (explicit functions, automatic dependency tracking), and what extras they bundle (middleware, devtools, persistence), but the engine room is the same.
-
-The next section walks the main archetypes through that lens.
 
 ### Try it
 
@@ -1342,8 +1308,6 @@ Prereqs: Section 1 (location and ownership).
 
 The full mechanics are the next guide (Data Fetching and Server State).
 
-This section is the architectural distinction that reorganizes everything above.
-
 ### The itch
 
 You fetch data from your API and store it in `useState`, or in Redux, alongside your UI state.
@@ -1360,7 +1324,7 @@ There are two fundamentally different kinds of state, and conflating them is the
 
 **Server state** is a local _cache_ of data that actually lives on a server: it is asynchronous, shared, owned by the server, and can become stale the moment you fetch it, because something else can change it.
 
-Server state needs caching, synchronization, and staleness handling that client-state tools (`useState`, Redux, Context) do not provide, which is why dedicated server-state libraries (the one you have used, React Query, now TanStack Query, and RTK Query) exist.
+Server state needs caching, synchronization, and staleness handling that client-state tools (`useState`, Redux, Context) do not provide, which is why dedicated server-state libraries (React Query, now TanStack Query, and RTK Query) exist.
 
 <MarginNote note="server data is a cache, not state">
 
@@ -1401,11 +1365,7 @@ The architectural payoff of internalizing this distinction is that it _removes_ 
 
 A great deal of what people put in Redux or Context or atoms is actually server state that should live in a query cache instead, and once it moves there, your remaining client state is small, local, and simple, exactly the lower rungs of Section 1's ladder.
 
-So "do I need Redux" often resolves to "no, most of that was server state. Put it in a query library and the rest is local." This is the single most clarifying move in modern React state architecture, and it connects directly to your own work with `useQuery`, the `enabled` flag, and the `useQuery`-versus-`useEffect` decisions.
-
-The next guide, Data Fetching and Server State, is the full mechanism: the caching model, stale-while-revalidate, query keys, deduplication, background refetch, optimistic updates, and the rest.
-
-This section's job is only to plant the distinction firmly, because it reorganizes everything in this guide: server state is a separate axis, and most of it should never touch your client-state tools at all.
+So "do I need Redux" often resolves to "no, most of that was server state. Put it in a query library and the rest is local."
 
 ### Try it
 
@@ -1589,7 +1549,7 @@ This is the primary source for most of the first half of this guide, and it is g
 2. Sharing State Between Components, at https://react.dev/learn/sharing-state-between-components . The official version of Section 3 (lifting state up).
 3. Passing Data Deeply with Context, at https://react.dev/learn/passing-data-deeply-with-context . Covers Sections 7 and 8 (when to drill, when to use Context, and composition as an alternative).
 4. Scaling Up with Reducer and Context, at https://react.dev/learn/scaling-up-with-reducer-and-context . The canonical version of the reducer-plus-two-contexts pattern from Sections 6 and 10.
-5. You Might Not Need an Effect, at https://react.dev/learn/you-might-not-need-an-effect . Reinforces Section 4 (do not sync derived state with an effect). Also referenced in the Hooks guide.
+5. You Might Not Need an Effect, at https://react.dev/learn/you-might-not-need-an-effect . Reinforces Section 4 (do not sync derived state with an effect).
 
 ### Kent C. Dodds
 
@@ -1606,10 +1566,6 @@ Both predate the React Compiler and the newest hooks, so pair the memoization ad
 The server-state writing, starting with "Why You Want React Query," at [tkdodo.eu/blog/why-you-want-react-query](https://tkdodo.eu/blog/why-you-want-react-query).
 
 The best articulation of the server-state-versus-client-state distinction from Section 14, by a TanStack Query maintainer.
-
-This is really the on-ramp to the next guide (Data Fetching and Server State).
-
-Read it when Section 14 makes you want the full story.
 
 ### The library docs, read as archetypes (Section 13), each current and maintained as of 2026
 

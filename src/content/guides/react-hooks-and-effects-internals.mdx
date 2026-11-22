@@ -17,8 +17,6 @@ This guide goes deep, on purpose, and it is built to be climbed, not swallowed.
 
 **You are not supposed to absorb all of it in one sitting.**
 
-Here is the method that actually works.
-
 ### Pass 1, one relaxed sitting (about 30 minutes)
 
 Read only the two short parts at the top of each section: **"The itch"** and **"The short version."** Skip everything labeled "How it actually works." When you finish, you will have a complete map of how hooks store your state, why effects behave the way they do, and what most of your effect bugs actually are.
@@ -94,10 +92,6 @@ They are the only thing that could possibly work given how hooks are stored.
 
 ### How it actually works
 
-This is the foundation, so it is worth getting exactly right.
-
-One term first, in case you are starting the series here.
-
 A fiber is the internal object React keeps for each component instance in your tree.
 
 It holds that component's state, its links to its parent, child, and sibling, and the work React still has to do for it.
@@ -105,8 +99,6 @@ It holds that component's state, its links to its parent, child, and sibling, an
 The rendering guide is, in large part, the story of fibers and how React walks them.
 
 For hooks, the only thing you need to carry in is that every rendered component has exactly one fiber, and that fiber is where its hooks are stored.
-
-(If you have read the rendering guide, this is the same object from its Fiber and hook-storage sections, here we go further into why the rules of hooks follow from it and what actually breaks when you violate them.)
 
 When React renders a function component, it does not just call your function.
 
@@ -193,8 +185,6 @@ Prereqs: JavaScript closures (a function remembering the variables in scope wher
 
 Nothing from earlier sections.
 
-This is the foundation everything else rests on.
-
 ### The itch
 
 You write `setCount(count + 1)` and then `console.log(count)` on the next line, and the log shows the old value.
@@ -202,8 +192,6 @@ You write `setCount(count + 1)` and then `console.log(count)` on the next line, 
 Or you set up a `setInterval` once, and it forever logs the count from the moment it was created.
 
 It feels like `count` is a stale variable that did not get the memo.
-
-Understanding why is the single highest-leverage thing in this guide.
 
 ### The short version
 
@@ -301,8 +289,6 @@ Prereqs: Section 2 (the snapshot model).
 
 Outside React: that a `setInterval`, event listener, or other long-lived callback captures the variables in scope at the moment it was created.
 
-This is the snapshot model showing up as a bug.
-
 ### The itch
 
 A timer, a subscription, an event listener, or a memoized callback keeps acting on old data.
@@ -385,8 +371,6 @@ It is the wrong tool when the value is incidental to the work.
 Sometimes you want to read the latest value inside the effect but you do not want changes to that value to re-run the effect at all.
 
 That is `useEffectEvent`, and it is the principled answer to the situation where you are tempted to just leave a value out of the deps and silence the linter.
-
-We will get there in Section 11, after the dependency array makes the problem precise.
 
 The reasoning procedure, which you can apply to any stale-closure bug: ask "does this function actually depend on the stale value, or does it just happen to read it?" If it depends on it (the work is different for different values), use honest deps (Fix B).
 
@@ -650,8 +634,6 @@ Once you think in "keep X in sync with Y" instead of "do X on mount," the depend
 
 ### How it actually works
 
-Here is the reframe in full, because it is the most useful idea in this guide after the snapshot model.
-
 A React component's render output describes what the DOM should look like, and React keeps the DOM in sync with it for you (rendering guide, reconciliation).
 
 But plenty of things your component cares about are _not_ the DOM that React manages: a WebSocket connection, a `setInterval`, a subscription to a browser API or an external store, the `document.title`, a chart drawn by a non-React library, an analytics ping.
@@ -712,7 +694,7 @@ useEffect(() => {
 
 There is no "on mount" or "on update" here.
 
-There is "the title should equal this, given `unreadCount`." React runs it on the first commit and again whenever `unreadCount` changes, which is exactly "keep the title in sync." That is the whole model.
+There is "the title should equal this, given `unreadCount`." React runs it on the first commit and again whenever `unreadCount` changes, which is exactly "keep the title in sync."
 
 ### Try it
 
@@ -800,8 +782,6 @@ This is why the linter matters so much, and why silencing it is almost always th
 The `exhaustive-deps` rule computes the _true_ set of reactive values your effect reads (props, state, and anything derived from them) and insists the array match.
 
 When it complains, it is telling you the array does not describe what the effect actually depends on, which means React's `areHookInputsEqual` comparison will give the wrong answer.
-
-The honest responses are: add the dependency (Fix B from Section 3), restructure so the effect genuinely does not need it (updater form, Section 4), or declare it non-reactive on purpose (`useEffectEvent`, Section 11).
 
 Disabling the rule with a comment just hides the mismatch and ships the stale-value bug.
 
@@ -919,8 +899,6 @@ The fixes, in order of preference:
 1. **Depend on or pass primitives.** If the effect only needs `userId`, list `userId`, not `config`. If the child only needs the id, pass the id, not the object. A primitive is stable when it is equal, so this sidesteps identity entirely. This is the cleanest fix and the one to try first.
 2. **Hoist genuinely constant values out of the component.** An object or array that never changes does not belong inside the render function. Move it to module scope (`const DEFAULTS = {...}` outside the component) and it has one identity for the life of the program.
 3. **Preserve identity with `useMemo`/`useCallback`** when you truly need a stable object or function that depends on changing values (Section 12). `useMemo(() => ({ userId }), [userId])` returns the same object identity until `userId` changes, so a downstream dependency array or memo boundary sees stability.
-
-There is a deep connection to the rendering guide worth making explicit.
 
 The most extreme case of identity instability is defining a component _inside_ another component's render: the inner component is a new function (a new `type`) every render, so React's reconciler treats it as a different component type and remounts the whole subtree, throwing away its state and DOM (rendering guide, the diff section).
 
@@ -1154,8 +1132,6 @@ Second, there is a rarely-needed third member of this family, `useInsertionEffec
 
 You will likely never write one directly.
 
-It is worth knowing it exists so the name does not surprise you.
-
 ### Try it
 
 > Build a tooltip that measures its own width in an effect and centers itself over a button by setting a `left` offset in state. Do it with `useEffect` first and watch it flash from the corner to centered. Switch the same code to `useLayoutEffect` and watch the flash disappear. Then put a deliberately slow loop inside the layout effect and feel the paint stall, which is the cost you are trading for.
@@ -1354,8 +1330,6 @@ The memoization here is not about CPU.
 
 It is about not breaking the identity contract of a dependency array and a memo boundary.
 
-That is the use that actually matters at 1 to 2 years of experience.
-
 The _secondary_ purpose is skipping expensive recomputation: if computing a value is genuinely costly (sorting a large list, an expensive transform), `useMemo` lets you recompute only when its inputs change.
 
 The trap is that the memoization itself has a cost (storing the value, comparing deps every render), so wrapping a trivial computation makes your code slower and noisier, not faster.
@@ -1493,8 +1467,6 @@ This is acceptable because it is idempotent (running it twice is harmless), whic
 
 A connection worth noting: `useImperativeHandle` lets a parent's ref expose a custom imperative API of a child instead of a raw DOM node, which is the controlled way to give a parent methods like `focus()` or `scrollToTop()` on a child.
 
-It is a focused topic that belongs with refs.
-
 ### Try it
 
 > Make a ref, write to `ref.current` from a button handler, and `console.log` it, confirming the screen does not change but the logged value does. Then add a normal `useState` next to it and watch only the state change cause a re-render. Finally, try writing to the ref directly in the component body and turn on StrictMode to see why that is discouraged (the write runs twice).
@@ -1508,8 +1480,6 @@ You can explain why mutating `ref.current` does not re-render, in terms of the u
 ## 14. Custom hooks: sharing logic, not state
 
 Prereqs: Section 1 (the positional hook list).
-
-Everything in this section follows from that one fact.
 
 ### The itch
 
@@ -1611,10 +1581,6 @@ It is how `eslint-plugin-react-hooks` knows to apply and enforce the rules insid
 
 Name a hook-calling function without the `use` prefix and the tooling can no longer protect you, and a function that does not call hooks should _not_ have the prefix, to avoid misleading the tooling.
 
-Follow the convention precisely.
-
-It is load-bearing for the linter and Compiler, not just for readability.
-
 A good custom hook returns whatever shape fits its use: an array when the values are positional and you want callers to rename them freely (like `useState`), an object when there are several named values.
 
 The point of extracting one is to give a piece of stateful logic a name and a single place to live, so it can be reused, tested in isolation by rendering it in a test component, and reasoned about as a unit.
@@ -1654,12 +1620,12 @@ Each connects to a mechanism you have already met in this guide, the rendering g
 **Reading external things.**
 
 - `use(resource)` is the modern reader. Given a promise, it suspends the component until the promise resolves (rendering guide, Suspense section, RSC guide for the server side), integrating data fetching with Suspense. Given a context, `use(Context)` reads it like `useContext` but, uniquely, may be called inside conditionals and loops (the deliberate exception to rule one from Section 1). It is the ergonomic surface behind a lot of modern data and context reading.
-- `useSyncExternalStore(subscribe, getSnapshot)` is how you subscribe to a store that lives outside React (a global store, a browser API like `navigator.onLine`, anything with its own change events) without the "tearing" bug where different parts of one render see different values of the store (rendering guide, tearing section). You will mostly meet it inside state libraries rather than write it by hand, but knowing it exists explains how those libraries stay correct under concurrent rendering. The state-management guide will return to it.
+- `useSyncExternalStore(subscribe, getSnapshot)` is how you subscribe to a store that lives outside React (a global store, a browser API like `navigator.onLine`, anything with its own change events) without the "tearing" bug where different parts of one render see different values of the store (rendering guide, tearing section). You will mostly meet it inside state libraries rather than write it by hand, but knowing it exists explains how those libraries stay correct under concurrent rendering.
 
 **Concurrency (rendering guide, concurrency and lanes sections).**
 
 - `useTransition` gives you `[isPending, startTransition]` to mark a state update as a non-urgent transition, so React can keep the UI responsive to urgent input while the heavier update renders at lower priority, and `isPending` lets you show a subtle pending state.
-- `useDeferredValue(value)` hands you a copy of a value that is allowed to lag, so an expensive subtree can render against the old value while the input that drives it stays snappy. Both are about not letting heavy rendering block interaction. The data-fetching and performance guides will use them.
+- `useDeferredValue(value)` hands you a copy of a value that is allowed to lag, so an expensive subtree can render against the old value while the input that drives it stays snappy. Both are about not letting heavy rendering block interaction.
 
 **Forms and Server Functions (RSC guide, Server Functions section).**
 
@@ -1816,10 +1782,6 @@ You can take "my effect fires on every render" and name the mechanism and the fi
 
 Prereqs: the rest of the guide, plus comfort reading JavaScript source.
 
-This is a pass 3 section.
-
-There is no rush.
-
 ### The itch
 
 You have the model.
@@ -1861,10 +1823,6 @@ Reading it is genuinely clarifying.
 Then `ReactFiberCommitWork.js` for `commitHookEffectListMount` and `commitHookEffectListUnmount`: where setups and cleanups actually run in the commit phase, which is the timing behind Sections 9 and 10 (passive versus layout effects).
 
 Pair this with `eslint-plugin-react-hooks` (the source of the rules-of-hooks and `exhaustive-deps` enforcement from Sections 1 and 7) and the React Compiler docs (for what it automates over Section 12).
-
-And keep the official react.dev references open.
-
-They are current within the React 19 line.
 
 ### Try it
 

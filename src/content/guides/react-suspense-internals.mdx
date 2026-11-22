@@ -115,19 +115,13 @@ So a Suspense fallback is _temporary_: shown while a promise is pending, removed
 
 This temporariness is the key difference from an error boundary's fallback (which is permanent until reset), and it follows directly from the thrown value being a promise (which resolves) rather than an error (which does not fix itself).
 
-So the whole model, in one breath: a component that is not ready throws a promise.
-
-React catches it and shows the nearest `<Suspense>` boundary's fallback.
-
-When the promise resolves, React retries and shows the real content.
-
 Everything else in this guide (where to put boundaries, how nesting reveals content, how siblings behave, how transitions avoid hiding content) is a consequence or refinement of this one mechanism.
 
 The "magic" of a component just rendering and React knowing it is not ready is exactly this: the component threw a promise, and React understood that as "not ready yet."
 
 ### Try it
 
-> Use a Suspense-integrated data source (the simplest is `React.lazy` for a component, Section 3, or `useSuspenseQuery` if you use TanStack Query) inside a `<Suspense fallback={<Spinner />}>`. Watch the spinner show while loading and the content replace it when ready, with no `isLoading` anywhere in your component. Then, conceptually, note that the component "suspended" by throwing a promise that React caught. Seeing the declarative loading with no loading state is the feature. Knowing it is a thrown promise is the mechanism.
+> Use a Suspense-integrated data source (the simplest is `React.lazy` for a component, Section 3, or `useSuspenseQuery` if you use TanStack Query) inside a `<Suspense fallback={<Spinner />}>`. Watch the spinner show while loading and the content replace it when ready, with no `isLoading` anywhere in your component. Then, conceptually, note that the component "suspended" by throwing a promise that React caught.
 
 ### You've got this if
 
@@ -142,10 +136,6 @@ Prereqs: Section 1, plus the Error Boundaries guide's unwind mechanism (Sections
 ### The itch
 
 Suspense and error boundaries feel related (both involve a boundary catching a thrown thing and showing a fallback), and they are: the same React mechanism powers both.
-
-If you read the Error Boundaries guide, this is the payoff.
-
-If you did not, here is the shared backbone you need.
 
 ### The short version
 
@@ -165,8 +155,6 @@ This guide is the promise branch.
 
 ### How it actually works
 
-Here is the shared mechanism, recapped so this guide is self-contained (the Error Boundaries guide has the full treatment).
-
 React renders via a work loop that processes the fiber tree one component at a time.
 
 A _fiber_ is React's internal object for a component, and fibers are linked into a tree with each fiber pointing to its parent (its `return` pointer).
@@ -176,8 +164,6 @@ When rendering a component throws, React does not let the throw escape to the br
 It catches it in the work loop (`throwException` in the source, Section 14) and then _unwinds_: it walks _up_ the fiber tree from the throwing component, following parent pointers, looking for the nearest fiber that can _handle_ the thrown value.
 
 This is exactly like a JavaScript exception bubbling up the call stack to the nearest `try`/`catch`, but over React's fiber tree.
-
-The single most important fact is that this catch-and-unwind is _generic over what was thrown_.
 
 When React catches the thrown value in `throwException`, it inspects _what_ it is:
 
@@ -210,17 +196,13 @@ When the retry happens, React renders the subtree again from the boundary.
 
 This matters for understanding sibling behavior (Section 7) and why suspending is "render threw, so we did not finish this subtree."
 
-This section is deliberately the bridge from the Error Boundaries guide.
-
-Everything that follows (suspending, retrying, placement, throttling, transitions) is the _promise branch_ of this shared machinery developed in full.
-
 If the unwind feels shaky, the Error Boundaries guide's Section 5 is the place to solidify it.
 
 Here, hold "a thrown promise unwinds to the nearest `<Suspense>` boundary, shows its fallback, and sets up a retry," and the rest follows.
 
 ### Try it
 
-> Wrap a component in both a `<Suspense fallback={<Loading />}>` and an error boundary. Make it sometimes suspend (throw a promise via a lazy import or a Suspense query) and sometimes throw an `Error`. Watch the _Suspense_ boundary catch the suspension (show `Loading`, then reveal content) and the _error_ boundary catch the error (show the error fallback, permanently). The two boundaries catching the two thrown values from one subtree is the shared mechanism made visible.
+> Wrap a component in both a `<Suspense fallback={<Loading />}>` and an error boundary. Make it sometimes suspend (throw a promise via a lazy import or a Suspense query) and sometimes throw an `Error`. Watch the _Suspense_ boundary catch the suspension (show `Loading`, then reveal content) and the _error_ boundary catch the error (show the error fallback, permanently).
 
 ### You've got this if
 
@@ -314,8 +296,6 @@ Under the hood, if the data is not cached yet, the library suspends (throws the 
 
 This is the production-grade way to do Suspense for data, because the library handles the caching requirement below.
 
-That caching requirement is the thing that bites everyone, so it deserves its own emphasis.
-
 **The promise a component suspends on must be stable across renders for the same input**, meaning the same promise object must be returned each time the component renders for the same data, not a freshly-created promise every render.
 
 Here is why: when the promise resolves, React _retries_ rendering the component (Section 4).
@@ -334,8 +314,6 @@ The Data Fetching guide's "server state is a cache" framing is the same point: t
 
 So the practical picture: use `React.lazy` for code splitting (no caching concern, React handles the chunk), use a Suspense-integrated data library for data (it handles promise caching), and use raw `use` when you have a _stable_ promise to read (cached or passed in).
 
-All three throw a thenable under the hood (Section 2).
-
 The difference is ergonomics and who manages the promise's stability.
 
 Get the stability right and Suspense works.
@@ -344,7 +322,7 @@ Get it wrong (a fresh promise per render) and you loop forever, which is the num
 
 ### Try it
 
-> First, `React.lazy` a component and watch it suspend while its chunk loads (Network tab shows the chunk fetch). Then, to feel the caching trap, try `use` with a promise created _inline_ in render (`use(fetchUser(id))`) and watch it loop or refetch endlessly. Then fix it by creating the promise _outside_ render (memoized or from a cache) and watch it resolve once. Causing and fixing the infinite-suspend loop is the most important lesson in this section.
+> First, `React.lazy` a component and watch it suspend while its chunk loads (Network tab shows the chunk fetch). Then, to feel the caching trap, try `use` with a promise created _inline_ in render (`use(fetchUser(id))`) and watch it loop or refetch endlessly. Then fix it by creating the promise _outside_ render (memoized or from a cache) and watch it resolve once.
 
 ### You've got this if
 
@@ -406,25 +384,9 @@ This is why the fallback is _temporary_: it shows only during the window between
 
 This also re-illuminates the caching requirement from Section 3 from the retry's perspective.
 
-The retry _re-renders the component_, which means the component's render function runs again.
-
-For the retry to _succeed_ (not re-suspend), reading the async value on the retry must return a _resolved_ value.
-
-If the component reads a _cached_ promise (the same promise that just resolved), it gets the resolved value and succeeds.
-
-If instead the component creates a _new_ promise on the retry render (an inline `fetch`), it reads a _new pending_ promise, suspends again, and the retry "fails" into another suspension, looping forever (the infinite-suspend bug).
-
 So the retry mechanism is exactly why stability matters: the retry only terminates if the thing the component reads on re-render is the now-resolved promise, which requires the promise to be the same (cached) one, not a fresh one.
 
 The retry is the moment where caching pays off or the loop happens.
-
-Two refinements that connect forward.
-
-First, the retry's priority (the retry lane) interacts with transitions (Section 9): when a suspension happens inside a transition, React's handling of the fallback differs, because the transition lane and the retry interact to keep already-revealed content visible.
-
-Second, multiple suspensions resolving close together produce multiple retries, and React's _throttling_ (Section 8) staggers or batches the resulting reveals to avoid a popcorn UI.
-
-Both build on this base mechanism: a resolved promise schedules a retry on a lane, and a successful retry replaces the fallback with content.
 
 So the answer to "how does the content appear on its own" is: React subscribed to the promise the component threw, and when it resolved, React scheduled a retry on a retry lane, which re-rendered the subtree successfully now that the data is available.
 
@@ -434,7 +396,7 @@ The automaticity that feels magical is React listening to the promise and re-ren
 
 ### Try it
 
-> Suspend a component on a deliberately slow (say, two-second) cached promise, and add a `console.log` in the component body. Watch it log once (suspends), show the fallback, and then log _again_ about two seconds later (the retry, after the promise resolved), this time rendering the content. Seeing the second render fire on its own when the promise resolves is the retry mechanism, visible.
+> Suspend a component on a deliberately slow (say, two-second) cached promise, and add a `console.log` in the component body. Watch it log once (suspends), show the fallback, and then log _again_ about two seconds later (the retry, after the promise resolved), this time rendering the content.
 
 ### You've got this if
 
@@ -529,7 +491,7 @@ Place boundaries where a region can sensibly load on its own, and you get an app
 
 ### Try it
 
-> Build a page with a static header and two data-driven panels. First wrap the whole page in one `<Suspense>` and watch the entire page (header included) show one fallback until everything loads. Then move the boundaries: keep the header outside any boundary and wrap each panel in its own `<Suspense>` with a skeleton, and watch the header appear instantly while each panel shows its own skeleton and fills in independently. Feeling the difference in loading experience is the placement lesson.
+> Build a page with a static header and two data-driven panels. First wrap the whole page in one `<Suspense>` and watch the entire page (header included) show one fallback until everything loads. Then move the boundaries: keep the header outside any boundary and wrap each panel in its own `<Suspense>` with a skeleton, and watch the header appear instantly while each panel shows its own skeleton and fills in independently.
 
 ### You've got this if
 
@@ -616,15 +578,13 @@ Nesting is the right tool when there is a real containment relationship and a re
 
 It is the wrong tool when applied so finely that the UI becomes a sequence of unrelated pops.
 
-So nested boundaries express a _progressive reveal_: each boundary reveals its level as soon as that level's data is ready, with deeper boundaries showing their fallbacks meanwhile, letting you design a staged loading experience (shell, then section, then detail) instead of an all-or-nothing wait.
-
 The mechanism is just Section 2's "unwind to the nearest boundary" applied at each level of nesting: a suspension is caught by the nearest enclosing boundary, so deeper suspensions are caught deeper, producing the staged reveal.
 
 <GuideFigure figure="su-nesting" />
 
 ### Try it
 
-> Nest two boundaries as in the example, with the outer content on a fast (half-second) promise and the inner content on a slow (two-second) promise. Watch the reveal sequence: outer skeleton, then the outer content with the inner skeleton inside it, then the inner content. Then make the outer data slower than the inner and observe that the inner cannot reveal until the outer does (because the inner does not render until its parent renders). Seeing the staged reveal follow the nesting is the lesson.
+> Nest two boundaries as in the example, with the outer content on a fast (half-second) promise and the inner content on a slow (two-second) promise. Watch the reveal sequence: outer skeleton, then the outer content with the inner skeleton inside it, then the inner content. Then make the outer data slower than the inner and observe that the inner cannot reveal until the outer does (because the inner does not render until its parent renders).
 
 ### You've got this if
 
@@ -692,12 +652,6 @@ Second, if you _do_ observe a waterfall, the causes are usually either a genuine
 The pre-warming behavior handles the independent-siblings case for you.
 
 Dependent fetches are inherently sequential regardless.
-
-So sibling behavior comes down to: one sibling suspending does not stop the others' fetches, because React 19 pre-warms the suspended tree's siblings (a discarded render that triggers their async work), preserving parallel fetching.
-
-The brief React 19 RC regression that waterfalled is gone in stable.
-
-The pre-warming improvement is the current, intended behavior.
 
 ### Try it
 
@@ -775,12 +729,6 @@ A few practical consequences:
 - **A multi-region reveal will feel smoother than the raw resolution timing suggests**, because React coordinates the reveals rather than firing each instantly. This is React doing work to make your staged reveal (Section 6) feel less staccato.
 - **This is why the popcorn UI is a _design_ concern, not just a timing one.** Throttling mitigates it, but it does not eliminate it if you have many independent boundaries resolving over a wide time range. That is where boundary placement (Section 5), nesting (Section 6), revealing-together patterns, and (experimentally) SuspenseList (Section 11) come in. Throttling smooths small timing differences. Large structural fragmentation is still your design to manage.
 
-React 19.2 also extended throttling-adjacent coordination to _server rendering_ with "Suspense batching," which batches the reveals of streamed boundaries during SSR for a smoother streamed experience.
-
-That is part of the streaming story (Section 12).
-
-The client-side throttling described here is the part relevant to ordinary Suspense use.
-
 So fallback throttling is React deliberately _not_ showing every fallback the instant it could and _not_ revealing every boundary the instant it resolves, in order to avoid flashing and popcorn.
 
 It trades a little latency for smoothness, it is built in, and it explains both the "missing" fallbacks (fast content, flash suppressed) and the smoother-than-expected multi-region reveals (coordinated reveals).
@@ -789,7 +737,7 @@ It trades a little latency for smoothness, it is built in, and it explains both 
 
 ### Try it
 
-> Suspend a component on a _very fast_ promise (resolve in, say, 20 to 50 milliseconds) and notice the fallback may not appear at all, just the content (throttling suppressed the flash). Then suspend on a clearly slow promise (one second) and confirm the fallback does show (long enough to be worth it). The presence or absence of the fallback based on resolution speed is throttling, observable.
+> Suspend a component on a _very fast_ promise (resolve in, say, 20 to 50 milliseconds) and notice the fallback may not appear at all, just the content (throttling suppressed the flash). Then suspend on a clearly slow promise (one second) and confirm the fallback does show (long enough to be worth it).
 
 ### You've got this if
 
@@ -824,8 +772,6 @@ Wrapping that update in a _transition_ (`startTransition`, or via `useDeferredVa
 This is the behavior that makes Suspense pleasant for navigation and filtering.
 
 ### How it actually works
-
-This section is the one most likely to fix a real frustration, so it is worth the detail.
 
 The setup: a Suspense boundary has _already revealed_ its content (the user is looking at search results, or a detail panel).
 
@@ -879,27 +825,21 @@ The two ways to mark the update as a transition (both from the Hooks guide, both
 
 The mechanism underneath (recapped from the Scheduler and Lanes guide) is that a transition update gets a _transition lane_, a low-priority lane, and React's handling of a re-suspension on a transition lane is specifically to _not_ replace already-revealed content with a fallback, instead keeping the committed content and rendering the new content at the transition priority until it can be swapped in.
 
-So "transitions avoid unwanted fallbacks" is, mechanically, "a re-suspension on a transition lane keeps the old content rather than showing the fallback," which is a deliberate rule in how React commits suspended transitions.
-
 The practical guidance is strong and worth stating as a rule: **for any update that changes what an already-visible Suspense boundary shows (navigation, filtering, tab switches, selecting a different item), wrap it in a transition** (`startTransition` or `useDeferredValue`), so the user keeps seeing the current content until the new content is ready, instead of flashing a fallback.
 
 Reserve the bare fallback (no transition) for _initial_ loads where there is no content yet to preserve.
 
 This single practice is what separates a Suspense app that feels smooth (content stays, updates swap in cleanly) from one that feels flickery (every navigation blanks the content behind a spinner).
 
-It is the most important behavior in this guide to internalize, because the default (flash the fallback) is so often not what you want for updates to revealed content.
-
 One more connection: React 19.2's `<ViewTransition>` (an opt-in API) hooks into exactly these async updates: View Transitions trigger for `startTransition`, `useDeferredValue`, Actions, and a `<Suspense>` revealing from fallback to content, which means the smooth content-swap a transition produces can be animated with a view transition.
 
 That is an additional layer on top of the fallback-avoidance described here.
-
-The core behavior to learn is that transitions keep revealed content visible instead of flashing a fallback.
 
 <GuideFigure figure="react-transition-fallback" />
 
 ### Try it
 
-> Build a master-detail view: a list, and a detail panel that suspends on the selected item's data. First, _without_ a transition, click between items and watch the detail panel flash its fallback (the previous detail disappears, spinner, new detail) on every click. Then wrap the selection update in `startTransition` (or drive the detail with a `useDeferredValue` of the selected id) and click between items again: the previous detail stays visible until the new one is ready, with no fallback flash, and `isPending` lets you dim it meanwhile. Feeling that difference is the single most valuable Suspense lesson.
+> Build a master-detail view: a list, and a detail panel that suspends on the selected item's data. First, _without_ a transition, click between items and watch the detail panel flash its fallback (the previous detail disappears, spinner, new detail) on every click. Then wrap the selection update in `startTransition` (or drive the detail with a `useDeferredValue` of the selected id) and click between items again: the previous detail stays visible until the new one is ready, with no fallback flash, and `isPending` lets you dim it meanwhile.
 
 ### You've got this if
 
@@ -966,13 +906,7 @@ The ordering (error boundary outside, Suspense inside) is the common arrangement
 
 A thrown promise is caught by the inner `<Suspense>` first (it is the nearest boundary for a promise), while a thrown error passes the `<Suspense>` (which does not handle errors) and is caught by the outer error boundary.
 
-Both boundaries wrap the same subtree, each catching its own kind of thrown value, which is exactly the shared-machinery picture from Section 2 made into a pattern: one subtree, two boundaries, two thrown-value types, two fallbacks.
-
 This is precisely the pattern the Data Fetching guide's `useSuspenseQuery` example uses, and it generalizes: any Suspense data fetching should be paired with an error boundary, because a fetch that can be _pending_ can also _fail_, and Suspense alone has no answer for failure (a Suspense boundary ignores thrown errors, without an error boundary, a fetch error would unwind all the way to the root and crash the app, per the Error Boundaries guide).
-
-So "Suspense for loading, error boundary for failure" is not two separate decisions.
-
-It is one decision to handle both non-success states of an async operation, using the two halves of the same mechanism.
 
 A few practical notes:
 
@@ -986,7 +920,7 @@ Pairing them is the canonical pattern, and forgetting the error boundary is a co
 
 ### Try it
 
-> Wrap a data-fetching component in both an error boundary and a `<Suspense>` as above. Make the fetch sometimes succeed (after a delay), sometimes fail. Watch the loading state (Suspense) during the delay, the content on success, and the error state (error boundary) on failure. Then remove the error boundary and make the fetch fail, and watch the whole app crash (the error unwound to the root). Seeing the failure crash the app without an error boundary is why pairing them is mandatory.
+> Wrap a data-fetching component in both an error boundary and a `<Suspense>` as above. Make the fetch sometimes succeed (after a delay), sometimes fail. Watch the loading state (Suspense) during the delay, the content on success, and the error state (error boundary) on failure. Then remove the error boundary and make the fetch fail, and watch the whole app crash (the error unwound to the root).
 
 ### You've got this if
 
@@ -1023,8 +957,6 @@ Until it stabilizes, you manage that need with boundary placement, nesting, and 
 ### How it actually works
 
 First, the important caveat, stated plainly because it determines whether you can use this: **`SuspenseList` is experimental and not part of the stable React API as of the React 19.2 line in 2026.** It is exposed only under the `unstable_SuspenseList` name (in `@types/react` it appears as `unstable_SuspenseList`), which is React's convention for "this exists in the codebase and experimental builds but is not a stable, supported public API. It may change or be removed without notice." So everything below is _what it does conceptually and where it is headed_, not something to build production features on yet.
-
-Treat this section as "understand the concept and watch for stabilization," not "use this now."
 
 The problem it solves is the _chaotic multi-boundary reveal_.
 
@@ -1129,13 +1061,11 @@ It can hydrate boundaries independently, prioritize hydrating the parts the user
 
 This makes a large page interactive in priority order rather than all-or-nothing, and Suspense boundaries are the units React hydrates selectively.
 
-Both of these are genuinely important to how Suspense is used in real (framework-based) apps, but they are _framework-coupled_: you configure and observe them through your framework's SSR setup, not through bare React, and they involve the server renderer, the streaming protocol, and hydration internals that are their own large topic.
-
 So the scoped takeaway: on the server, Suspense boundaries are where React splits the stream (fallback first, content streamed in) and where it hydrates selectively (priority order, interaction-driven), with React 19.2 batching streamed reveals.
 
 ### Try it
 
-> If you have a streaming-SSR framework (Next.js with the App Router, say), wrap a slow server component in `<Suspense fallback={<Skeleton />}>` and load the page with a throttled network: observe the shell and skeleton arriving first, then the real content streaming in to replace the skeleton, all in the initial HTML stream (visible in the network response). Seeing the fallback stream first and the content stream in later is Suspense driving streaming SSR.
+> If you have a streaming-SSR framework (Next.js with the App Router, say), wrap a slow server component in `<Suspense fallback={<Skeleton />}>` and load the page with a throttled network: observe the shell and skeleton arriving first, then the real content streaming in to replace the skeleton, all in the initial HTML stream (visible in the network response).
 
 ### You've got this if
 
@@ -1184,8 +1114,6 @@ Fix: if it is an update to revealed content (navigation, filter), wrap it in a t
 The classic missing-transition problem (Section 9): an update to an already-revealed boundary defaults to showing the fallback.
 
 Fix: wrap the update in a transition.
-
-This is the highest-value fix in practice.
 
 #### An unexpected request waterfall
 
@@ -1289,7 +1217,7 @@ The **pre-warming** behavior (Section 7) lives in the work-loop logic that, on a
 
 ### Try it
 
-> Open `ReactFiberThrow.js` and find the thenable check in `throwException`. Recognize that a thrown thenable leads to the Suspense path (find the boundary, attach a ping) while a non-thenable leads to the error-boundary path. Seeing that single branch is seeing why this guide and the Error Boundaries guide are two halves of one mechanism.
+> Open `ReactFiberThrow.js` and find the thenable check in `throwException`. Recognize that a thrown thenable leads to the Suspense path (find the boundary, attach a ping) while a non-thenable leads to the error-boundary path.
 
 ### You've got this if
 

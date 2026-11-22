@@ -120,13 +120,9 @@ If you optimize on the wrong axis, you spend effort and the app stays slow, whic
 
 So the first question for any "it's slow" is always: _is this slow to load, or slow while running?_ The answer points you at an entire half of this guide and rules out the other half.
 
-And over both axes sits the rule that the rest of the guide keeps returning to, important enough to be its own section (4): **measure first.** Both axes have good measurement tools (the Profiler for rendering, bundle analyzers and load metrics for shipping), and both reward looking before acting, because both are full of things that _feel_ slow but are not, and things that are slow in ways you would never guess.
-
-Performance intuition is unusually unreliable, so the discipline that separates effective performance work from cargo-culting is simply: identify the axis, measure on that axis, fix what the measurement shows, measure again.
-
 ### Try it
 
-> Take an app or page you think is slow and ask only one question before touching anything: does it feel slow to _load_ (blank or unresponsive at first, then fine) or slow to _use_ (loads fine, then lags as you interact)? Write down which. That single classification determines which half of this guide applies, and getting it right is more valuable than any individual technique.
+> Take an app or page you think is slow and ask only one question before touching anything: does it feel slow to _load_ (blank or unresponsive at first, then fine) or slow to _use_ (loads fine, then lags as you interact)? Write down which.
 
 ### You've got this if
 
@@ -191,10 +187,6 @@ This reframes what `React.memo` actually is.
 
 So memo is the opt-in mechanism for "do not re-render this child just because the parent did, only re-render it if its props actually changed." That is only a meaningful thing to opt into precisely because the default is the opposite: render children when the parent renders, no questions asked.
 
-If you held the (wrong) belief that components only render when props change, `React.memo` would seem pointless, because the behavior it provides would seem to already be the default.
-
-The reason memo exists is that the real default is "render on parent render," and memo opts out of it.
-
 This single correction explains a huge amount of later confusion.
 
 "Why did this re-render, its props are the same?" Because its parent rendered.
@@ -203,11 +195,9 @@ This single correction explains a huge amount of later confusion.
 
 "Why does moving state down help so much?" Because it shrinks which parent renders, and therefore how much of the tree gets dragged into the render (Section 8, and State guide Section 2).
 
-Every one of those follows from getting point 2 right: rendering propagates downward from whoever rendered, independent of props, until something stops it.
-
 ### Try it
 
-> Build a parent with a counter in state and a child that takes _no props_ and logs every time it renders. Click the counter and watch the propless child re-render every time, purely because its parent rendered. Then wrap the child in `React.memo` and watch it go silent (no props means props never change, so memo always bails). You have just disproved "components render when props change" and seen what memo actually does.
+> Build a parent with a counter in state and a child that takes _no props_ and logs every time it renders. Click the counter and watch the propless child re-render every time, purely because its parent rendered. Then wrap the child in `React.memo` and watch it go silent (no props means props never change, so memo always bails).
 
 ### You've got this if
 
@@ -299,10 +289,6 @@ If a component is slow, the first question is not "how do I make it render less 
 
 Often a "re-render problem" is actually a "this render does expensive work" problem, and the fix is to make the render cheap (memoize the computation, or move it out), after which the re-render frequency stops mattering.
 
-Optimizing the frequency of a render that is already cheap is wasted effort.
-
-Optimizing the cost of a render that is expensive fixes the actual jank.
-
 So the mental order is: is this render actually expensive (expensive computation, huge subtree, many DOM changes), or is it just frequent?
 
 If it is just frequent and cheap, leave it alone.
@@ -313,11 +299,9 @@ If it is expensive, make the single render cheaper first.
 
 Only then, if a cheap render is happening so often that the frequency itself is the cost, do you reduce the frequency (memo, composition, store selectors).
 
-And you decide which case you are in by measuring (Section 4), not by guessing, because a render's cost is exactly the kind of thing intuition gets wrong.
-
 ### Try it
 
-> Build a component that sorts a large array in its render body and re-renders on a counter click. Profile it and see the render time dominated by the sort. Now wrap _the sort_ in `useMemo` (caching the computation) and watch the render get cheap even though it still re-renders just as often. Then, separately, build a propless component that does nothing expensive, re-render it constantly, and confirm in the Profiler that it costs almost nothing. The contrast (expensive render versus frequent cheap render) is the whole lesson.
+> Build a component that sorts a large array in its render body and re-renders on a counter click. Profile it and see the render time dominated by the sort. Now wrap _the sort_ in `useMemo` (caching the computation) and watch the render get cheap even though it still re-renders just as often. Then, separately, build a propless component that does nothing expensive, re-render it constantly, and confirm in the Profiler that it costs almost nothing.
 
 ### You've got this if
 
@@ -397,7 +381,7 @@ The Profiler is what keeps performance work honest.
 
 ### Try it
 
-> Install the React DevTools, open the Profiler tab, turn on "record why each component rendered," and profile a real interaction in your app. Find the widest bar and read why it rendered. Then make one targeted change and profile the same interaction again, comparing the before and after numbers. Doing this once, end to end, builds the habit that makes every other section in this guide effective.
+> Install the React DevTools, open the Profiler tab, turn on "record why each component rendered," and profile a real interaction in your app. Find the widest bar and read why it rendered. Then make one targeted change and profile the same interaction again, comparing the before and after numbers.
 
 ### You've got this if
 
@@ -478,15 +462,11 @@ For primitives (numbers, strings, booleans) that is exactly what you want: equal
 
 For objects, arrays, and functions, `Object.is` compares _identity_, not contents (Hooks guide, Section 8), which is where memo so often fails to fire: a parent that passes a freshly-created object, array, or inline function as a prop gives the memoized child a new identity every render, so the comparison reports "changed," so the bailout does not happen, so the child renders anyway.
 
-That failure mode is so common and so important that it gets its own section next.
-
-But the mechanism to hold here is clean: `React.memo` is a boundary that compares props by `Object.is` and skips the subtree when they are all equal.
-
 <GuideFigure figure="react-memo-bailout" />
 
 ### Try it
 
-> Build a parent that re-renders on a counter and a memoized child receiving a single primitive prop that does _not_ change. Confirm in the Profiler that the child bails out (does not render) when the counter changes. Then change the child's prop along with the counter and watch it render. You are watching the props comparison decide whether the bailout fires.
+> Build a parent that re-renders on a counter and a memoized child receiving a single primitive prop that does _not_ change. Confirm in the Profiler that the child bails out (does not render) when the counter changes. Then change the child's prop along with the counter and watch it render.
 
 ### You've got this if
 
@@ -523,8 +503,6 @@ The fix is to make those props referentially stable (with `useMemo`/`useCallback
 The second common reason memo "fails" is that the re-render is coming from Context, not the parent, which memo cannot stop (Section 10).
 
 ### How it actually works
-
-This is Section 5's `Object.is` detail and the Hooks guide's referential stability (Section 8) colliding, and it is one of the highest-value things to understand in all of React performance, because so much memoization is silently useless for this exact reason.
 
 Recall: `React.memo` bails out only when _every_ prop is `Object.is`-equal to its previous value, and `Object.is` compares objects, arrays, and functions by _identity_, not contents.
 
@@ -587,19 +565,11 @@ The lesson is that **`React.memo` and prop stability are a package deal**: memoi
 
 A memo boundary with unstable props is pure overhead (it does the comparison work and never bails).
 
-This is also why "I added `React.memo` everywhere and nothing got faster" is such a common experience: without also stabilizing the props, the boundaries never fire.
-
 Even better than stabilizing the props is often to _not pass unstable props at all_: depend on primitives where you can (pass `userId` not a `{ userId }` object), move truly-constant objects to module scope (so they have one identity forever, no `useMemo` needed), and use composition to avoid passing the prop through the boundary at all (Section 8).
 
 The most robust memo boundaries are the ones whose props are naturally stable (primitives and stable references), not the ones propped up by a pile of `useMemo` calls.
 
 The second reason memo "does nothing," worth naming so you do not chase the props when that is not the issue: the re-render is coming from a _Context_ the component consumes, not from its parent.
-
-Context changes re-render consumers regardless of memo (State guide, Section 9, Section 10 here), so a perfectly memoized component with perfectly stable props still re-renders when a Context it reads changes.
-
-If the Profiler says a memoized component rendered "because Context changed," no amount of prop stabilization will help.
-
-That is a Context problem (Section 10), not a memo problem.
 
 Reading _why_ it rendered in the Profiler (Section 4) is how you tell the two cases apart.
 
@@ -609,7 +579,7 @@ With the Compiler on, the manual `useMemo`/`useCallback`/`React.memo` dance abov
 
 ### Try it
 
-> Take the unstable-props `Parent` above, confirm in the Profiler that `MemoChild` re-renders on every counter click despite the memo. Stabilize the three props with `useMemo`/`useCallback` and watch `MemoChild` go silent. Then, if you have a project with the Compiler enabled, remove the manual `useMemo`/`useCallback` and confirm `MemoChild` stays silent anyway, because the Compiler stabilized the props for you.
+> Take the unstable-props `Parent` above, confirm in the Profiler that `MemoChild` re-renders on every counter click despite the memo. Stabilize the three props with `useMemo`/`useCallback` and watch `MemoChild` go silent.
 
 ### You've got this if
 
@@ -645,8 +615,6 @@ Without it, the manual rules from the Hooks guide still fully apply.
 
 ### How it actually works
 
-This section is the performance-axis view of the Hooks guide's Section 12, plus the Compiler reality.
-
 Recall the two jobs of `useMemo` and `useCallback`:
 
 1. **Referential stability.** They preserve the identity of an object, array, or function across renders (keyed by a dependency array compared with `Object.is`), so that value can feed a `React.memo` boundary (Section 6) or another hook's dependency array (Hooks guide, Section 7) without breaking it. This is their _primary_ performance role: not making anything intrinsically faster, but keeping identities stable so equality checks fire and bailouts happen.
@@ -655,8 +623,6 @@ Recall the two jobs of `useMemo` and `useCallback`:
 And recall the cautions: memoization has its own cost (storing the value, comparing deps every render), so memoizing trivial work is a net loss.
 
 Memoization is not a correctness guarantee (React may discard the cache), and a memo with an unstable dependency never hits.
-
-All of that still holds.
 
 The manual model is: use `useMemo`/`useCallback` to stabilize identities feeding memo boundaries and dependency arrays, and to cache genuinely expensive computations, and not otherwise.
 
@@ -685,7 +651,7 @@ Either way, the _understanding_ from Section 6 (why stability matters, what a me
 
 ### Try it
 
-> In a project without the Compiler, build the Section 6 stabilized example and confirm the memo bails out. Then enable the React Compiler in your build (the docs have per-framework setup), delete the manual `useMemo`/`useCallback`/`React.memo`, and confirm in the Profiler that the unnecessary re-renders are _still_ gone, because the Compiler inserted the equivalent memoization. Watching the manual code become deletable is the fastest way to understand what the Compiler does.
+> In a project without the Compiler, build the Section 6 stabilized example and confirm the memo bails out. Then enable the React Compiler in your build (the docs have per-framework setup), delete the manual `useMemo`/`useCallback`/`React.memo`, and confirm in the Profiler that the unnecessary re-renders are _still_ gone, because the Compiler inserted the equivalent memoization.
 
 ### You've got this if
 
@@ -852,8 +818,6 @@ With keys, it matches by key regardless of position, so an element with key `'a'
 
 That matching decision determines whether React _reuses_ an existing component instance and its DOM (cheap, preserves state) or _destroys and recreates_ it (expensive, resets state).
 
-So keys are the input to a decision that has both correctness and performance consequences.
-
 #### Why the array index as a key is a trap
 
 Using the array index as the key (`items.map((item, i) => <Row key={i} />)`) means the key is the _position_, which defeats the entire purpose of keys, because the key now changes meaning when the list reorders or an item is inserted or removed.
@@ -881,10 +845,6 @@ So a good key turns a reorder or insert from "rewrite many rows" into "move and 
 The performance win is real on large or frequently-reordered lists.
 
 The rules that follow are the rendering guide's, now with their performance rationale: keys must be _stable_ (the same item gets the same key across renders, so use a data id, not the index, and not `Math.random()` which generates a new key every render and forces a full remount every time), _unique_ among siblings (so React can tell them apart), and _tied to identity_ (the item, not its position).
-
-Get these right and list updates are correct and cheap.
-
-Get them wrong and you pay in both wasted DOM work and state bugs.
 
 <GuideFigure figure="pf-keys" />
 
@@ -920,10 +880,6 @@ You used Context to share some state, and now a whole swath of your app re-rende
 
 Context turned into a performance liability, and memo did not save you.
 
-The State guide explained the mechanism.
-
-Here is the performance view and the fix.
-
 ### The short version
 
 When a Context's value changes, every component consuming that Context re-renders, _bypassing `React.memo`_ (a consumer subscribes to the Context directly, not through props, so the memo prop-check does not apply).
@@ -933,8 +889,6 @@ The performance fixes are the State guide's: stabilize the Provider value so it 
 The hard ceiling is that Context has no slice-level subscription (the selectivity gap), so for large or frequently-changing shared state read by many consumers, the performance answer is an external store with selectors, which re-renders only the components whose selected slice changed.
 
 ### How it actually works
-
-This is the performance lens on the State guide's Context sections (9 through 12), so it recaps the mechanism briefly and focuses on the cost and the fix.
 
 The core cost: a component that consumes a Context (via `useContext` or `use(Context)`) has a direct subscription to that Context, separate from props.
 
@@ -1109,7 +1063,7 @@ Using it for work that genuinely cannot be reduced is exactly its purpose.
 
 ### Try it
 
-> Build a search input that filters a large list expensively, with no concurrency, and feel the typing lag. Wrap the results update in `startTransition` (or feed the expensive filter a `useDeferredValue(query)`) and feel the input become responsive while the results update slightly behind, with `isPending` showing the lag. Profile both and note that the filter still takes the same time. What changed is that it no longer blocks the keystroke.
+> Build a search input that filters a large list expensively, with no concurrency, and feel the typing lag. Wrap the results update in `startTransition` (or feed the expensive filter a `useDeferredValue(query)`) and feel the input become responsive while the results update slightly behind, with `isPending` showing the lag. Profile both and note that the filter still takes the same time.
 
 ### You've got this if
 
@@ -1149,8 +1103,6 @@ The cost of a large list is not subtle: rendering 10,000 rows means React create
 
 That is expensive in every phase (Section 3's "large subtree" and "many DOM mutations" costs at once), and it is _wasted_, because the user sees only the dozen rows in the viewport at any moment.
 
-Virtualization eliminates the waste by rendering only what is visible.
-
 The mechanism, which is worth understanding even though you will use a library for it:
 
 1. **A scroll container with the full scroll height.** You create a scrollable container whose inner height (via a spacer element) equals the total height of all items as if they were rendered, say 10,000 rows times 35 pixels each. This makes the scrollbar behave correctly: the user can scroll through the whole list's worth of space, and the scroll position maps to a position in the full list.
@@ -1176,12 +1128,6 @@ The current options in 2026:
 - **react-virtuoso**: a _batteries-included_ component with built-in support for dynamic item heights, grouping, sticky headers, and infinite scroll out of the box. Often the pragmatic default for complex lists (chat, feeds, grouped or variable-height content) because it handles the hard cases for you.
 - **react-window**: mature, lightweight, and battle-tested (from the author of react-virtualized), but focused on fixed-size lists and no longer actively developed. Fine for an existing codebase or simple fixed-height lists. Not the first choice for new projects with complex needs.
 
-Choose by your list's complexity: react-virtuoso for rich, dynamic-height, grouped content where you want the features handled.
-
-TanStack Virtual when you want a headless, minimal, controllable virtualizer.
-
-React-window for simple fixed-size lists in a maintained codebase.
-
 All three implement the same core mechanism above.
 
 The differences are ergonomics and which hard cases they handle for you.
@@ -1192,11 +1138,9 @@ For a list of fifty items, virtualization is overhead you do not need.
 
 For a list of fifty thousand, it is the difference between usable and frozen.
 
-Measure, confirm the list is the bottleneck, then virtualize.
-
 ### Try it
 
-> Render a list of 10,000 rows the naive way and profile the render and commit time, scroll jank, and node count in the Elements panel (10,000+ nodes). Then render the same data with TanStack Virtual or react-virtuoso and profile again: the node count drops to the visible window plus overscan, and the render, commit, and scroll all get dramatically faster. Seeing the Elements panel hold ~20 nodes for a 10,000-item list is the mechanism made visible.
+> Render a list of 10,000 rows the naive way and profile the render and commit time, scroll jank, and node count in the Elements panel (10,000+ nodes). Then render the same data with TanStack Virtual or react-virtuoso and profile again: the node count drops to the visible window plus overscan, and the render, commit, and scroll all get dramatically faster.
 
 ### You've got this if
 
@@ -1227,8 +1171,6 @@ The highest-impact place to split is by route (each page is its own chunk), so n
 This is a _load-performance_ technique (Section 1): it reduces the bytes shipped up front, not the runtime render cost.
 
 ### How it actually works
-
-This is the first of the load-axis sections (Section 1), and the mechanism is about _when_ code arrives rather than _how_ it renders.
 
 By default, your bundler combines all your code into one (or a few) bundles that the browser downloads, parses, and executes before the app is interactive.
 
@@ -1288,12 +1230,6 @@ The key framing, tying back to Section 1: code splitting is a _load-performance_
 
 It does nothing for runtime rendering cost (a split component renders exactly as fast or slow as before).
 
-It reduces the _bytes shipped up front_ so the app becomes interactive sooner.
-
-So you reach for it when your measurement shows the bottleneck is load (slow first paint, large initial bundle), not when the problem is jank during use.
-
-And it pairs with the next section (trimming the bundle itself) and with Server Components (moving code off the client entirely), which are the other two ways to ship less.
-
 ### Try it
 
 > Build an app with a heavy page (import a large library into it) bundled normally, and measure the initial bundle size and load time. Convert that page to `React.lazy` with a `Suspense` fallback, rebuild, and confirm in the bundle output that the heavy code moved to a separate chunk and the initial bundle shrank. Load the app and watch the heavy chunk fetch only when you navigate to that page (Network tab).
@@ -1342,10 +1278,6 @@ You cannot trim what you cannot see, so the first step is always a _bundle analy
 
 It almost always reveals surprises: a single heavy dependency taking a large fraction of the bundle, multiple versions of the same library, a large library imported for one small function, or polyfills you do not need.
 
-This is the load-axis equivalent of the Profiler (Section 4): measure, find the heavy thing, address that.
-
-Optimizing the bundle without analyzing it is the same mistake as optimizing renders without profiling.
-
 #### Dependencies are usually the biggest lever
 
 Application code is often a small fraction of the bundle.
@@ -1379,10 +1311,6 @@ Only the rendered output does.
 This is qualitatively different from code splitting (which ships the code _later_) or tree-shaking (which ships _less_ of it): the server-only code is _never shipped_.
 
 In a Server Components architecture, keeping heavy, render-only dependencies in Server Components is one of the largest available bundle wins, which is one of the central reasons RSC exists.
-
-(The framework-coupled details are in the RSC guide, and the performance point is that server-rendering code removes it from the client bundle entirely.)
-
-The framing, tying back to Section 1: this is all load performance, and the principle is to ship less JavaScript, in order of leverage: see what you ship (analyze), cut the heavy dependencies (swap, import narrowly, remove), make sure tree-shaking actually works (verify), split what is left so the initial load ships only what the first screen needs (Section 13), and move render-only code to the server so it is never shipped (RSC).
 
 None of these techniques touches runtime rendering.
 
@@ -1472,7 +1400,7 @@ The loop is the method.
 
 ### Try it
 
-> Take a real performance complaint about your app and run the whole procedure: classify the axis, measure, identify the specific bottleneck, apply the _first_ applicable fix in the ordered list (not the fanciest one), measure again, and stop when the measurement says it is fast enough. Doing this once end to end, resisting the urge to jump to virtualization or memo before measuring, is the habit the whole guide is for.
+> Take a real performance complaint about your app and run the whole procedure: classify the axis, measure, identify the specific bottleneck, apply the _first_ applicable fix in the ordered list (not the fanciest one), measure again, and stop when the measurement says it is fast enough.
 
 ### You've got this if
 
@@ -1556,7 +1484,7 @@ If not, remove it.
 
 ### Try it
 
-> Take a real slow spot in your app, open the Profiler (or bundle analyzer, depending on the axis), and write a one-sentence diagnosis in the form "it is slow because X, which is Section N's mechanism, so the fix is Y." Then apply Y and measure again. Doing this on two or three real problems makes the measure-diagnose-fix loop reflexive, which is the whole point of the guide.
+> Take a real slow spot in your app, open the Profiler (or bundle analyzer, depending on the axis), and write a one-sentence diagnosis in the form "it is slow because X, which is Section N's mechanism, so the fix is Y." Then apply Y and measure again.
 
 ### You've got this if
 
@@ -1601,10 +1529,6 @@ Evergreen and high-value.
 ### The React DevTools Profiler documentation
 
 Read the React DevTools Profiler documentation (linked from the React docs and the React DevTools extension) for Section 4. Read your browser's Performance panel documentation for the load-axis and commit-phase measurements.
-
-These are the instruments the whole guide depends on.
-
-Learning to read the flamegraph and the "why did this render" data is the single highest-leverage skill here.
 
 ### Virtualization libraries
 

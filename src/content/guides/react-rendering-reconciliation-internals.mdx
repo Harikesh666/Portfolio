@@ -274,7 +274,7 @@ Honest one-liner: the Virtual DOM is a programming model where you pretend to re
 
 ### Try it
 
-> Nothing to run here. Just notice that you have never written code that reads the DOM to decide what to re-render. You describe the end state. React figures out the diff. That asymmetry _is_ the Virtual DOM idea.
+> Render a static `<p>Hello</p>` next to a counter button. In the DevTools Elements panel, edit the paragraph's text by hand, then click the counter. The count updates, but your edit survives. React compared its previous tree against its new one, saw no change to the paragraph, and never read the live DOM to notice your edit.
 
 ### You've got this if
 
@@ -397,8 +397,6 @@ Fix: define components at module scope, never inside another component.
 
 Within a list, a `key` is your promise that "the element with this key is the same logical item as last render's element with this key, even if it moved." Keys are matched only among siblings of the same parent, never globally.
 
-The full payoff is the next section.
-
 ### Try it
 
 > In a scratch project, write a parent component that defines a small child component _inside_ its own body and renders it, with an `<input>` in the child whose value is parent state. Type into it and watch the cursor get kicked out on every keystroke. Now move the child definition out to module scope and watch the focus stay put. Same input, one structural difference.
@@ -485,7 +483,7 @@ This is usually cleaner than copying the new prop into state with an effect.
 
 ### Try it
 
-> Render a list of items where each row is a component holding its own `useState` checkbox. Add a shuffle button that reorders the array. Run it once with `key={index}` and once with `key={item.id}`. Check a few boxes, hit shuffle, and watch: with index keys the checks stay glued to their positions while the labels move under them. With stable keys the checks follow their items. This is the single most convincing experiment for understanding keys.
+> Render a list of items where each row is a component holding its own `useState` checkbox. Add a shuffle button that reorders the array. Run it once with `key={index}` and once with `key={item.id}`. Check a few boxes, hit shuffle, and watch: with index keys the checks stay glued to their positions while the labels move under them. With stable keys the checks follow their items.
 
 ### You've got this if
 
@@ -635,7 +633,7 @@ Reusing the two trees back and forth (instead of allocating a new tree each rend
 
 ### Try it
 
-> Conceptual one: next time you read "render can be interrupted," remind yourself _which_ tree is being built. The reason interruption is safe is that the answer is always "the disposable one."
+> Reuse Section 7's heavy list and input, with the filter update wrapped in `startTransition`. Type fast while the list renders. React abandons each half-built list when a keystroke arrives, yet the screen never shows a half-rendered list. You only see the old complete list or the new one, because the unfinished work lived in the work-in-progress tree.
 
 ### You've got this if
 
@@ -715,10 +713,6 @@ Everything else (fetching, subscriptions, logging)?
 
 Defaulting to `useLayoutEffect` is a common, avoidable perf mistake because it blocks paint.
 
-And the headline: **render runs many times and may be discarded. Commit runs once per real update and is where effects fire.** Put a side effect in render and it can run during a speculative render that never commits.
-
-Side effects go in effects or event handlers.
-
 ### Try it
 
 > Add `console.log('render')` to a component's body and `useEffect(() => console.log('effect'), [])`. In a StrictMode dev build you will see render logged twice and the effect run-cleanup-run. That doubling is React stress-testing your purity (Section 16), and seeing it makes the phase split concrete.
@@ -781,8 +775,6 @@ If all yes, React clones the existing subtree and skips re-rendering it entirely
 
 This is what makes `React.memo` work and what makes "this part didn't change, skip it" cheap.
 
-The `childLanes` check skips a whole subtree with one bitwise test.
-
 #### Going up: `completeWork`
 
 When a fiber has no children left to process, React completes it on the way up.
@@ -794,8 +786,6 @@ It also **bubbles `flags` and `lanes` up** into the parent's `subtreeFlags`/`chi
 Then it moves to the sibling (descending into it), or returns to the parent.
 
 Trace it and it is just depth-first traversal: down to first child, across siblings, back up.
-
-The difference from old React is that it is an explicit loop over heap objects (`child`/`sibling`/`return` pointers), not recursion, which is precisely why it can pause between any two steps.
 
 <GuideFigure figure="rr-work-loop" />
 
@@ -838,10 +828,6 @@ You opt into this with `startTransition`, `useTransition`, and `useDeferredValue
 ### How it actually works
 
 Concurrent React (via `createRoot`, the default in modern apps) interleaves rendering with the browser's other work.
-
-It is **not** multi-threaded and does **not** render in the background.
-
-It is **cooperative**: do a small chunk, give the thread back so the browser can handle input and paint, then resume.
 
 #### Time slicing
 
@@ -1217,13 +1203,9 @@ StrictMode trains your code to survive that.
 
 </MarginNote>
 
-Clean under StrictMode means safe under concurrency.
-
-"Only works with StrictMode off" means a latent bug.
-
 ### Try it
 
-> You already ran this in Section 9's "Try it." Now make it a teaching moment: add a `setInterval` in a `useEffect` _without_ a cleanup, and watch StrictMode reveal two intervals running. Add the cleanup and watch it drop back to one.
+> Now make it a teaching moment: add a `setInterval` in a `useEffect` _without_ a cleanup, and watch StrictMode reveal two intervals running. Add the cleanup and watch it drop back to one.
 
 ### You've got this if
 
@@ -1313,7 +1295,7 @@ This is the first time the lanes/scheduler machinery (Sections 11 and 12) is dir
 
 ### Try it
 
-> Build a two-tab UI where one tab has a text input. Implement it once by conditionally unmounting the inactive tab, and once with `<Activity mode="hidden">`. Type in the input, switch tabs, switch back. With unmounting your text is gone. With Activity it is preserved. That is the whole pitch in ten seconds.
+> Build a two-tab UI where one tab has a text input. Implement it once by conditionally unmounting the inactive tab, and once with `<Activity mode="hidden">`. Type in the input, switch tabs, switch back. With unmounting your text is gone. With Activity it is preserved.
 
 ### You've got this if
 
@@ -1354,35 +1336,16 @@ A procedure for "why did this re-render / why is it slow," top to bottom:
 
 The high-value pitfalls, each tied to its mechanism (the section that explains it is in parentheses):
 
-A component defined inside another component's render gets a new function identity every render, reads as a new type, and forces a full remount that loses state and focus (5).
-
-Array index as a key on a list that can reorder, filter, or insert binds state and uncontrolled DOM state to the slot instead of the data, so reorders attach the wrong state to the wrong row (6).
-
-Defaulting to `useLayoutEffect` blocks paint.
-
-Unless you must measure or mutate the DOM before paint to avoid a flicker, use `useEffect` (9).
-
-A side effect in render can run during a speculative render React later discards, causing duplicate requests or corrupted state.
-
-Put side effects in effects or handlers (9).
-
-Reading an external mutable store directly in render risks tearing.
-
-Route it through `useSyncExternalStore` (14).
-
-`flushSync` to force an update "now" opts out of batching and concurrency and is almost always wrong unless you must read the updated DOM immediately (12).
-
-Conditional or looped hook calls desync the positional hook list and read the wrong hook's state (13).
-
-"Only breaks with StrictMode on" is a real purity or cleanup bug, not a quirk (16).
-
-Hand-writing `useMemo`/`useCallback` everywhere once the Compiler is on adds noise and can interfere.
-
-Keep them only for identity control feeding an effect dependency (17).
-
-Conditionally unmounting tabs to "save resources" throws away their state and re-pays mount cost.
-
-`<Activity mode="hidden">` preserves state and can pre-render (17).
+1. A component defined inside another component's render reads as a new type every render and forces a full remount that loses state and focus (5).
+2. Array index as a key on a list that can reorder, filter, or insert binds state to the slot instead of the data (6).
+3. Defaulting to `useLayoutEffect` blocks paint, so use `useEffect` unless you must measure or mutate the DOM before paint (9).
+4. A side effect in render can run during a speculative render React later discards, so put side effects in effects or handlers (9).
+5. Reading an external mutable store directly in render risks tearing, so route it through `useSyncExternalStore` (14).
+6. `flushSync` opts out of batching and concurrency, and is almost always wrong unless you must read the updated DOM immediately (12).
+7. Conditional or looped hook calls desync the positional hook list and read the wrong hook's state (13).
+8. "Only breaks with StrictMode on" is a real purity or cleanup bug, not a quirk (16).
+9. Hand-writing `useMemo`/`useCallback` everywhere once the Compiler is on adds noise and can interfere, so keep them only for effect-dependency identity (17).
+10. Conditionally unmounting tabs throws away their state and re-pays mount cost, while `<Activity mode="hidden">` preserves state and can pre-render (17).
 
 #### The whole thing in one list
 
@@ -1409,8 +1372,6 @@ You reach for the Profiler and the four questions _before_ you reach for `useMem
 ## 19. Reading the source (pass 3)
 
 Prereqs: the rest of the guide, plus comfort reading JavaScript.
-
-This is a pass 3 section, so there is no rush.
 
 ### The itch
 
