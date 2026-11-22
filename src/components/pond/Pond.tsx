@@ -65,6 +65,9 @@ export function Pond({ birdArrival, caption, description, labels = [], mode, sti
         const sizing = new ResizeObserver(() => pondRef.current?.resize());
         sizing.observe(container);
         document.addEventListener("visibilitychange", syncActivity);
+        // A paused or reduced-motion scene draws no frames, so repaint it for the new theme.
+        const redraw = () => pondRef.current?.redraw();
+        window.addEventListener("themechange", redraw);
 
         // Start after the page's own entrance work, when the browser is idle.
         const schedule =
@@ -144,6 +147,7 @@ export function Pond({ birdArrival, caption, description, labels = [], mode, sti
             visibility.disconnect();
             sizing.disconnect();
             document.removeEventListener("visibilitychange", syncActivity);
+            window.removeEventListener("themechange", redraw);
             pondRef.current?.destroy();
             pondRef.current = null;
         };

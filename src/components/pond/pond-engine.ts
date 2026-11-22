@@ -1,4 +1,4 @@
-import { daylightAt, mumbaiHour, type Daylight } from "./pond-daylight";
+import { daylightAt, sceneHour, type Daylight } from "./pond-daylight";
 import {
     createDecor,
     drawLilyPads,
@@ -167,6 +167,8 @@ export type Pond = Readonly<{
     poke(x: number, y: number): void;
     /** Pointer position over the pond, or null when it leaves. */
     setPointer(point: { x: number; y: number } | null): void;
+    /** Draws one frame in the current light and theme: a paused scene after the theme changes. */
+    redraw(): void;
     destroy(): void;
 }>;
 
@@ -195,7 +197,7 @@ export function createPond(options: PondOptions): Pond {
     let decor: Decor | undefined;
     let stoneLayer: HTMLCanvasElement | undefined;
     let pointer: Vec | null = null;
-    let daylightHour = hourOverride ?? mumbaiHour();
+    let daylightHour = hourOverride ?? sceneHour();
     let daylightAge = 0;
     // WebGL2 draws the water, stones, koi, and real ripples. Without it the
     // older WebGL1 water and the 2D koi take over.
@@ -367,7 +369,7 @@ export function createPond(options: PondOptions): Pond {
         daylightAge += dt;
         if (hourOverride === undefined && daylightAge > daylightRefreshSeconds) {
             daylightAge = 0;
-            daylightHour = mumbaiHour();
+            daylightHour = sceneHour();
         }
         const night = daylight().night;
         const pace = 1 - night * (1 - nightPace);
@@ -846,6 +848,9 @@ export function createPond(options: PondOptions): Pond {
                 if (lastStir) gpu.drop(point.x, point.y, stirStrength, 3);
                 lastStir = point;
             }
+        },
+        redraw() {
+            draw(0);
         },
         destroy() {
             setActive(false);

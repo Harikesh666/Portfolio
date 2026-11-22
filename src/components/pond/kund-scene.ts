@@ -807,6 +807,9 @@ export async function createKundScene(options: KundOptions): Promise<Pond | null
     }
 
     return {
+        redraw() {
+            render();
+        },
         resize() {
             width = container.clientWidth;
             height = container.clientHeight;

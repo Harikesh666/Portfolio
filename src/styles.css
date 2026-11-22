@@ -611,12 +611,18 @@
         position: relative;
     }
 
+    /*
+     * The SVG is only a corner to measure from: the strokes draw outside its
+     * box (overflow visible). Rough Notation makes it 100px square, but near
+     * the end of a line that box pokes past the screen and a phone widens the
+     * page to fit it (a mark late on a Resume line made the page 380px wide).
+     */
     .rough-annotation {
         position: absolute;
         top: 0;
         left: 0;
-        width: 100px;
-        height: 100px;
+        width: 1px;
+        height: 1px;
         overflow: visible;
         pointer-events: none;
     }

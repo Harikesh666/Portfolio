@@ -41,7 +41,7 @@ import {
     routePageContainer,
     routePageEnterTween,
 } from "../lib/motion";
-import { openSkyDarkDim, placeholderStops } from "../components/pond/pond-daylight";
+import { mumbaiLocation, openSkyDarkDim, placeholderStops, skyHourAt } from "../components/pond/pond-daylight";
 import { notFoundMeta } from "../lib/not-found-head";
 import {
     HeroHandoffContext,
@@ -74,14 +74,13 @@ const themeScript = `(() => {
 /**
  * Paints the scene placeholders for Mumbai's time of day before first paint,
  * so a night visit never flashes a daylight teal box while WebGL loads. It
- * interpolates the same stops the scenes use (`placeholderStops`) and writes
+ * maps Mumbai's clock onto the light curve with the scenes' own function
+ * (`skyHourAt`, inlined), interpolates the same stops (`placeholderStops`) and writes
  * both themes, so a later theme toggle stays right.
  */
 const pondPlaceholderScript = `(() => {
   const stops = ${JSON.stringify(placeholderStops)};
-  const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "numeric", hourCycle: "h23" }).formatToParts(new Date());
-  const read = (type) => Number((parts.find((part) => part.type === type) || {}).value || 0);
-  const hour = read("hour") + read("minute") / 60;
+  const hour = (${skyHourAt.toString()})(new Date(), ${mumbaiLocation.latitude}, ${mumbaiLocation.longitude});
   let i = 0;
   while (i < stops.length - 2 && hour >= stops[i + 1].hour) i += 1;
   const from = stops[i];

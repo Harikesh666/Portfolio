@@ -1,4 +1,4 @@
-import { daylightAt, mumbaiHour } from "./pond-daylight";
+import { daylightAt, sceneHour } from "./pond-daylight";
 import { createFullscreenTriangle, fullscreenVertex, glslNoise, link, uniforms } from "./pond-gl";
 import { createPetals, type Petals } from "./footer-petals";
 import { createSway, swayFeel, type Sway } from "./footer-sway";
@@ -312,7 +312,7 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
     /** As bright as the photo is shown: the dark theme and night only dim it a little. */
     function brightness() {
         const dark = isDark();
-        return (dark ? 0.86 : 1) * (1 - 0.1 * daylightAt(hourOverride ?? mumbaiHour(), dark).night);
+        return (dark ? 0.86 : 1) * (1 - 0.1 * daylightAt(hourOverride ?? sceneHour(), dark).night);
     }
 
     /** The loose petals: a soft shadow under each, then the petal, turned and tumbled, all dimmed like the photo. */
@@ -522,7 +522,11 @@ export function createFooterGarden(options: GardenOptions): FooterGarden | null 
             isVisible = visible;
             if (visible) {
                 maybeStartGrowing();
-                if (grow < 1 && hasBeenSeen) run();
+                // Pick up whatever was mid-flight when the bed left the screen
+                // (petals in the air, plants still swaying, as when a link in
+                // the footer navigates away). The loop stops itself again as
+                // soon as nothing moves, so a still bed costs one frame.
+                if (hasBeenSeen) run();
                 if (!reducedMotion && idleTimer === undefined) {
                     idleTimer = window.setTimeout(idle, idleEvery[0] * 1000);
                 }

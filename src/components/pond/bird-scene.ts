@@ -1,4 +1,4 @@
-import { daylightAt, mumbaiHour } from "./pond-daylight";
+import { daylightAt, sceneHour } from "./pond-daylight";
 import type { Pond } from "./pond-engine";
 import { birdFragment, birdShaderSizes } from "./bird-shader";
 import { bulbulPhrase, createVoice, type Note } from "./bird-song";
@@ -295,7 +295,7 @@ export function createBirdScene(options: BirdOptions): Pond | null {
     let height = 1;
     let aspect = 2;
     let time = random(0, 100);
-    let hour = hourOverride ?? mumbaiHour();
+    let hour = hourOverride ?? sceneHour();
     let clockAge = 0;
     let frame: number | undefined;
     let lastTimestamp: number | undefined;
@@ -485,7 +485,7 @@ export function createBirdScene(options: BirdOptions): Pond | null {
         clockAge += dt;
         if (hourOverride === undefined && clockAge > clockSeconds) {
             clockAge = 0;
-            hour = mumbaiHour();
+            hour = sceneHour();
         }
         const night = light().night;
         // The wind: slow swells with quicker gusts on top, shared by branch, leaves and feathers.
@@ -824,6 +824,9 @@ export function createBirdScene(options: BirdOptions): Pond | null {
     const toFrame = (x: number, y: number) => ({ x: (x - width / 2) / height, y: 1 - y / height });
 
     return {
+        redraw() {
+            render();
+        },
         resize() {
             width = container.clientWidth;
             height = container.clientHeight;

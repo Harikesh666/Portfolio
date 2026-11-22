@@ -195,22 +195,52 @@ export function sunTimes(now: Date, latitude = home.latitude, longitude = home.l
     return { sunrise: noon - halfDay, sunset: noon + halfDay };
 }
 
-/** Sunrise and sunset on the keyframe day above, which the light curve was drawn around. */
-const keyframeSunrise = 6.75;
-const keyframeSunset = 18.75;
+/** Mumbai, whose clock and sun the koi, the 404 sky, the footer and the bulbul follow. */
+export const mumbaiLocation = { latitude: 19.08, longitude: 72.88 } as const;
 
 /**
- * The hour on the keyframe day that matches the sky at home right now:
- * today's real sunrise and sunset at Bijethua map onto the curve's, so
- * dusk comes at 5:15 pm in December and near 7 pm in June.
+ * The hour on the keyframe day that matches the sky at a place right now:
+ * today's real sunrise and sunset there map onto the curve's (6:45 am and
+ * 6:45 pm), so dusk in Mumbai comes near 6 pm in November and 7:20 pm in
+ * June instead of at 6:45 pm all year. It uses nothing but Date, Intl and
+ * Math, so the root route inlines its source into the pre-paint placeholder
+ * script and the placeholder always matches the scene. The sun's position is
+ * the same approximation as `sunTimes` (a unit test holds them together).
  */
-export function homeHour(now = new Date()) {
-    const clock = mumbaiHour(now);
-    const { sunrise, sunset } = sunTimes(now);
-    if (clock >= sunrise && clock <= sunset) {
-        return keyframeSunrise + ((clock - sunrise) / (sunset - sunrise)) * (keyframeSunset - keyframeSunrise);
+export function skyHourAt(now: Date, latitude: number, longitude: number): number {
+    const parts = new Intl.DateTimeFormat("en-GB", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "numeric", hourCycle: "h23" }).formatToParts(now);
+    let clock = 0;
+    for (const part of parts) {
+        if (part.type === "hour") clock += Number(part.value);
+        if (part.type === "minute") clock += Number(part.value) / 60;
     }
-    const night = 24 - (sunset - sunrise);
+    const radians = Math.PI / 180;
+    const india = new Date(now.getTime() + 5.5 * 3600000);
+    const day = Math.floor((india.getTime() - Date.UTC(india.getUTCFullYear(), 0, 0)) / 86400000);
+    const declination = 23.44 * radians * Math.sin((2 * Math.PI * (284 + day)) / 365);
+    const b = (2 * Math.PI * (day - 81)) / 364;
+    const equationOfTime = 9.87 * Math.sin(2 * b) - 7.53 * Math.cos(b) - 1.5 * Math.sin(b);
+    const noon = 12 + ((82.5 - longitude) * 4) / 60 - equationOfTime / 60;
+    const phi = latitude * radians;
+    const cosine = (Math.sin(-0.833 * radians) - Math.sin(phi) * Math.sin(declination)) / (Math.cos(phi) * Math.cos(declination));
+    const halfDay = Math.acos(Math.min(1, Math.max(-1, cosine))) / radians / 15;
+    const sunrise = noon - halfDay;
+    const sunset = noon + halfDay;
+    const curveSunrise = 6.75;
+    const curveSunset = 18.75;
+    if (clock >= sunrise && clock <= sunset) {
+        return curveSunrise + ((clock - sunrise) / (sunset - sunrise)) * (curveSunset - curveSunrise);
+    }
     const sinceSunset = (clock - sunset + 24) % 24;
-    return (keyframeSunset + (sinceSunset / night) * (24 - (keyframeSunset - keyframeSunrise))) % 24;
+    return (curveSunset + (sinceSunset / (24 - (sunset - sunrise))) * (24 - (curveSunset - curveSunrise))) % 24;
+}
+
+/** The light curve's hour for Mumbai's sky right now. */
+export function sceneHour(now = new Date()) {
+    return skyHourAt(now, mumbaiLocation.latitude, mumbaiLocation.longitude);
+}
+
+/** The same for the sky at home in Bijethua, which the Kund scene follows. */
+export function homeHour(now = new Date()) {
+    return skyHourAt(now, home.latitude, home.longitude);
 }
