@@ -1160,7 +1160,7 @@ But when you need to look, here are the instruments and the symptom-to-mechanism
 
 #### The browser Performance panel
 
-is the primary tool, because scheduling is fundamentally about main-thread timing.
+The browser Performance panel is the primary tool, because scheduling is fundamentally about main-thread timing.
 
 Record an interaction and look at the main-thread flame chart:
 
@@ -1170,7 +1170,7 @@ Record an interaction and look at the main-thread flame chart:
 
 #### The React DevTools Profiler
 
-shows which components rendered, how long, and why (the Event System and Performance guides).
+The React DevTools Profiler shows which components rendered, how long, and why (the Event System and Performance guides).
 
 It does not show lanes directly, but "why did this render" plus the timing tells you whether an update was urgent or deferred and whether renders are happening when you expect.
 
@@ -1290,7 +1290,9 @@ You opened the `scheduler` package or `ReactFiberLane.js` and recognized a funct
 
 When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
 
-### The React 18 Working Group discussions, at https://github.com/reactwg/react-18/discussions
+### The React 18 Working Group discussions
+
+Available at [github.com/reactwg/react-18/discussions](https://github.com/reactwg/react-18/discussions).
 
 These are the closest thing to a primary explanation of the concurrent model from the React team, written when React 18 introduced it, and they remain accurate for the React 19 line (the model did not change).
 
@@ -1300,7 +1302,7 @@ Start here for the _why_ behind lanes.
 
 ### The React source, the primary primary source (pass 3)
 
-the `scheduler` package (`Scheduler.js`, `SchedulerMinHeap.js`, and the host loop with `performWorkUntilDeadline` and `shouldYieldToHost`) for Sections 3 and 4, and `react-reconciler`'s `ReactFiberLane.js` (and `ReactFiberWorkLoop.js`) for Sections 5 through 12.
+Read the `scheduler` package (`Scheduler.js`, `SchedulerMinHeap.js`, and the host loop with `performWorkUntilDeadline` and `shouldYieldToHost`) for Sections 3 and 4, and `react-reconciler`'s `ReactFiberLane.js` (and `ReactFiberWorkLoop.js`) for Sections 5 through 12.
 
 Per Section 14, `ReactFiberLane.js` is unusually readable and is the single best file to confirm the lane model against.
 
@@ -1308,7 +1310,7 @@ Everything in this guide is a reading of these files.
 
 ### acdlite's (Andrew Clark's) original lanes pull request and design notes
 
-(linked from the React repository and referenced in community write-ups) document the _transition from the expiration-time model to lanes_ and the reasoning for the bitmask, which is the history in Sections 5 and 9.
+These (linked from the React repository and referenced in community write-ups) document the _transition from the expiration-time model to lanes_ and the reasoning for the bitmask, which is the history in Sections 5 and 9.
 
 It is from the React 18 development period and remains the design of record.
 
@@ -1322,7 +1324,7 @@ Re-reading that guide's concurrency material alongside this one connects the two
 
 ### For the browser-platform background
 
-documentation on the event loop, macrotasks versus microtasks, and `MessageChannel` (on MDN, https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel ) makes Section 4 concrete, since the scheduler's yield mechanism is built directly on these platform primitives.
+Documentation on the event loop, macrotasks versus microtasks, and `MessageChannel` (on [MDN](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel)) makes Section 4 concrete, since the scheduler's yield mechanism is built directly on these platform primitives.
 
 Understanding why a macrotask runs after paint and a microtask does not is the key to why React uses `MessageChannel`.
 

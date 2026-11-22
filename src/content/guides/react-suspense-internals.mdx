@@ -84,7 +84,7 @@ The declarative experience is the selling point: instead of manually tracking a 
 
 ```jsx
 <Suspense fallback={<Spinner />}>
-    <Profile />{" "}
+    <Profile />
     {/* if Profile is not ready, the Spinner shows; when ready, Profile shows */}
 </Suspense>
 ```
@@ -505,7 +505,6 @@ The principled placement is between these, and it follows from a simple idea: **
 
 ```jsx
 <Layout>
-    {" "}
     {/* shell: renders immediately, no boundary */}
     <Header />
     <Nav />
@@ -569,7 +568,6 @@ Consider an outer boundary whose content includes an inner boundary:
 ```jsx
 <Suspense fallback={<PageSkeleton />}>
     <PageFrame>
-        {" "}
         {/* needs the page's own data */}
         <Suspense fallback={<DetailSkeleton />}>
             <Detail /> {/* needs additional, slower data */}
@@ -951,12 +949,10 @@ So to handle an async subtree completely, you need _both_ kinds of boundary, and
 
 ```jsx
 <ErrorBoundary fallback={<ErrorState />}>
-    {" "}
     {/* catches a thrown error: the fetch failed */}
     <Suspense fallback={<LoadingState />}>
-        {" "}
         {/* catches a thrown promise: still loading */}
-        <Profile />{" "}
+        <Profile />
         {/* useSuspenseQuery / use(): suspends while pending, throws on failure */}
     </Suspense>
 </ErrorBoundary>
@@ -1020,7 +1016,7 @@ React has an API for this, but it is still experimental, and you should know bot
 
 #### It is still experimental
 
-as of the React 19 line, exposed only as `unstable_SuspenseList` (not the stable public API), so you should not rely on it in production.
+It is still experimental as of the React 19 line, exposed only as `unstable_SuspenseList` (not the stable public API), so you should not rely on it in production.
 
 The _need_ it addresses (avoiding a chaotic multi-boundary reveal) is real.
 
@@ -1231,7 +1227,7 @@ Use a single shared boundary for "reveal together."
 
 #### The DevTools
 
-help: the React DevTools shows which components are suspended and (in some versions) lets you _simulate_ a suspended state on a boundary to test its fallback without waiting for real loading.
+The DevTools help: the React DevTools shows which components are suspended and (in some versions) lets you _simulate_ a suspended state on a boundary to test its fallback without waiting for real loading.
 
 The Network tab shows fetch timing (parallel versus waterfall) and resolution speed (relevant to throttling).
 
@@ -1325,43 +1321,45 @@ You opened `ReactFiberThrow.js` (or located it) and recognized the thenable-vers
 
 When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
 
-### The React docs on Suspense, current within the React 19 line
+### The React docs on Suspense
 
-The `<Suspense>` reference at https://react.dev/reference/react/Suspense documents the boundary, fallbacks, the transition behavior (revealing content without hiding it, Section 9), and nesting (Section 6).
+The [`<Suspense>` reference](https://react.dev/reference/react/Suspense) documents the boundary, fallbacks, the transition behavior (revealing content without hiding it, Section 9), and nesting (Section 6).
 
-The `use` reference at https://react.dev/reference/react/use covers suspending on a promise (Section 3).
+The [`use` reference](https://react.dev/reference/react/use) covers suspending on a promise (Section 3).
 
-`lazy` at https://react.dev/reference/react/lazy covers code-splitting suspense.
+[`lazy`](https://react.dev/reference/react/lazy) covers code-splitting suspense.
 
 These are the authoritative current sources.
 
-### The React 19 release post, at https://react.dev/blog/2024/12/05/react-19
+### The React 19 release post
 
-Documents "pre-warming for suspended trees" (Section 7) and the stable `use` API.
+[The React 19 release post](https://react.dev/blog/2024/12/05/react-19) documents "pre-warming for suspended trees" (Section 7) and the stable `use` API.
 
 The primary source for what React 19 changed about Suspense, including the resolution of the sibling-rendering behavior.
 
-### The React 18 Working Group discussion on Suspense, at https://github.com/reactwg/react-18/discussions/7
+### The React 18 Working Group discussion on Suspense
 
-The primary explanation of "Concurrent Suspense" versus "Legacy Suspense," including placeholder throttling (Section 8), delayed transitions (Section 9), and the sibling-handling behavior (Section 7).
+[The discussion](https://github.com/reactwg/react-18/discussions/7) is the primary explanation of "Concurrent Suspense" versus "Legacy Suspense," including placeholder throttling (Section 8), delayed transitions (Section 9), and the sibling-handling behavior (Section 7).
 
 Written for React 18 and accurate for the model the React 19 line uses.
 
 The foundational read for the _why_ behind Suspense's behaviors.
 
-### TkDodo's "React 19 and Suspense, a Drama in 3 Acts," at https://tkdodo.eu/blog/react-19-and-suspense-a-drama-in-3-acts
+### TkDodo's "React 19 and Suspense, a Drama in 3 Acts"
 
-A clear account of the React 19 sibling-fetching behavior change and its resolution (Section 7), including why pre-rendering siblings of a suspended tree is "overhead" and how pre-warming reconciles parallel fetching with that.
+[TkDodo's post](https://tkdodo.eu/blog/react-19-and-suspense-a-drama-in-3-acts) is a clear account of the React 19 sibling-fetching behavior change and its resolution (Section 7), including why pre-rendering siblings of a suspended tree is "overhead" and how pre-warming reconciles parallel fetching with that.
 
 Useful primary-adjacent context for the pre-warming story.
 
 ### The React source (pass 3)
 
-in `react-reconciler`: `ReactFiberThrow.js` (the shared thenable-versus-error branch, Sections 2 and 14), `ReactFiberSuspenseComponent.js` (the boundary fiber and offscreen content), and the ping/retry-lane logic (Section 4), per Section 14.
+The React source is in `react-reconciler`: `ReactFiberThrow.js` (the shared thenable-versus-error branch, Sections 2 and 14), `ReactFiberSuspenseComponent.js` (the boundary fiber and offscreen content), and the ping/retry-lane logic (Section 4), per Section 14.
 
 Reading the thenable branch in `throwException` confirms the shared mechanism with error boundaries.
 
-**The Error Boundaries and resilience guide, and the Data Fetching, Scheduler and Lanes, and (pending) Hydration guides in this series.** The Error Boundaries guide is the error half of this guide's shared mechanism (read its Section 10).
+### The Error Boundaries and resilience guide, and the Data Fetching, Scheduler and Lanes, and (pending) Hydration guides in this series
+
+The Error Boundaries guide is the error half of this guide's shared mechanism (read its Section 10).
 
 The Data Fetching guide covers `use`/`useSuspenseQuery` and the caching that makes Suspense terminate (Section 3).
 

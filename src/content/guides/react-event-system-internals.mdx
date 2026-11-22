@@ -797,7 +797,7 @@ If a `mousemove` triggers expensive work, React can keep the UI responsive to a 
 
 #### Everything else gets a default priority
 
-between the two, for events that do not clearly fall into either bucket.
+Everything else gets a default priority between the two, for events that do not clearly fall into either bucket.
 
 The mechanism that connects this to your code is simple and powerful: **when an event handler calls `setState`, the resulting update is assigned the lane corresponding to the event's priority.** React sets the "current event priority" as part of dispatching the event (Section 5), and any state updates your handler schedules inherit it.
 
@@ -1071,9 +1071,9 @@ The moment you do this, you have two event systems handling the same click: the 
 
 Their _ordering_ relative to each other follows entirely from _where each listener sits_, which Sections 4 and 5 already established.
 
-The key fact: **React's listener is at the root container.
+The key fact: **React's listener is at the root container. Your native listener is at the node.**
 
-Your native listener is at the node.** Consider a native bubble listener on a child element and a React `onClick` on the same element.
+Consider a native bubble listener on a child element and a React `onClick` on the same element.
 
 When the user clicks:
 
@@ -1179,7 +1179,9 @@ Making `onScroll` not bubble matches the browser and removes that confusion.
 
 The practical consequence: put your `onScroll` handler on the element that actually scrolls, not on an ancestor expecting to catch descendants' scrolls, because it will not bubble up to the ancestor.
 
-**`onFocus` and `onBlur` _do_ bubble.** Native `focus` and `blur` famously do _not_ bubble, which makes it hard to catch focus changes on a container.
+#### `onFocus` and `onBlur` _do_ bubble
+
+Native `focus` and `blur` famously do _not_ bubble, which makes it hard to catch focus changes on a container.
 
 React solves this by building `onFocus`/`onBlur` on the native `focusin`/`focusout` events, which _do_ bubble (this was a React 17 change: "Use browser focusin and focusout for onFocus and onBlur").
 
@@ -1187,7 +1189,9 @@ So in React you _can_ put `onFocus`/`onBlur` on a parent and catch focus enterin
 
 Knowing this is built on `focusin`/`focusout` explains why React's focus events bubble when you might expect them not to.
 
-**`onMouseEnter`/`onMouseLeave` are synthesized and do _not_ bubble.** The native bubbling mouse events are `mouseover`/`mouseout`, which bubble and fire repeatedly as the pointer moves over descendants, which is noisy.
+#### `onMouseEnter`/`onMouseLeave` are synthesized and do _not_ bubble
+
+The native bubbling mouse events are `mouseover`/`mouseout`, which bubble and fire repeatedly as the pointer moves over descendants, which is noisy.
 
 The non-bubbling `mouseenter`/`mouseleave` semantics (fire once when entering or leaving an element and its subtree, do not bubble) are what you usually want for hover effects.
 
@@ -1401,23 +1405,31 @@ You opened the `react-dom` events code (or even just inspected a node's `__react
 
 When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
 
-**The React 17 announcement and its event-delegation section, at https://legacy.reactjs.org/blog/2020/10/20/react-v17.html (and the release candidate post with the detailed delegation explanation at https://legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html).** This is the primary source for Section 4: why React moved delegation from `document` to the root container, with the multiple-versions-on-one-page motivation.
+### The React 17 announcement and its event-delegation section
+
+Available at [legacy.reactjs.org/blog/2020/10/20/react-v17.html](https://legacy.reactjs.org/blog/2020/10/20/react-v17.html) (and the release candidate post with the detailed delegation explanation at [legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html](https://legacy.reactjs.org/blog/2020/08/10/react-v17-rc.html)).
+
+This is the primary source for Section 4: why React moved delegation from `document` to the root container, with the multiple-versions-on-one-page motivation.
 
 It is on the legacy docs site because it dates to React 17, but the change it describes is exactly the behavior in the current React 19 line, so it is accurate for today.
 
 ### The SyntheticEvent and event-object reference
 
-The current React docs document the event object as part of common component props, at https://react.dev/reference/react-dom/components/common (see the "React event object" section), which covers `preventDefault`, `stopPropagation`, `nativeEvent`, and the event types for Sections 2, 7, and 12.
+The current React docs document the event object as part of common component props, at [react.dev/reference/react-dom/components/common](https://react.dev/reference/react-dom/components/common) (see the "React event object" section), which covers `preventDefault`, `stopPropagation`, `nativeEvent`, and the event types for Sections 2, 7, and 12.
 
-The older but more exhaustively enumerated reference at https://legacy.reactjs.org/docs/events.html lists every synthetic event and notes behaviors like `onScroll` not bubbling and the `onMouseLeave`-is-`mouseout` detail.
+The older but more exhaustively enumerated reference at [legacy.reactjs.org/docs/events.html](https://legacy.reactjs.org/docs/events.html) lists every synthetic event and notes behaviors like `onScroll` not bubbling and the `onMouseLeave`-is-`mouseout` detail.
 
 It is framed for React 16 to 17 but the event-object facts remain accurate.
 
-### "Responding to Events," at https://react.dev/learn/responding-to-events , and the propagation section it links to
+### "Responding to Events"
+
+Available at [react.dev/learn/responding-to-events](https://react.dev/learn/responding-to-events), and the propagation section it links to.
 
 The official current-docs introduction to event handling, capture and bubble phases, `stopPropagation`, and `preventDefault` (Sections 6 and 7), written for the React 19 line.
 
-### `createPortal`, at https://react.dev/reference/react-dom/createPortal
+### `createPortal`
+
+Available at [react.dev/reference/react-dom/createPortal](https://react.dev/reference/react-dom/createPortal).
 
 The reference for portals, which explicitly documents that events from a portal propagate to React-tree ancestors rather than DOM-tree ancestors (Section 10).
 
@@ -1425,7 +1437,7 @@ Current.
 
 ### The React source (pass 3)
 
-in the `react-dom` package under its events directory: `DOMPluginEventSystem.js`, `ReactDOMEventListener.js`, and the individual plugins (`SimpleEventPlugin`, `ChangeEventPlugin`, `EnterLeaveEventPlugin`), per Section 14.
+The source lives in the `react-dom` package under its events directory: `DOMPluginEventSystem.js`, `ReactDOMEventListener.js`, and the individual plugins (`SimpleEventPlugin`, `ChangeEventPlugin`, `EnterLeaveEventPlugin`), per Section 14.
 
 This is the ground truth.
 

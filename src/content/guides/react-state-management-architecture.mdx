@@ -1236,21 +1236,21 @@ The libraries cluster into a few archetypes, all built on the external-store mod
 
 #### Single-store
 
-libraries (Redux Toolkit) keep all state in one object updated by pure reducers via dispatched actions, with selectors to read slices.
+Single-store libraries (Redux Toolkit) keep all state in one object updated by pure reducers via dispatched actions, with selectors to read slices.
 
 Predictable and toolable, with the most ceremony.
 
 #### Minimal-store
 
-libraries (Zustand) keep the same single-store-with-selectors idea but strip the ceremony down to a hook and direct setters, with no provider.
+Minimal-store libraries (Zustand) keep the same single-store-with-selectors idea but strip the ceremony down to a hook and direct setters, with no provider.
 
 #### Atomic
 
-libraries (Jotai, and the now-deprecated Recoil that pioneered the model) build state bottom-up from many tiny independent atoms that compose into derived atoms, giving fine-grained subscriptions by construction.
+Atomic libraries (Jotai, and the now-deprecated Recoil that pioneered the model) build state bottom-up from many tiny independent atoms that compose into derived atoms, giving fine-grained subscriptions by construction.
 
 #### Proxy
 
-libraries (Valtio, MobX) let you read and mutate state like a plain object and track access automatically.
+Proxy libraries (Valtio, MobX) let you read and mutate state like a plain object and track access automatically.
 
 Match the archetype to your app's shape.
 
@@ -1300,7 +1300,7 @@ Recoil pioneered this atoms-and-selectors model, but Meta archived Recoil at the
 
 #### Jotai is the actively maintained successor
 
-with the same atomic model and current React 19 support.
+Jotai is the actively maintained successor, with the same atomic model and current React 19 support.
 
 Reach for the atomic archetype when your state is naturally a graph of small interdependent pieces rather than one monolith.
 
@@ -1613,15 +1613,21 @@ This is the primary source for most of the first half of this guide, and it is g
 4. Scaling Up with Reducer and Context, at https://react.dev/learn/scaling-up-with-reducer-and-context . The canonical version of the reducer-plus-two-contexts pattern from Sections 6 and 10.
 5. You Might Not Need an Effect, at https://react.dev/learn/you-might-not-need-an-effect . Reinforces Section 4 (do not sync derived state with an effect). Also referenced in the Hooks guide.
 
-**Kent C.
+### Kent C. Dodds
 
-Dodds, "Application State Management with React," at https://kentcdodds.com/blog/application-state-management-with-react , and "How to use React Context effectively," at https://kentcdodds.com/blog/how-to-use-react-context-effectively .** The first is the clearest argument for the "most state is local or server state, very little needs to be global" position that underlies Sections 1 and 14.
+"Application State Management with React," at [kentcdodds.com/blog/application-state-management-with-react](https://kentcdodds.com/blog/application-state-management-with-react), and "How to use React Context effectively," at [kentcdodds.com/blog/how-to-use-react-context-effectively](https://kentcdodds.com/blog/how-to-use-react-context-effectively).
+
+The first is the clearest argument for the "most state is local or server state, very little needs to be global" position that underlies Sections 1 and 14.
 
 The second is the practical companion to Sections 8 and 10 (Context as transport, the provider-plus-hook pattern, stabilizing the value).
 
 Both predate the React Compiler and the newest hooks, so pair the memoization advice with the Hooks guide's Section 12, but the architectural guidance is evergreen.
 
-**TkDodo (Dominik Dorfmeister), the server-state writing, starting with "Why You Want React Query," at https://tkdodo.eu/blog/why-you-want-react-query .** The best articulation of the server-state-versus-client-state distinction from Section 14, by a TanStack Query maintainer.
+### TkDodo (Dominik Dorfmeister)
+
+The server-state writing, starting with "Why You Want React Query," at [tkdodo.eu/blog/why-you-want-react-query](https://tkdodo.eu/blog/why-you-want-react-query).
+
+The best articulation of the server-state-versus-client-state distinction from Section 14, by a TanStack Query maintainer.
 
 This is really the on-ramp to the next guide (Data Fetching and Server State).
 
@@ -1643,7 +1649,7 @@ Jotai is its maintained successor for the atomic model.
 
 ### If you want to see the mechanism in React's source (pass 3)
 
-the context propagation logic lives in `ReactFiberNewContext.js` in the `react-reconciler` package (how a Provider value change marks consumers for re-render, the basis of Section 9), and the external-store binding is `useSyncExternalStore` in `ReactFiberHooks.js` (the safe-subscription primitive behind Section 12).
+The context propagation logic lives in `ReactFiberNewContext.js` in the `react-reconciler` package (how a Provider value change marks consumers for re-render, the basis of Section 9), and the external-store binding is `useSyncExternalStore` in `ReactFiberHooks.js` (the safe-subscription primitive behind Section 12).
 
 Reading the propagation code is the fastest way to see that "the whole value, every consumer" is not a limitation you can configure away but how the mechanism is built.
 

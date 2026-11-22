@@ -86,7 +86,7 @@ It helps to see the two axes as living in different phases of your app's life.
 
 #### Load performance
 
-is everything that happens _before_ your app is interactive: the browser downloads your JavaScript bundle over the network, parses it, and executes it to mount your React tree.
+Load performance is everything that happens _before_ your app is interactive: the browser downloads your JavaScript bundle over the network, parses it, and executes it to mount your React tree.
 
 The dominant cost here is _bytes_: a larger bundle takes longer to download (especially on slow connections) and longer to parse and execute (especially on slow devices).
 
@@ -100,7 +100,7 @@ They touch how much code arrives.
 
 #### Runtime rendering performance
 
-is everything that happens _while_ the app runs and the user interacts: state changes, re-renders, and DOM updates.
+Runtime rendering performance is everything that happens _while_ the app runs and the user interacts: state changes, re-renders, and DOM updates.
 
 The dominant cost here is _work per interaction_: how many components re-render when something changes, how expensive each render is, and how many DOM mutations result.
 
@@ -295,9 +295,9 @@ A render that adds or changes thousands of DOM nodes is slow in the commit phase
 
 The fixes are again to produce fewer DOM changes (virtualization, stable keys to avoid needless remounts, Section 9).
 
-The reframe that follows is the most useful idea in performance work after "measure first," and it has a name from Kent C.
+The reframe that follows is the most useful idea in performance work after "measure first," and it has a name from Kent C. Dodds: _fix the slow render before you fix the re-render._
 
-Dodds: _fix the slow render before you fix the re-render._ If a component is slow, the first question is not "how do I make it render less often," it is "why is a single render slow," because if one render is slow, reducing the _count_ of renders only partially helps and a single slow render still janks.
+If a component is slow, the first question is not "how do I make it render less often," it is "why is a single render slow," because if one render is slow, reducing the _count_ of renders only partially helps and a single slow render still janks.
 
 Often a "re-render problem" is actually a "this render does expensive work" problem, and the fix is to make the render cheap (memoize the computation, or move it out), after which the re-render frequency stops mattering.
 
@@ -361,7 +361,7 @@ There are two instruments, for the two axes (Section 1).
 
 #### The React DevTools Profiler
 
-is your instrument for _runtime rendering_ performance.
+The React DevTools Profiler is your instrument for _runtime rendering_ performance.
 
 You record a profiling session while you interact with the app, and it gives you, per "commit" (each time React updated the DOM):
 
@@ -376,7 +376,7 @@ The hunch was not.
 
 #### The browser's Performance panel
 
-is your instrument for the _whole picture_, including the commit-phase and load-phase costs that the React Profiler does not show: time spent in scripting versus layout versus paint, long tasks that block the main thread, dropped frames during a scroll or animation, and (for load) the download and parse of your bundle.
+The browser's Performance panel is your instrument for the _whole picture_, including the commit-phase and load-phase costs that the React Profiler does not show: time spent in scripting versus layout versus paint, long tasks that block the main thread, dropped frames during a scroll or animation, and (for load) the download and parse of your bundle.
 
 When jank is about layout and paint (Section 3's "many DOM mutations" case) rather than React rendering, the React Profiler will look fine and the browser panel will show the real cost in layout and paint.
 
@@ -769,7 +769,7 @@ function ColorPicker({ children }) {
     return (
         <div style={{ color }}>
             <input value={color} onChange={(e) => setColor(e.target.value)} />
-            {children}{" "}
+            {children}
             {/* this is the SAME element object App passed; ColorPicker did not create it */}
         </div>
     );
@@ -1052,7 +1052,7 @@ Concurrency is the second option.
 
 #### `useTransition`
 
-marks a state update as a non-urgent transition:
+`useTransition` marks a state update as a non-urgent transition:
 
 ```js
 const [isPending, startTransition] = useTransition();
@@ -1081,7 +1081,7 @@ The net effect: typing stays responsive even though filtering is expensive, beca
 
 #### `useDeferredValue`
 
-is the value-oriented version: instead of marking an update, you derive a _lagging_ copy of a value, and feed that lagging copy to the expensive part:
+`useDeferredValue` is the value-oriented version: instead of marking an update, you derive a _lagging_ copy of a value, and feed that lagging copy to the expensive part:
 
 ```js
 const [query, setQuery] = useState("");
@@ -1097,9 +1097,7 @@ It is the same underlying priority mechanism as `useTransition`, expressed as "l
 
 Reach for `useTransition` when you own the _state update_ that triggers the work.
 
-The crucial caveat, so you use these correctly: **concurrency does not reduce the work.
-
-It reschedules it.** The expensive filter still runs and still takes 50 milliseconds.
+The crucial caveat, so you use these correctly: **concurrency does not reduce the work. It reschedules it.** The expensive filter still runs and still takes 50 milliseconds.
 
 Concurrency just keeps that 50 milliseconds from blocking the keystroke.
 
@@ -1251,7 +1249,7 @@ const SettingsPage = lazy(() => import("./SettingsPage")); // its own chunk, loa
 function App() {
     return (
         <Suspense fallback={<Spinner />}>
-            {showSettings && <SettingsPage />}{" "}
+            {showSettings && <SettingsPage />}
             {/* chunk fetched only when this first renders */}
         </Suspense>
     );
@@ -1586,45 +1584,55 @@ You can take "the whole screen re-renders when I type" or "the initial load is s
 
 When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
 
-### The official React docs (react.dev), current within the React 19 line
+### The official React docs (react.dev)
 
-The reference pages for the tools in this guide are accurate and worth reading: `memo` (https://react.dev/reference/react/memo) for Sections 5 and 6, `useMemo` (https://react.dev/reference/react/useMemo) and `useCallback` (https://react.dev/reference/react/useCallback) for Section 7, `useTransition` (https://react.dev/reference/react/useTransition) and `useDeferredValue` (https://react.dev/reference/react/useDeferredValue) for Section 11, and `lazy` (https://react.dev/reference/react/lazy) with `Suspense` (https://react.dev/reference/react/Suspense) for Section 13.
+The reference pages for the tools in this guide are accurate, current within the React 19 line, and worth reading: [`memo`](https://react.dev/reference/react/memo) for Sections 5 and 6, [`useMemo`](https://react.dev/reference/react/useMemo) and [`useCallback`](https://react.dev/reference/react/useCallback) for Section 7, [`useTransition`](https://react.dev/reference/react/useTransition) and [`useDeferredValue`](https://react.dev/reference/react/useDeferredValue) for Section 11, and [`lazy`](https://react.dev/reference/react/lazy) with [`Suspense`](https://react.dev/reference/react/Suspense) for Section 13.
 
-The "Render and Commit" learn page (https://react.dev/learn/render-and-commit) underpins Sections 2 and 3.
+The ["Render and Commit"](https://react.dev/learn/render-and-commit) learn page underpins Sections 2 and 3.
 
-**The React Compiler documentation and 1.0 announcement, at https://react.dev/learn/react-compiler and https://react.dev/blog/2025/10/07/react-compiler-1 .** The primary source for Section 7: what the Compiler does, how to enable it (it is opt-in at the build level), the `"use no memo"` opt-out, and the reported performance wins.
+### The React Compiler documentation and 1.0 announcement
+
+Read the [Compiler documentation](https://react.dev/learn/react-compiler) and the [1.0 announcement](https://react.dev/blog/2025/10/07/react-compiler-1) on react.dev.
+
+The primary source for Section 7: what the Compiler does, how to enable it (it is opt-in at the build level), the `"use no memo"` opt-out, and the reported performance wins.
 
 Current as of the October 2025 stable release.
 
 The lint rules now live in `eslint-plugin-react-hooks` (v6 and later).
 
-### "Before You memo()" by Dan Abramov, at https://overreacted.io/before-you-memo/
+### "Before You memo()" by Dan Abramov
+
+Read it on [overreacted.io](https://overreacted.io/before-you-memo/).
 
 The canonical argument for Section 8: prefer composition (moving state down, passing content as `children`) over memoization.
 
 It predates the Compiler, so read its `memo` advice alongside Section 7, but the composition patterns are evergreen and are the most underused performance techniques in React.
 
-**"Fix the slow render before you fix the re-render" by Kent C.
+### "Fix the slow render before you fix the re-render" by Kent C. Dodds
 
-Dodds, at https://kentcdodds.com/blog/fix-the-slow-render-before-you-fix-the-re-render .** The primary source for Section 3's reframe: diagnose whether a render is expensive before trying to reduce how often it happens.
+Read it on [kentcdodds.com](https://kentcdodds.com/blog/fix-the-slow-render-before-you-fix-the-re-render).
+
+The primary source for Section 3's reframe: diagnose whether a render is expensive before trying to reduce how often it happens.
 
 Evergreen and high-value.
 
 ### The React DevTools Profiler documentation
 
-(linked from the React docs and the React DevTools extension) for Section 4, and your browser's Performance panel documentation for the load-axis and commit-phase measurements.
+Read the React DevTools Profiler documentation (linked from the React docs and the React DevTools extension) for Section 4. Read your browser's Performance panel documentation for the load-axis and commit-phase measurements.
 
 These are the instruments the whole guide depends on.
 
 Learning to read the flamegraph and the "why did this render" data is the single highest-leverage skill here.
 
-### Virtualization libraries (Section 12), current and maintained as of 2026
+### Virtualization libraries
 
-TanStack Virtual at https://tanstack.com/virtual/latest (headless, lightweight), react-virtuoso at https://virtuoso.dev (batteries-included, the pragmatic default for complex lists), and react-window (mature, fixed-size focus, less actively developed).
+These are current as of 2026. [TanStack Virtual](https://tanstack.com/virtual/latest) (headless, lightweight), [react-virtuoso](https://virtuoso.dev) (batteries-included, the pragmatic default for complex lists), and react-window (mature, fixed-size focus, less actively developed).
 
 Read each one's introduction through the Section 12 lens (render only the visible window) rather than as isolated APIs.
 
-### For load performance beyond React, web.dev (https://web.dev) on Core Web Vitals and loading performance
+### web.dev on Core Web Vitals and loading performance
+
+For load performance beyond React, read [web.dev](https://web.dev).
 
 Load performance (Sections 13 and 14) is mostly a web-platform topic, not a React-specific one, and web.dev is the canonical source for what the browser actually spends time on (download, parse, execute, layout, paint) and how it is measured.
 

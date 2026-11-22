@@ -25,8 +25,6 @@ The trick is that **you are not supposed to absorb all of this in one sitting.**
 
 Here is the method that actually works.
 
-### Read it in three passes
-
 ### Pass 1, one relaxed sitting (about 30 to 40 minutes)
 
 Read only the two short parts at the top of each section: **"The itch"** and **"The short version."** Skip everything labeled "How it actually works." When you finish, you will have a complete mental map of how React renders, you will understand the cause of most of the bugs you have already hit, and you will know the vocabulary.
@@ -350,9 +348,13 @@ When React compares old and new at the same spot, it uses two rules.
 
 #### Rule 1: if the element type is the same
 
-(both `'div'`, or both the same component), reuse the existing thing and just update props.
+If the element type is the same (both `'div'`, or both the same component), reuse the existing thing and just update props.
 
-**If the type is different**, throw the whole old subtree away and build the new one from scratch, _losing all its state._ **Rule 2: within a list, a `key` tells React which item is which** across renders.
+**If the type is different**, throw the whole old subtree away and build the new one from scratch, _losing all its state._
+
+#### Rule 2: within a list, a `key` tells React which item is which
+
+Within a list, a `key` tells React which item is which across renders.
 
 These two rules are the whole diff, and they are why the bugs above happen.
 
@@ -713,9 +715,7 @@ Everything else (fetching, subscriptions, logging)?
 
 Defaulting to `useLayoutEffect` is a common, avoidable perf mistake because it blocks paint.
 
-And the headline: **render runs many times and may be discarded.
-
-Commit runs once per real update and is where effects fire.** Put a side effect in render and it can run during a speculative render that never commits.
+And the headline: **render runs many times and may be discarded. Commit runs once per real update and is where effects fire.** Put a side effect in render and it can run during a speculative render that never commits.
 
 Side effects go in effects or event handlers.
 
@@ -909,10 +909,8 @@ A _set_ of lanes is an integer with several bits on.
 This lets React do priority math with raw bitwise ops:
 
 ```js
-((fiber.lanes & renderLanes) !==
-    NoLanes // any work on this fiber at these priorities?
-    (fiber.childLanes & renderLanes)) !==
-    NoLanes; // any work below me? (the bailout check)
+const hasWorkHere = (fiber.lanes & renderLanes) !== NoLanes; // any work on this fiber at these priorities?
+const hasWorkBelow = (fiber.childLanes & renderLanes) !== NoLanes; // any work below me? (the bailout check)
 const merged = laneSetA | laneSetB; // combine two sets
 const stillPending = pending & ~finished; // remove the ones we just did
 ```
@@ -1253,7 +1251,7 @@ The **React Compiler** (stable since October 2025) reads your code at build time
 
 #### `<Activity>`
 
-lets you hide part of the UI while keeping its state alive (great for tabs), instead of unmounting and losing everything.
+`<Activity>` lets you hide part of the UI while keeping its state alive (great for tabs), instead of unmounting and losing everything.
 
 **View Transitions** let React animate UI changes using the browser's built-in animation API.
 
@@ -1486,7 +1484,7 @@ When you want to go past this guide, these are the canonical sources, each with 
 
 ### React Fiber Architecture, by Andrew Clark (acdlite)
 
-Available at https://github.com/acdlite/react-fiber-architecture .
+Available at [github.com/acdlite/react-fiber-architecture](https://github.com/acdlite/react-fiber-architecture).
 
 This is the best explanation of _why_ Fiber exists and _what a fiber is_, written by someone on the React team who actually built it.
 
@@ -1506,9 +1504,9 @@ Read it for the mental model, not for the field names.
 
 Two current references plus one architecture deep dive:
 
-1. The official `<Suspense>` reference, at https://react.dev/reference/react/Suspense , kept current within the React 19 line. Good for the everyday API and the patterns around it.
-2. The `use` hook reference, at https://react.dev/reference/react/use . This is the modern, ergonomic way to suspend on a promise, and it is the surface behind much of Section 15.
-3. "New Suspense SSR Architecture in React 18," by Dan Abramov, at https://github.com/reactwg/react-18/discussions/37 . This is the clearest explanation of streaming server rendering and selective hydration, which is the mechanism behind the second half of Section 15. Think of it as the Suspense equivalent of the Fiber doc above: a primary-source architectural explainer. It predates the React 19 `use` hook and the 19.2 reveal-batching refinement, so pair it with the two react.dev pages for the current API surface.
+1. The official [`<Suspense>` reference](https://react.dev/reference/react/Suspense), kept current within the React 19 line. Good for the everyday API and the patterns around it.
+2. The [`use` hook reference](https://react.dev/reference/react/use). This is the modern, ergonomic way to suspend on a promise, and it is the surface behind much of Section 15.
+3. ["New Suspense SSR Architecture in React 18,"](https://github.com/reactwg/react-18/discussions/37) by Dan Abramov. This is the clearest explanation of streaming server rendering and selective hydration, which is the mechanism behind the second half of Section 15. Think of it as the Suspense equivalent of the Fiber doc above: a primary-source architectural explainer. It predates the React 19 `use` hook and the 19.2 reveal-batching refinement, so pair it with the two react.dev pages for the current API surface.
 
 A good way to use all of these: read the relevant deep section of this guide first so you have the vocabulary, then read the primary source, then come back and reread the section.
 

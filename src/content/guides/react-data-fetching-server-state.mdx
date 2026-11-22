@@ -1093,7 +1093,7 @@ You can explain why an optimistic update must snapshot the cache before changing
 
 Prereqs: Sections 3 and 5.
 
-From the State guide: referential stability and avoiding flicker from changing identity (Hooks guide, Section 8).
+From the Hooks guide: referential stability and avoiding flicker from changing identity (Section 8).
 
 Outside React: pagination and cursors, and the idea of warming a cache ahead of need.
 
@@ -1628,7 +1628,7 @@ This is the most common "it does not update" bug and it is always a key problem.
 
 #### The app refetches too much
 
-`staleTime` is too low for the data (Section 5 and 8).
+`staleTime` is too low for the data (Sections 5 and 8).
 
 Raise `staleTime` to match the data's volatility rather than disabling triggers like `refetchOnWindowFocus`.
 
@@ -1672,7 +1672,9 @@ You can take "the screen still shows the old data after I saved" and name the me
 
 When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
 
-### The TanStack Query documentation, at https://tanstack.com/query/latest , current for v5
+### The TanStack Query documentation
+
+At [tanstack.com/query/latest](https://tanstack.com/query/latest), current for v5.
 
 The official reference and the source of truth for the API specifics in this guide.
 
@@ -1682,7 +1684,9 @@ Read the "Important Defaults" page first.
 
 It resolves most early confusion.
 
-### TkDodo's blog (Dominik Dorfmeister), at https://tkdodo.eu/blog , especially the "Practical React Query" series
+### TkDodo's blog (Dominik Dorfmeister)
+
+At [tkdodo.eu/blog](https://tkdodo.eu/blog), especially the "Practical React Query" series.
 
 Dominik is a TanStack Query maintainer, and this blog is the best deep writing on the library and on server state generally.
 
@@ -1706,7 +1710,7 @@ Reading SWR's "Getting Started" through this guide's lens is a good way to confi
 
 ### If you want to see the mechanism in the source (pass 3)
 
-in the `@tanstack/query-core` package, look at the `QueryCache` (the keyed store from Sections 3 and 7), the `Query` class (the entry, its status, and the gc timer from Sections 4 and 6), and the `QueryObserver` (the per-component subscription), and in `@tanstack/react-query`, look at how `useBaseQuery` subscribes via `useSyncExternalStore` (the bridge from Section 14).
+In the `@tanstack/query-core` package, look at the `QueryCache` (the keyed store from Sections 3 and 7), the `Query` class (the entry, its status, and the gc timer from Sections 4 and 6), and the `QueryObserver` (the per-component subscription), and in `@tanstack/react-query`, look at how `useBaseQuery` subscribes via `useSyncExternalStore` (the bridge from Section 14).
 
 Seeing that the cache is a plain keyed store with observers, subscribed through `useSyncExternalStore`, is the fastest way to confirm that this is the external-store pattern (State guide, Section 12) specialized for server state, not a separate kind of magic.
 

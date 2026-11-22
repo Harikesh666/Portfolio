@@ -448,9 +448,8 @@ But composition is still possible, because the server can render content and han
 function Page() {
     return (
         <ClientLayout>
-            {" "}
             {/* a Client Component */}
-            <ServerContent />{" "}
+            <ServerContent />
             {/* rendered on the server, passed in as children */}
         </ClientLayout>
     );
@@ -785,33 +784,15 @@ A reasoning procedure for RSC bugs:
 
 The high-value pitfalls, each tied to the section that explains it:
 
-Marking a component `"use client"` "just in case," or high up the tree, ships its entire subtree of code to the browser and discards most of RSC's benefit.
-
-Push the directive to the interactive leaf (Sections 2 and 4).
-
-Believing `"use server"` makes a component a Server Component.
-
-It does not.
-
-Server Components are the default and have no directive, while `"use server"` marks Server Functions (Sections 3 and 8).
-
-Believing `"use client"` means "runs only in the browser." It actually marks the client-bundle boundary, and such components still render to HTML on the server first (Section 4).
-
-Trying to pass a function (like an event handler) as a prop from a Server Component to a Client Component.
-
-Functions are not serializable.
-
-Define handlers inside the client component (Section 5).
-
-Trying to `import` and render a Server Component from inside a Client Component.
-
-The boundary is one-directional.
-
-Use the `children` pattern to pass server content down instead (Section 5).
-
-Forgetting that a Server Function is a real, callable network endpoint, and skipping input validation and authorization on it (Section 8).
-
-Putting a data fetch in a Client Component's `useEffect` out of habit, when a Server Component could fetch it directly during render with no spinner and no API route (Sections 1 and 3).
+| Pitfall, and what to do instead | Sections |
+| --- | --- |
+| Marking a component `"use client"` "just in case," or high up the tree, ships its entire subtree of code to the browser and discards most of RSC's benefit. Push the directive to the interactive leaf. | 2 and 4 |
+| Believing `"use server"` makes a component a Server Component. It does not. Server Components are the default and have no directive, while `"use server"` marks Server Functions. | 3 and 8 |
+| Believing `"use client"` means "runs only in the browser." It actually marks the client-bundle boundary, and such components still render to HTML on the server first. | 4 |
+| Trying to pass a function (like an event handler) as a prop from a Server Component to a Client Component. Functions are not serializable. Define handlers inside the client component. | 5 |
+| Trying to `import` and render a Server Component from inside a Client Component. The boundary is one-directional. Use the `children` pattern to pass server content down instead. | 5 |
+| Forgetting that a Server Function is a real, callable network endpoint, and skipping input validation and authorization on it. | 8 |
+| Putting a data fetch in a Client Component's `useEffect` out of habit, when a Server Component could fetch it directly during render with no spinner and no API route. | 1 and 3 |
 
 #### The whole thing in one paragraph
 
@@ -847,7 +828,9 @@ You can take a confusing RSC error and immediately ask "which side of the bounda
 
 These are the canonical current sources, with notes on how each relates to this guide.
 
-#### Official Server Components reference, at https://react.dev/reference/rsc/server-components
+### Official Server Components reference
+
+Read it on [react.dev](https://react.dev/reference/rsc/server-components).
 
 The authoritative description of Server Components, kept current in the React 19 line.
 
@@ -855,25 +838,29 @@ It is also where the React team states the stability boundary directly: the user
 
 Maps to Sections 1 through 3.
 
-#### Official `"use client"` and `"use server"` directive references, on react.dev under the RSC section
+### Official `"use client"` and `"use server"` directive references
+
+They are on react.dev under the RSC section: [`"use client"`](https://react.dev/reference/rsc/use-client) and [`"use server"`](https://react.dev/reference/rsc/use-server).
 
 Read these for the precise meaning of each directive.
 
 They are the cure for the two biggest misconceptions in this whole topic (Sections 4 and 8).
 
-#### The `use` hook reference, at https://react.dev/reference/react/use
+### The `use` hook reference
+
+Read it on [react.dev](https://react.dev/reference/react/use).
 
 The modern way to read promises and context during render, used on both sides of the boundary.
 
 Connects this guide to Section 15 of the rendering guide.
 
-#### Server Functions and the React 19 form hooks
+### Server Functions and the React 19 form hooks
 
-(`useActionState`, `useFormStatus`, `useOptimistic`), documented on react.dev.
+Server Functions and the React 19 form hooks (`useActionState`, `useFormStatus`, `useOptimistic`) are documented on react.dev.
 
 Read these when you start handling real mutations and forms (Section 8).
 
-#### Your framework's docs (almost certainly Next.js App Router)
+### Your framework's docs (almost certainly Next.js App Router)
 
 Because RSC only runs through a framework, the Next.js documentation on Server and Client Components, data fetching, and Server Actions is where the concepts here become concrete commands and file conventions.
 

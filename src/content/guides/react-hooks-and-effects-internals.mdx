@@ -19,8 +19,6 @@ This guide goes deep, on purpose, and like the engine guide it is built to be cl
 
 Here is the method that actually works.
 
-### Read it in three passes
-
 ### Pass 1, one relaxed sitting (about 30 minutes)
 
 Read only the two short parts at the top of each section: **"The itch"** and **"The short version."** Skip everything labeled "How it actually works." When you finish, you will have a complete map of how hooks store your state, why effects behave the way they do, and what most of your effect bugs actually are.
@@ -1017,7 +1015,9 @@ Thinking "this render's effect cleans up the previous render's effect" makes the
 
 <GuideFigure figure="hk-cleanup" />
 
-**The fetch race**, which is the same idea applied to async work:
+#### The fetch race
+
+The fetch race is the same idea applied to async work:
 
 ```js
 useEffect(() => {
@@ -1041,7 +1041,9 @@ You did not write race-handling logic.
 
 You wrote "this synchronization is being torn down, so ignore its in-flight result," which is just cleanup doing its normal job.
 
-**Ordering within a commit**, stated carefully because the exact details are an implementation concern you should not lean on: within a single commit, React runs the needed cleanups before the needed setups, so no setup ever runs while a stale cleanup is still pending.
+#### Ordering within a commit
+
+Ordering within a commit is stated carefully here because the exact details are an implementation concern you should not lean on: within a single commit, React runs the needed cleanups before the needed setups, so no setup ever runs while a stale cleanup is still pending.
 
 For layout effects this happens synchronously during commit.
 
@@ -1812,7 +1814,7 @@ Every rule you were told to memorize is a consequence of one of these mechanisms
 
 ### Try it
 
-> Take a real hook or effect bug from your own code (or reproduce one of the eight above) and walk the three questions out loud before changing anything. Do this on three different bugs and the procedure becomes reflexive, which is the goal: reach for the model before you reach for `useMemo`.
+> Take a real hook or effect bug from your own code (or reproduce one of the nine above) and walk the three questions out loud before changing anything. Do this on three different bugs and the procedure becomes reflexive, which is the goal: reach for the model before you reach for `useMemo`.
 
 ### You've got this if
 
@@ -1890,7 +1892,7 @@ When you want to go past this guide, these are the canonical sources, each with 
 
 ### A Complete Guide to useEffect, by Dan Abramov
 
-Available at https://overreacted.io/a-complete-guide-to-useeffect/ .
+Available at [overreacted.io/a-complete-guide-to-useeffect](https://overreacted.io/a-complete-guide-to-useeffect/).
 
 This is the single best long-form explanation of the snapshot model and effects-as-synchronization, written by someone who was on the React team.
 
@@ -1902,7 +1904,7 @@ The core model is evergreen.
 
 ### React as a UI Runtime, by Dan Abramov
 
-Available at https://overreacted.io/react-as-a-ui-runtime/ .
+Available at [overreacted.io/react-as-a-ui-runtime](https://overreacted.io/react-as-a-ui-runtime/).
 
 A deeper, more complete mental model of how React treats your components as a program it runs, including state, identity, and reconciliation.
 
@@ -1914,12 +1916,12 @@ Also predates the Compiler and the newest hooks, so treat it as model-not-API.
 
 Several pages are directly relevant and kept up to date:
 
-1. Synchronizing with Effects, at https://react.dev/learn/synchronizing-with-effects . The official version of Section 6.
-2. You Might Not Need an Effect, at https://react.dev/learn/you-might-not-need-an-effect . The official version of "most prop-reaction code is not an effect," from Section 6.
-3. Removing Effect Dependencies, at https://react.dev/learn/removing-effect-dependencies . Directly supports Sections 7 and 8.
-4. Separating Events from Effects, at https://react.dev/learn/separating-events-from-effects . The conceptual home of Section 11, more thorough than the reference page.
-5. The useEffectEvent reference, at https://react.dev/reference/react/useEffectEvent . The exact rules and caveats for Section 11, including the deliberately-unstable-identity point.
-6. Rules of Hooks, at https://react.dev/reference/rules/rules-of-hooks . The official statement of Section 1.
+1. Synchronizing with Effects, at [react.dev/learn/synchronizing-with-effects](https://react.dev/learn/synchronizing-with-effects). The official version of Section 6.
+2. You Might Not Need an Effect, at [react.dev/learn/you-might-not-need-an-effect](https://react.dev/learn/you-might-not-need-an-effect). The official version of "most prop-reaction code is not an effect," from Section 6.
+3. Removing Effect Dependencies, at [react.dev/learn/removing-effect-dependencies](https://react.dev/learn/removing-effect-dependencies). Directly supports Sections 7 and 8.
+4. Separating Events from Effects, at [react.dev/learn/separating-events-from-effects](https://react.dev/learn/separating-events-from-effects). The conceptual home of Section 11, more thorough than the reference page.
+5. The useEffectEvent reference, at [react.dev/reference/react/useEffectEvent](https://react.dev/reference/react/useEffectEvent). The exact rules and caveats for Section 11, including the deliberately-unstable-identity point.
+6. Rules of Hooks, at [react.dev/reference/rules/rules-of-hooks](https://react.dev/reference/rules/rules-of-hooks). The official statement of Section 1.
 
 ### eslint-plugin-react-hooks
 

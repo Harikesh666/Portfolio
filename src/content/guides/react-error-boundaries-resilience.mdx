@@ -110,7 +110,7 @@ class ErrorBoundary extends React.Component {
 
 // Usage: wrap a part of the tree
 <ErrorBoundary>
-    <RiskyFeature />{" "}
+    <RiskyFeature />
     {/* if this throws while rendering, the boundary shows FallbackUI */}
 </ErrorBoundary>;
 ```
@@ -255,7 +255,7 @@ Catching an error needs to do two different kinds of work, one in each phase, wh
 
 #### `static getDerivedStateFromError(error)`
 
-is the _render-phase_ half.
+`static getDerivedStateFromError(error)` is the _render-phase_ half.
 
 When a component below the boundary throws during render, React catches the error (Section 5) and then re-renders the boundary, calling this static method with the thrown error.
 
@@ -277,7 +277,7 @@ So `getDerivedStateFromError` is narrowly "given the error, what state should I 
 
 #### `componentDidCatch(error, errorInfo)`
 
-is the _commit-phase_ half.
+`componentDidCatch(error, errorInfo)` is the _commit-phase_ half.
 
 It runs after the error is caught and the fallback is being committed, and it is where you put the _side effects_ of handling an error, primarily logging or reporting:
 
@@ -730,7 +730,7 @@ This expresses "if the situation changed, give the children another try":
 
 ```jsx
 <ErrorBoundary FallbackComponent={Fallback} resetKeys={[userId]}>
-    <UserProfile userId={userId} />{" "}
+    <UserProfile userId={userId} />
     {/* boundary auto-resets when userId changes */}
 </ErrorBoundary>
 ```
@@ -1308,29 +1308,29 @@ You opened `ReactFiberThrow.js` (or even just located it) and recognized that th
 
 When you want to go past this guide, these are the canonical sources, each with a note on how it relates to what you read here and how current it is.
 
-### The React docs on error handling, current within the React 19 line
+### The React docs on error handling
 
-The `Component` reference documents `getDerivedStateFromError` and `componentDidCatch` (Section 3) at https://react.dev/reference/react/Component (see the error-boundary sections).
+The [`Component` reference](https://react.dev/reference/react/Component) documents `getDerivedStateFromError` and `componentDidCatch` (Section 3) (see the error-boundary sections).
 
-The `createRoot` reference at https://react.dev/reference/react-dom/client/createRoot documents the React 19 `onCaughtError`, `onUncaughtError`, and `onRecoverableError` options (Section 9) with examples, and `hydrateRoot` at https://react.dev/reference/react-dom/client/hydrateRoot covers their use during hydration (Section 12).
+The [`createRoot` reference](https://react.dev/reference/react-dom/client/createRoot) documents the React 19 `onCaughtError`, `onUncaughtError`, and `onRecoverableError` options (Section 9) with examples, and [`hydrateRoot`](https://react.dev/reference/react-dom/client/hydrateRoot) covers their use during hydration (Section 12).
 
 These are the authoritative current sources for the API.
 
-### The React 19 release post, at https://react.dev/blog/2024/12/05/react-19
+### The React 19 release post
 
-Documents the new root-level error options and the changed default logging behavior (uncaught errors to `window.reportError`, caught to `console.error`) from Section 9, with the rationale.
+[The React 19 release post](https://react.dev/blog/2024/12/05/react-19) documents the new root-level error options and the changed default logging behavior (uncaught errors to `window.reportError`, caught to `console.error`) from Section 9, with the rationale.
 
 This is the primary source for what React 19 changed about error handling.
 
-### The `react-error-boundary` library, at https://github.com/bvaughn/react-error-boundary
+### The `react-error-boundary` library
 
-The de facto standard library for error boundaries (Section 4), providing the `<ErrorBoundary>` component, `FallbackComponent`/`fallbackRender`, `onError`, `onReset`, `resetKeys` (Section 8), and the `useErrorBoundary`/`showBoundary` hook for forwarding handler and async errors into a boundary (Section 7).
+[`react-error-boundary`](https://github.com/bvaughn/react-error-boundary) is the de facto standard library for error boundaries (Section 4), providing the `<ErrorBoundary>` component, `FallbackComponent`/`fallbackRender`, `onError`, `onReset`, `resetKeys` (Section 8), and the `useErrorBoundary`/`showBoundary` hook for forwarding handler and async errors into a boundary (Section 7).
 
 Its README is a practical primary source for the ergonomic patterns this guide describes, and it is actively maintained.
 
 ### The React source (pass 3)
 
-in the `react-reconciler` package: `ReactFiberThrow.js` (the shared catch-and-route logic for errors and promises, Sections 5 and 10), `ReactFiberUnwindWork.js` (the unwind, Section 5), and `ReactFiberErrorLogger.js` (logging and root callbacks, Section 9), per Section 14.
+The React source is in the `react-reconciler` package: `ReactFiberThrow.js` (the shared catch-and-route logic for errors and promises, Sections 5 and 10), `ReactFiberUnwindWork.js` (the unwind, Section 5), and `ReactFiberErrorLogger.js` (logging and root callbacks, Section 9), per Section 14.
 
 Reading `throwException` is the fastest way to confirm the shared mechanism with Suspense.
 
