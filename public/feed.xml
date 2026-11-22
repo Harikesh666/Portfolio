@@ -66,7 +66,7 @@
       <title>React&apos;s Scheduler and Lanes</title>
       <link>https://www.harikesh.xyz/articles/react-scheduler-and-lanes-internals</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-scheduler-and-lanes-internals</guid>
-      <description>A guided tour of cooperative scheduling, update priority, lanes, and React&apos;s concurrent work loop.</description>
+      <description>How React decides when to work and which update goes first: the scheduler&apos;s 5ms slices, the 31-lane bitmask, and the path from a click or a transition to a render in React 19.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
