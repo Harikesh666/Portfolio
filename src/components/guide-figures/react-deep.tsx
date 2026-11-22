@@ -323,10 +323,10 @@ export function TimeSlicingFigure() {
     const all = [
         block("React work", 0, 2, "slice 1"),
         block("MessageChannel", 2, 3, "post", "accent"),
-        block("Browser", 3, 5.5, "paint, input", "strong"),
+        block("Browser", 3, 5.5, "input, maybe paint", "strong"),
         block("MessageChannel", 5.5, 7, "message", "accent"),
         block("React work", 7, 9, "slice 2"),
-        block("Browser", 9, 10.4, "paint", "strong"),
+        block("Browser", 9, 10.4, "turn", "strong"),
         block("React work", 10.4, 12, "slice 3"),
     ];
     const deadline = [{ at: 2, label: "about 5ms" }];
@@ -338,18 +338,18 @@ export function TimeSlicingFigure() {
                 axis: "time →",
                 steps: [
                     {
-                        caption: "`performWorkUntilDeadline` records a deadline, then runs scheduled work, checking after each unit whether `now >= deadline`.",
+                        caption: "`performWorkUntilDeadline` notes when the slice started, then runs scheduled work, asking `shouldYieldToHost` after each unit whether about 5ms have passed.",
                         blocks: all.slice(0, 1),
                         markers: deadline,
                         at: 2,
                     },
                     {
-                        caption: "The deadline arrives with work left, so the scheduler posts a message to schedule the next chunk as a macrotask, then returns and yields.",
+                        caption: "Time is up with work left, so the scheduler posts a message to schedule the next chunk as a macrotask, then returns and yields.",
                         blocks: all.slice(0, 2),
                         markers: deadline,
                         at: 3,
                     },
-                    { caption: "A macrotask runs after the browser has had the chance to paint and handle input, unlike a microtask.", blocks: all.slice(0, 3), markers: deadline, at: 5.5 },
+                    { caption: "Yielding gives the browser a turn: it handles input, and paints if a frame is due. A microtask would not give it that turn.", blocks: all.slice(0, 3), markers: deadline, at: 5.5 },
                     {
                         caption: "The `message` event arrives promptly, with no 4ms `setTimeout` clamp, and calls `performWorkUntilDeadline` again for another slice.",
                         blocks: all.slice(0, 5),
@@ -359,8 +359,8 @@ export function TimeSlicingFigure() {
                     { caption: "This repeats until the render finishes: the chopped-up pattern you see in a Performance panel trace.", blocks: all, markers: deadline, at: 12 },
                 ],
                 overview: "A render, sliced into chunks of about 5ms, each ending with a `MessageChannel` post and a browser turn. Press Play to watch the yield-and-resume cycle.",
-                figcaption: "Posting a `MessageChannel` message yields after paint, without the `setTimeout` delay.",
-                description: ["React works for about 5ms, posts a message, lets the browser paint and handle input, then resumes on the message event."],
+                figcaption: "Posting a `MessageChannel` message gives the browser a turn, without the `setTimeout` clamp.",
+                description: ["React works for about 5ms, posts a message, lets the browser handle input and paint if a frame is due, then resumes on the message event."],
             }}
         />
     );
@@ -376,27 +376,27 @@ export function StarvationFigure() {
                 bits: ["DefaultLane", "TransitionLane"],
                 steps: [
                     {
-                        caption: "Each lane gets an expiration time when it first becomes pending. Lower priority lanes get later times.",
+                        caption: "Each lane gets an expiration time when it first becomes pending: 250ms for sync and continuous lanes, 5 seconds for default and transition lanes.",
                         rows: [pending([0, 1]), expired([]), render([])],
                     },
-                    { caption: "`getNextLanes` picks the highest priority pending lane, so the urgent work renders first.", rows: [pending([0, 1]), expired([]), render([0])] },
+                    { caption: "The transition renders in time slices. An urgent update arrives, and `getNextLanes` picks the higher priority DefaultLane first.", rows: [pending([0, 1]), expired([]), render([0])] },
                     {
-                        caption: "Urgent updates keep arriving, so the transition is deferred again and again. This is starvation.",
+                        caption: "Urgent updates keep arriving, so the transition render is interrupted and restarted again and again. This is starvation.",
                         rows: [pending([0, 1]), expired([]), render([0])],
                     },
                     {
-                        caption: "On each scheduling pass, before choosing lanes, `markStarvedLanesAsExpired` walks the pending lanes and checks their expiration times.",
+                        caption: "Each time React schedules the root, `markStarvedLanesAsExpired` walks the pending lanes and checks their expiration times.",
                         rows: [pending([0, 1]), expired([]), render([])],
                     },
-                    { caption: "A lane that has waited past its expiration time is added to the root's `expiredLanes` set.", rows: [pending([0, 1]), expired([1]), render([])] },
+                    { caption: "The transition has waited past its 5 seconds, so it joins the root's `expiredLanes` set.", rows: [pending([0, 1]), expired([1]), render([])] },
                     {
-                        caption: "Expired lanes are forced in regardless of priority and render synchronously, not time-sliced. The stale work finishes.",
+                        caption: "When the transition lane renders next, React turns time slicing off. The render runs without yielding, so new urgent work cannot interrupt it, and the stale work finishes.",
                         rows: [pending([0, 1]), expired([1]), render([1])],
                     },
                 ],
-                overview: "A low-priority transition lane is outranked by constant urgent updates until its expiration time passes. Press Play to see it forced through.",
-                figcaption: "Priority sets the normal order, and expiration puts a deadline on that order.",
-                description: ["The transition lane waits behind the default lane until it expires, then it renders synchronously."],
+                overview: "A transition lane keeps getting interrupted by urgent updates until its expiration time passes. Press Play to see it finish.",
+                figcaption: "Priority sets the normal order, and expiration stops a lane from being interrupted forever.",
+                description: ["The transition keeps losing to the default lane until it expires, then it renders synchronously without yielding."],
             }}
         />
     );
@@ -420,21 +420,21 @@ export function EntanglementFigure() {
                         rows: rows([1, 2], [], [1]),
                     },
                     {
-                        caption: "Entanglement declares that if either lane renders, the other must render in the same pass. Transitions touching the same state are one case.",
+                        caption: "Entanglement records that these lanes should render together. Transition updates on the same hook's queue are one case.",
                         rows: rows([1, 2], [1, 2], []),
                     },
                     {
-                        caption: "When `getNextLanes` selects an entangled lane, it adds every lane entangled with it to `renderLanes` for that pass.",
+                        caption: "As a render starts, `getEntangledLanes` adds every lane entangled with the chosen ones to the lanes for that render.",
                         rows: rows([1, 2], [1, 2], [1, 2]),
                     },
                     {
-                        caption: "The related updates apply together. React splits by default for responsiveness, and entangles where splitting would break consistency.",
+                        caption: "The related updates apply together. React calls this best effort: it will not throw away a render already in progress to honor a new entanglement.",
                         rows: rows([], [1, 2], [1, 2]),
                     },
                 ],
                 overview: "Two related transition lanes, first split across passes, then entangled so they render together. Press Play to see the difference.",
                 figcaption: "Split lanes for responsiveness, entangle lanes where splitting would show an inconsistent UI.",
-                description: ["Transition A and B, when entangled, are always in the same renderLanes."],
+                description: ["Transition A and B, once entangled, normally render in the same pass."],
             }}
         />
     );
