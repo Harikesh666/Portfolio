@@ -578,9 +578,11 @@
         }
     }
 
-    /* Home intro keywords: strong text at rest, their own hue while the
-       pointer or focus is inside the paragraph. Colour changes are kept
-       under reduced motion; only the icon's lift is removed. */
+    /* Intro keywords: strong text at rest, their own hue while the pointer
+       or focus is inside the paragraph, or, on touch screens, while the
+       paragraph is in the middle of the screen (data-warm, set by
+       keyword-warmth.ts). Colour changes are kept under reduced motion;
+       only the icon's lift is removed. */
     .intro-keyword {
         color: var(--foreground-strong);
         transition: color 220ms ease;
@@ -3683,6 +3685,24 @@
     .intro-keywords:focus-within .intro-keyword__icon {
         color: var(--keyword-tone);
         opacity: 1;
+    }
+
+    /* Touch: warming waits a beat after the paragraph settles in view, so
+       the reader sees it happen; cooling starts at once. */
+    .intro-keywords[data-warm] .intro-keyword {
+        color: var(--keyword-tone);
+        transition-delay: calc(250ms + var(--keyword-index, 0) * 45ms);
+    }
+
+    .intro-keywords[data-warm] .intro-keyword__icon {
+        color: var(--keyword-tone);
+        opacity: 1;
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+        .intro-keywords[data-warm] .intro-keyword__icon {
+            transform: translateY(-1px) scale(1.12) rotate(-6deg);
+        }
     }
 
     @media (hover: hover) and (pointer: fine) {

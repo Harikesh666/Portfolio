@@ -1,6 +1,8 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import { RocketLaunchIcon } from "@phosphor-icons/react";
 import { ContributionGraph } from "../components/ContributionGraph";
+import { IntroKeyword } from "../components/IntroKeyword";
 import { PageEnter } from "../components/PageEnter";
 import { SketchMark } from "../components/SketchMark";
 import { Reveal } from "../components/Reveal";
@@ -101,13 +103,16 @@ function AboutPage() {
                     </StaggerReveal.Headline>
                     <StaggerReveal.Item
                         as="div"
-                        className="mt-3 text-[1.0625rem] leading-7 text-foreground"
+                        className="intro-keywords mt-3 text-[1.0625rem] leading-7 text-foreground"
                     >
                         <p>
                             I'm a software engineer in Mumbai. I excel most at{" "}
                             <SketchMark kind="marker">backend work</SketchMark>,
-                            and I ship full-stack
-                            applications when that is what the work needs.
+                            and I{" "}
+                            <IntroKeyword icon={RocketLaunchIcon} index={0} tone="ship">
+                                ship full-stack applications
+                            </IntroKeyword>{" "}
+                            when that is what the work needs.
                         </p>
                         <p className="mt-4">
                             Most of the things I know to do in software began
