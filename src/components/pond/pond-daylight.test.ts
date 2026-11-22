@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daylightAt, homeHour, mumbaiHour, openSkyAt, placeholderStops, sunTimes } from "./pond-daylight";
+import { daylightAt, homeHour, mumbaiHour, mumbaiLocation, openSkyAt, placeholderStops, sceneHour, skyHourAt, sunTimes } from "./pond-daylight";
 
 describe("daylightAt", () => {
     it("is full night after dark and full day at noon", () => {
@@ -105,5 +105,49 @@ describe("homeHour", () => {
 
     it("is full night at home by 7 pm in December", () => {
         expect(daylightAt(homeHour(new Date("2026-12-21T13:30:00Z")), false).night).toBe(1);
+    });
+});
+
+describe("sceneHour", () => {
+    const { latitude, longitude } = mumbaiLocation;
+    /** A Date at a fractional hour on Mumbai's clock (IST is UTC+5:30). */
+    const istAt = (date: string, hour: number) => new Date(Date.parse(`${date}T00:00:00Z`) + (hour - 5.5) * 3_600_000);
+
+    it("puts Mumbai's real sunrise and sunset on the curve's 6:45 am and 6:45 pm, whatever the season", () => {
+        for (const date of ["2026-11-22", "2026-06-21", "2026-12-21", "2026-03-20"]) {
+            const { sunrise, sunset } = sunTimes(istAt(date, 12), latitude, longitude);
+            expect(sceneHour(istAt(date, sunrise))).toBeCloseTo(6.75, 1);
+            expect(sceneHour(istAt(date, sunset))).toBeCloseTo(18.75, 1);
+        }
+    });
+
+    it("is past dusk at 6:15 pm in late November, when the curve's own clock would still be golden", () => {
+        expect(sceneHour(istAt("2026-11-22", 18.25))).toBeGreaterThan(18.75);
+        expect(sceneHour(istAt("2026-06-21", 18.25))).toBeLessThan(18.75);
+    });
+
+    it("moves smoothly forward through the night and across midnight, with no jump", () => {
+        let previous = sceneHour(istAt("2026-11-22", 18.5));
+        for (let minutes = 10; minutes <= 12 * 60; minutes += 10) {
+            const date = minutes < 330 ? "2026-11-22" : "2026-11-23";
+            const clock = (18.5 + minutes / 60) % 24;
+            const hour = sceneHour(istAt(date, clock));
+            const step = (hour - previous + 24) % 24;
+            expect(step).toBeGreaterThan(0);
+            expect(step).toBeLessThan(0.25);
+            previous = hour;
+        }
+    });
+
+    it("still runs when inlined from its source, as the pre-paint placeholder script does", () => {
+        const inlined = new Function(`return (${skyHourAt.toString()})`)() as typeof skyHourAt;
+        for (const hour of [0.5, 6.9, 12, 17.95, 18.4, 21]) {
+            const now = istAt("2026-11-22", hour);
+            expect(inlined(now, latitude, longitude)).toBeCloseTo(skyHourAt(now, latitude, longitude), 6);
+        }
+    });
+
+    it("leaves Mumbai's clock itself alone", () => {
+        expect(mumbaiHour(istAt("2026-11-22", 18.25))).toBeCloseTo(18.25);
     });
 });

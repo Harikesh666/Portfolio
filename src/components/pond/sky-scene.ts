@@ -1,4 +1,4 @@
-import { mumbaiHour, openSkyAt, type OpenSkyLight } from "./pond-daylight";
+import { sceneHour, openSkyAt, type OpenSkyLight } from "./pond-daylight";
 import type { Pond } from "./pond-engine";
 import { createFlock, numeralBox, type Flock, type Point } from "./sky-flock";
 
@@ -507,7 +507,7 @@ export function createSkyScene(options: SkySceneOptions): Pond | null {
     let height = 0;
     let ratio = 1;
     let time = 0;
-    let hour = hourOverride ?? mumbaiHour();
+    let hour = hourOverride ?? sceneHour();
     let clockAge = 0;
     let frame: number | undefined;
     let lastTimestamp: number | undefined;
@@ -849,7 +849,7 @@ export function createSkyScene(options: SkySceneOptions): Pond | null {
         clockAge += dt;
         if (hourOverride === undefined && clockAge > clockSeconds) {
             clockAge = 0;
-            hour = mumbaiHour();
+            hour = sceneHour();
         }
         flock?.step(dt, { night: fireflies(light()), pointer });
     }
@@ -972,6 +972,9 @@ export function createSkyScene(options: SkySceneOptions): Pond | null {
         },
         setPointer(point) {
             pointer = point;
+        },
+        redraw() {
+            draw();
         },
         destroy() {
             setActive(false);
