@@ -27,8 +27,8 @@ export function ElementFieldsFigure() {
         node("jsx2", 8, 78, 104, 38, "<Toolbar />", undefined, "accent"),
         node("element2", 128, 78, 104, 38, "element", "type: Toolbar", "accent"),
         node("call", 248, 78, 104, 38, "Toolbar()", "returns elements", "accent"),
-        node("fake", 8, 148, 164, 38, "lookalike from JSON", "$$typeof is a string", "strong"),
-        node("refuse", 188, 148, 164, 38, "not rendered", "no Symbol, no element", "strong"),
+        node("fake", 8, 148, 164, 38, "lookalike from JSON", "no Symbol in $$typeof", "strong"),
+        node("refuse", 188, 148, 164, 38, "throws an error", "no Symbol, no element", "strong"),
     ];
     const wires: FlowWire[] = [
         { id: "compile", d: "M112 27 H126", tone: "task" },
@@ -56,7 +56,7 @@ export function ElementFieldsFigure() {
             lit: { nodes: ["fake"], wires: [], tone: "strong" },
         },
         {
-            caption: "React checks `$$typeof`, sees the fake, and refuses to render it. That closes off a class of injection attacks.",
+            caption: "React checks `$$typeof`, sees no Symbol, and throws instead of rendering it. That closes off a class of injection attacks.",
             lit: { nodes: ["fake", "refuse"], wires: ["check"], tone: "strong" },
         },
     ];
@@ -65,7 +65,7 @@ export function ElementFieldsFigure() {
             description={[
                 "A host element has a string type, and React DOM makes a real node for it.",
                 "A composite element has a function type, and React calls it to get more elements.",
-                "A lookalike parsed from JSON has no Symbol in $$typeof, so React refuses to render it.",
+                "A lookalike parsed from JSON has no Symbol in $$typeof, so React throws instead of rendering it.",
             ]}
             figcaption="`type` decides what React does with an element, and `$$typeof` decides whether it is one at all."
             height={194}
@@ -124,7 +124,7 @@ export function FiberLinksFigure() {
             patch: subs({ list: "lanes: update", main: "childLanes: work below", app: "childLanes: work below", header: "childLanes: none, skip" }),
         },
         {
-            caption: "`alternate` points to this fiber's twin in the other tree: the double buffering of Section 8.",
+            caption: "`alternate` points to this fiber's twin in the other tree. That twin is how double buffering works.",
             lit: { nodes: ["app", "twin"], wires: ["alternate"], tone: "accent" },
         },
     ];

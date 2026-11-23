@@ -365,7 +365,7 @@ export function UnwindFigure() {
             patch: subs({ inner: "throws during render" }),
         },
         {
-            caption: "React unwinds, walking up the fiber tree through each `return` pointer. It discards the half-built work in the failed subtree as it goes.",
+            caption: "React searches up the fiber tree through each `return` pointer for a fiber that can handle the error.",
             lit: { nodes: ["inner", "mid"], wires: ["up-1"], tone: "accent" },
             patch: subs({ inner: "throws during render" }),
         },
@@ -375,12 +375,12 @@ export function UnwindFigure() {
             patch: subs({ inner: "throws during render", mid: "not a handler, keep going" }),
         },
         {
-            caption: "The nearest boundary above the thrower stops the walk. React schedules an update on it carrying the error.",
+            caption: "The nearest boundary above the thrower stops the walk. React marks it and queues a capture update carrying the error, in this same render.",
             lit: { nodes: ["outer"], wires: [], tone: "task" },
             patch: subs({ inner: "throws during render", outer: "nearest boundary found" }),
         },
         {
-            caption: "The boundary calls `getDerivedStateFromError`, renders its fallback instead of its children, and `componentDidCatch` runs in the commit phase. The blast radius is its subtree.",
+            caption: "React then unwinds to the boundary, discarding the half-built work. It renders the boundary again, calls `getDerivedStateFromError`, and shows the fallback instead of its children. `componentDidCatch` runs in the commit phase.",
             lit: { nodes: ["outer", "inner"], wires: [], tone: "task" },
             patch: subs({ outer: "renders its fallback", inner: "replaced by the fallback" }),
         },
@@ -407,7 +407,7 @@ export function UnwindFigure() {
 /* react-event-system-internals */
 export function DelegationFigure() {
     const nodes = [
-        node("root", 8, 8, 120, 40, "root container", "one React listener", "task"),
+        node("root", 8, 8, 120, 40, "root container", "React's listeners", "task"),
         node("btn", 8, 150, 120, 40, "button", "native click target"),
         node("fiber", 232, 8, 120, 40, "target fiber", "found from the node"),
         node("up", 232, 78, 120, 44, "parent fibers", "walk toward root", "accent"),
@@ -424,7 +424,7 @@ export function DelegationFigure() {
     const steps: FlowStep[] = [
         { caption: "The user clicks a deep button. The browser creates a native `click` event with the button as its `target`.", lit: { nodes: ["btn"], wires: [] } },
         {
-            caption: "The native event bubbles up the real DOM to the root container, where React's single delegated `click` listener catches it.",
+            caption: "The native event bubbles up the real DOM to the root container, where React's bubble-phase `click` listener catches it.",
             lit: { nodes: ["btn", "root"], wires: ["bubble"], tone: "task" },
         },
         {
@@ -432,23 +432,23 @@ export function DelegationFigure() {
             lit: { nodes: ["root", "fiber"], wires: ["find"], tone: "task" },
         },
         {
-            caption: "React walks up the fiber tree from the target, collecting every matching `onClick` and `onClickCapture` along the way, in tree order.",
+            caption: "React walks up the fiber tree from the target, collecting every `onClick` along the way. The root's capture listener did the same walk for `onClickCapture` on the way down.",
             lit: { nodes: ["fiber", "up"], wires: ["walk"], tone: "accent" },
-            patch: subs({ up: ["collect onClick", "and onClickCapture"] }),
+            patch: subs({ up: ["collect onClick", "target first"] }),
         },
         {
-            caption: "React wraps the native event in a `SyntheticEvent` and calls the collected handlers in order. Capture handlers go first, then bubble handlers.",
+            caption: "React wraps the native event in a `SyntheticEvent` and calls the collected handlers in order, from the target up to the root.",
             lit: { nodes: ["synth", "handler"], wires: ["wrap", "call"], tone: "task" },
         },
         {
-            caption: "The real listener sits at the root, yet React makes it behave as if each element had its own, by walking the fiber tree.",
+            caption: "The real listeners sit at the root, yet React makes them behave as if each element had its own, by walking the fiber tree.",
             lit: { nodes: ["root", "up", "handler"], wires: [], tone: "task" },
-            patch: subs({ root: "the listener lives here", up: "the handlers live here" }),
+            patch: subs({ root: "the listeners live here", up: "the handlers live here" }),
         },
     ];
     return (
         <FlowFigure
-            description={["The native click bubbles from the button to the root container's one listener.", "React finds the target fiber, walks up collecting handlers, wraps a SyntheticEvent and calls the handlers in order."]}
+            description={["The native click bubbles from the button to React's bubble listener on the root container.", "React finds the target fiber, walks up collecting handlers, wraps a SyntheticEvent and calls the handlers in order."]}
             figcaption="React rebuilds the propagation path by walking its own fiber tree from the target up."
             height={252}
             nodes={nodes}
@@ -547,7 +547,7 @@ export function MemoBailoutFigure() {
             lit: { nodes: ["memo", "props"], wires: ["renders", "compare"], tone: "accent" },
         },
         {
-            caption: "Every prop is `Object.is`-equal, so React bails out. The child function is not called, and its whole subtree is skipped too.",
+            caption: "Every prop is `Object.is`-equal, so React bails out. The child function is not called, and the subtree is skipped unless something below has its own update.",
             lit: { nodes: ["memo"], wires: [], tone: "accent" },
             patch: subs({ memo: "all props equal: bail out", sub: "skipped" }),
         },
@@ -569,8 +569,8 @@ export function MemoBailoutFigure() {
     ];
     return (
         <FlowFigure
-            description={["The parent renders the React.memo child.", "The child compares old and new props with Object.is.", "All equal: it skips itself and its subtree. Any difference: it renders, and the subtree too."]}
-            figcaption="`React.memo` compares props with `Object.is` and skips the whole subtree when they are all equal."
+            description={["The parent renders the React.memo child.", "The child compares old and new props with Object.is.", "All equal: it skips itself, and the subtree too unless something below has its own update. Any difference: it renders, and the subtree too."]}
+            figcaption="`React.memo` compares props with `Object.is` and skips the parent's re-render below it when they are all equal."
             height={202}
             nodes={nodes}
             overview="`React.memo` is a gate that stops a parent's re-render from flowing down when props are unchanged. Press Play to watch the props check decide."
@@ -671,7 +671,7 @@ export function ChildrenSlotFigure() {
     const steps: FlowStep[] = [
         { caption: "`Page` is a Server Component. It renders `ClientLayout` and puts `ServerContent` between its tags.", lit: { nodes: ["page"], wires: [], tone: "accent" } },
         {
-            caption: "`ServerContent` runs on the server. Client code could not run it, so a client file cannot `import` it.",
+            caption: "`ServerContent` awaits server data. Imported into a client file it would become client code, and that code cannot reach the server.",
             lit: { nodes: ["page", "content"], wires: ["renders"], tone: "accent" },
             patch: subs({ content: "runs on the server" }),
         },
@@ -702,7 +702,7 @@ export function ChildrenSlotFigure() {
             figcaption="Server content can live inside a client shell because it is passed down as `children`, not imported."
             height={206}
             nodes={nodes}
-            overview="A Client Component cannot import a Server Component, yet server content can still sit inside it. Press Play to follow `ServerContent` into `ClientLayout` as `children`."
+            overview="A client file cannot import server-only code, yet server content can still sit inside a Client Component. Press Play to follow `ServerContent` into `ClientLayout` as `children`."
             steps={steps}
             width={360}
             wires={wires}
