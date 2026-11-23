@@ -1,240 +1,207 @@
 ---
 title: "React Hooks and Effects"
-description: "A practical mental model for hooks, renders, effects, closures, and React's update queues."
+description: "How hooks really work in React 19: the hook list on the fiber, render snapshots, update queues with lanes and rebasing, when effects fire and flush, refs, useEffectEvent, Actions and Strict Mode."
 category: "Foundation"
-readTime: "60 min read"
+readTime: "41 min read"
 date: "May 2026"
 publishedAt: "2026-05-01"
 order: 2
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025) and `useEffectEvent` stable since 19.2.
+A chat room shows a notification when it connects. You switch the theme, and the chat disconnects and reconnects. You remove `theme` from the dependency array, and the linter complains. You silence the linter, and the notification uses yesterday's theme.
 
-## Read this first
-
-This guide goes deep, on purpose, and it is built to be climbed, not swallowed.
-
-**You are not supposed to absorb all of it in one sitting.**
-
-### Pass 1, one relaxed sitting (about 30 minutes)
-
-Read only the two short parts at the top of each section: **"The itch"** and **"The short version."** Skip everything labeled "How it actually works." When you finish, you will have a complete map of how hooks store your state, why effects behave the way they do, and what most of your effect bugs actually are.
-
-That alone makes you noticeably better at this.
-
-Getting the map first is what keeps the deep parts from feeling like a wall.
-
-### Pass 2, spread over weeks, driven by your real work
-
-When you hit something at work that one of these sections explains, come back and read its **"How it actually works."** An effect that fires on every render?
-
-Read the deep part of Sections 7 and 8.
-
-A value that is mysteriously stale inside a `setInterval`?
-
-Section 3.
-
-A re-render that `React.memo` was supposed to stop but did not?
-
-Sections 8 and 12.
-
-Reading the deep material right when you have a real reason to care is what makes it stick.
-
-### Pass 3, someday, when you are curious
-
-Section 17 points you into React's actual source for hooks.
-
-There is no rush.
-
-### Two rules that multiply everything
-
-1. **Run the experiments.** Each section ends with a short **"Try it."** A bug you have personally caused and watched happen is a bug you will never ship. Keep a throwaway React project open (a Vite scratch app, or any sandbox) and actually reproduce each one.
-2. **Trust the order.** The sections build on each other. The single most important idea in this whole guide is in Section 2 (every render is a snapshot), and almost every later section is a consequence of it. Here is the build order:
-
-<GuideSpine steps={[{"title": "Why the rules of hooks exist at all", "sections": [1]}, {"title": "THE mental model: a render is a snapshot", "sections": [2], "note": "everything below is a consequence"}, {"title": "The bug that model creates", "sections": [3]}, {"title": "How state actually updates (the queue)", "sections": [4, 5]}, {"title": "Effects as synchronization, not lifecycle", "sections": [6], "note": "the reframe that fixes most effect bugs"}, {"title": "The dependency array + referential stability", "sections": [7, 8], "note": "most everyday effect bugs live here"}, {"title": "Cleanup, and effect timing around paint", "sections": [9, 10]}, {"title": "The non-reactive escape hatch", "sections": [11]}, {"title": "Memoization, refs, and custom hooks", "sections": [12, 13, 14]}, {"title": "The modern hook surface, then debugging", "sections": [15, 16, 17]}]} />
-
-Each section also opens with a one-line **Prereqs** note: the earlier sections or outside concepts worth having in hand before you read that section's deep part.
-
-Sections that need nothing past basic JavaScript say so.
-
-You do not need to finish this guide to benefit from it.
-
-Finish pass 1 and you are already ahead.
-
----
-
-## 1. The rules of hooks, and why they are not arbitrary
-
-Prereqs: JavaScript functions and objects.
-
-This section defines "fiber" inline and re-explains the hook storage from the ground up, so you can start the series here without the rendering guide.
-
-### The itch
-
-"Don't call hooks inside conditions, loops, or after an early return. Only call them at the top level, and only from React functions." Everyone repeats these rules.
-
-But a rule you cannot derive is a rule you will eventually break by accident.
-
-Where do they actually come from?
-
-### The short version
-
-A function component has no `this` and no object to hang state on.
-
-So React keeps a small internal object for each component on screen (its fiber) and stores your hooks as an ordered linked list on that fiber, matching each hook call to its stored slot purely by call order: the first hook call this render gets slot one, the second gets slot two, and so on.
-
-Call a hook conditionally and the order shifts between renders, so React reads the wrong slot.
-
-The rules are <Mark kind="circle">not style preferences</Mark>.
-
-They are the only thing that could possibly work given how hooks are stored.
-
-### How it actually works
-
-A fiber is the internal object React keeps for each component instance in your tree.
-
-It holds that component's state, its links to its parent, child, and sibling, and the work React still has to do for it.
-
-The rendering guide is, in large part, the story of fibers and how React walks them.
-
-For hooks, the only thing you need to carry in is that every rendered component has exactly one fiber, and that fiber is where its hooks are stored.
-
-When React renders a function component, it does not just call your function.
-
-First it sets a module-level pointer, internally called the "currently rendering fiber," to that component's fiber, and it sets another pointer, the "work in progress hook," to walk a linked list.
-
-Then it calls your function.
-
-Every hook you call reads from those module-level pointers.
-
-That is the whole trick: `useState` is not magic syntax, it is an ordinary function that, when called, looks at "which fiber are we rendering right now" and "which hook slot are we up to," does its work, and advances the cursor to the next slot.
-
-The hook list lives on the fiber's `memoizedState` field.
-
-Each node is roughly:
-
-```js
-{
-  memoizedState, // this hook's value: the state value, or {deps, create, destroy} for an effect,
-                 // or the cached {value, deps} for useMemo
-  queue,         // the update queue, for useState/useReducer; null otherwise
-  next,          // pointer to the NEXT hook called in this component, or null
+```jsx
+function ChatRoom({ roomId, theme }) {
+    useEffect(() => {
+        const connection = createConnection(roomId);
+        connection.on("connected", () => showNotification("Connected!", theme));
+        connection.connect();
+        return () => connection.disconnect();
+    }, [roomId, theme]); // switch the theme, and the chat reconnects
 }
 ```
 
-So `useState`, `useState`, `useEffect` builds a three-node list, and React binds the Nth hook _call_ to the Nth _node_ by position, not by name.
+Each part of that bug comes from a few mechanisms. React keeps your hooks in a list on an internal object. Each render sees a frozen copy of state. An effect compares its dependencies with `Object.is`, and every setup has a cleanup.
 
-React never sees your variable names.
+This guide shows those mechanisms as React's source implements them. By the end you can derive the rules of hooks, and section 13 fixes the chat room.
 
-It only sees order.
+> Current as of React 19.2 and 19.3, with React Compiler 1.0. The hook model dates from React 16.8, and `useEffectEvent` became stable in 19.2.
 
-<GuideFigure figure="hk-hook-nodes" />
+## Before you start
 
-Now the two rules fall out:
+- Closures, a function remembering the variables around it: [the closures guide](/articles/closures-function-backpack).
+- Tasks, microtasks and paint: [the event loop guide](/articles/asynchronous-javascript-event-loop).
+- Fibers, the render and commit phases, and bailouts: [the rendering guide](/articles/react-rendering-reconciliation-internals).
+- Lanes, priorities and when React renders: [the scheduler and lanes guide](/articles/react-scheduler-and-lanes-internals).
+- Suspending on a promise: [the Suspense guide](/articles/react-suspense-internals).
+- Server Functions and Actions on the server: [the Server Components guide](/articles/react-server-components-internals).
 
-#### Rule one: call hooks in the same order on every render
+<GuideSpine steps={[{"title": "Where hooks live, and why the rules exist", "sections": [1]}, {"title": "A render is a snapshot, and the bug it creates", "sections": [2, 3], "note": "the model everything else rests on"}, {"title": "How state updates: the queue", "sections": [4, 5, 6, 7]}, {"title": "Effects: synchronize, compare, clean up", "sections": [8, 9, 10, 11], "note": "most everyday effect bugs live here"}, {"title": "When effects run, and the non-reactive escape hatch", "sections": [12, 13]}, {"title": "Memoization, refs and custom hooks", "sections": [14, 15, 16]}, {"title": "The React 19 hooks and Strict Mode", "sections": [17, 18]}, {"title": "Debugging", "sections": [19]}]} />
 
-No conditionals, loops, or early returns before or around a hook.
+## 1. Hooks live in a list on the fiber
 
-If render one calls `useState`, `useState`, `useEffect`, and render two skips the second `useState` because it sat behind an `if`, then on render two React's cursor binds your `useEffect` call to the _second_ node, the one that holds your second piece of state.
+Everyone repeats the rules of hooks. Call them at the top level, never inside a condition, a loop or after an early return. Call them only from components or other hooks.
 
-Now React reads a state value where it expected an effect record, or vice versa.
-
-The bug is silent and bizarre, which is exactly why the rule is absolute rather than "usually a good idea." (React does throw "Rendered fewer hooks than expected" in some shapes of this mistake, but you should never rely on getting the error rather than the corruption.)
-
-#### Rule two: only call hooks from React function components or from other hooks
-
-Those module-level pointers (the current fiber, the cursor) are only set up while React is rendering a component.
-
-Call a hook from a plain function or an event handler and there is no current fiber to read, so React throws the "Invalid hook call" error.
-
-There is a nice mechanical detail here: React swaps the active "dispatcher" (the object that actually implements `useState`, `useEffect`, and the rest) depending on the phase.
-
-During a mount it points to the mount implementations, during an update it points to the update implementations, and when you are not rendering at all it points to a special dispatcher whose every method just throws.
-
-The error you get from calling a hook in the wrong place is that throwing dispatcher doing its one job.
-
-The `eslint-plugin-react-hooks` rule enforces both statically, and in React 19 the same plugin surfaces React Compiler diagnostics too (see the rendering guide's 2026 section).
-
-Treat it as non-optional.
-
-It is not nagging.
-
-It is the only thing standing between you and the positional-list corruption above.
-
-One modern exception worth flagging now so it does not surprise you later: the `use` hook (Section 15) is deliberately allowed inside conditionals and loops.
-
-It is special-cased in the implementation precisely because the React team decided the ergonomic win was worth building the machinery to support it.
-
-Every other hook still obeys rule one.
-
-### Try it
-
-> Write a component with `const [a] = useState(1)` then `if (props.flag) { useState(2) }` then `useEffect(...)`. Toggle `flag` from a parent. Watch React either throw or, worse, attach the wrong value to the wrong hook. Then move the second `useState` above the `if` and watch it become stable.
-
-### You've got this if
-
-You can explain why call order, not variable names, is what binds a hook call to its stored state.
-
----
-
-## 2. Every render is a snapshot
-
-Prereqs: JavaScript closures (a function remembering the variables in scope where it was defined).
-
-Nothing from earlier sections.
-
-### The itch
-
-You write `setCount(count + 1)` and then `console.log(count)` on the next line, and the log shows the old value.
-
-Or you set up a `setInterval` once, and it forever logs the count from the moment it was created.
-
-It feels like `count` is a stale variable that did not get the memo.
+A rule you cannot derive is a rule you will break by accident. So where do these rules come from?
 
 ### The short version
 
-Each time your component function runs, it produces one render, and that render has its own private copy of props, state, and every function defined inside it, all frozen at the values from that run.
+A function component has no `this` and no object to keep state on. So React keeps one internal object per component instance, its **fiber**, and stores your hooks there as a linked list.
 
-State is not a live variable you read "now." The `count` you see in a given render is a constant for the entire life of that render.
+React matches each hook call to a list node <Mark kind="circle">only by order</Mark>: the first call gets node one, the second gets node two. It never sees your variable names. Call a hook conditionally and the order shifts, so a call reads another hook's node.
 
-When state changes, React does not mutate that constant.
+The rules are not style. They are the only thing that works with storage by position. Before each render React installs a mount or update version of every hook, and after it a version that throws.
 
-It schedules a brand new run of your function, which produces a new render with a new constant.
+### A toy hooks runtime
 
-<Mark kind="marker" wraps>Closures capture the render they were born in.</Mark>
-
-Almost every effect and event-handler surprise is this one fact wearing a costume.
-
-### How it actually works
-
-Think of your component function as a frame in a flipbook.
-
-Each render is one drawing.
-
-The `count` in render number three is the number three, permanently, the way the number on page three of a flipbook does not change when you flip to page four.
-
-React does not reach back into page three and edit it.
-
-It draws page four.
-
-Concretely, when you call `useState`, you get back the value _for this render_ and a setter:
+This teaching version runs in Node. It keeps hooks in an array and finds them with a cursor.
 
 ```js
+// Simplified teaching version: hooks found by position, not by name.
+let fiber = null; // the component being rendered
+let cursor = 0; // which hook slot we are up to
+
+function useState(initial) {
+    const owner = fiber;
+    const slot = cursor++;
+    if (owner.hooks.length <= slot) owner.hooks.push(initial); // first render: allocate
+    const setState = (value) => {
+        owner.hooks[slot] = value;
+    };
+    return [owner.hooks[slot], setState];
+}
+
+function render(component, f, props) {
+    fiber = f;
+    cursor = 0;
+    return component(props);
+}
+```
+
+Now break rule one on purpose.
+
+```js
+function Form({ showAge }) {
+    const [name] = useState("Ada");
+    if (showAge) {
+        const [age] = useState(36); // a conditional hook: the bug
+    }
+    const [city] = useState("London");
+    return `${name}, ${city}`;
+}
+
+const formFiber = { hooks: [] };
+console.log(render(Form, formFiber, { showAge: true }));
+console.log(render(Form, formFiber, { showAge: false }));
+```
+
+```text role="output"
+Ada, London
+Ada, 36
+```
+
+On the second render, the `city` call reaches slot two, which holds the age. Nothing knew the names, so nothing noticed.
+
+### The real hook node
+
+React links nodes instead of using an array, starting at the fiber's `memoizedState` field.
+
+```ts
+// The Hook type in ReactFiberHooks.js, React 19.
+type Hook = {
+    memoizedState: any; // this hook's value
+    baseState: any; // the state before any skipped update (section 5)
+    baseQueue: Update | null; // skipped updates waiting to replay (section 5)
+    queue: any; // the update queue, for useState and useReducer
+    next: Hook | null; // the next hook called in this component
+};
+```
+
+`memoizedState` holds something different for each kind of hook.
+
+| Hook | The node's `memoizedState` holds | `queue` |
+|---|---|---|
+| `useState`, `useReducer` | The current state | An update queue |
+| `useEffect`, `useLayoutEffect`, `useInsertionEffect` | An effect object `{ tag, create, deps, inst }` | `null` |
+| `useMemo` | `[value, deps]` | `null` |
+| `useCallback` | `[callback, deps]` | `null` |
+| `useRef` | The ref object `{ current }` | `null` |
+| `useContext`, `use()` | No node at all | n/a |
+
+<GuideFigure figure="hk-hook-nodes" />
+
+React works in two phases. The render phase calls your components to compute the new UI, and the **commit** phase applies the result to the DOM. On the first render, `mountWorkInProgressHook` appends a node per call. Later renders walk the list with `updateWorkInProgressHook`, copying each node from the last committed fiber.
+
+### The errors a broken order produces
+
+```text
+Rendered more hooks than during the previous render.
+Rendered fewer hooks than expected. This may be caused by an accidental early return statement.
+Should have a queue. You are likely calling Hooks conditionally, which is not allowed.
+```
+
+React throws the first when a render calls more hooks than the stored list holds, and the second when a render stops early. It throws the third when a `useState` call lands on a node without an update queue, such as an effect's node.
+
+In development it first warns about a change in the order of hooks. Some mismatches throw nothing and read the wrong node, so never count on the error.
+
+### The dispatcher swap
+
+```js
+// From renderWithHooks in ReactFiberHooks.js, React 19.2 (production branch, simplified).
+ReactSharedInternals.H =
+    current === null || current.memoizedState === null
+        ? HooksDispatcherOnMount // first render: allocate nodes
+        : HooksDispatcherOnUpdate; // later renders: read nodes
+
+let children = Component(props, secondArg);
+
+ReactSharedInternals.H = ContextOnlyDispatcher; // after render: hooks throw
+```
+
+A **dispatcher** is an object holding one implementation of every hook. The `useState` you import forwards to whichever dispatcher React installed, so one line creates a node on mount and reads it on update.
+
+| Dispatcher | When React installs it | What `useState` does there |
+|---|---|---|
+| `HooksDispatcherOnMount` | The fiber's first render | `mountState`: create the node and its queue |
+| `HooksDispatcherOnUpdate` | Later renders | `updateState`: walk to the node and fold its queue |
+| `HooksDispatcherOnRerender` | A re-run after a render-phase update, or after `use()` suspends (waits on a promise) | `rerenderState`: apply the render-phase updates |
+| `ContextOnlyDispatcher` | Outside any render | Throws "Invalid hook call" |
+
+That last row is rule two: call a hook from an event handler, and the throwing dispatcher answers. `eslint-plugin-react-hooks` checks both rules statically, and its `recommended` preset also reports diagnostics from React Compiler, the build tool that adds memoization (section 14).
+
+`use()` is the one exception to rule one. It takes no node, so it may sit inside a condition (section 17).
+
+### Try it
+
+Run the toy in Node and confirm the city comes out as 36. Then, in a React app, call `useState(1)`, then `if (props.flag) useState(2)`, then `useEffect(...)`. Toggle `flag` from a parent and watch the warning, then the crash.
+
+Turning `flag` on usually gives "Should have a queue", because the second `useState` reads the effect's node. Move the second `useState` above the `if` to fix it.
+
+## 2. Every render is a snapshot
+
+You call `setCount(count + 1)` and log `count` on the next line. The log shows the old value. A `setInterval` created once logs the same count forever. It looks as if `count` missed an update.
+
+### The short version
+
+Each time React calls your component, it produces one render. That render has its own props, its own state and its own functions, all fixed at that call's values. `count` is not a live variable you read "now". It is a constant for the whole life of one render.
+
+A setter does not change that constant. It queues an update and asks React for a new render, which reads a new constant. <Mark kind="marker" wraps>Closures capture the render they were born in.</Mark> So a callback that outlives its render keeps that render's values. React chose this because a render that never changes midway can be paused, restarted or thrown away safely.
+
+### One render, one set of constants
+
+```jsx
 function Counter() {
     const [count, setCount] = useState(0);
-    // For THIS render, `count` is a specific number and never changes.
-    // Everything defined below closes over that specific number.
 
     function handleClick() {
         setCount(count + 1);
-        console.log(count); // logs the value from THIS render, not the new one
+        console.log(count); // this render's value, not the new one
     }
 
     useEffect(() => {
         const id = setInterval(() => {
-            console.log(count); // closes over THIS render's count, forever, if deps are []
+            console.log(count); // render zero's count, forever
         }, 1000);
         return () => clearInterval(id);
     }, []);
@@ -243,972 +210,1040 @@ function Counter() {
 }
 ```
 
-Three things follow, and they are the source of most confusion in React:
+Think of a flipbook. Each render is one drawing, and the `count` on page three is 3 for good. React does not edit page three. It draws page four.
 
-1. **`setCount(count + 1)` then `console.log(count)` logs the old value** because `count` in this render is a constant. The setter does not reassign it. It schedules a new render where `count` will be recomputed to the new value. You are reading the old page. The new page has not been drawn yet.
+| What you see | Why |
+|---|---|
+| `console.log(count)` after `setCount` logs the old value | The setter schedules a new render instead of reassigning this one's constant |
+| A click handler sees the state of one render | Each render makes a new `handleClick` that closes over its own `count` |
 
-2. **Event handlers see the state of the render that created them.** `handleClick` is a fresh function on every render, and each version closes over that render's `count`. The one that runs when you click is the one from the render that produced the button currently on screen.
+### Watch two renders in Node
 
-3. **The `setInterval` logs a stale value forever** because the effect ran once (empty deps), the callback closed over render zero's `count`, and nothing ever recreates it. The interval is loyal to the render it was born in. This is the canonical stale closure, and it gets its own section next.
+```js
+// Simplified teaching version: each render is a fresh call with fresh constants.
+const store = { count: 0 };
+const buttons = [];
 
-This is why people who internalize "a render is a snapshot" stop fighting React and start working with it.
+function Counter() {
+    const count = store.count; // a constant for this render
+    function handleClick() {
+        store.count = count + 1; // stands in for setCount(count + 1)
+        console.log("this handler sees count =", count);
+    }
+    buttons.push(handleClick);
+}
 
-You do not ask "what is the current value of `count`." You ask "which render's snapshot is this code closing over." The mechanism underneath is exactly the hook storage from Section 1: `setCount` enqueues an update on the hook's queue and asks React to render again.
+Counter(); // render 1
+buttons[0](); // click the button that render 1 drew
+Counter(); // render 2
+buttons[0](); // render 1's handler, still alive
+buttons[1](); // render 2's handler
+```
 
-The new render reads the updated value out of the queue and hands you a new constant.
+```text role="output"
+this handler sees count = 0
+this handler sees count = 0
+this handler sees count = 1
+```
 
-Your old closures are untouched, because they belong to a render that already happened.
+Render 1's handler still sees 0 after render 2 exists. It belongs to a render that already happened.
 
 <GuideFigure figure="react-render-snapshot" />
 
-There is a deliberate design choice hiding here.
+### Why React chose snapshots
 
-React could have made `count` a live, mutable thing you read at any moment.
+React could have made `count` a live value. With snapshots, the same props and state always give the same UI. Concurrent React, which can render in pieces, relies on that.
 
-It chose snapshots instead because snapshots make rendering predictable: given the same props and state, your function returns the same UI, every time, with no spooky action from values changing mid-render.
-
-That predictability is what lets React pause, restart, and discard renders under concurrent rendering (rendering guide, concurrency section) without your code noticing.
-
-The snapshot model is not an accident you have to work around.
-
-It is load-bearing.
+So do not ask "what is `count` now?". Ask "which render's snapshot does this code close over?".
 
 ### Try it
 
-> Build the `Counter` above with the empty-deps interval. Click the button several times and watch the on-screen number climb while the console keeps logging the original value. Then add `count` to the dependency array and watch the logged value start tracking the screen (because now the effect, and its closure, is recreated each time `count` changes). You just watched a snapshot get replaced.
+In a React app, build the `Counter` above. Click several times: the screen climbs while the console keeps logging 0. Add `count` to the effect's dependency array, and the rebuilt closure makes the log track the screen.
 
-### You've got this if
+## 3. Stale closures: the bug in long-lived callbacks
 
-You can explain why `count` does not change after you call `setCount`, in terms of renders rather than timing.
-
----
-
-## 3. Stale closures: the bug hiding in every effect
-
-Prereqs: Section 2 (the snapshot model).
-
-Outside React: that a `setInterval`, event listener, or other long-lived callback captures the variables in scope at the moment it was created.
-
-### The itch
-
-A timer, a subscription, an event listener, or a memoized callback keeps acting on old data.
-
-You add the value to a dependency array and it gets fixed, but you are not sure why, and sometimes "fixing the deps" causes a different problem (the timer resets constantly).
-
-You want a way to reason about this instead of guessing.
+A timer, a subscription or a listener keeps acting on old data. Adding the value to the dependency array fixes it, but sometimes the timer then resets every second. You want to reason about this instead of guessing.
 
 ### The short version
 
-A stale closure is just Section 2 biting you: a function that outlives the render it was created in keeps seeing that render's values.
+A **stale closure** is section 2 in action: a function that outlives its render keeps seeing that render's values. Timers, subscriptions and listeners live longest, so they go stale most often. There are three fixes, and the right one depends on what the code needs.
 
-The fix is always one of three moves, and which one is right depends on what you actually want.
+If it only needs the previous state, use the updater form `setCount(c => c + 1)`. If the work changes with the value, list it as a dependency. If the code reads the value but should not react to it, use `useEffectEvent`. The wrong fix trades a stale value for an effect that keeps restarting.
 
-Either make the function not depend on the stale value (use the updater form of `setState`, or a ref), or make React recreate the function when the value changes (put it in the deps), or declare the value as non-reactive on purpose (`useEffectEvent`, Section 11).
+### The broken counter
 
-Picking the wrong fix is what causes the "timer keeps resetting" follow-on bug.
-
-### How it actually works
-
-Walk the canonical case.
-
-You want a counter that increments once a second:
-
-```js
+```jsx
 useEffect(() => {
     const id = setInterval(() => {
-        setCount(count + 1); // BUG: `count` is frozen at the value from the render that ran this effect
+        setCount(count + 1); // count is frozen at the render that ran this effect
     }, 1000);
     return () => clearInterval(id);
-}, []); // empty deps: this effect runs once, so its closure is render zero's, forever
+}, []); // runs once, so its closure is render zero's
 ```
 
-This counts to one and stops, because every tick computes `0 + 1`.
+This counts to 1 and stops. Every tick computes `0 + 1`, because the callback closed over render zero and React never rebuilds it.
 
-The callback closed over render zero's `count`, which is `0`, and the empty dependency array means React never recreates the effect, so the closure never refreshes.
+### Fix A: stop depending on the value
 
-Now the three fixes, each with its mechanism and its trade.
-
-#### Fix A: do not depend on the stale value at all (updater form).
-
-```js
+```jsx
 useEffect(() => {
     const id = setInterval(() => {
-        setCount((c) => c + 1); // reads the LATEST value from the queue, not a closed-over snapshot
+        setCount((c) => c + 1); // React passes the latest state in
     }, 1000);
     return () => clearInterval(id);
 }, []);
 ```
 
-This works and keeps the empty deps.
+The updater `c => c + 1` does not close over `count`. React hands it the current value when it processes the queue (section 4). The effect truly does not depend on `count`, so it should not list it.
 
-The updater function `c => c + 1` does not close over `count`.
+### Fix B: rebuild the effect when the value changes
 
-React hands it the current value when it processes the queue (Section 4).
-
-When your effect's logic only needs the previous state to compute the next state, this is almost always the cleanest fix, because the effect genuinely does not depend on `count`, so it should not list `count`.
-
-#### Fix B: recreate the effect when the value changes (honest deps).
-
-```js
+```jsx
 useEffect(() => {
     const id = setInterval(() => {
         setCount(count + 1);
     }, 1000);
     return () => clearInterval(id);
-}, [count]); // now the effect (and its fresh closure) is recreated whenever count changes
+}, [count]); // a fresh effect, and closure, after every change
 ```
 
-This also works, but notice the cost: every time `count` changes, React runs the cleanup (clears the old interval) and the setup (starts a new one).
+This also works, at a cost. Every change runs the cleanup and a new setup, so the interval clock restarts each tick. Fix B is right when the work really should be rebuilt, such as reconnecting a socket for a new `roomId`.
 
-For a once-a-second counter that is wasteful and slightly jittery, because the interval clock restarts each tick.
+### Fix C: mark the value as non-reactive
 
-Fix B is correct when the effect genuinely _should_ tear down and rebuild on the value's change (for example, reconnecting a socket when `roomId` changes).
+When the effect must read the latest value but a change should not re-run it, use `useEffectEvent` (section 13).
 
-It is the wrong tool when the value is incidental to the work.
-
-#### Fix C: declare the value non-reactive (Section 11 preview)
-
-Sometimes you want to read the latest value inside the effect but you do not want changes to that value to re-run the effect at all.
-
-That is `useEffectEvent`, and it is the principled answer to the situation where you are tempted to just leave a value out of the deps and silence the linter.
-
-The reasoning procedure, which you can apply to any stale-closure bug: ask "does this function actually depend on the stale value, or does it just happen to read it?" If it depends on it (the work is different for different values), use honest deps (Fix B).
-
-If it only needs the latest value to compute a next state, use the updater form or a ref (Fix A).
-
-If it reads the value but should not react to it, that is the non-reactive case (Fix C).
-
-The reason guessing fails is that all three "make the symptom go away" in the simple case, but they have different re-run behavior, and the wrong one trades a stale-value bug for a thrashing-effect bug.
+| Fix | What it does | Re-runs the effect? | Use it when |
+|---|---|---|---|
+| A: updater form or a ref | Stops reading the stale value | No | The code only needs the previous state |
+| B: honest dependencies | Rebuilds the closure on change | Yes, every change | The work differs for each value |
+| C: `useEffectEvent` | Reads the latest value at call time | No | The value is read but is not a trigger |
 
 ### Try it
 
-> Build the broken counter (Fix-nothing), confirm it counts to one and stops. Apply Fix A and watch it count smoothly with empty deps. Apply Fix B and open DevTools: you will see the effect's cleanup and setup firing every single second. Feeling that difference is what teaches you which fix to reach for.
+In a React app, build the broken counter and confirm it stops at 1. Apply Fix A and watch it count. Apply Fix B with a `console.log` in the cleanup, and watch cleanup and setup fire every second.
 
-### You've got this if
+## 4. Setting state queues an update
 
-You can explain why `setCount(c => c + 1)` fixes the stale counter but `setCount(count + 1)` does not, without using the word "fresh."
-
----
-
-## 4. How state updates actually happen (the queue)
-
-Prereqs: Section 2 (snapshots).
-
-From the rendering guide: batching and lanes, which this section recaps as much as you need.
-
-### The itch
-
-You call `setCount(count + 1)` three times in one click handler and the count goes up by one, not three.
-
-But `setCount(c => c + 1)` three times goes up by three.
-
-And none of it seems to take effect until your function runs again.
-
-What is the model?
+You call `setCount(count + 1)` three times in one handler, and the count goes up by one. Three calls to `setCount(c => c + 1)` go up by three. And nothing changes until your function runs again. What is the model?
 
 ### The short version
 
-Calling a setter <Mark kind="circle">does not change</Mark> a variable.
+A setter does not change a variable. It creates an update object, adds it to that hook's **update queue**, and asks React to schedule a render. On the next render, `useState` folds the queue: it starts from the previous state and applies each update in order. A plain value replaces the running result, and an updater function receives it.
 
-It pushes an update onto that hook's queue and asks React to schedule a render.
+So three `setCount(count + 1)` calls all hold the value 1, from the same snapshot, and land on 1. Three `setCount(c => c + 1)` calls compose to 3. React renders once for all three, because it renders later, in a microtask or a task, after your handler has finished.
 
-Multiple setters fired in the same tick are batched: React processes the whole queue once and renders once.
+### The fold
 
-When you pass a value (`count + 1`), every call in the batch is computed from the same snapshot, so they stomp on each other and the last one wins.
-
-When you pass an updater (`c => c + 1`), React applies each one in turn to the running result, so they compose.
-
-That difference is the queue doing its job.
-
-### How it actually works
-
-Each `useState` (and `useReducer`) hook node carries an update queue, the same `queue` field from Section 1.
-
-A setter call does three things: it creates an update object holding either your new value or your updater function, it appends that update to the hook's queue, and it marks the fiber as needing work at some lane (rendering guide, lanes section) and asks the scheduler to render.
-
-It does not touch the value your current render is holding.
-
-That value is a snapshot (Section 2), and snapshots do not move.
-
-When React renders the component again, `useState` on that hook walks the queue and computes the new state by folding the updates together, starting from the previous committed value:
-
-```
-newState = previousState
-for each update in queue:
-  if update holds a value V:        newState = V
-  if update holds an updater fn U:  newState = U(newState)
-```
-
-Now the two behaviors are not surprising, they are arithmetic.
-
-With three value-form calls in one handler:
+`basicStateReducer` below is React's real function. The `fold` around it is a simplified teaching version of the loop in `updateReducerImpl`.
 
 ```js
-function handleClick() {
-    setCount(count + 1); // count is, say, 0 this render → update holds the value 1
-    setCount(count + 1); // count is STILL 0 (same snapshot) → update holds the value 1
-    setCount(count + 1); // still 0 → update holds the value 1
+function basicStateReducer(state, action) {
+    return typeof action === "function" ? action(state) : action;
 }
-// queue folds: 0 → 1 → 1 → 1. Result: 1.
+
+function fold(baseState, updates) {
+    let state = baseState;
+    for (const update of updates) state = basicStateReducer(state, update.action);
+    return state;
+}
+
+const count = 0; // this render's snapshot
+const valueForm = [{ action: count + 1 }, { action: count + 1 }, { action: count + 1 }];
+const updaterForm = [{ action: (c) => c + 1 }, { action: (c) => c + 1 }, { action: (c) => c + 1 }];
+console.log(fold(count, valueForm));
+console.log(fold(count, updaterForm));
 ```
 
-All three read the same snapshot `count` (which is `0`), so all three enqueue the literal value `1`.
-
-Folding three "set to 1" updates lands on `1`.
-
-With three updater-form calls:
-
-```js
-function handleClick() {
-    setCount((c) => c + 1); // update holds a function
-    setCount((c) => c + 1);
-    setCount((c) => c + 1);
-}
-// queue folds: 0 → (0+1)=1 → (1+1)=2 → (2+1)=3. Result: 3.
+```text role="output"
+1
+3
 ```
 
-Each updater receives the running result of the previous one, so they compose to `3`.
+In a component, the same two handlers look like this.
+
+```jsx
+function handleClick() {
+    setCount(count + 1); // count is 0 in this render, so the update holds 1
+    setCount(count + 1); // still 0, still 1
+    setCount(count + 1); // the queue folds 0 -> 1 -> 1 -> 1
+}
+
+function handleClickComposed() {
+    setCount((c) => c + 1); // the update holds a function
+    setCount((c) => c + 1);
+    setCount((c) => c + 1); // the queue folds 0 -> 1 -> 2 -> 3
+}
+```
 
 <GuideFigure figure="hk-updater-fold" />
 
-The rule of thumb that falls out: if your next state depends on the previous state, use the updater form, because the value form is reading a snapshot that may already be stale within the same handler.
+If your next state depends on the previous state, use the updater form.
 
-#### Batching
-
-In React 18 and later, all updates are automatically batched by default, whether they fire in a React event handler, a promise callback, a `setTimeout`, or a native event handler.
-
-The lanes mechanism (rendering guide) is what implements this: same-tick updates land on a shared lane and flush together as one render.
-
-This is why three setters produce one render, not three, and why your function does not re-run between the setter calls.
-
-The escape hatch is `flushSync(() => setX(...))`, which forces a synchronous render and commit right then so you can, for example, read the updated DOM immediately.
-
-It opts you out of batching and concurrency, so it is almost always the wrong tool.
-
-Reach for it only when you must observe the committed result before the next line runs.
-
-#### Bail-out on equal state
-
-If you set state to a value that is `Object.is`-equal to the current state, React may skip re-rendering that component.
-
-There is a subtlety the docs are explicit about: React might still render the component once before bailing out (it has to run your function to discover the new value is equal), but it will not go deeper or commit changes.
-
-So setting state to the same value is cheap, but not always literally zero work, and you should not rely on a same-value set as a way to "do nothing."
-
-#### Lazy initial state
-
-The argument to `useState` is only used on the first render (the mount), but it is evaluated on every render if you write it as a call.
-
-So `useState(expensiveInit())` runs `expensiveInit` every render and throws the result away after mount.
-
-Pass a function instead, `useState(() => expensiveInit())`, and React calls it only once, on mount.
-
-Same idea as Section 13's lazy ref pattern.
-
-It matters whenever the initializer is non-trivial.
-
-### Try it
-
-> One button handler, three `setCount(count + 1)` calls, a `console.log` in the component body. Confirm one render and a net increase of one. Switch all three to `setCount(c => c + 1)` and confirm a net increase of three with still one render. Then wrap one call in `flushSync` and watch an extra render appear in the log.
-
-### You've got this if
-
-You can explain, using the word "queue," why value-form setters in the same tick do not stack but updater-form setters do.
-
----
-
-## 5. useState vs useReducer
-
-Prereqs: Section 4 (the update queue and updater functions).
-
-Outside React: what makes a function pure.
-
-### The itch
-
-Your component has grown five `useState` calls that have to change together, your event handlers are getting tangled, and you keep introducing bugs where one piece of state updates and a related one does not.
-
-People say "use a reducer," but it is not obvious when the switch pays for itself, or what you actually gain.
-
-### The short version
-
-`useState` is `useReducer` with a built-in reducer you did not write.
-
-You reach for `useReducer` when your state transitions get complex enough that describing them as named actions ("submit," "reset," "select row") is clearer than scattering setter calls, when the next state depends on several existing fields at once, or when you want the update logic in one pure function you can test and read in one place.
-
-You also get a `dispatch` function whose identity is stable for the life of the component, which is quietly useful for dependency arrays and context.
-
-### How it actually works
-
-Mechanically these two hooks are nearly the same thing.
-
-Both allocate a hook node with an update queue (Section 1).
-
-Both schedule a render and fold their queue on the next render (Section 4).
-
-The only real difference is what kind of update each enqueues and how the queue is folded:
-
-- `useState`'s setter enqueues either a value or an updater function, and the fold applies them as in Section 4. Internally, `useState` is implemented as `useReducer` with a fixed "basic state reducer" that says: if the update is a function, call it on the previous state, otherwise use the value. That is literally the built-in reducer.
-- `useReducer`'s `dispatch` enqueues an action (any value you choose), and the fold runs _your_ reducer, `(state, action) => newState`, for each queued action.
-
-So choosing between them is not a performance decision.
-
-It is a code-clarity decision about where your transition logic lives.
-
-Three signals that it is time to switch:
-
-#### Signal one: transitions touch several fields together
-
-A form with `values`, `errors`, `touched`, and `isSubmitting` where a single "submit failed" event has to update three of them at once is painful as four `useState` calls, because nothing forces them to move together and it is easy to update three and forget the fourth.
-
-A reducer lets you write one `case 'SUBMIT_FAILED'` that returns the whole new state object, so the transition is atomic and visible in one place.
-
-#### Signal two: the next state is a function of the current state in non-trivial ways
-
-Reducers receive the previous state as their first argument, so "the new state depends on the old state" is the default rather than something you have to remember to express with the updater form.
-
-This removes a whole category of snapshot-staleness bugs (Section 2) because the reducer never closes over a rendered state value.
-
-It is handed the latest one during the fold.
-
-#### Signal three: you want the update logic testable and out of the component
-
-A reducer is a pure function with no React in it.
-
-You can unit-test `reducer(state, action)` with plain inputs and outputs, and a teammate can read every way the state can change by reading one function instead of hunting for setter calls across handlers.
-
-State machines (explicit named states and the allowed transitions between them) are the natural endpoint of this, and a reducer is the idiomatic way to express one in React.
-
-Two mechanical perks worth naming.
-
-First, `dispatch` is referentially stable: React guarantees the same `dispatch` function identity across renders for the life of the component, exactly like a `useState` setter.
-
-That stability means you can list `dispatch` in an effect's dependency array (or pass it through context) without causing the effect to re-run, which matters once you have read Section 8.
-
-Second, lazy initialization: `useReducer(reducer, initialArg, init)` calls `init(initialArg)` only on mount, the same once-only pattern as lazy `useState` and lazy refs.
-
-The reducer must be pure: same state and action in, same new state out, no mutations of the existing state, no side effects.
-
-React relies on this, and under StrictMode it will call your reducer twice in development (rendering guide, StrictMode section) specifically to surface a reducer that mutates or has side effects.
-
-If "it only misbehaves in StrictMode" ever shows up here, your reducer is not pure.
-
-### Try it
-
-> Take a component with three or four related `useState` calls and rewrite it with a single `useReducer`. Notice two things: the event handlers shrink to `dispatch({ type: '...' })` calls, and the "what are all the ways this state can change" question now has a single-function answer. Then write a one-line test that calls your reducer directly with no React involved.
-
-### You've got this if
-
-You can explain why `dispatch` is safe to omit-by-stability from a dependency array while an arbitrary handler function is not.
-
----
-
-## 6. useEffect is a synchronization primitive, not a lifecycle hook
-
-Prereqs: Section 2 (snapshots).
-
-Outside React: the idea of an external system (a subscription, a timer, the `document.title`, a non-React widget) that lives outside React and has to be kept in step with your state.
-
-From the rendering guide: that effects run after the commit phase, recapped here.
-
-### The itch
-
-You learned effects as "componentDidMount, componentDidUpdate, and componentWillUnmount rolled into one." So you write `useEffect(..., [])` for "on mount," reach for refs to detect "did this prop change since last time," and fight the dependency linter constantly.
-
-It half-works, and the bugs are always about timing.
-
-The lifecycle framing is the problem itself.
-
-### The short version
-
-<MarginNote note="forget mount and unmount as the model">
-
-An effect does not represent a moment in a component's life.
-
-</MarginNote>
-
-It represents a _synchronization_: "this external thing (a subscription, a timer, the document title, a network resource, a non-React widget) should be kept in agreement with these values from my render." You describe the target state and how to achieve and undo it.
-
-React's job is to keep reality matching your latest render by running the effect when the values it depends on change, and running cleanup to unwind the previous synchronization first.
-
-Once you think in "keep X in sync with Y" instead of "do X on mount," the dependency array stops being a puzzle and the bugs mostly evaporate.
-
-### How it actually works
-
-A React component's render output describes what the DOM should look like, and React keeps the DOM in sync with it for you (rendering guide, reconciliation).
-
-But plenty of things your component cares about are _not_ the DOM that React manages: a WebSocket connection, a `setInterval`, a subscription to a browser API or an external store, the `document.title`, a chart drawn by a non-React library, an analytics ping.
-
-React has no idea these exist.
-
-An effect is how you extend "keep this in sync with my render" to those external systems.
-
-You hand React three things:
-
-1. **A setup function**: how to bring the external system into agreement with the current render's values (open the connection to `roomId`, start the interval, set the title to `title`).
-2. **A cleanup function** (what setup returns): how to undo that, so the system can be re-synchronized cleanly (close the connection, clear the interval).
-3. **A dependency array**: which values from this render the synchronization actually depends on (Section 7).
-
-React then runs this on a simple contract: after it commits a render and the browser paints, if any dependency changed since the last committed run, React first runs the previous cleanup (unwinding the old synchronization) and then runs the new setup (establishing the new one).
-
-On the very first commit there is no previous cleanup, so it just runs setup.
-
-When the component unmounts, there is no new setup, so it just runs the final cleanup.
-
-Notice what "mount" and "unmount" became: they are not special cases you target, they are simply the first and last steps of an ongoing synchronization.
-
-You stopped writing lifecycle code and started describing a thing that should stay in sync.
-
-This is why "run on mount only" via `[]` is better understood as "this synchronization does not depend on any changing value, so it is established once and torn down once." And why an effect with `[roomId]` is "stay connected to whatever room `roomId` currently names": when `roomId` changes, the old connection is wrong, so React tears it down and builds the right one.
-
-You did not write "if roomId changed, reconnect." You wrote "be connected to roomId," and React derived the reconnect.
-
-Two consequences that fix real bugs:
-
-#### Most "I need to run code when a prop changes" is not an effect at all
-
-The lifecycle mindset reaches for an effect to respond to a prop change.
-
-But if the work is computing something from props or state, you can usually just compute it during render (no effect), and if it must happen in response to a user action, it belongs in the event handler (no effect).
-
-Effects are specifically for synchronizing with external systems that React does not manage.
-
-The React docs have a whole page, "You Might Not Need an Effect," that is really this point: if you are not syncing with something outside React, you probably should not be in an effect.
-
-Effects that exist only to copy one piece of state into another, or to "react" to a prop by setting state, are usually a sign the lifecycle framing has led you astray.
-
-#### Effects run after paint, and that is on purpose
-
-Passive effects (ordinary `useEffect`) run after React commits and the browser paints (rendering guide, render and commit section), so they never block the user from seeing the update.
-
-That timing is correct for synchronization: you want the screen updated first, then the external world brought into agreement.
-
-The exception, when you must read or change layout before the user sees it, is `useLayoutEffect` (Section 10), and the fact that it is the exception rather than the default is itself a consequence of this model.
-
-A small concrete example to anchor it:
+### The queue is a circular list
 
 ```js
-useEffect(() => {
-    document.title = `Inbox (${unreadCount})`; // bring the title into sync with unreadCount
-}, [unreadCount]); // it depends on unreadCount, and only that
+// Simplified teaching version of how React links updates into queue.pending.
+function enqueue(queue, update) {
+    if (queue.pending === null) {
+        update.next = update; // the first update is a ring of one
+    } else {
+        update.next = queue.pending.next; // the new last points at the first
+        queue.pending.next = update; // the old last points at the new one
+    }
+    queue.pending = update; // pending always points at the newest update
+}
+
+const queue = { pending: null };
+for (const action of ["a", "b", "c"]) enqueue(queue, { action });
+
+const order = [];
+const first = queue.pending.next; // the oldest update
+let update = first;
+do {
+    order.push(update.action);
+    update = update.next;
+} while (update !== first);
+console.log(order.join(" -> "));
 ```
 
-There is no "on mount" or "on update" here.
+```text role="output"
+a -> b -> c
+```
 
-There is "the title should equal this, given `unreadCount`." React runs it on the first commit and again whenever `unreadCount` changes, which is exactly "keep the title in sync."
+`queue.pending` points at the newest update, and its `next` is the oldest. One pointer gives React both ends, so adding an update and starting the walk each take one step. Each update carries more than your action.
 
-### Try it
+```ts
+// The Update type in ReactFiberHooks.js, React 19.2 (a gesture field omitted).
+type Update<S, A> = {
+    lane: Lane; // how urgent the update is (section 5)
+    revertLane: Lane; // used by useOptimistic (section 17)
+    action: A; // your value or updater function
+    hasEagerState: boolean; // computed before render? (section 6)
+    eagerState: S | null;
+    next: Update<S, A>; // the next update in the ring
+};
+```
 
-> Take an effect you wrote in the lifecycle style (something with `[]` plus a manual "did it change" check, or an effect that just copies a prop into state) and rewrite it as a synchronization: name the external thing it keeps in sync, and list the values it depends on. If you cannot name an external thing, that is the signal it should not be an effect at all. Move it into render or a handler.
+Every update first waits in a side buffer, `concurrentQueues`. React links the buffer into the ring when the next render starts, so the ring never changes under a render that is reading it.
 
-### You've got this if
-
-You can explain why "run on mount" and "clean up on unmount" are just the boundary cases of an ongoing synchronization, not the purpose of an effect.
-
----
-
-## 7. The dependency array, and what it really compares
-
-Prereqs: Section 6 (effects as synchronization) and Section 2.
-
-Outside React: how `Object.is` compares values.
-
-### The itch
-
-The dependency array feels like a magic incantation.
-
-Empty array means once, no array means every time, and listing things means "sometimes." When you get it wrong you either get an infinite loop or a stale value, and the linter keeps adding things you did not think you needed.
-
-You want to know what the array physically is so you can stop guessing.
-
-### The short version
-
-<Mark kind="marker" wraps>The dependency array is a memoization key for your synchronization.</Mark>
-
-React stores the previous array on the effect's hook node, and after each commit it compares the new array to the old one element by element with `Object.is`.
-
-If every element is equal, the values your effect depends on did not change, so React skips it (no cleanup, no setup).
-
-If any element differs, or there is no array at all, the synchronization is out of date, so React runs cleanup then setup.
-
-The array is not "when to run." It is "the exact set of values this effect's correctness depends on," and lying about that set is what produces both stale-value bugs and infinite loops.
-
-### How it actually works
-
-On the effect's hook node, React keeps a record shaped roughly like `{ tag, create, destroy, deps }`: the tag (passive vs layout), your setup function (`create`), the cleanup it returned last time (`destroy`), and the dependency array from the last committed run (`deps`).
-
-After a commit, for each effect, React runs a comparison that is genuinely this simple:
+### What a setter does
 
 ```js
-function areHookInputsEqual(nextDeps, prevDeps) {
-    if (prevDeps === null) return false; // no previous deps: always "changed"
-    for (let i = 0; i < nextDeps.length; i++) {
-        if (Object.is(nextDeps[i], prevDeps[i])) continue;
-        return false; // one element differs: "changed"
-    }
-    return true; // all equal: "unchanged", skip the effect
+// Simplified teaching version of dispatchSetState (ReactFiberHooks.js).
+function dispatchSetState(fiber, queue, action) {
+    const lane = requestUpdateLane(fiber); // how urgent, read from context
+    const update = { lane, action, hasEagerState: false, eagerState: null, next: null };
+    const root = enqueueConcurrentHookUpdate(fiber, queue, update, lane); // join the queue
+    scheduleUpdateOnFiber(root, fiber, lane); // mark the lane, then schedule the root
 }
 ```
 
-That is the entire dependency-array mechanism.
+It never touches the value your render holds. `requestUpdateLane` picks a **lane**, a bit that says how urgent the update is. A click gives `SyncLane`, a timer `DefaultLane`, and `startTransition` a transition lane.
 
-Everything you know about it is a reading of that function:
+A **transition** is an update you mark as not urgent with `startTransition`, so React may render it later and interrupt it. [The scheduler and lanes guide](/articles/react-scheduler-and-lanes-internals) covers lanes in full.
 
-- **Empty array `[]`**: there are zero elements to compare, so after the first run the comparison is always "all equal." The effect runs once on the first commit, never re-runs, and cleans up on unmount. This is "the synchronization depends on nothing that changes."
-- **No array (omitted)**: React never gets a `nextDeps` to compare, so it treats every commit as "changed" and runs the effect after every commit. This is "re-synchronize on every render," which is rarely what you want.
-- **`[a, b]`**: React compares `a` and `b` against their previous values with `Object.is`. Any change re-runs the effect. This is "the synchronization depends on `a` and `b`."
+### Batching
 
-Now the two failure modes are not mysterious:
+```jsx
+setTimeout(() => {
+    setCount((c) => c + 1);
+    setFlag((f) => !f);
+    setName("Ada");
+}, 0); // createRoot: one render for all three
+```
 
-#### Stale values come from leaving a dependency out
+React 18 and later batch every update, from handlers, timeouts, promises and native listeners alike. Rendering waits for a later microtask or task, so same-tick updates all join the queue first. Updates from one context also share a lane.
 
-If your effect reads `count` but you do not list it, the comparison never notices `count` changing, so React never re-runs the effect, so the effect keeps using the `count` from the render where it last ran.
+The old `ReactDOM.render` roots, removed in React 19, rendered such updates at once. An `await` splits the work into separate renders.
 
-This is precisely the stale closure of Section 3, now with a mechanical cause: you told React this synchronization does not depend on `count`, and React believed you.
+```jsx
+async function save() {
+    setStatus("saving"); // renders after this event
+    await api.save();
+    setStatus("saved"); // a later tick, so a later render
+    setDirty(false); // batched with "saved"
+}
+```
 
-The fix is to tell the truth about the dependencies (or to genuinely make the effect not depend on `count`, via Section 4's updater form or Section 11's `useEffectEvent`).
+### flushSync: the escape hatch
 
-#### Infinite loops come from a dependency whose identity changes every render
+```jsx
+import { flushSync } from "react-dom";
 
-If a dependency is a new object, array, or function every render (Section 8), then `Object.is` reports "changed" on every commit, so the effect runs on every commit.
+function addItem(item) {
+    flushSync(() => setItems((items) => [...items, item]));
+    listRef.current.lastChild.scrollIntoView(); // the new row is in the DOM already
+}
+```
 
-If that effect also sets state, the set schedules another render, which creates another new identity, which runs the effect again, forever.
+`flushSync` renders and commits its updates before it returns, opting out of batching. Use it only when the next line must read the committed DOM.
 
-The loop is not the effect being greedy.
+### Lazy initial state
 
-It is you feeding it a dependency that can never compare equal.
+```jsx
+const [rows, setRows] = useState(buildRows()); // buildRows runs on every render
+const [lazyRows, setLazyRows] = useState(() => buildRows()); // runs once, on mount
+```
 
-This is why the linter matters so much, and why silencing it is almost always the wrong move.
-
-The `exhaustive-deps` rule computes the _true_ set of reactive values your effect reads (props, state, and anything derived from them) and insists the array match.
-
-When it complains, it is telling you the array does not describe what the effect actually depends on, which means React's `areHookInputsEqual` comparison will give the wrong answer.
-
-Disabling the rule with a comment just hides the mismatch and ships the stale-value bug.
-
-One more precise note: the comparison is `Object.is`, not `===`.
-
-They differ in only two cases: `Object.is(NaN, NaN)` is `true` (where `NaN === NaN` is `false`), and `Object.is(0, -0)` is `false` (where `0 === -0` is `true`).
-
-For everyday dependencies the distinction never bites, but it is the same comparison React uses for state bail-out (Section 4) and for `useMemo`/`useCallback` (Section 12), so it is worth knowing the exact operator.
+React uses the initial value only on mount, but the first line still calls `buildRows()` every render and discards the result. Pass a function, and `mountStateImpl` calls it once.
 
 ### Try it
 
-> Write an effect with `[]` that reads a state value and logs it. Watch it log the initial value forever as the value changes (stale). Add the value to the array. Watch it start re-running and tracking. Then create the loop on purpose: make a dependency `const opts = { id }` defined in render, list `opts`, and have the effect call `setState`. Watch it spin, then move `opts` into a `useMemo` (Section 8) and watch it stop.
+In a React app, put three `setCount(count + 1)` calls in one handler and a `console.log` in the component body. Confirm one render and an increase of one. Switch to `setCount(c => c + 1)` and confirm an increase of three. Then wrap one call in `flushSync` and watch an extra render appear.
 
-### You've got this if
+## 5. Inside the queue: lanes, skipped updates and rebasing
 
-You can explain why omitting a dependency causes a stale value and an unstable dependency causes an infinite loop, both in terms of the same `Object.is` comparison.
-
----
-
-## 8. Referential stability (why a new object breaks everything)
-
-Prereqs: Section 7.
-
-Outside React: that JavaScript compares objects, arrays, and functions by identity, not by contents.
-
-From the rendering guide: the bailout and memo idea (referenced, not required).
-
-### The itch
-
-You wrapped a child in `React.memo` and it still re-renders.
-
-You wrote a perfectly correct dependency array and the effect still fires every render.
-
-Both times the value "looks the same." You are running into identity, and it is one of the two or three things that separate people who can reason about React from people who cargo-cult `useMemo`.
+A transition and a click can update the same state. React renders the click first and the transition later. The click must not lose the transition's update, and the transition must not undo the click. How does one queue serve two renders?
 
 ### The short version
 
-In JavaScript, objects, arrays, and functions are compared by identity, not by contents: `{} !== {}` and `(() => {}) !== (() => {})`, even though they look identical.
+Each update carries the lane it was created with, and each render processes only some lanes, its `renderLanes`. When `useState` folds the queue, it skips any update whose lane is not in the render. It saves the state just before the first skip as the hook's `baseState`. It keeps the skipped update, and every update after it, in `baseQueue`.
 
-<MarginNote note="fresh identity even when the contents match">
+The urgent render shows a result without the skipped work. When the skipped lane renders later, React replays the kept updates from `baseState`, in their original order. This is **rebasing**. The final state is the same as if every update had applied in the order you made them.
 
-Every time your component renders, every object, array, and function literal written inside it is created fresh, so it has a new identity.
-
-</MarginNote>
-
-React's equality checks (dependency arrays, `React.memo`, `useMemo`) all use `Object.is`, which sees those fresh identities as "changed." So an inline object or function handed to a dependency array re-runs the effect every render, and one handed to a memoized child defeats the memo.
-
-Primitives (numbers, strings, booleans) compare by value, so they are stable when they are equal.
-
-The fixes are: depend on primitives where you can, preserve identity with `useMemo`/`useCallback` where you cannot, or hoist truly-constant objects out of the component.
-
-### How it actually works
-
-Start with the JavaScript fact, because React inherits it rather than inventing it.
-
-Two object literals with identical contents are different objects:
+### A toy rebase
 
 ```js
-{ a: 1 } === { a: 1 } // false: different objects in memory
-[1, 2] === [1, 2]     // false
-const f = () => {};
-const g = () => {};
-f === g               // false: different function objects
-1 === 1               // true: primitives compare by value
-'x' === 'x'           // true
+// Simplified teaching version of the skip-and-rebase loop in updateReducerImpl.
+const reducer = (state, action) => (typeof action === "function" ? action(state) : action);
+const isSubset = (set, lane) => (set & lane) === lane; // NoLane (0) is in every set
+
+function processQueue(hook, renderLanes) {
+    let state = hook.baseState;
+    let newBaseState = state;
+    const kept = [];
+    for (const update of hook.baseQueue) {
+        if (!isSubset(renderLanes, update.lane)) {
+            if (kept.length === 0) newBaseState = state; // the state before the first skip
+            kept.push(update); // skipped: replay it later
+            continue;
+        }
+        if (kept.length > 0) kept.push({ ...update, lane: 0 }); // applied now, replayed later too
+        state = reducer(state, update.action);
+    }
+    hook.memoizedState = state;
+    hook.baseState = kept.length > 0 ? newBaseState : state;
+    hook.baseQueue = kept;
+    return state;
+}
 ```
 
-`Object.is` behaves like `===` here.
-
-So "same value" for a primitive means equal, but "same value" for an object means _the same object_, the same identity in memory.
-
-Now layer on Section 2: your component function runs top to bottom on every render, so every literal inside it is constructed anew each time.
+Queue a transition update, then a click, on one string.
 
 ```js
-function Parent({ userId }) {
-    const config = { userId }; // NEW object every render
-    const handleClick = () => doThing(); // NEW function every render
-    const items = data.map((d) => d.name); // NEW array every render
+const SyncLane = 0b10;
+const TransitionLane = 0b100000000;
+const hook = {
+    baseState: "",
+    baseQueue: [
+        { lane: TransitionLane, action: (s) => s + "T" }, // a transition appends T
+        { lane: SyncLane, action: (s) => s + "S" }, // then a click appends S
+    ],
+};
+
+console.log(JSON.stringify(processQueue(hook, SyncLane))); // the urgent render
+console.log(JSON.stringify(processQueue(hook, TransitionLane))); // the transition render, later
+```
+
+```text role="output"
+"S"
+"TS"
+```
+
+The click shows `"S"` at once. The transition render replays both updates from the empty base and ends at `"TS"`, the order you made them. Applying `T` on top of `"S"` would give `"ST"`, an order no user caused.
+
+### The real bookkeeping
+
+| Field | What it holds after a render |
+|---|---|
+| `memoizedState` | The state this render shows |
+| `baseState` | The state before the first skipped update |
+| `baseQueue` | The skipped update and every later one, as a ring |
+| `fiber.lanes` | The skipped lanes, so React knows this fiber still has work |
+
+```js
+// From updateReducerImpl in ReactFiberHooks.js, React 19.2 (simplified).
+const shouldSkipUpdate = !isSubsetOfLanes(renderLanes, updateLane);
+if (shouldSkipUpdate) {
+    // clone it into the new base queue; the first skip also fixes newBaseState
+    currentlyRenderingFiber.lanes = mergeLanes(currentlyRenderingFiber.lanes, updateLane);
+    markSkippedUpdateLanes(updateLane);
+} else {
+    newState = update.hasEagerState ? update.eagerState : reducer(newState, update.action);
+}
+```
+
+An applied update that follows a skip is cloned with `NoLane`, which is 0. Zero is a subset of every lane set, so React never skips that clone. Marking the skipped lane on the fiber brings the later transition render back to this component.
+
+Rebasing has a consequence you can feel. An updater after a skipped update runs in the urgent render and again in the replay. So updaters and reducers must be pure: same input, same output, no side effects.
+
+When two transition updates hit the same queue, `entangleTransitionUpdate` ties their lanes together, so React renders them together.
+
+### Try it
+
+Run the toy in Node. Then put the click first and the transition second, and predict both lines before you run it. Add a second click and check that the final string still matches the order of the calls.
+
+## 6. Bailouts and render-phase updates
+
+Setting state to the value it already has should cost nothing, yet sometimes React still calls your component. And sometimes React calls it twice in a row with no commit between. Both come from the queue.
+
+### The short version
+
+When you call a `useState` setter and the fiber has no other pending updates, React computes the next state at once, outside any render. This is the **eager state**. If it is `Object.is`-equal to the current state, React keeps the update but schedules no render at all.
+
+If the fiber already has pending work, React cannot know the current state yet. So it renders the component, finds the same state and skips the children. `useReducer` never takes the eager path. A setter called during your own component's render is different again. React stashes the update and calls your component again at once, up to 25 times.
+
+### The eager path
+
+```js
+// Simplified teaching version of dispatchSetStateInternal, React 19.2.
+function dispatchSetStateInternal(fiber, queue, action, lane) {
+    const update = { lane, action, hasEagerState: false, eagerState: null, next: null };
+    const nothingPending = fiber.lanes === NoLanes && (fiber.alternate === null || fiber.alternate.lanes === NoLanes);
+    if (nothingPending && queue.lastRenderedReducer !== null) {
+        const current = queue.lastRenderedState;
+        const eager = queue.lastRenderedReducer(current, action); // compute it now
+        update.hasEagerState = true;
+        update.eagerState = eager;
+        if (Object.is(eager, current)) {
+            enqueueConcurrentHookUpdateAndEagerlyBailout(fiber, queue, update); // kept for a rebase
+            return false; // no render scheduled
+        }
+    }
+    const root = enqueueConcurrentHookUpdate(fiber, queue, update, lane);
+    scheduleUpdateOnFiber(root, fiber, lane);
+    return true;
+}
+```
+
+React keeps two copies of each fiber, the committed one and a work-in-progress one. The other copy is called the **alternate**, and React checks both for pending lanes.
+
+| Condition for the eager path | Why |
+|---|---|
+| A `useState` setter, not `useReducer`'s `dispatch` | Only `dispatchSetState` has this path |
+| Not called during this component's own render | Render-phase updates go another way |
+| No pending updates on the fiber or its alternate | Otherwise the current state is not known yet |
+| `queue.lastRenderedReducer` is set | `useOptimistic` sets it to `null` on purpose |
+
+If the eager state differs, React stores it on the update and uses it during the fold instead of calling your updater again. If computing it throws, React swallows the error, and render throws it again. A Node toy shows the outcomes.
+
+```js
+// Simplified teaching version of the eager check in dispatchSetStateInternal.
+const reducer = (state, action) => (typeof action === "function" ? action(state) : action);
+const queue = { lastRenderedState: 5, lastRenderedReducer: reducer };
+const fiber = { lanes: 0 }; // 0 means no pending updates
+
+function setState(action) {
+    if (fiber.lanes === 0 && queue.lastRenderedReducer !== null) {
+        const eager = queue.lastRenderedReducer(queue.lastRenderedState, action);
+        if (Object.is(eager, queue.lastRenderedState)) return "bail out, no render";
+    }
+    fiber.lanes |= 0b10; // the update is pending now
+    return "render scheduled";
+}
+
+console.log(setState(5)); // same value, nothing pending
+console.log(setState(6)); // a real change
+console.log(setState(5)); // same as the committed value, but work is pending
+```
+
+```text role="output"
+bail out, no render
+render scheduled
+render scheduled
+```
+
+### The bailout during render
+
+Without the eager path, React must render to find out.
+
+```js
+// From updateReducerImpl, after the fold (simplified).
+if (!Object.is(newState, hook.memoizedState)) {
+    markWorkInProgressReceivedUpdate(); // the state really changed
+}
+// if nothing changed, React skips the children and commits nothing
+```
+
+### Render-phase updates
+
+```jsx
+function List({ items }) {
+    const [prevItems, setPrevItems] = useState(items);
+    const [selection, setSelection] = useState(null);
+    if (items !== prevItems) {
+        setPrevItems(items); // a render-phase update
+        setSelection(null); // reset derived state when the prop changes
+    }
     // ...
 }
 ```
 
-`config`, `handleClick`, and `items` have a brand new identity on every single render, even when `userId` and the contents are unchanged.
-
-This is the root cause behind two of the most common "React is not doing what I told it" experiences:
-
-#### Effects that fire every render
-
-From Section 7, the dependency array compares with `Object.is`.
-
-List `config` (a fresh object every render) and the comparison reports "changed" every commit, so the effect runs every commit.
-
-The effect is behaving correctly.
-
-The dependency you gave it can never compare equal.
-
-People often "fix" this by removing `config` from the deps and silencing the linter, which trades the over-firing for a stale-value bug.
-
-The real fix is to stabilize the identity or depend on the primitive inside it.
-
-#### `React.memo` that does not prevent re-renders
-
-`React.memo` makes a component bail out of re-rendering when its props are unchanged, where "unchanged" again means `Object.is`-equal prop by prop (rendering guide, bailout section).
-
-Pass a memoized child an inline object, array, or function prop and that prop is a new identity every render, so the memo's prop check always reports "changed," so the child re-renders every time.
-
-The memo boundary is intact.
-
-You keep handing it a new key.
-
-This is why "I added `React.memo` and nothing improved" is, nine times out of ten, an unstable-prop problem rather than a memo problem.
-
-The fixes, in order of preference:
-
-1. **Depend on or pass primitives.** If the effect only needs `userId`, list `userId`, not `config`. If the child only needs the id, pass the id, not the object. A primitive is stable when it is equal, so this sidesteps identity entirely. This is the cleanest fix and the one to try first.
-2. **Hoist genuinely constant values out of the component.** An object or array that never changes does not belong inside the render function. Move it to module scope (`const DEFAULTS = {...}` outside the component) and it has one identity for the life of the program.
-3. **Preserve identity with `useMemo`/`useCallback`** when you truly need a stable object or function that depends on changing values (Section 12). `useMemo(() => ({ userId }), [userId])` returns the same object identity until `userId` changes, so a downstream dependency array or memo boundary sees stability.
-
-The most extreme case of identity instability is defining a component _inside_ another component's render: the inner component is a new function (a new `type`) every render, so React's reconciler treats it as a different component type and remounts the whole subtree, throwing away its state and DOM (rendering guide, the diff section).
-
-That catastrophic version and the everyday "my effect fires too often" version are the same phenomenon at different scales: a fresh identity where React expected a stable one.
-
-Once you see identity as the thread connecting remounts, broken memos, and over-firing effects, a large class of bugs collapses into one idea.
-
-A caution so you do not over-correct: this does not mean wrap everything in `useMemo`.
-
-Most props and dependencies are primitives and are already stable.
-
-Identity only matters for the specific objects, arrays, and functions you actually feed into an equality check (a dependency array, a `React.memo` boundary, or another memo's deps).
-
-And with the React Compiler on (Section 12), much of the manual stabilization is handled for you.
-
-The goal is to _recognize_ identity as the cause when an equality check misbehaves, not to defensively memoize the entire component.
-
-### Try it
-
-> Make a `React.memo` child that logs when it renders. Pass it `style={{ color: 'red' }}` inline and watch it re-render every time the parent does. Pull the object into a module-scope constant (or a `useMemo`) and watch the child go quiet. Then do the same with a function prop and an inline arrow vs a `useCallback`. Seeing the child fall silent is the moment identity becomes real.
-
-### You've got this if
-
-You can explain why `style={{ color: 'red' }}` defeats `React.memo` but `style={STABLE_STYLE}` does not, using the word "identity."
-
----
-
-## 9. Cleanup, and the setup and cleanup pairing
-
-Prereqs: Section 6 (synchronization) and Section 7 (the dependency comparison).
-
-Outside React: promises and async callbacks (for the fetch-race example).
-
-From the rendering guide: StrictMode's double-invoke, referenced near the end.
-
-### The itch
-
-You set up a subscription or an event listener in an effect and you are vaguely aware you should clean it up, but the timing confuses you.
-
-Does cleanup only run on unmount?
-
-Why does your subscription seem to fire twice, or your fetch sometimes show stale results?
-
-And why does StrictMode make the effect run, then clean up, then run again?
-
-### The short version
-
-The function your effect returns is its cleanup, and it is not just an unmount handler.
-
-Cleanup and setup are a pair that React runs to move from one synchronization to the next.
-
-Before re-running an effect because its dependencies changed, React runs the previous cleanup first, then the new setup.
-
-On unmount, it runs the final cleanup.
-
-The mental model: <Mark kind="marker" wraps>each render's effect cleans up the previous render's effect before establishing its own</Mark>.
-
-Get this and double-subscriptions, leaks, and fetch races stop happening.
-
-### How it actually works
-
-Recall the effect record on the hook node from Section 7: `{ create, destroy, deps }`.
-
-When React first runs an effect, it calls `create` (your setup) and stores whatever it returns as `destroy` (your cleanup).
-
-The contract for subsequent commits is the pairing:
-
-- If the dependencies are unchanged (`areHookInputsEqual` is true), React does nothing: no cleanup, no setup. The previous synchronization is still valid.
-- If the dependencies changed, React calls the stored `destroy` (cleaning up the _previous_ render's synchronization) and then calls `create` again (establishing this render's synchronization), storing the new cleanup.
-- On unmount, React calls the stored `destroy` one last time, with no following setup.
-
-So cleanup is emphatically not "unmount-only." It runs every time the effect is about to re-synchronize.
-
-This is the piece the lifecycle mindset (Section 6) gets wrong, and the mistake has teeth.
-
-Consider a subscription:
+Calling your own component's setter during its render is allowed for one pattern: adjusting state when a prop changes. `isRenderPhaseUpdate` spots the call, and `enqueueRenderPhaseUpdate` stashes it. As soon as your function returns, React calls it again with the rerender dispatcher, before it renders any child.
 
 ```js
-useEffect(() => {
-    const sub = source.subscribe(roomId, onMessage);
-    return () => sub.unsubscribe(); // cleanup: undo THIS subscription
-}, [roomId]);
+// From renderWithHooksAgain in ReactFiberHooks.js, React 19.2 (simplified).
+const RE_RENDER_LIMIT = 25;
+let numberOfReRenders = 0;
+do {
+    didScheduleRenderPhaseUpdateDuringThisPass = false;
+    if (numberOfReRenders >= RE_RENDER_LIMIT) {
+        throw new Error("Too many re-renders. React limits the number of renders to prevent an infinite loop.");
+    }
+    numberOfReRenders += 1;
+    ReactSharedInternals.H = HooksDispatcherOnRerender;
+    children = Component(props, secondArg);
+} while (didScheduleRenderPhaseUpdateDuringThisPass);
 ```
 
-When `roomId` changes from `A` to `B`, React runs the cleanup for the `A` subscription, then sets up the `B` subscription.
-
-If you had treated cleanup as unmount-only and, say, only unsubscribed in a separate unmount path, you would now be subscribed to both `A` and `B`, and `onMessage` would fire twice.
-
-The leak and the double-fire are the same bug: a setup without its paired cleanup.
-
-Thinking "this render's effect cleans up the previous render's effect" makes the correct code obvious, because you write the cleanup that exactly undoes the setup sitting two lines above it.
-
-<GuideFigure figure="hk-cleanup" />
-
-#### The fetch race
-
-The fetch race is the same idea applied to async work:
-
-```js
-useEffect(() => {
-    let ignore = false;
-    fetchUser(userId).then((data) => {
-        if (!ignore) setUser(data); // only the latest effect's response is allowed to win
-    });
-    return () => {
-        ignore = true;
-    }; // cleanup flips the flag for the superseded request
-}, [userId]);
-```
-
-If `userId` changes quickly, you fire two requests.
-
-Without the flag, whichever resolves last sets the state, which might be the _older_ request finishing after the newer one (a race that shows the wrong user).
-
-The cleanup flips `ignore = true` on the superseded effect, so when its `fetch` finally resolves, its `setUser` is skipped.
-
-You did not write race-handling logic.
-
-You wrote "this synchronization is being torn down, so ignore its in-flight result," which is just cleanup doing its normal job.
-
-#### Ordering within a commit
-
-Ordering within a commit is stated carefully here because the exact details are an implementation concern you should not lean on: within a single commit, React runs the needed cleanups before the needed setups, so no setup ever runs while a stale cleanup is still pending.
-
-For layout effects this happens synchronously during commit.
-
-For passive effects it happens after paint (Section 10).
-
-The precise order _between different components'_ effects (which sibling's cleanup runs first) is not part of React's public contract, so do not write code that depends on it.
-
-What you can rely on is the pairing: a given effect's cleanup always runs before that same effect's next setup, and before unmount.
-
-#### Why StrictMode runs setup, cleanup, setup on mount in development
-
-In development, StrictMode deliberately mounts each component, runs effects, immediately runs their cleanups, and runs the effects again (rendering guide, StrictMode section).
-
-This is not a quirk to work around.
-
-It is a test.
-
-If your effect is a correct synchronization with a cleanup that exactly undoes its setup, the extra cleanup-then-setup cycle is invisible (you disconnect and reconnect, ending in the same state).
-
-If your effect leaks (subscribes without unsubscribing, starts a timer without clearing it, fetches without an ignore flag), the double-invoke makes the leak show up immediately, in development, instead of in production under fast navigation.
-
-"It only breaks with StrictMode on" always means a real missing-or-wrong cleanup, never a React bug.
-
-The fix is to make setup and cleanup a clean pair, after which StrictMode goes quiet.
+An unconditional `setCount(count + 1)` in the body never settles, so it hits the limit. Guard every render-phase update with a condition, as `List` does. Setting a different component's state during render is not allowed, and React warns about it.
 
 ### Try it
 
-> Write the `roomId` subscription effect, but comment out the `return () => sub.unsubscribe()`. Change `roomId` a few times and watch handlers stack up (log inside `onMessage`). Restore the cleanup and watch it return to exactly one active subscription. Then turn on StrictMode and confirm the well-behaved version survives the double-invoke unchanged while the leaky version visibly doubles.
+In a React app, log in a component body and call `setCount(count)` from a button: no render should happen. If you changed the count just before, React may render once to find the state equal. Then call `setCount(count + 1)` unguarded in the body and read the error.
 
-### You've got this if
+## 7. useState and useReducer
 
-You can explain why cleanup runs before every re-run of an effect, not only on unmount, and why that makes the subscription example correct.
-
----
-
-## 10. useLayoutEffect vs useEffect: timing around paint
-
-Prereqs: Section 9 (setup and cleanup).
-
-Outside React: the browser's paint cycle and reading layout with `getBoundingClientRect`.
-
-From the rendering guide: the commit phase order, recapped here as a sequence of moments.
-
-### The itch
-
-You position a tooltip or measure an element in a `useEffect`, and the user sees it flash in the wrong place for one frame before it jumps to the right place.
-
-Switching to `useLayoutEffect` fixes the flicker.
-
-You want to know what the difference actually is so you know when each one is right, and why the docs warn against reaching for `useLayoutEffect` by default.
+Your component has grown five `useState` calls that must change together, and one keeps updating without its partner. People say "use a reducer", but when does it pay off?
 
 ### The short version
 
-Both hooks run after React updates the DOM, but at different moments relative to the browser painting pixels.
+`useState` is `useReducer` with a reducer you did not write. Its built-in `basicStateReducer` calls a function action on the previous state, and uses any other action as the new state. With `useReducer` you write the reducer yourself and dispatch actions such as `{ type: "submit" }`.
 
-`useLayoutEffect` runs synchronously right after React mutates the DOM and _before_ the browser paints, so you can measure layout and make corrections the user never sees.
+Both hooks share the node, the queue, the fold and the rebasing, so the choice is about clarity, not speed. Reach for a reducer when one event changes several fields at once, or when you want every transition in one pure, testable function. Both hooks return a function with a stable identity.
 
-`useEffect` runs _after_ paint, asynchronously, so it never blocks the user from seeing the update.
-
-Default to `useEffect`.
-
-Reach for `useLayoutEffect` only when you must read or change layout before paint to avoid a visible flicker, because it blocks painting and so can make the page feel slow if you do heavy work in it.
-
-### How it actually works
-
-This is best understood as a sequence of moments in the commit phase (rendering guide, render and commit section).
-
-After React finishes rendering (the interruptible phase) and is ready to commit, the order of events is:
-
-1. React mutates the real DOM to match the new render (inserts, updates, removes nodes). The DOM is now correct in memory, but the browser has not painted it yet.
-2. React synchronously runs all `useLayoutEffect` cleanups and setups for this commit. Because this is before paint, anything you do here, including reading layout with `getBoundingClientRect` and synchronously setting state to reposition, happens before the user sees a single frame.
-3. The browser paints. The user now sees the result, including any layout correction you made in step 2.
-4. Later, asynchronously (in a separate task scheduled after paint), React runs all `useEffect` cleanups and setups. These are the "passive" effects, and they never delay what the user sees.
-
-That sequence explains both the flicker and the fix.
-
-If you measure-and-reposition in a `useEffect`, the browser already painted the element in its initial position in step 3, then your effect runs in step 4 and sets state, causing another render and another paint that moves it.
-
-The user sees the intermediate frame: a flash.
-
-Move the measure-and-reposition into `useLayoutEffect` and it happens in step 2, before any paint, so the user only ever sees the corrected position.
-
-There is no intermediate frame to flash.
-
-<GuideFigure figure="hk-layout-effect" />
-
-The genuine use cases for `useLayoutEffect` are narrow and they all share a shape: you must read the laid-out DOM (a measurement) or mutate it (set a scroll position, position an overlay) _and have that reflected in the same paint the user first sees_.
-
-Tooltip and popover positioning, measuring an element to size something relative to it, synchronously restoring scroll position.
-
-Outside that shape, `useEffect` is correct.
-
-The cost, and why it is not the default: step 2 is synchronous and blocks the browser from getting to step 3.
-
-Heavy work in a `useLayoutEffect` (or many of them) delays paint, which the user perceives as jank or a frozen frame.
-
-`useEffect` running after paint is what keeps updates feeling instant even when there is follow-up work to do.
-
-So the rule is not "layout effect is the powerful one, use it when in doubt." It is "passive effect by default, layout effect only to prevent a visible flicker, and keep the layout effect cheap."
-
-Two further notes.
-
-First, server rendering: `useLayoutEffect` cannot run on the server (there is no layout to read), and React warns if you use it in code that renders on the server.
-
-If you have a layout effect in shared code, either guard it or move the logic so it does not run during server rendering.
-
-Second, there is a rarely-needed third member of this family, `useInsertionEffect`, which runs even earlier (before layout effects) and exists almost exclusively for CSS-in-JS libraries to inject styles before layout is read.
-
-You will likely never write one directly.
-
-### Try it
-
-> Build a tooltip that measures its own width in an effect and centers itself over a button by setting a `left` offset in state. Do it with `useEffect` first and watch it flash from the corner to centered. Switch the same code to `useLayoutEffect` and watch the flash disappear. Then put a deliberately slow loop inside the layout effect and feel the paint stall, which is the cost you are trading for.
-
-### You've got this if
-
-You can place `useLayoutEffect` and `useEffect` correctly in the sequence "mutate DOM, run X, paint, run Y," and say which is X and which is Y.
-
----
-
-## 11. useEffectEvent: reading the latest without reacting to it
-
-Prereqs: Section 7 (the dependency array) and Section 3 (stale closures).
-
-This is the principled fix for the tension between them.
-
-### The itch
-
-You have an effect that should re-run only when one value changes (reconnect when `roomId` changes), but inside it you also read another value (show a notification using the current `theme`).
-
-If you put `theme` in the deps, changing the theme needlessly reconnects the socket.
-
-If you leave `theme` out, you get a stale closure and the linter is right to complain.
-
-Every "just disable the linter here" instinct is pointing at this exact situation.
-
-### The short version
-
-`useEffectEvent` (stable since React 19.2) lets you carve the non-reactive part out of an effect.
-
-You wrap the "read the latest value but do not treat it as a trigger" logic in an Effect Event.
-
-Inside that wrapped function, props and state always read at their latest committed values, but the function is intentionally excluded from the dependency array, so changes to what it reads do not re-run the effect.
-
-<MarginNote note="the honest way to leave a value out">
-
-It is the principled, lint-understood answer to the cases where you were tempted to lie to the dependency array.
-
-</MarginNote>
-
-### How it actually works
-
-First, name the problem precisely using Section 7.
-
-The dependency array is "the set of values this synchronization depends on." But real effects sometimes contain two kinds of logic mixed together: _reactive_ logic (the part that, when its inputs change, genuinely means the synchronization is out of date and must be redone) and _non-reactive_ logic (the part that should run as part of the effect but should always use the latest values without itself being a trigger).
-
-The classic case:
+### useState is useReducer
 
 ```js
-function ChatRoom({ roomId, theme }) {
-    useEffect(() => {
-        const connection = createConnection(roomId);
-        connection.on("connected", () => {
-            showNotification("Connected!", theme); // reads theme, but theme should NOT trigger reconnect
-        });
-        connection.connect();
-        return () => connection.disconnect();
-    }, [roomId, theme]); // including theme means changing the theme disconnects and reconnects: wrong
+// updateState from ReactFiberHooks.js, React 19.2. That is the whole function.
+function updateState(initialState) {
+    return updateReducer(basicStateReducer, initialState);
 }
 ```
 
-The reconnection should be reactive to `roomId` (a new room genuinely means "tear down and reconnect").
+A setter queues a value or an updater. `dispatch` queues an action, and the fold runs your `(state, action) => newState` on each one.
 
-The notification reads `theme`, but `theme` changing should not reconnect anything.
-
-You just want the notification to use whatever the theme currently is.
-
-Listing `theme` makes the effect over-react.
-
-Omitting `theme` gives a stale closure (the notification shows an old theme) and is exactly the dishonest-deps situation the linter flags.
-
-`useEffectEvent` resolves this by separating the two:
+### A reducer you can test without React
 
 ```js
+function formReducer(state, action) {
+    switch (action.type) {
+        case "submit":
+            return { ...state, isSubmitting: true, errors: {} };
+        case "submit_failed":
+            return { ...state, isSubmitting: false, errors: action.errors };
+        default:
+            return state;
+    }
+}
+
+const before = { values: { email: "" }, errors: {}, isSubmitting: true };
+const after = formReducer(before, { type: "submit_failed", errors: { email: "required" } });
+console.log(after.isSubmitting, after.errors.email, before.isSubmitting);
+```
+
+```text role="output"
+false required true
+```
+
+One `submit_failed` case updates both fields in one step, and the old state object is untouched.
+
+| Signal | With several `useState` calls | With `useReducer` |
+|---|---|---|
+| One event changes several fields | Easy to update three fields and forget the fourth | One case returns the whole new state |
+| The next state depends on current fields | You must remember the updater form | The reducer always receives the latest state |
+| You want the logic testable | Setter calls spread across handlers | One pure function, tested with plain values |
+
+A reducer is also the usual way to write a state machine in React: named states and the allowed moves between them.
+
+### A stable dispatch
+
+```js
+// From mountReducer: dispatch is created once and kept on the queue.
+const dispatch = (queue.dispatch = dispatchReducerAction.bind(null, currentlyRenderingFiber, queue));
+```
+
+Every later render returns `queue.dispatch`, the same function, and `useState`'s setter is bound the same way. So listing either in a dependency array never re-runs an effect, and passing either through context is safe. `useReducer(reducer, initialArg, init)` calls `init(initialArg)` only on mount, like a lazy initializer.
+
+The reducer must be pure. Rebasing may run it again (section 5), and Strict Mode calls it twice in development (section 18). A reducer that misbehaves only in Strict Mode is not pure.
+
+### Try it
+
+In a React app, rewrite a component with three or four related `useState` calls as one `useReducer`. The handlers shrink to `dispatch({ type: "..." })`. Then test the reducer in Node with plain objects.
+
+## 8. Effects synchronize with the outside world
+
+Many people learn effects as `componentDidMount`, `componentDidUpdate` and `componentWillUnmount` rolled into one. So they write `useEffect(..., [])` for "on mount" and use refs to detect "did this prop change". It half works, and the bugs are always about timing.
+
+### The short version
+
+An effect does not mark a moment in a component's life. It describes a **synchronization**: keep some external system in step with values from this render. The external system is anything React does not manage, such as a socket, a timer, `document.title` or a chart library.
+
+You give React three things: a setup function, the cleanup it returns, and a dependency array. After a commit, if a dependency changed, React runs the old cleanup and then the new setup. Mount is just the first setup, and unmount is the last cleanup. If you cannot name the external system, you probably do not need an effect.
+
+### "Be in sync", not "do on mount"
+
+```jsx
+useEffect(() => {
+    document.title = `Inbox (${unreadCount})`; // bring the title into sync
+}, [unreadCount]); // it depends on unreadCount, and only that
+```
+
+There is no "on mount" or "on update" here, only "the title should equal this, given `unreadCount`".
+
+<MarginNote note="forget mount and unmount as the model">
+
+React keeps the DOM in step with your render for you. An effect extends that promise to things React has never heard of. You describe the target, and React works out when to reach it again.
+
+</MarginNote>
+
+```jsx
+useEffect(() => {
+    const connection = createConnection(roomId); // setup: connect to this room
+    connection.connect();
+    return () => connection.disconnect(); // cleanup: undo exactly that
+}, [roomId]); // the synchronization depends on roomId
+```
+
+You did not write "if `roomId` changed, reconnect". You wrote "be connected to `roomId`", and React derived the reconnect.
+
+| Moment | What React runs |
+|---|---|
+| First commit | Setup |
+| A later commit, a dependency changed | The previous cleanup, then the new setup |
+| A later commit, no dependency changed | Nothing |
+| Unmount | The last cleanup |
+
+### You might not need an effect
+
+```jsx
+// Wrong: an effect that copies props into state.
+const [fullName, setFullName] = useState("");
+useEffect(() => {
+    setFullName(first + " " + last); // a second render, with a stale name in between
+}, [first, last]);
+
+// Right: compute it during render.
+const name = first + " " + last;
+```
+
+```jsx
+// Wrong: a request sent by an effect that watches a flag.
+// Right: the click caused it, so the click handler sends it.
+function handleSubmit() {
+    post("/api/register", form);
+}
+```
+
+Effects are for systems outside React. If the work computes something from props or state, do it during render. If it responds to a user action, do it in the event handler. The linter's `set-state-in-effect` rule flags the first pattern, and the docs page "You Might Not Need an Effect" covers the rest.
+
+### Try it
+
+Take an effect you wrote in the lifecycle style. Name the external system it keeps in sync and list the values it reads. If you cannot name a system, move the code into render or a handler.
+
+## 9. The dependency array
+
+The dependency array feels like an incantation. An empty array means once, no array means every time, and a list means "sometimes". Get it wrong and you get a loop or a stale value. What is the array, physically?
+
+### The short version
+
+Think of it this way: <Mark kind="marker" wraps>the dependency array is a cache key for your synchronization.</Mark> During render, React compares each new element with the previous one, using `Object.is`. If every element matches, React skips the effect at commit. If any differs, or there is no array, React runs cleanup then setup.
+
+An empty array matches every time after the first, so the effect runs once and cleans up on unmount. The array is not "when to run". It is the set of values the effect reads. Leave one out and you get a stale value. List one with a new identity every render, and the effect re-runs every render.
+
+### areHookInputsEqual
+
+```js
+// areHookInputsEqual from ReactFiberHooks.js, React 19.2, without its DEV warnings.
+function areHookInputsEqual(nextDeps, prevDeps) {
+    if (prevDeps === null) return false;
+    for (let i = 0; i < prevDeps.length && i < nextDeps.length; i++) {
+        if (Object.is(nextDeps[i], prevDeps[i])) continue;
+        return false;
+    }
+    return true;
+}
+
+console.log(areHookInputsEqual([], [])); // an empty array
+console.log(areHookInputsEqual([1, "room-a"], [1, "room-a"])); // equal primitives
+console.log(areHookInputsEqual([{ id: 1 }], [{ id: 1 }])); // a new object each render
+console.log(areHookInputsEqual([1], null)); // no previous deps
+```
+
+```text role="output"
+true
+true
+false
+false
+```
+
+That loop is the whole dependency mechanism. In development, React also warns when the array changes length between renders.
+
+### Where the comparison happens
+
+```js
+// Simplified teaching version of updateEffectImpl (ReactFiberHooks.js, React 19.2).
+function updateEffectImpl(fiberFlags, hookFlags, create, deps) {
+    const hook = updateWorkInProgressHook();
+    const nextDeps = deps === undefined ? null : deps;
+    const inst = hook.memoizedState.inst; // one instance for the effect's whole life
+    if (nextDeps !== null && areHookInputsEqual(nextDeps, currentHook.memoizedState.deps)) {
+        hook.memoizedState = pushSimpleEffect(hookFlags, inst, create, nextDeps); // no HasEffect: skip
+        return;
+    }
+    currentlyRenderingFiber.flags |= fiberFlags; // this fiber has effect work
+    hook.memoizedState = pushSimpleEffect(HasEffect | hookFlags, inst, create, nextDeps);
+}
+```
+
+The comparison happens during render, not after the commit. Each render pushes a fresh effect object, with or without the `HasEffect` bit, and the commit runs only effects that carry it.
+
+The effect object holds `tag`, `create` (your setup), `deps` and `inst`. The `inst` object lives as long as the effect and keeps the cleanup in `inst.destroy`. React also links a component's effects into a ring at `fiber.updateQueue.lastEffect` for the commit to walk.
+
+| What you wrote | `nextDeps` | Result |
+|---|---|---|
+| `[]` | `[]` | Equal after the first run: runs once, cleans up on unmount |
+| No array | `null` | Never compared: runs after every commit |
+| `[a, b]` | `[a, b]` | Runs whenever `a` or `b` changes under `Object.is` |
+
+### Stale values and infinite loops
+
+If an effect reads `count` but does not list it, React never sees `count` change and never re-runs the effect. You told React the synchronization does not depend on `count`, and React believed you.
+
+```jsx
+function Results({ id }) {
+    const [data, setData] = useState(null);
+    const options = { id, limit: 20 }; // a new object every render
+    useEffect(() => {
+        fetchResults(options).then(setData); // setData renders, which builds a new options
+    }, [options]); // which never compares equal: a loop
+}
+```
+
+A dependency with a new identity every render always compares as changed. If the effect also sets state, the new render builds another object and runs the effect again. Section 10 shows the fixes.
+
+The `exhaustive-deps` lint rule computes the true set of reactive values an effect reads: props, state and anything derived from them. When it complains, `areHookInputsEqual` is about to give the wrong answer, and silencing the rule ships the bug.
+
+### Object.is, not ===
+
+```js
+console.log(NaN === NaN, Object.is(NaN, NaN));
+console.log(0 === -0, Object.is(0, -0));
+```
+
+```text role="output"
+false true
+true false
+```
+
+They differ only for `NaN` and for `0` and `-0`.
+
+### Try it
+
+In a React app, write an effect with `[]` that logs a state value, and watch it log the first value forever. Add the value to the array and watch it track. Then build the `Results` loop and stop it by moving `options` inside the effect and listing `id`.
+
+## 10. Referential stability
+
+You wrapped a child in `React.memo`, and it still re-renders. You wrote a correct dependency array, and the effect still fires every render. Both times the value "looks the same". You have met identity.
+
+### The short version
+
+JavaScript compares objects, arrays and functions by identity, not by contents, so two literals that look the same are different values. Your component body runs on every render, so every literal written inside it gets a new identity each time. React's checks all use `Object.is`: dependency arrays, `React.memo` props, and `useMemo` and `useCallback` deps.
+
+So a fresh object in a dependency array re-runs the effect every render, and a fresh function prop defeats `React.memo`. Primitives compare by value and stay stable when equal. Fix it by depending on primitives, by moving constants out of the component, or by keeping an identity with `useMemo` or `useCallback`.
+
+### Identity in plain JavaScript
+
+```js
+console.log({ a: 1 } === { a: 1 }); // two objects
+console.log([1, 2] === [1, 2]); // two arrays
+console.log((() => {}) === (() => {})); // two functions
+console.log(1 === 1, "x" === "x"); // primitives compare by value
+
+const config = { a: 1 };
+console.log(config === config); // the same object
+```
+
+```text role="output"
+false
+false
+false
+true true
+true
+```
+
+React inherits this rule from JavaScript. "The same value" for a primitive means equal, but for an object it means the very same object.
+
+```jsx
+function Parent({ userId }) {
+    const config = { userId }; // a new object every render
+    const handleClick = () => doThing(); // a new function every render
+    const items = data.map((d) => d.name); // a new array every render
+    // ...
+}
+```
+
+### The memo symptom
+
+`React.memo` skips a re-render when every prop is `Object.is`-equal to the last one. Pass a memoized child an inline object or function, and that prop is new every time, so the child always renders. "I added `React.memo` and nothing improved" usually means an unstable prop.
+
+| Fix, in order of preference | Example | Why it works |
+|---|---|---|
+| Depend on or pass primitives | List `userId`, not `config` | Equal primitives are stable |
+| Move constants out of the component | `const DEFAULTS = {...}` at module scope | One identity for the program's life |
+| Keep an identity with `useMemo` or `useCallback` | `useMemo(() => ({ userId }), [userId])` | The same object until `userId` changes |
+
+### The extreme case: a component defined inside a component
+
+```jsx
+function Page() {
+    function Row() {
+        return <li>row</li>;
+    } // a new component type on every render
+    return <Row />; // React remounts it, losing its state and DOM
+}
+```
+
+The inner function is a new component type each render, so React remounts its subtree. The `static-components` lint rule flags it. That and an over-firing effect are one phenomenon at two scales: a fresh identity where React expected a stable one.
+
+Do not over-correct. Most props and dependencies are primitives and already stable. Identity matters only for values that feed an equality check, and React Compiler (section 14) handles most of it.
+
+### Try it
+
+In a React app, make a `React.memo` child that logs when it renders. Pass it `style={{ color: "red" }}` and watch it render with every parent render. Move the object to a module constant and watch the child go quiet.
+
+## 11. Cleanup: setup and cleanup come in pairs
+
+You set up a subscription in an effect and know you should clean it up, but the timing confuses you. Does cleanup only run on unmount? Why does a handler fire twice, or a fetch show stale results?
+
+### The short version
+
+The function your effect returns is its cleanup, and it is not an unmount handler. React runs it to undo one synchronization before starting the next. When dependencies change, React calls the previous render's cleanup, then this render's setup. On unmount it calls the last cleanup, with no setup after it.
+
+For layout and passive effects, React runs every due cleanup before any setup, so a new setup never overlaps a stale one. The model is simple: <Mark kind="underline" wraps>each render's effect cleans up the previous render's effect</Mark> before it starts its own. Write the cleanup so it exactly undoes the setup above it, and leaks and races disappear.
+
+### The pairing
+
+```jsx
+useEffect(() => {
+    const subscription = source.subscribe(roomId, onMessage);
+    return () => subscription.unsubscribe(); // undo THIS subscription
+}, [roomId]);
+```
+
+When `roomId` changes from A to B, React runs A's cleanup, then subscribes to B. Treat cleanup as unmount-only, and you stay subscribed to both, so `onMessage` fires twice. The leak and the double message are one bug: a setup without its cleanup.
+
+<GuideFigure figure="hk-cleanup" />
+
+React stores each cleanup in `inst.destroy` and calls it before the next `create`, your setup.
+
+### The fetch race
+
+```jsx
+useEffect(() => {
+    let ignore = false;
+    fetchUser(userId).then((data) => {
+        if (!ignore) setUser(data); // only the latest effect may win
+    });
+    return () => {
+        ignore = true; // the superseded request is ignored
+    };
+}, [userId]);
+```
+
+If `userId` changes quickly, two requests are in flight, and without the flag the last to answer wins. The cleanup flips `ignore` on the superseded effect, so its late answer is dropped. This Node toy simulates the race.
+
+```js
+// Simplified teaching version: two requests, and the older one answers last.
+function fakeFetch(id, ms) {
+    return new Promise((resolve) => setTimeout(() => resolve(`user ${id}`), ms));
+}
+
+let shown = null;
+function runEffect(id, ms) {
+    let ignore = false;
+    fakeFetch(id, ms).then((data) => {
+        if (!ignore) shown = data;
+    });
+    return () => {
+        ignore = true; // the cleanup
+    };
+}
+
+const cleanupA = runEffect("A", 50); // slow request
+cleanupA(); // userId changes, so React cleans up A first
+runEffect("B", 10); // fast request
+setTimeout(() => console.log(shown), 100);
+```
+
+```text role="output"
+user B
+```
+
+Delete the `if (!ignore)` check and it prints `user A`. If your request API supports it, cleanup can cancel the request instead.
+
+```jsx
+useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/users/${userId}`, { signal: controller.signal })
+        .then((response) => response.json())
+        .then(setUser)
+        .catch((error) => {
+            if (error.name !== "AbortError") throw error;
+        });
+    return () => controller.abort(); // cancel the superseded request
+}, [userId]);
+```
+
+### What you can rely on
+
+You can rely on the pairing: an effect's cleanup always runs before its next setup, and on unmount. Do not rely on the order between sibling components. Section 12 places each kind of effect around the browser's paint. In development, Strict Mode adds one extra cleanup and setup on mount to test the pairing (section 18).
+
+### Try it
+
+In a React app, write the `roomId` subscription and comment out the cleanup. Change `roomId` a few times and log inside `onMessage`: the handlers stack up. Restore the cleanup and confirm one subscription stays active.
+
+## 12. When effects run: insertion, layout and passive
+
+You position a tooltip in a `useEffect`, and for one frame it flashes in the wrong place. `useLayoutEffect` fixes it. What is the real difference, and why not use `useLayoutEffect` everywhere?
+
+### The short version
+
+React commits in phases. First it changes the DOM, and during that phase it runs `useInsertionEffect`, then the cleanups of changed layout effects. Next, still <Mark kind="circle">before paint</Mark>, it attaches refs and runs `useLayoutEffect` setups. Passive effects, from `useEffect`, come last.
+
+After most renders React runs passive effects in a separate task, so the browser usually paints first. After a discrete render, such as a click, it runs them at the end of the commit instead. State set in a layout effect re-renders before paint. State set in a passive effect renders at default priority, so a paint can come first.
+
+Layout effects block paint, so default to `useEffect` and keep layout effects for preventing a visible flicker, and keep them cheap.
+
+### The commit, step by step
+
+| Step | What runs | Can the browser paint before it? |
+|---|---|---|
+| 1. Mutation | DOM inserts, updates and removals. Insertion effect cleanups and setups. Layout effect cleanups. Old refs detach. | No |
+| 2. Layout | Layout effect setups. New refs attach. | No |
+| 3. Paint | The browser draws the frame | n/a |
+| 4. Passive | All passive cleanups, then all passive setups | Usually yes, but not after a discrete render |
+
+Each effect's `tag` combines its kind with the `HasEffect` bit from section 9.
+
+```js
+// ReactHookEffectTags.js, React 19: one bit per effect kind.
+export const HasEffect = /* */ 0b0001; // dependencies changed: fire this time
+export const Insertion = /* */ 0b0010;
+export const Layout = /*    */ 0b0100;
+export const Passive = /*   */ 0b1000;
+```
+
+The commit asks for exact combinations, such as `Layout | HasEffect`. React also flags the fiber so it can skip subtrees with no effect work: `useEffect` sets `Passive`, and the other two set `Update`.
+
+```js
+// Simplified teaching version of the commit for one function component.
+function commitMutation(fiber) {
+    commitHookEffectListUnmount(Insertion | HasEffect, fiber);
+    commitHookEffectListMount(Insertion | HasEffect, fiber);
+    commitHookEffectListUnmount(Layout | HasEffect, fiber); // old layout cleanups
+}
+
+function commitLayout(fiber) {
+    commitHookEffectListMount(Layout | HasEffect, fiber); // new layout setups
+}
+
+// Later, for the whole tree: commitPassiveUnmountEffects, then commitPassiveMountEffects.
+```
+
+### When passive effects run in React 19
+
+```js
+// From commitRoot in ReactFiberWorkLoop.js, React 19.2 (simplified).
+if (includesSyncLane(pendingEffectsLanes)) {
+    flushPendingEffects(); // a discrete render: run passive effects now, before paint
+}
+// otherwise a NormalPriority scheduler task runs flushPassiveEffects later
+```
+
+A source comment gives the reason: after a discrete render, the effects' results must be observable at once.
+
+| What caused the render | When its passive effects run |
+|---|---|
+| A click or key press (`SyncLane`) | At the end of the commit, before paint |
+| A timer, a network response or a transition | In a later scheduler task, usually after paint |
+| Anything, if a new render starts first | Just before that render begins |
+
+If an effect must wait for paint after a click, as with an `alert()`, defer it with `setTimeout`.
+
+### State updates inside effects
+
+```jsx
+useLayoutEffect(() => {
+    const { width } = tipRef.current.getBoundingClientRect();
+    setLeft(anchorX - width / 2); // SyncLane: re-renders before paint
+}, [anchorX]);
+
+useEffect(() => {
+    const { width } = tipRef.current.getBoundingClientRect();
+    setLeft(anchorX - width / 2); // at most DefaultLane: a paint can come first
+}, [anchorX]);
+```
+
+React runs the commit at discrete priority, so a setter in a layout effect gets `SyncLane` and renders before the commit returns. Passive effects run with priority lowered to at most `DefaultLane`, so their updates render in a scheduler task. That is the flash: the browser paints the first position, then your correction.
+
+<GuideFigure figure="hk-layout-effect" />
+
+Layout effects suit measurements that must appear in the first paint: tooltips, popovers, sizing from a measured element and restoring scroll.
+
+### useInsertionEffect and server rendering
+
+```jsx
+useInsertionEffect(() => {
+    const style = document.createElement("style");
+    style.textContent = rule; // in place before any layout effect measures
+    document.head.appendChild(style);
+    return () => style.remove();
+}, [rule]);
+```
+
+`useInsertionEffect` exists for CSS-in-JS libraries. It runs in the mutation phase, so injected styles exist before any layout effect measures.
+
+No effect runs on the server, and React 19's server renderer treats `useLayoutEffect` as a no-op. A layout-dependent component may jump after **hydration**, when React attaches to the server's HTML. Render such components only on the client.
+
+### Try it
+
+Drop this component into a React 19 app and click the button.
+
+```jsx
+function Probe() {
+    const [n, setN] = useState(0);
+    useInsertionEffect(() => console.log("insertion", n));
+    useLayoutEffect(() => {
+        console.log("layout", n);
+        requestAnimationFrame(() => console.log("next frame", n));
+    });
+    useEffect(() => console.log("passive", n));
+    return <button onClick={() => setN(n + 1)}>{n}</button>;
+}
+```
+
+For a click, the log reads "insertion", "layout", "passive", then "next frame". Change the handler to `setTimeout(() => setN(n + 1))` and record a Performance trace. The passive effects now run in a later task of their own.
+
+Finally, add a 100ms busy loop to the layout effect and feel the paint stall, which is the cost of a layout effect.
+
+## 13. useEffectEvent: read the latest without reacting
+
+Back to the opening chat room. The effect should reconnect when `roomId` changes, but it also reads `theme`. With `theme` listed, a theme change reconnects. Without it, the notification goes stale.
+
+### The short version
+
+`useEffectEvent`, stable since React 19.2, splits an effect into two kinds of logic. Reactive logic, like connecting to `roomId`, must re-run when its values change. Non-reactive logic, like a notification in the current `theme`, should use the latest value without being a trigger.
+
+Wrap the non-reactive part in an **Effect Event**. When it runs, it sees the latest committed props and state, yet it stays out of the dependency array. Its identity changes every render. You omit it because the linter knows it is non-reactive, not because it is stable. Call it only from effects, never during render.
+
+### The fix
+
+```jsx
 function ChatRoom({ roomId, theme }) {
     const onConnected = useEffectEvent(() => {
-        showNotification("Connected!", theme); // always reads the LATEST theme at call time
+        showNotification("Connected!", theme); // the latest theme, read at call time
     });
 
     useEffect(() => {
@@ -1216,665 +1251,591 @@ function ChatRoom({ roomId, theme }) {
         connection.on("connected", () => onConnected());
         connection.connect();
         return () => connection.disconnect();
-    }, [roomId]); // theme is gone; only roomId is a genuine trigger now
+    }, [roomId]); // only roomId is a trigger now
 }
 ```
 
-The mechanism and model: `onConnected` is an Effect Event.
+<MarginNote note="the honest way to leave a value out">
 
-The logic inside it is non-reactive, and when you call it, it reads the latest committed values of any props and state it closes over.
+The effect reconnects only when `roomId` changes, and the notification still uses the current theme. Every "disable the linter here" instinct points at this situation, and an Effect Event names it in a way the linter understands.
 
-So `theme` is read fresh every time `onConnected` runs, even though `theme` is not in the effect's dependency array.
+</MarginNote>
 
-The effect now correctly reconnects only on `roomId` changes, and the notification still uses the current theme.
-
-Here is the precise detail that is easy to get wrong, and the official reference is explicit about it: Effect Event functions do **not** have a stable identity.
-
-Their identity intentionally changes on every render.
-
-So the reason you omit `onConnected` from the dependency array is _not_ that it is referentially stable (it is not).
-
-It is that Effect Events are defined as non-reactive, and the linter has special knowledge of them: it knows they must be excluded from dependency arrays and enforces that exclusion.
-
-This is a different stability story from `useState` setters and `dispatch` (which truly are stable) and from `useRef` (also stable).
-
-Effect Events are stable in _behavior contract_ (always omit from deps), not in identity.
-
-Getting this right matters because if you reasoned "it must be stable, so I can pass it around like a callback," you would be wrong on both counts.
-
-That leads to the rules, which are real constraints, not style advice:
-
-- **Only call Effect Events from inside effects (or from other Effect Events).** You can call them from `useEffect`, `useLayoutEffect`, `useInsertionEffect`, or another Effect Event in the same component. Do not call them during render, do not pass them as props or into other hooks. The linter enforces this. The reason is that "read the latest committed value" only has a well-defined meaning at the times effects run. Calling one during render or handing it to unrelated code breaks that guarantee.
-- **It is a hook, so it follows rule one (Section 1).** Top level only, no conditionals or loops. If you need a conditional Effect Event, extract a component.
-- **Do not use it to dodge real dependencies.** This is the abuse the React docs warn against by name. If a value changing genuinely means the effect's work is now wrong (the notification should fire _separately for each different value_, like logging a visit per URL), then that value is reactive and belongs in the dependency array. An Effect Event would wrongly suppress the re-run. Effect Events are only for logic that is genuinely "an event fired from inside the effect," where you want the latest value but the value is not a trigger.
-
-You may have previously solved this with a `useRef` that you keep updating in an effect to hold the latest value, then read inside the main effect.
-
-That pattern works but has real downsides the Effect Event fixes: it separates a value from its usage (harder to read), the linter does not understand the ref as a reactive value (so it cannot help you keep things correct), and it is awkward for cases where some of the logic should be reactive and some should not.
-
-`useEffectEvent` is the supported, lint-aware version of that pattern.
-
-On versions before 19.2, the ref pattern is still your fallback (it was experimental in 19.0 and 19.1, and not available in 18 and earlier).
-
-### Try it
-
-> Build the `ChatRoom` with `theme` in the deps and a notification on connect. Toggle the theme and watch the console show a disconnect and reconnect every toggle. Extract the notification into a `useEffectEvent`, drop `theme` from the deps, and watch the toggles stop reconnecting while the notification still picks up the new theme. Then deliberately misuse it: try to also remove `roomId` and read it inside the Effect Event, and notice the room stops reconnecting when it should, which is the abuse the rules exist to prevent.
-
-### You've got this if
-
-You can explain why you omit an Effect Event from the dependency array even though its identity is not stable, and when reaching for one would actually be a bug.
-
----
-
-## 12. useMemo and useCallback (and what the Compiler changes)
-
-Prereqs: Section 7 (the `Object.is` deps comparison) and Section 8 (referential stability).
-
-From the rendering guide: the Compiler and bailouts, referenced.
-
-### The itch
-
-You have sprinkled `useMemo` and `useCallback` around "for performance," you are not sure they help, and you have heard the React Compiler now does this automatically and you should maybe delete them all.
-
-You want to know what these hooks actually cache, when they earn their keep, and what changes once the Compiler is on.
-
-### The short version
-
-`useMemo` caches a computed value, and `useCallback` caches a function, each keyed by a dependency array compared with `Object.is`, all stored on the hook node.
-
-Their primary real job is referential stability (Section 8): keeping an object or function identity the same across renders so it does not break a downstream dependency array or memo boundary.
-
-Their secondary job is skipping genuinely expensive recomputation.
-
-<Mark kind="underline" wraps>They are not a correctness tool</Mark> (React may throw the cache away), and used reflexively they add cost and noise.
-
-With the React Compiler 1.0 (stable October 2025), most manual memoization becomes unnecessary, because the Compiler inserts equivalent memoization for you.
-
-### How it actually works
-
-Both hooks store a small record on their hook node: `{ value, deps }` for `useMemo`, and the function plus its deps for `useCallback`.
-
-On each render, React compares the new deps to the stored deps with the same `areHookInputsEqual` (`Object.is` element by element) from Section 7.
-
-If the deps are unchanged, React returns the cached value (or function) without recomputing.
-
-If any dep changed, it recomputes (or takes the new function) and updates the cache.
-
-`useCallback(fn, deps)` is literally `useMemo(() => fn, deps)`.
-
-It just memoizes a function instead of a computed result.
-
-So everything you know about dependency arrays and identity from Sections 7 and 8 applies unchanged here.
-
-Their _primary_ purpose is the one people underweight: referential stability.
-
-Recall from Section 8 that an inline object or function gets a new identity every render and that this breaks dependency arrays and `React.memo`.
-
-`useMemo` and `useCallback` are how you hand a _stable_ identity to something that checks identity:
+### How it works
 
 ```js
-const filterOptions = useMemo(() => ({ status, sortBy }), [status, sortBy]);
-useEffect(() => {
-    /* uses filterOptions */
-}, [filterOptions]); // now stable until status/sortBy change
-
-const handleSelect = useCallback((id) => onSelect(id), [onSelect]);
-return <MemoizedRow onSelect={handleSelect} />; // memo boundary not defeated by a new function each render
+// Simplified teaching version of mountEvent and updateEvent (ReactFiberHooks.js, React 19.2).
+function useEffectEvent(callback) {
+    const hook = mountOrUpdateWorkInProgressHook();
+    if (hook.memoizedState === null) hook.memoizedState = { impl: callback };
+    const ref = hook.memoizedState; // one box for the component's whole life
+    queueSwapAtCommit(ref, callback); // during commit: ref.impl = callback
+    return function eventFn(...args) {
+        if (isRendering()) throw new Error("A function wrapped in useEffectEvent can't be called during rendering.");
+        return ref.impl(...args); // always the latest committed callback
+    };
+}
 ```
 
-Without the `useMemo`, `filterOptions` is a new object every render and the effect runs every render.
+The hook keeps a box, `{ impl }`, for the component's whole life. Each render returns a new wrapper, which is why the identity changes, and the wrapper calls whatever `impl` holds.
 
-Without the `useCallback`, `handleSelect` is a new function every render and `MemoizedRow` re-renders every render.
+React writes the new callback into `impl` during the commit, before any layout or passive effect of that commit runs. So an effect that fires sees this render's `theme`. React 19.2 swaps it just before DOM mutation, and 19.3 during it.
 
-The memoization here is not about CPU.
+| Rule | Why |
+|---|---|
+| Call it only from effects or other Effect Events | "The latest committed value" only has a meaning when effects run. During render it throws. |
+| Never pass it to another component or hook | It belongs to the effect beside it, and the linter enforces this |
+| Call `useEffectEvent` at the top level | It is a hook, so it obeys section 1 |
+| Never use it to hide a real dependency | If the work should repeat for each value, that value is a trigger |
 
-It is about not breaking the identity contract of a dependency array and a memo boundary.
+### The abuse to avoid
 
-The _secondary_ purpose is skipping expensive recomputation: if computing a value is genuinely costly (sorting a large list, an expensive transform), `useMemo` lets you recompute only when its inputs change.
+```jsx
+// Wrong: url decides the work, so url is reactive.
+const onVisit = useEffectEvent(() => logVisit(url));
+useEffect(() => onVisit(), []); // logs only the first url
 
-The trap is that the memoization itself has a cost (storing the value, comparing deps every render), so wrapping a trivial computation makes your code slower and noisier, not faster.
+// Right: url is a dependency, the cart count is not.
+const onVisitUrl = useEffectEvent((visitedUrl) => logVisit(visitedUrl, cartCount));
+useEffect(() => onVisitUrl(url), [url]);
+```
 
-The bar for "expensive enough to memoize for CPU reasons" is higher than people assume.
+### The ref pattern it replaces
 
-Measure before assuming a `useMemo` helps.
+```jsx
+const latestTheme = useRef(theme);
+useLayoutEffect(() => {
+    latestTheme.current = theme; // the older workaround
+});
+```
 
-Two important non-guarantees.
-
-First, **memoization is not correctness.** React reserves the right to discard a `useMemo`/`useCallback` cache (for example to free memory) and recompute, so your code must be correct even if the memo "forgets." Never use `useMemo` to ensure something runs only once for correctness, or to store state.
-
-Use state or a ref for that.
-
-Second, **an unstable dep defeats the whole thing.** If you memoize with a dependency that itself changes identity every render (Section 8), the memo never hits, and you have added overhead for nothing.
-
-Memoization only stabilizes if its inputs are stable.
-
-#### What the Compiler changes
-
-The React Compiler (rendering guide, 2026 section), stable as 1.0 since October 2025, analyzes your components at build time and automatically inserts memoization for values and functions that would benefit, based on what each piece of UI actually depends on.
-
-When it is enabled, the large majority of hand-written `useMemo` and `useCallback` calls become redundant, because the Compiler is already doing equivalent (often more precise) memoization.
-
-The practical guidance for a codebase with the Compiler on: stop adding `useMemo`/`useCallback` reflexively, and lean on the Compiler.
-
-Where you still might keep a manual one is the narrow case where you need a guaranteed-stable identity feeding an effect's dependency array and you want it explicit, though even there the Compiler frequently handles it.
-
-Hand-memoizing everything on top of the Compiler adds noise and, in some cases, can interfere.
-
-The `eslint-plugin-react-hooks` and Compiler diagnostics will flag patterns that fight it.
-
-If the Compiler is _not_ on in your project, the manual rules above still fully apply.
+That works, but it separates a value from its use, and the linter cannot follow it. Before 19.2, `useEffectEvent` shipped only in experimental builds, so older apps still use the ref.
 
 ### Try it
 
-> Make a `React.memo` child and pass it an inline `onClick={() => ...}`. Confirm it re-renders every parent render. Wrap the handler in `useCallback` with correct deps and confirm the child goes quiet. Then wrap a trivial computation like `useMemo(() => a + b, [a, b])` and recognize that you just added cost for no benefit. If you have a project with the Compiler enabled, delete a defensive `useCallback` and confirm the child stays quiet anyway, because the Compiler stabilized it.
+In a React app, build `ChatRoom` with `theme` in the dependency array and log in connect and disconnect. Toggle the theme and watch it reconnect. Move the notification into `useEffectEvent` and drop `theme`: toggles stop reconnecting. Then move `roomId` into the Effect Event too, and watch the room stop reconnecting when it should.
 
-### You've got this if
+## 14. useMemo, useCallback and the Compiler
 
-You can explain that the main job of `useCallback` is preserving a function's identity for a dependency array or memo boundary, not making the function "faster."
-
----
-
-## 13. useRef: the mutable box that does not re-render
-
-Prereqs: Section 4 (the update queue, which refs deliberately bypass) and Section 2.
-
-Outside React: DOM nodes and element methods like `focus()` and `getBoundingClientRect`.
-
-From the rendering guide: the commit phase, when DOM refs are attached.
-
-### The itch
-
-You need to remember a value across renders (an interval ID, the previous value of a prop, a flag) but you do not want changing it to trigger a re-render.
-
-Or you need to reach a real DOM node to focus it or measure it.
-
-`useRef` does both, and the "does not cause a re-render" part trips people up because it seems to violate everything else about React.
+You have sprinkled `useMemo` and `useCallback` around "for performance", and you have heard that React Compiler does this for you. What do these hooks cache, and when do they earn their keep?
 
 ### The short version
 
-`useRef(initial)` returns a stable object `{ current: initial }` that lives on the hook node and persists across renders.
+`useMemo` caches a computed value, and `useCallback` caches a function. Each stores `[value, deps]` on its hook node and compares deps with the same `areHookInputsEqual` as effects. Their main job is keeping an identity stable, so a downstream dependency array or `React.memo` boundary sees "unchanged". Their second job is skipping truly expensive work.
 
-Reading or writing `ref.current` does not schedule a render, because refs are deliberately outside the state and update-queue machinery.
+Still, <Mark kind="underline" wraps>they are not a correctness tool</Mark>, because React may throw a cache away. React Compiler 1.0, stable since October 2025, inserts equivalent memoization at build time. With it on, most hand-written `useMemo` and `useCallback` calls become unnecessary.
 
-That makes refs perfect for two things: holding a reference to a DOM node (React sets `ref.current` to the node during commit), and storing a mutable value you want to remember but not render on.
-
-The rule is: do not read or write `ref.current` during render.
-
-Do it in effects or event handlers, because mutating it during render makes rendering impure.
-
-### How it actually works
-
-A ref's hook node stores a single object, and `useRef` returns that same object on every render.
-
-That is the entire "stability" guarantee: the identity of the ref object never changes for the life of the component, and it carries a single mutable property, `current`, that you can read and write freely.
-
-Crucially, writing to `current` does none of the things `setState` does (Section 4): it does not create an update, it does not append to a queue, it does not mark a lane, and it does not ask the scheduler for a render.
-
-It just mutates a property on an object.
-
-So the value changes, but the screen does not, until something _else_ triggers a render, at which point your render reads the latest `current`.
-
-That non-reactivity is the whole point, and it gives refs two distinct jobs.
-
-#### Job one: reaching the DOM
-
-When you pass a ref to a host element, `<input ref={inputRef} />`, React sets `inputRef.current` to the actual DOM node during the commit phase, specifically after mutating the DOM and before running layout effects (rendering guide, commit section), and sets it back to `null` when the node is removed.
-
-So inside a `useEffect` or `useLayoutEffect` or an event handler, `inputRef.current` is the real element, and you can call `inputRef.current.focus()` or measure it.
-
-You do not get the node during render (it does not exist yet on first render), which is one more reason not to read refs during render.
+### updateMemo
 
 ```js
+// updateMemo from ReactFiberHooks.js, React 19.2 (its Strict Mode branch removed).
+function updateMemo(nextCreate, deps) {
+    const hook = updateWorkInProgressHook();
+    const nextDeps = deps === undefined ? null : deps;
+    const prevState = hook.memoizedState; // [value, deps]
+    if (nextDeps !== null && areHookInputsEqual(nextDeps, prevState[1])) {
+        return prevState[0]; // a cache hit
+    }
+    const nextValue = nextCreate();
+    hook.memoizedState = [nextValue, nextDeps];
+    return nextValue;
+}
+```
+
+`updateCallback` is the same, except it stores your function instead of calling one. So `useCallback(fn, deps)` behaves like `useMemo(() => fn, deps)`.
+
+### The main job: stable identity
+
+```jsx
+const filterOptions = useMemo(() => ({ status, sortBy }), [status, sortBy]);
+useEffect(() => {
+    loadRows(filterOptions);
+}, [filterOptions]); // stable until status or sortBy changes
+
+const handleSelect = useCallback((id) => onSelect(id), [onSelect]);
+return <MemoizedRow onSelect={handleSelect} />; // the memo boundary holds
+```
+
+This is the third fix from section 10, and it is about identity, not CPU.
+
+### The second job: expensive work
+
+```jsx
+const visible = useMemo(() => sortRows(rows, sortKey), [rows, sortKey]); // only when inputs change
+const total = useMemo(() => a + b, [a, b]); // slower than just adding
+```
+
+Memoization has its own cost: storing the value and comparing deps every render. Wrapping trivial work makes code slower and noisier, so measure first.
+
+Memoization never promises two things. First, the cache can vanish, for example when you edit the file in development or when a component suspends on its first mount. So never use `useMemo` to store state or to run something once. Use state or a ref. Second, an unstable dependency defeats it.
+
+### What the Compiler changes
+
+```jsx
+// What you write with React Compiler on.
+function Row({ item, onSelect }) {
+    const label = formatLabel(item);
+    return <MemoButton onClick={() => onSelect(item.id)}>{label}</MemoButton>;
+}
+// The compiler caches label and the arrow, so MemoButton sees stable props.
+```
+
+The Compiler analyzes components at build time and memoizes values and functions by what each part of the UI depends on. Compiled code calls an internal hook, `useMemoCache`, which keeps an array of cached slots per component. With it on, stop adding `useMemo` and `useCallback` by reflex.
+
+You might keep a manual one where an effect needs an identity you want to state openly. The lint rule `preserve-manual-memoization` warns when the Compiler cannot keep yours. Without the Compiler, the manual rules above still apply.
+
+### Try it
+
+In a React app, compare `useMemo(() => a + b, [a, b])` with plain `a + b` in the Profiler. The memo buys nothing. Then, in a project with the Compiler on, delete a defensive `useCallback` that feeds a `React.memo` child, and confirm the child stays quiet.
+
+## 15. useRef and ref callbacks
+
+You need to remember an interval ID without causing a render, or reach a DOM node to focus it. `useRef` does both, and its "no re-render" part seems to break everything else about React.
+
+### The short version
+
+`useRef(initial)` returns an object, `{ current: initial }`, stored on the hook node and returned unchanged on every render. Writing `ref.current` creates no update, joins no queue and schedules no render. That suits two jobs: holding a DOM node, which React writes into `current` during commit, and keeping a mutable value you never render.
+
+Do not read or write `ref.current` during render, except to set it up once. Renders can run twice or be thrown away. React 19 lets a ref callback return a cleanup function, and passes `ref` to function components as an ordinary prop.
+
+### All of useRef
+
+```js
+// mountRef and updateRef from ReactFiberHooks.js, React 19.2.
+function mountRef(initialValue) {
+    const hook = mountWorkInProgressHook();
+    const ref = { current: initialValue };
+    hook.memoizedState = ref;
+    return ref;
+}
+
+function updateRef(initialValue) {
+    const hook = updateWorkInProgressHook();
+    return hook.memoizedState;
+}
+```
+
+The screen changes only when something else renders, and that render reads the latest `current`.
+
+### Job one: reaching the DOM
+
+```jsx
 const inputRef = useRef(null);
 useEffect(() => {
-    inputRef.current.focus(); // the node exists by commit time
+    inputRef.current.focus(); // the node exists by the time effects run
 }, []);
 return <input ref={inputRef} />;
 ```
 
-#### Job two: a mutable instance variable
+React detaches old refs during the mutation phase and attaches new ones during the layout phase. Children commit before parents, so a component's layout and passive effects already see its DOM refs. `current` is `null` before the first commit and after the node is removed.
 
-Any value you want to persist across renders without rendering on it goes in a ref: an interval or timeout ID so you can clear it later, a flag like the `ignore` boolean from Section 9, the previous value of a prop for comparison, a mutable counter that should not paint.
+### Job two: a mutable value you do not render
 
-The classic "latest value" pattern (the manual predecessor to `useEffectEvent`, Section 11) is a ref you update in an effect so that other long-lived callbacks can read the current value without being recreated:
+```jsx
+const intervalRef = useRef(null);
 
-```js
-const latestCount = useRef(count);
-useEffect(() => {
-    latestCount.current = count;
-}); // keep the box current after each commit
-// elsewhere, a long-lived callback reads latestCount.current to get the newest value
+function start() {
+    intervalRef.current = setInterval(tick, 1000); // remembered, with no render
+}
+
+function stop() {
+    clearInterval(intervalRef.current);
+}
 ```
 
-#### The rule and why it exists
+Interval IDs, an `ignore` flag, the previous value of a prop and a counter that should not paint all belong in refs.
 
-Do not read or write `ref.current` during rendering (the body of your component, before it returns), with one sanctioned exception below.
+### Ref callbacks with cleanup
 
-The reason is purity: React expects rendering to be a pure function of props and state (rendering guide, first-principles section), and it relies on that to render safely under StrictMode's double-invoke and under concurrent rendering, where a render can be started, abandoned, and restarted.
-
-Mutating a ref during render is a side effect that can run zero, one, or two times in ways you cannot predict, leading to bugs that appear only under StrictMode or concurrency.
-
-Confine ref reads and writes to effects and handlers, which run at well-defined times after commit.
-
-The one accepted exception is lazy initialization of an expensive ref value, guarding it so it only happens once:
-
-```js
-const ref = useRef(null);
-if (ref.current === null) ref.current = createExpensiveThing(); // runs once, idempotent
+```jsx
+<div
+    ref={(node) => {
+        const observer = new ResizeObserver(() => measure(node));
+        observer.observe(node);
+        return () => observer.disconnect(); // React 19: runs when the ref detaches
+    }}
+/>
 ```
 
-This is acceptable because it is idempotent (running it twice is harmless), which is the property StrictMode's double-invoke checks for.
+React stores the returned function on the fiber as `refCleanup` and calls it on detach. Return nothing, and React keeps the old behavior of calling your callback with `null`.
 
-A connection worth noting: `useImperativeHandle` lets a parent's ref expose a custom imperative API of a child instead of a raw DOM node, which is the controlled way to give a parent methods like `focus()` or `scrollToTop()` on a child.
+An inline callback is a new function each render, so React cleans up the old one and calls the new one every time. Strict Mode adds one extra attach and cleanup on mount (section 18).
+
+### ref is a prop in React 19
+
+```jsx
+function TextInput({ ref, ...props }) {
+    return <input ref={ref} {...props} />; // no forwardRef needed
+}
+```
+
+`useImperativeHandle` lets a parent's ref receive a custom object instead of a raw node.
+
+```jsx
+function VideoPlayer({ ref, src }) {
+    const videoRef = useRef(null);
+    useImperativeHandle(ref, () => ({ play: () => videoRef.current.play() }), []);
+    return <video ref={videoRef} src={src} />;
+}
+```
+
+React runs it as a layout effect, so the parent's ref is set before the parent's own layout effects.
+
+### The rule, and its one exception
+
+```jsx
+const playerRef = useRef(null);
+if (playerRef.current === null) {
+    playerRef.current = new VideoPlayer(); // runs once, and running it twice is harmless
+}
+```
+
+Rendering must be a pure function of props and state. Strict Mode calls render twice, and concurrent React can discard a render and start again. So a ref write during render can happen zero, one or two times. Keep ref reads and writes in effects and handlers.
+
+The exception, shown above, is lazy initialization that is **idempotent**: doing it twice has the same result as doing it once. The `refs` lint rule flags other reads and writes during render.
 
 ### Try it
 
-> Make a ref, write to `ref.current` from a button handler, and `console.log` it, confirming the screen does not change but the logged value does. Then add a normal `useState` next to it and watch only the state change cause a re-render. Finally, try writing to the ref directly in the component body and turn on StrictMode to see why that is discouraged (the write runs twice).
+In a React app, write to a ref from a button handler and log it: the log changes, the screen does not. Add a `useState` next to it and watch only the state cause a render. Then give a `<div>` an inline ref callback that logs on attach and on cleanup. Both fire on every render.
 
-### You've got this if
+## 16. Custom hooks: sharing logic, not state
 
-You can explain why mutating `ref.current` does not re-render, in terms of the update queue it deliberately bypasses.
-
----
-
-## 14. Custom hooks: sharing logic, not state
-
-Prereqs: Section 1 (the positional hook list).
-
-### The itch
-
-Custom hooks feel slightly magical, like they create some shared thing.
-
-You are not sure whether two components using the same custom hook share state, whether the rules of hooks apply inside them, or what is actually being reused.
-
-Getting this wrong leads to expecting shared state that is not there, or to subtle rule-of-hooks violations.
+Custom hooks feel like they create something shared. Do two components using the same custom hook share state? Do the rules of hooks apply inside one? What is actually reused?
 
 ### The short version
 
-A custom hook is just a function whose name starts with `use` and that calls other hooks.
+A custom hook is a function whose name starts with `use` and that calls other hooks. It has no fiber and no instance of its own. When a component calls it, the hooks inside run during that component's render, and their nodes join the component's own list at that spot.
 
-There is no magic and no shared instance.
+So two components calling the same custom hook get independent state. They share logic, never data. The same positional list explains why the rules of hooks apply inside custom hooks too. The `use` prefix is how the linter and React Compiler know to treat a function as a hook.
 
-<MarginNote note="as if you pasted the calls into the component">
+### One list per component
 
-When a component calls a custom hook, that hook's internal `useState`, `useEffect`, and so on are appended to the _calling component's_ own hook list, inline, at the call site.
-
-</MarginNote>
-
-So two components calling the same custom hook each get their own completely independent state.
-
-What they share is the _logic_, not the data.
-
-And because the hook's calls become part of the caller's positional list, custom hooks obey the rules of hooks exactly like everything else.
-
-### How it actually works
-
-This follows directly from Section 1's linked list, and seeing it that way removes the mystery entirely.
-
-Recall that hooks are stored as an ordered list on the rendering component's fiber, bound by call order.
-
-A custom hook is not a component and has no fiber of its own.
-
-It is a plain function call that happens during a component's render.
-
-So when the component runs and reaches your custom hook call, the hooks _inside_ that custom hook execute as part of the component's render, and their nodes are appended to the component's hook list right where the call sits.
-
-Picture a component that calls a custom hook:
-
-```js
+```jsx
 function useToggle(initial = false) {
-    const [on, setOn] = useState(initial); // becomes a node in the CALLER's hook list
-    const toggle = useCallback(() => setOn((o) => !o), []); // also the caller's list
+    const [on, setOn] = useState(initial); // a node in the CALLER's list
+    const toggle = useCallback(() => setOn((o) => !o), []); // also the caller's
     return [on, toggle];
 }
 
 function Panel() {
-    const [open, toggleOpen] = useToggle(); // appends useToggle's hooks here
+    const [open, toggleOpen] = useToggle(); // useToggle's two nodes go here
     const [count, setCount] = useState(0); // then this one
-    // Panel's hook list, in order: [useToggle's useState] → [useToggle's useCallback] → [count's useState]
+    // Panel's list: useToggle's useState, useToggle's useCallback, count's useState
 }
 ```
 
-`Panel`'s hook list is the flattened sequence of every hook call that executed during its render, including the ones that happened to live inside `useToggle`.
+<MarginNote note="as if you pasted the calls into the component">
 
-There is no `useToggle` instance and no boundary.
+There is no `useToggle` instance and no boundary in storage. The calls run inside `Panel`'s render, so their nodes join `Panel`'s list in the order they ran.
 
-The calls are simply inlined into `Panel`'s list by execution order.
+</MarginNote>
 
-Three important consequences fall out:
+The toy runtime from section 1 shows that two components get two copies.
 
-#### Two components calling the same custom hook do not share state
+```js
+// Reuses the toy useState and render from section 1.
+function useToggle(initial = false) {
+    const [on, setOn] = useState(initial);
+    return [on, () => setOn(!on)];
+}
 
-If both `Panel` and `Sidebar` call `useToggle()`, each call happens during a _different_ component's render, on a _different_ fiber, and so allocates _different_ hook nodes.
+function Panel() {
+    const [open, toggle] = useToggle();
+    return { open, toggle };
+}
 
-`Panel`'s toggle and `Sidebar`'s toggle are entirely independent.
+const panelFiber = { hooks: [] };
+const sidebarFiber = { hooks: [] };
+const panel = render(Panel, panelFiber);
+render(Panel, sidebarFiber);
+panel.toggle(); // toggle the panel only
+console.log(render(Panel, panelFiber).open, render(Panel, sidebarFiber).open);
+```
 
-This is the answer to the most common custom-hook misconception: custom hooks share _stateful logic_ (the recipe for how to manage a piece of state), never the _state itself_.
+```text role="output"
+true false
+```
 
-If you actually want two components to share the same state, that is what lifting state up or context (the state-management guide) is for.
+### Three consequences
 
-A custom hook will not do it, by construction.
+| Question | Answer | Why |
+|---|---|---|
+| Do two callers share state? | No | Each call runs on a different fiber and creates its own nodes |
+| Do the rules of hooks apply inside? | Yes | Its calls join the caller's list, and there is only one list |
+| Can custom hooks call custom hooks? | Yes | Every call flattens into the same list, in execution order |
 
-#### The rules of hooks apply inside custom hooks, for the same reason they apply anywhere
+To share state between components, lift it up or put it in context. [The state management guide](/articles/react-state-management-architecture) covers both. A function that calls no hooks should not have the `use` prefix.
 
-Because the custom hook's calls land in the caller's positional list, calling one of them conditionally inside the custom hook desyncs that list exactly as it would in a component (Section 1).
-
-So a custom hook must also call its hooks unconditionally, at the top level.
-
-This is not a separate rule.
-
-It is the same rule, because there is only one list.
-
-#### Composition is just more inlining
-
-A custom hook can call another custom hook, which appends _its_ hooks into the list too, still flattened by execution order.
-
-There is no nesting in the storage.
-
-It is all one linear list on the rendering component's fiber.
-
-This is why deeply composed custom hooks still work fine, as long as every link in the chain follows the rules.
-
-The `use` naming convention is not cosmetic.
-
-It is how `eslint-plugin-react-hooks` knows to apply and enforce the rules inside your function (treating it as a hook rather than a regular function), and it is part of how the React Compiler identifies hooks.
-
-Name a hook-calling function without the `use` prefix and the tooling can no longer protect you, and a function that does not call hooks should _not_ have the prefix, to avoid misleading the tooling.
-
-A good custom hook returns whatever shape fits its use: an array when the values are positional and you want callers to rename them freely (like `useState`), an object when there are several named values.
-
-The point of extracting one is to give a piece of stateful logic a name and a single place to live, so it can be reused, tested in isolation by rendering it in a test component, and reasoned about as a unit.
-
-What you are reusing is always the logic.
-
-The state is minted fresh at every call site.
+Return an array when callers will rename the values, like `useState`, and an object for several named values. Either way, the logic gets a name and one home, and you can test it in a small test component.
 
 ### Try it
 
-> Write `useToggle` and use it in two sibling components. Toggle one and confirm the other does not move, proving the state is independent. Then, inside `useToggle`, wrap its `useState` in an `if` and watch the rules-of-hooks violation surface in the consuming component, demonstrating that the hook's calls really are part of the caller's list.
+In a React app, use `useToggle` in two sibling components. Toggle one and confirm the other does not move. Then wrap the `useState` inside `useToggle` in an `if` and watch the error appear in the calling component.
 
-### You've got this if
+## 17. The newer hooks: use, Actions and optimistic state
 
-You can explain why two components using the same custom hook have independent state, in terms of separate fibers and separate hook nodes.
-
----
-
-## 15. The modern hook surface (a map)
-
-Prereqs: Section 1, plus a skim of the rendering guide (Suspense, concurrency, tearing) and the RSC guide (Server Functions), since this maps onto them.
-
-### The itch
-
-Beyond `useState` and `useEffect`, React 19 ships a pile of hooks (`use`, `useId`, `useSyncExternalStore`, `useTransition`, `useDeferredValue`, `useActionState`, `useFormStatus`, `useOptimistic`), and it is hard to know which matter to you, which connect to things you already know, and where to go to learn each one properly.
-
-You want a map, not a tutorial on each.
+React 19 ships `use`, `useOptimistic`, `useActionState`, `useFormStatus` and more. How do they connect to the machinery you now know?
 
 ### The short version
 
-Most of the modern hooks fall into three groups: reading external things (`use`, `useSyncExternalStore`), concurrency (`useTransition`, `useDeferredValue`), and forms and Server Functions (`useActionState`, `useFormStatus`, `useOptimistic`), plus a couple of utilities (`useId`, `useDebugValue`).
+Most newer hooks sit on the same list, queue and lanes. `use(resource)` reads a promise or a context without taking a hook node, which is why it may sit in a condition. A pending promise suspends the component until it resolves. An **Action** is a function React runs inside a transition, often an async one.
 
-Each connects to a mechanism you have already met in this guide, the rendering guide, or the RSC guide, so you can learn them on demand rather than all at once.
+`useOptimistic` shows a temporary value during an Action. It queues a `SyncLane` update that React drops once the Action's transition lane renders. `useActionState` keeps an Action's result, runs queued calls one after another and tracks `isPending`. `useTransition` and `useDeferredValue` move work onto transition lanes. The rest cover external stores, IDs and DevTools labels.
 
-### How it actually works as a map, with where to go deeper
+### use(): no node, so no rule one
 
-**Reading external things.**
+```jsx
+function Comments({ commentsPromise }) {
+    const comments = use(commentsPromise); // suspends until the promise resolves
+    return comments.map((comment) => <p key={comment.id}>{comment.text}</p>);
+}
 
-- `use(resource)` is the modern reader. Given a promise, it suspends the component until the promise resolves (rendering guide, Suspense section, RSC guide for the server side), integrating data fetching with Suspense. Given a context, `use(Context)` reads it like `useContext` but, uniquely, may be called inside conditionals and loops (the deliberate exception to rule one from Section 1). It is the ergonomic surface behind a lot of modern data and context reading.
-- `useSyncExternalStore(subscribe, getSnapshot)` is how you subscribe to a store that lives outside React (a global store, a browser API like `navigator.onLine`, anything with its own change events) without the "tearing" bug where different parts of one render see different values of the store (rendering guide, tearing section). You will mostly meet it inside state libraries rather than write it by hand, but knowing it exists explains how those libraries stay correct under concurrent rendering.
+function Heading({ showTheme }) {
+    if (showTheme) {
+        const theme = use(ThemeContext); // allowed: use() takes no hook node
+        return <h1 className={theme}>Hello</h1>;
+    }
+    return <h1>Hello</h1>;
+}
+```
 
-**Concurrency (rendering guide, concurrency and lanes sections).**
+```js
+// use from ReactFiberHooks.js, React 19.2 (one branch for 19.3 omitted).
+function use(usable) {
+    if (usable !== null && typeof usable === "object") {
+        if (typeof usable.then === "function") return useThenable(usable); // a promise
+        if (usable.$$typeof === REACT_CONTEXT_TYPE) return readContext(usable); // a context
+    }
+    throw new Error("An unsupported type was passed to use(): " + String(usable));
+}
+```
 
-- `useTransition` gives you `[isPending, startTransition]` to mark a state update as a non-urgent transition, so React can keep the UI responsive to urgent input while the heavier update renders at lower priority, and `isPending` lets you show a subtle pending state.
-- `useDeferredValue(value)` hands you a copy of a value that is allowed to lag, so an expensive subtree can render against the old value while the input that drives it stays snappy. Both are about not letting heavy rendering block interaction.
+Neither branch calls `mountWorkInProgressHook`, so `use()` never shifts the hook list. Promises get their own counter, `thenableIndexCounter`, which matches each promise to its call on replay.
 
-**Forms and Server Functions (RSC guide, Server Functions section).**
+If the promise resolves while React is still waiting, React replays the component with the rerender dispatcher, reusing the hooks that already ran. Otherwise the nearest Suspense boundary shows its fallback, and React renders the component again later.
 
-- `useActionState(action, initialState)` manages the state, pending status, and result of a form action, and is the client-side companion to Server Functions, though it works with plain client functions too.
-- `useFormStatus()` lets a component deep inside a form read the parent form's submission status without prop drilling.
-- `useOptimistic(state, updateFn)` shows an optimistic value immediately while an async action is in flight, then reconciles to the real result when it settles. These three are the backbone of React 19's form story and connect directly to the RSC and data-fetching material. Learn them when you are building forms or working with actions.
+Create the promise in a parent, a cache or a Server Component, not during render. The [Suspense guide](/articles/react-suspense-internals) covers what happens after a component suspends.
 
-**Utilities.**
+### useOptimistic
 
-- `useId()` generates a stable, unique ID that matches between server and client rendering, for accessibility attributes (`aria-describedby`, label associations) where you need a unique id that does not break hydration. Do not use it for list keys.
-- `useDebugValue(value)` adds a label to a custom hook in React DevTools. Purely a developer-experience tool for library authors.
+```jsx
+function Thread({ messages, sendMessage }) {
+    const [optimistic, addOptimistic] = useOptimistic(messages, (state, text) => [...state, { text, sending: true }]);
 
-The reason this is a map rather than five more deep sections is that each of these is best learned the moment you have a real reason to reach for it, with the relevant deep guide open.
+    async function formAction(formData) {
+        addOptimistic(formData.get("text")); // shows at once
+        await sendMessage(formData); // when the Action ends, messages updates and the temp row goes
+    }
 
-They all rest on mechanisms you now understand: the hook list and rules (Section 1), the snapshot and queue model (Sections 2 and 4), Suspense and concurrency and tearing (the rendering guide), and Server Functions (the RSC guide).
+    return <form action={formAction}>{/* render optimistic, plus an input */}</form>;
+}
+```
 
-None of them is a new kind of thing.
+```js
+// Simplified teaching version of the update dispatchOptimisticSetState queues.
+const update = {
+    lane: SyncLane, // the optimistic value commits right away
+    revertLane: requestTransitionLane(transition), // and disappears when the Action's lane renders
+    action,
+};
+```
 
-They are new surfaces over machinery you have already seen.
+The fold applies the optimistic update until `renderLanes` contains its `revertLane`. Then it skips it, as if it never happened, and the real `messages` show. Every render, `useOptimistic` also resets its base state to the value you pass in, so optimistic updates rebase on the latest real state (section 5).
+
+Call the setter inside an Action. Outside one, React logs a development warning and the value only flashes.
+
+### useActionState
+
+```jsx
+async function addToCart(previousCount, itemId) {
+    await post("/cart", itemId);
+    return previousCount + 1;
+}
+
+function AddButton({ itemId }) {
+    const [count, dispatchAction, isPending] = useActionState(addToCart, 0);
+    return (
+        <button onClick={() => startTransition(() => dispatchAction(itemId))}>
+            Add {isPending ? "..." : count}
+        </button>
+    );
+}
+```
+
+`useActionState` allocates three hook nodes: the state, `isPending` held as optimistic state, and a queue of pending calls. React runs queued calls one at a time and passes each the previous result. The action can be a plain client function, as here, or a Server Function. [The Server Components guide](/articles/react-server-components-internals) covers the server side.
+
+`dispatchAction` has a stable identity. Call it from an Action, through `startTransition` or a form's `action` prop. The action function may have side effects, so Strict Mode never calls it twice.
+
+### The rest, as a map
+
+| Hook | What it gives you | Mechanism |
+|---|---|---|
+| `useTransition` | `[isPending, startTransition]` | A transition lane, plus an urgent optimistic `isPending` |
+| `useDeferredValue` | A value that may lag | During an urgent render, a second render on a deferred transition lane |
+| `useSyncExternalStore` | A value from a store outside React | Re-checks the snapshot before commit, to avoid **tearing** |
+| `useId` | An ID that matches on server and client | Derived from the component's place in the tree |
+| `useDebugValue` | A custom hook's DevTools label | Does nothing outside DevTools |
+| `useFormStatus` | The parent form's pending state | Reads the nearest `<form>` Action, from `react-dom` |
+
+Tearing is one screen showing two versions of the same value. `useId` is for accessibility attributes such as `aria-describedby`, never for list keys.
 
 ### Try it
 
-> Pick the one closest to your current work. If you do data fetching, wrap a slow update in `startTransition` and watch `isPending` while typing stays smooth. If you build forms, wire up `useActionState` with a trivial async action and watch its pending and result states. Learning one in context beats skimming all eight.
+In a React app, wire `useActionState` to an async action that waits one second. Click three times quickly and confirm the calls run one after another, each starting from the previous result.
 
-### You've got this if
+## 18. Strict Mode runs your code twice
 
-You can sort an unfamiliar modern hook into "reads external things," "concurrency," "forms and actions," or "utility," and name the deeper guide that covers it.
-
----
-
-## 16. Debugging hooks and effects
-
-Prereqs: ideally Sections 1 through 15, since this is the synthesis.
-
-At minimum Sections 2, 7, and 8.
-
-### The itch
-
-Something is wrong: an effect fires constantly, or never.
-
-A value is stale.
-
-A memoized child re-renders anyway.
-
-The count went up by one when you set it three times.
-
-You want a procedure that turns "React is being weird" into "I know exactly which mechanism this is."
+In development, your component logs twice, and a chat connects, disconnects and connects again. Nothing is broken. `<StrictMode>` is doing this on purpose.
 
 ### The short version
 
-Almost every hook and effect bug is one of a small set, and each maps to a section of this guide.
+In development, `<StrictMode>` calls code that should be pure twice, to expose code that is not. React calls your component body twice and keeps one result. It also doubles initializers, updaters, reducers and `useMemo` functions.
 
-The procedure is: figure out which render's snapshot the bad value came from, check the dependency array against what the code actually reads (run the linter), and ask whether the misbehaving value is a primitive or an identity.
+In React 19, the second component call reuses the hook state of the first, so `useMemo` and `useCallback` return the first call's results. On mount, React also runs one extra cleanup and setup for every effect and ref callback. Correct code behaves the same. A missing cleanup or a side effect in render breaks visibly, in development.
 
-Those three questions resolve the large majority of cases.
+### How React doubles the render
 
-### How it actually works
+```js
+// From renderWithHooks in ReactFiberHooks.js, React 19.2 (simplified).
+const shouldDoubleRenderDEV = __DEV__ && (workInProgress.mode & StrictLegacyMode) !== NoMode;
+shouldDoubleInvokeUserFnsInHooksDEV = shouldDoubleRenderDEV; // first call: double the user functions
+let children = Component(props, secondArg);
+shouldDoubleInvokeUserFnsInHooksDEV = false;
+if (shouldDoubleRenderDEV) {
+    children = renderWithHooksAgain(workInProgress, Component, props, secondArg); // reuses hook state
+}
+```
 
-Run these questions in order against any hook or effect bug.
+| What React doubles | How | What it catches |
+|---|---|---|
+| The component body | Called twice, the second call reuses the first call's hooks | Side effects and ref writes during render |
+| State initializers, updaters and reducers | Called twice during the first call | Mutating state instead of returning new state |
+| `useMemo` callbacks | Called twice during the first call, reused in the second | Impure computations |
+| Effects | One extra cleanup and setup on mount | A missing or partial cleanup |
+| Ref callbacks | One extra cleanup and attach on mount, new in React 19 | A missing ref cleanup |
+| `useActionState` action functions | Never doubled | Nothing, because they may have side effects |
 
-#### Question one: which render's snapshot is this value from?
+### What a double render exposes
 
-(Sections 2 and 3.) If a callback, timer, or effect is using an old value, it closed over an earlier render.
+```jsx
+function StoryTray({ stories }) {
+    const items = stories; // not a copy
+    items.push({ id: "create", label: "Create Story" }); // mutates a prop
+    return <ul>{items.map((story) => <li key={story.id}>{story.label}</li>)}</ul>;
+}
+```
 
-Decide whether it should depend on the value (then list it honestly, Section 7), only needs the latest to compute next state (use the updater form, Section 4), or reads it but should not react to it (`useEffectEvent`, Section 11).
+In Strict Mode "Create Story" appears twice, because the second call pushes into the same array again. Copy first with `[...stories, ...]`, and both calls agree. With React DevTools installed, logs from the second call appear dimmed.
 
-"Stale value" is never random.
+### What the extra effect cycle exposes
 
-It is a closure pinned to a render.
+```text
+Connecting to "general"
+Disconnected from "general"
+Connecting to "general"
+```
 
-#### Question two: does the dependency array match what the effect reads?
+The extra cycle simulates a component that unmounts and mounts again, as when a Suspense fallback replaces it or the user navigates away and back.
 
-(Section 7.) Turn on `eslint-plugin-react-hooks` and believe it.
-
-If it wants a dependency you left out, your effect has a stale-value bug waiting to happen.
-
-If the effect fires every render, look for a dependency whose identity changes every render (Section 8).
-
-If the effect loops forever, it is almost always setting state that changes one of its own dependencies' identities.
-
-#### Question three: is the misbehaving value a primitive or an identity?
-
-(Section 8.) When `React.memo` does not stop a re-render, or an effect fires too often, inspect the suspect prop or dependency.
-
-If it is an object, array, or function created inline in the parent's render, that is the cause: a new identity every render.
-
-Stabilize it (lift it out, `useMemo`, `useCallback`) or depend on the primitive inside it.
-
-"Looks the same but is treated as different" is always an identity issue.
-
-The common bugs, each tagged with its mechanism:
-
-An effect that runs on every render is being fed a dependency with a fresh identity each render (an inline object, array, or function).
-
-Stabilize the dependency or depend on a primitive (Section 8).
-
-An effect that loops forever is setting state that changes one of its own dependencies.
-
-Break the cycle by removing the dependency, using the updater form, or moving the computation out of the effect (Sections 4, 7, 8).
-
-A stale value inside a timer, subscription, or handler is a closure over an old render.
-
-Choose the honest-deps, updater-form, or `useEffectEvent` fix based on whether the value is a real trigger (Sections 3, 11).
-
-An effect that runs setup then cleanup then setup on mount in development is StrictMode surfacing a missing or incorrect cleanup.
-
-Make setup and cleanup a clean pair (Sections 9, and the rendering guide's StrictMode section).
-
-If it breaks only with StrictMode on, it is a real bug, not a quirk.
-
-A crash or wrong-hook value after a conditional is a desynced positional hook list.
-
-Move every hook to the top level (Section 1).
-
-State that "did not update" right after you set it is the snapshot model: the setter scheduled a new render and your current `count` is still this render's constant (Sections 2, 4).
-
-A `React.memo` child that re-renders anyway is getting an unstable prop identity from its parent.
-
-Stabilize the prop (Sections 8, 12).
-
-Three `setCount(count + 1)` calls that only bumped the value by one are value-form setters all reading the same snapshot.
-
-Use the updater form to compose them (Section 4).
-
-A flicker where an element paints in the wrong place for one frame is a layout read happening in a passive effect after paint.
-
-Move it to `useLayoutEffect` (Section 10).
-
-#### The whole thing in one list
-
-1. Hooks are an ordered linked list on a component's fiber, bound by call order, which is why their order is sacred (Section 1).
-2. Each render is a frozen snapshot of props, state, and closures, and setters schedule a new render instead of mutating it (Sections 2 and 4).
-3. Effects are synchronizations, not lifecycle callbacks: React pairs cleanup with setup, gated by an `Object.is` comparison of the dependency array (Sections 6, 7, and 9).
-4. A fresh object or function every render reads as "changed," which over-fires effects, defeats `React.memo`, and, in the extreme, remounts whole subtrees (Section 8).
-5. `useLayoutEffect` runs before paint and `useEffect` after it (Section 10).
-6. `useEffectEvent` carves the non-reactive part out of an effect, so you can read the latest value without making it a trigger (Section 11).
-7. `useMemo` and `useCallback` exist mostly to preserve identity, a job the React Compiler now largely automates (Section 12).
-8. `useRef` is a mutable box that deliberately sidesteps the update queue, so changing it does not render (Section 13).
-9. Custom hooks reuse logic, not state, because their hooks inline into each caller's own list (Section 14).
-
-Every rule you were told to memorize is a consequence of one of these mechanisms, which is why understanding the mechanism lets you derive the rule instead of reciting it.
+A correct effect ends in the same state: one connection. A leaky one ends with two. "It only breaks in Strict Mode" always means a real bug, usually a missing cleanup. Fix the pair, and Strict Mode goes quiet.
 
 ### Try it
 
-> Take a real hook or effect bug from your own code (or reproduce one of the nine above) and walk the three questions out loud before changing anything. Do this on three different bugs and the procedure becomes reflexive, which is the goal: reach for the model before you reach for `useMemo`.
+In a React app, wrap the root in `<StrictMode>` and log in a component body, an updater, a `useMemo` callback and an effect. Count each log on first mount. Then remove an effect's cleanup and watch the extra cycle leave a second subscription behind.
 
-### You've got this if
+## 19. Debugging hooks and effects
 
-You can take "my effect fires on every render" and name the mechanism and the fix without guessing.
-
----
-
-## 17. Reading the source (pass 3)
-
-Prereqs: the rest of the guide, plus comfort reading JavaScript source.
-
-### The itch
-
-You have the model.
-
-Now you want to see hooks in React's actual code and confirm the linked list, the dispatcher swap, the update queue, and the `Object.is` dependency check are really there.
+An effect fires constantly, or never. A value is stale. A memoized child re-renders anyway. You want a procedure that turns "React is being weird" into "I know which mechanism this is".
 
 ### The short version
 
-Nearly all of it lives in one file, `ReactFiberHooks.js`, plus the commit-time effect handling in `ReactFiberCommitWork.js`.
+Almost every hook bug is one of a few mechanisms from this guide. Ask three questions in order. Which render's snapshot did the bad value come from? Does the dependency array match what the effect reads, as the linter reports? Is the misbehaving value a primitive or an identity?
 
-It is more readable than you expect once you know the map, because every function corresponds to something in this guide.
+Those three resolve most cases. For timing bugs, ask a fourth: which commit phase runs this code, and was the render discrete? The React DevTools Profiler shows why each component rendered. Performance Tracks, new in React 19.2, show render and effect time per component in Chrome's Performance panel.
 
-### How it actually works: the reading order
+### Making identity visible
 
-`ReactFiberHooks.js` is the main event.
+```js
+function useWhyDidYouUpdate(name, props) {
+    const previous = useRef(props);
+    useEffect(() => {
+        const changed = Object.keys(props).filter((key) => !Object.is(props[key], previous.current[key]));
+        if (changed.length > 0) console.log(name, "changed:", changed);
+        previous.current = props;
+    });
+}
+```
 
-Look for:
+This small hook logs which props changed identity since the last commit. A stale value is never random: it is a closure pinned to a render. "Looks the same but is treated as different" is always identity.
 
-The `Hook` type and `mountWorkInProgressHook` / `updateWorkInProgressHook`: the linked list and the cursor that walks it.
+### Symptoms and causes
 
-This is Section 1 made literal, including why order is non-negotiable.
+| Symptom | Mechanism | Section |
+|---|---|---|
+| An effect runs after every render | A dependency with a fresh identity | 10 |
+| An effect loops forever | It sets state that rebuilds its own dependency | 9 |
+| A stale value in a timer or subscription | A closure over an old render | 3 |
+| Setup, cleanup, setup on mount in development | Strict Mode testing the cleanup | 18 |
+| "Rendered more hooks" after a condition | A desynced hook list | 1 |
+| "Too many re-renders" | An unguarded setter in the body | 6 |
+| State "did not update" right after a set | The snapshot | 2 |
+| Three value setters added only one | All read one snapshot | 4 |
+| A `React.memo` child re-renders anyway | An unstable prop from the parent | 10 |
+| A one-frame flicker | Layout read in a passive effect | 12 |
+| A ref callback runs on every render | An inline callback is a new function | 15 |
 
-`HooksDispatcherOnMount` versus `HooksDispatcherOnUpdate`: the two dispatcher objects React swaps between, which is how the same `useState` line allocates on mount and reads on update.
+### Reading the source
 
-The throwing dispatcher (`ContextOnlyDispatcher` and related) is the one that produces the "Invalid hook call" error from Section 1.
+Paths are relative to `packages/react-reconciler/src/` in the React repository.
 
-`mountState` / `updateState`, the update queue, and `dispatchSetState`: the queue from Section 4, including the fold over pending updates and the basic state reducer that makes `useState` a special case of `useReducer` (Section 5).
-
-The bail-out on `Object.is`-equal state is here too.
-
-`mountEffect` / `updateEffect`, `pushEffect`, and `areHookInputsEqual`: the effect record, the dependency array, and the exact `Object.is` element-by-element comparison from Section 7.
-
-`areHookInputsEqual` is the few-line function the entire dependency-array mental model rests on.
-
-Reading it is genuinely clarifying.
-
-`mountRef` / `updateRef`: the ref box from Section 13, and how little there is to it (no queue, no scheduling).
-
-Then `ReactFiberCommitWork.js` for `commitHookEffectListMount` and `commitHookEffectListUnmount`: where setups and cleanups actually run in the commit phase, which is the timing behind Sections 9 and 10 (passive versus layout effects).
-
-Pair this with `eslint-plugin-react-hooks` (the source of the rules-of-hooks and `exhaustive-deps` enforcement from Sections 1 and 7) and the React Compiler docs (for what it automates over Section 12).
+| File | What to look for |
+|---|---|
+| `ReactFiberHooks.js` | The `Hook` and `Update` types, `renderWithHooks`, `mountWorkInProgressHook`, `updateWorkInProgressHook`, the dispatchers, `updateReducerImpl`, `dispatchSetStateInternal`, `areHookInputsEqual`, `updateEffectImpl`, `mountEvent`, `use` |
+| `ReactFiberConcurrentUpdates.js` | `enqueueConcurrentHookUpdate` and how updates join the ring |
+| `ReactHookEffectTags.js` | `HasEffect`, `Insertion`, `Layout`, `Passive` |
+| `ReactFiberCommitWork.js` | The mutation, layout and passive traversals |
+| `ReactFiberCommitEffects.js` | `commitHookEffectListMount`, `commitHookEffectListUnmount`, ref attach and detach |
+| `ReactFiberWorkLoop.js` | `commitRoot` and the rule for flushing passive effects |
 
 ### Try it
 
-> Open `ReactFiberHooks.js`, find `areHookInputsEqual`, and read it. It is short. Recognizing that the entire dependency-array model in Section 7 is that one loop is the fastest way to stop treating the array as magic.
+Take a real hook bug from your code, or reproduce one row of the table, and walk the questions before you change anything. Then open `ReactFiberHooks.js`, find `updateEffectImpl`, and confirm the comparison happens during render.
 
-### You've got this if
+## The whole thing in one list
 
-You opened `ReactFiberHooks.js`, found a function named in this guide, and recognized what it does.
+1. Hooks are a linked list on the fiber, matched by call order, which is why the rules of hooks exist.
+2. React swaps dispatchers: mount creates nodes, update reads them, and outside render hooks throw.
+3. Each render is a snapshot, and every closure keeps the render that created it.
+4. A setter adds an update to a circular queue, and the next render folds it, so updaters compose.
+5. Updates carry lanes, and React replays skipped updates from `baseState` in their original order.
+6. A same-value `useState` update can bail out before render, and render-phase updates re-run the component at once.
+7. Effects synchronize with outside systems, and React decides during render, with `Object.is`, whether each one fires.
+8. Cleanup always runs before the next setup, and fresh identities over-fire effects and defeat memoization.
+9. Insertion and layout effects run before paint, and passive effects usually run after it, but not after a click.
+10. `useEffectEvent`, refs, the Compiler, `use()`, Actions and Strict Mode all build on the same list and queue.
 
----
+## Further reading
 
-## Further reading (primary sources)
+### The rules and the effect model
 
-### A Complete Guide to useEffect, by Dan Abramov
+[Rules of Hooks](https://react.dev/reference/rules/rules-of-hooks) is the official version of section 1. [Synchronizing with Effects](https://react.dev/learn/synchronizing-with-effects), [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) and [Removing Effect Dependencies](https://react.dev/learn/removing-effect-dependencies) cover sections 8 to 10.
 
-Available at [overreacted.io/a-complete-guide-to-useeffect](https://overreacted.io/a-complete-guide-to-useeffect/).
+### Effect Events and effect timing
 
-This is the single best long-form explanation of the snapshot model and effects-as-synchronization, written by someone who was on the React team.
+[Separating Events from Effects](https://react.dev/learn/separating-events-from-effects) and the [useEffectEvent reference](https://react.dev/reference/react/useEffectEvent) cover section 13. The caveats in the [useEffect reference](https://react.dev/reference/react/useEffect) describe when effects run around paint.
 
-It maps onto Sections 2, 3, 6, and 7 of this guide, and it is where the "each render has its own everything" framing comes from.
+### React 19 changes
 
-One caveat on currency: it predates `useEffectEvent` going stable (it discusses the underlying problem and an earlier experimental shape of the solution) and predates the React Compiler, so pair its `useCallback`/`useMemo` advice with Section 12 and its non-reactive-value discussion with Section 11.
+The [React 19 upgrade guide](https://react.dev/blog/2024/04/25/react-19-upgrade-guide) covers ref cleanups and Strict Mode. The [React 19.2 announcement](https://react.dev/blog/2025/10/01/react-19-2) introduces `useEffectEvent`, and the [React Compiler 1.0 announcement](https://react.dev/blog/2025/10/07/react-compiler-1) covers automatic memoization.
 
-The core model is evergreen.
+### Actions, Strict Mode and the linter
 
-### React as a UI Runtime, by Dan Abramov
+The [useOptimistic](https://react.dev/reference/react/useOptimistic), [useActionState](https://react.dev/reference/react/useActionState), [use](https://react.dev/reference/react/use) and [StrictMode](https://react.dev/reference/react/StrictMode) references cover sections 17 and 18. The [eslint-plugin-react-hooks reference](https://react.dev/reference/eslint-plugin-react-hooks) lists every lint rule.
 
-Available at [overreacted.io/react-as-a-ui-runtime](https://overreacted.io/react-as-a-ui-runtime/).
+### The source
 
-A deeper, more complete mental model of how React treats your components as a program it runs, including state, identity, and reconciliation.
+[ReactFiberHooks.js](https://github.com/facebook/react/blob/main/packages/react-reconciler/src/ReactFiberHooks.js) holds nearly everything in this guide, and [ReactFiberWorkLoop.js](https://github.com/facebook/react/blob/main/packages/react-reconciler/src/ReactFiberWorkLoop.js) holds the commit and the passive flush.
 
-It maps onto Sections 2, 13, and 14, and complements the rendering guide.
+### Two classic essays
 
-Also predates the Compiler and the newest hooks, so treat it as model-not-API.
-
-### The official React docs (react.dev), current within the React 19 line
-
-Several pages are directly relevant and kept up to date:
-
-1. Synchronizing with Effects, at [react.dev/learn/synchronizing-with-effects](https://react.dev/learn/synchronizing-with-effects). The official version of Section 6.
-2. You Might Not Need an Effect, at [react.dev/learn/you-might-not-need-an-effect](https://react.dev/learn/you-might-not-need-an-effect). The official version of "most prop-reaction code is not an effect," from Section 6.
-3. Removing Effect Dependencies, at [react.dev/learn/removing-effect-dependencies](https://react.dev/learn/removing-effect-dependencies). Directly supports Sections 7 and 8.
-4. Separating Events from Effects, at [react.dev/learn/separating-events-from-effects](https://react.dev/learn/separating-events-from-effects). The conceptual home of Section 11, more thorough than the reference page.
-5. The useEffectEvent reference, at [react.dev/reference/react/useEffectEvent](https://react.dev/reference/react/useEffectEvent). The exact rules and caveats for Section 11, including the deliberately-unstable-identity point.
-6. Rules of Hooks, at [react.dev/reference/rules/rules-of-hooks](https://react.dev/reference/rules/rules-of-hooks). The official statement of Section 1.
-
-### eslint-plugin-react-hooks
-
-The plugin that enforces the rules of hooks and `exhaustive-deps`.
-
-It is not optional tooling.
-
-It is the mechanical guardrail for Sections 1, 7, and 11.
-
-Keep it on and believe it.
+Dan Abramov's [A Complete Guide to useEffect](https://overreacted.io/a-complete-guide-to-useeffect/) and [React as a UI Runtime](https://overreacted.io/react-as-a-ui-runtime/) explain the snapshot model and identity. Both predate `useEffectEvent` and the Compiler, so read them for the model, not the API.
