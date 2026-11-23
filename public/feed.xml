@@ -24,42 +24,42 @@
       <title>React Data Fetching and Server State</title>
       <link>https://www.harikesh.xyz/articles/react-data-fetching-server-state</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-data-fetching-server-state</guid>
-      <description>A guide to remote data as a cache: query keys, stale data, mutations, optimistic updates, and Suspense.</description>
+      <description>Why fetched data is a cache, not state, and how TanStack Query v5 runs that cache: query keys, staleTime and gcTime, deduplication, refetch triggers, retries, mutations, optimistic updates and Suspense in React 19.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
       <title>React Error Boundaries and Resilience</title>
       <link>https://www.harikesh.xyz/articles/react-error-boundaries-resilience</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-error-boundaries-resilience</guid>
-      <description>What React catches, how it recovers, and how error boundaries contain failures in real applications.</description>
+      <description>How React 19 handles a component that throws: the unwind to the nearest boundary, the one synchronous retry, what boundaries miss, Actions errors, the three root error options, and where to put boundaries.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
       <title>React&apos;s Event System</title>
       <link>https://www.harikesh.xyz/articles/react-event-system-internals</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-event-system-internals</guid>
-      <description>How synthetic events, delegation, propagation, portals, and event priority work in modern React.</description>
+      <description>How React 19 handles events: delegated listeners on the root container, the walk up the fiber tree, synthetic events, stopPropagation across two systems, portals, and how an event sets the lane of your update.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
       <title>React Hooks and Effects</title>
       <link>https://www.harikesh.xyz/articles/react-hooks-and-effects-internals</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-hooks-and-effects-internals</guid>
-      <description>A practical mental model for hooks, renders, effects, closures, and React&apos;s update queues.</description>
+      <description>How hooks really work in React 19: the hook list on the fiber, render snapshots, update queues with lanes and rebasing, when effects fire and flush, refs, useEffectEvent, Actions and Strict Mode.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
       <title>React Performance Architecture</title>
       <link>https://www.harikesh.xyz/articles/react-performance-architecture</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-performance-architecture</guid>
-      <description>A measured approach to rendering cost, memoization, concurrency, virtualization, and bundle size.</description>
+      <description>Find where React time really goes and fix the cause: why components re-render, bailouts and memo, the React Compiler, keys, context, transitions, Activity, virtualization and smaller bundles, in React 19.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
       <title>React Rendering and Reconciliation Internals</title>
       <link>https://www.harikesh.xyz/articles/react-rendering-reconciliation-internals</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-rendering-reconciliation-internals</guid>
-      <description>A guided deep dive into how React turns state into UI, compares trees, and keeps updates responsive.</description>
+      <description>How React 19 turns state into DOM changes: elements, the two-rule diff and keys, fibers and double buffering, the work loop and bailouts, the commit sub-phases, and where hooks keep their state.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
@@ -73,21 +73,21 @@
       <title>React Server Components and the Server/Client Boundary</title>
       <link>https://www.harikesh.xyz/articles/react-server-components-internals</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-server-components-internals</guid>
-      <description>A clear model of Server Components, Client Components, serialization, streaming, and framework boundaries.</description>
+      <description>How React 19 splits one tree between server and browser: the use client module boundary, what props can cross it, the Flight payload row by row, first load and hydration, Server Functions and their security, and what Next.js owns.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
       <title>React State Management Architecture</title>
       <link>https://www.harikesh.xyz/articles/react-state-management-architecture</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-state-management-architecture</guid>
-      <description>How to choose where state lives, avoid contradictions, and scale shared state without unnecessary complexity.</description>
+      <description>Where each piece of React state should live, from local state to Context, external stores and server caches, and how React 19 propagates context and binds stores with useSyncExternalStore.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
       <title>React Suspense Internals</title>
       <link>https://www.harikesh.xyz/articles/react-suspense-internals</link>
       <guid isPermaLink="true">https://www.harikesh.xyz/articles/react-suspense-internals</guid>
-      <description>How promises suspend rendering, boundaries reveal content, retries work, and transitions prevent jarring fallbacks.</description>
+      <description>How a component suspends in React 19, how the nearest boundary catches it, how pings and retries bring content back, and how pre-warming, the 300ms throttle and transitions shape what users see.</description>
       <pubDate>Fri, 01 May 2026 03:30:00 GMT</pubDate>
     </item>
     <item>
