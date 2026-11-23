@@ -1,1588 +1,1614 @@
 ---
 title: "React State Management Architecture"
-description: "How to choose where state lives, avoid contradictions, and scale shared state without unnecessary complexity."
+description: "Where each piece of React state should live, from local state to Context, external stores and server caches, and how React 19 propagates context and binds stores with useSyncExternalStore."
 category: "Architecture"
-readTime: "55 min read"
+readTime: "38 min read"
 date: "May 2026"
 publishedAt: "2026-05-01"
 order: 3
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (latest patch 19.2.6, May 2026), with the React Compiler 1.0 stable (October 2025).
+A dashboard feels slow. Every keystroke in its search box makes the whole page stutter. The React DevTools Profiler, which records what rendered and why, shows 200 components rendering per letter.
 
-> You can read this guide right after the Hooks guide. Wherever it reaches for an engine concept, it defines that concept in one line at first use and points you to the fuller treatment.
+```jsx
+const AppContext = createContext(null);
 
-## Read this first
+function App() {
+    const [user, setUser] = useState(null);
+    const [search, setSearch] = useState(""); // typed into one small input
 
-**You are not meant to absorb this in one sitting.**
+    return (
+        <AppContext value={{ user, setUser, search, setSearch }}>
+            <Header />
+            <Dashboard />
+        </AppContext>
+    );
+}
+```
 
-### Pass 1, one relaxed sitting (about 30 minutes)
+No library caused it, and a library is not the first fix. The search text lives at the top, inside a context every component reads. So each keystroke changes a value that 200 components depend on.
 
-Read only **"The itch"** and **"The short version"** of each section.
+This guide shows how to decide where each piece of state lives and who owns it. The ladder runs from local state up to Context, stores and server caches. It also opens the two React 19 mechanisms behind the upper rungs: context propagation and `useSyncExternalStore`.
 
-Skip the "How it actually works" blocks.
+> Current as of React 19.2 and 19.3. Library notes match Redux Toolkit 2.15, React Redux 9.3, Zustand 5.1, Jotai 3.0, Valtio 2.3 and TanStack Query 5.
 
-You will come out with a complete map of where state should live, why Context behaves the way it does, what external state libraries are actually for, and the single most important distinction in modern app state (server state versus client state).
+## Before you start
 
-That alone will change how you structure features.
+- `useState`, `useReducer`, the update queue and referential stability: [the hooks guide](/articles/react-hooks-and-effects-internals).
+- How a state change re-renders a subtree, bailouts, `React.memo` and tearing: [the rendering guide](/articles/react-rendering-reconciliation-internals).
+- Lanes, batching and transitions: [the scheduler and lanes guide](/articles/react-scheduler-and-lanes-internals).
+- Caching remote data in depth: [the data fetching guide](/articles/react-data-fetching-server-state).
 
-### Pass 2, driven by real work
+<GuideSpine steps={[{"title": "Where state lives decides what re-renders", "sections": [1]}, {"title": "Keep it low, lift only when forced", "sections": [2, 3]}, {"title": "Store the minimum, shape it so it cannot lie", "sections": [4, 5, 6]}, {"title": "Sharing without drilling: Context as a transport", "sections": [7, 8]}, {"title": "How context propagates, and its ceiling", "sections": [9, 10, 11], "note": "the deep middle"}, {"title": "Stepping outside React: external stores", "sections": [12, 13]}, {"title": "Server state, URL state, and choosing a rung", "sections": [14, 15]}]} />
 
-When a real problem shows up (a whole screen re-renders on every keystroke, a piece of state is mysteriously out of sync with another, you cannot decide between Context and a store, a teammate proposes Redux for something that does not need it), come back and read the deep part of the matching section.
+## 1. Where state lives decides what re-renders
 
-### Pass 3, when curious
-
-The further-reading section points at the primary sources and at the one or two places in React's own code worth seeing.
-
-Each section also opens with a one-line **Prereqs** note: the earlier sections (in this guide or the Hooks and rendering guides) or outside concepts worth having in hand first.
-
-Sections that need nothing past basic React say so.
-
-### Two rules that multiply everything
-
-1. **Run the experiments.** Each section ends with a short **"Try it."** Keep a throwaway React project open (a Vite scratch app, or any sandbox) and actually reproduce each one. The re-render behavior of Context, especially, has to be watched in the Profiler to be believed.
-2. **Trust the order.** Here is the spine:
-
-<GuideSpine steps={[{"title": "The real question: where does state live, and who owns it?", "sections": [1]}, {"title": "Keep it low (colocation), lift only when forced", "sections": [2, 3]}, {"title": "Store the minimum: derive the rest, structure it well", "sections": [4, 5]}, {"title": "Consolidate complex transitions (reducers, state machines)", "sections": [6]}, {"title": "Sharing without drilling: Context as a transport", "sections": [7, 8]}, {"title": "Why Context re-renders too much, and how far you can push it", "sections": [9, 10, 11], "note": "the deep middle"}, {"title": "Stepping outside React: external stores and their archetypes", "sections": [12, 13]}, {"title": "The distinction that reorganizes everything: server state", "sections": [14]}, {"title": "A decision framework, then debugging", "sections": [15, 16]}]} />
-
-You do not need to finish this guide to benefit from it.
-
-Finish pass 1 and you are already ahead.
-
----
-
-## 1. The only state question that matters: location and ownership
-
-Prereqs: basic React (components, props, `useState`).
-
-Nothing from the other guides yet.
-
-### The itch
-
-Every "what state management should I use" debate starts in the wrong place.
-
-You reach for a library before you have answered the question that actually determines whether your app is maintainable: where should each piece of state live, and which component owns it?
-
-Pick the location wrong and no library saves you.
-
-Pick it right and you often need no library at all.
+Most "which state library should we use" debates start in the wrong place. The question that decides whether an app stays maintainable comes first: where does each piece of state live, and who owns it?
 
 ### The short version
 
-State management is <Mark kind="circle">not primarily</Mark> about tools.
+State management is mostly not about tools. For each piece of state you decide two things. Its **location** is the component that holds it. Its **ownership** is the component responsible for changing it.
 
-It is about deciding, for each piece of state, two things: its **location** (which component holds it) and its **ownership** (which component is responsible for changing it).
+Location matters because a state change re-renders the owner and, by default, its whole subtree. State at the root re-renders the app. So keep state in the lowest component that uses it. Climb to lifting, Context or a store only when forced, because each rung costs more. Server data and URL state sit on their own axes.
 
-Most state should live as low in the tree as possible, owned by the component that uses it.
+### State is not one thing
 
-You only escalate to lifting, Context, or an external store when a real constraint forces you to, and each escalation has a cost.
+Look at the state of a typical page.
 
-The entire rest of this guide is a disciplined way to answer "where does this live" before you ever reach for a library.
+```js
+const pageState = {
+    inputText: "react", // one input reads it, changes every keystroke
+    isModalOpen: false, // one modal
+    theme: "dark", // read everywhere, changes rarely
+    currentUser: { id: 7 }, // read everywhere, owned by the server
+    products: [], // a copy of server data
+    selectedRowId: 3, // shared by a table and a detail panel
+};
+```
 
-### How it actually works
+These values have different lifetimes, owners and sharing needs. Treating them as one pile is the root cause of most state-management pain. So ask of each piece: who needs this, and who changes it?
 
-Start by noticing that "state" is not one thing.
+### Location is blast radius
 
-The value of a text input, whether a modal is open, the current theme, the logged-in user, the list of products fetched from your API, the selected row in a table: these have wildly different lifetimes, owners, and sharing needs, and treating them as one undifferentiated pile is the root cause of most state-management pain.
+`React.memo` wraps a component so it skips re-rendering when its props did not change. With no such boundaries in the way, a state change re-renders the owner and every component below it. Here is a simplified teaching model you can run in Node.
 
-The useful move is to ask, for each piece, a short series of questions, and the first and most important is simply: **who needs this, and who changes it?**
+```js
+const tree = {
+    App: ["Header", "Page"],
+    Header: [],
+    Page: ["Sidebar", "Search"],
+    Sidebar: [],
+    Search: ["Input", "Results"],
+    Input: [],
+    Results: [],
+};
 
-That question has a precise mechanical consequence in React, which is why it matters more than library choice.
+function rerendered(owner) {
+    return [owner, ...tree[owner].flatMap(rerendered)];
+}
 
-When a piece of state changes, React re-renders the component that owns it and, by default, that component's entire subtree (rendering guide, the work loop and bailout sections).
+console.log(rerendered("Input").join(" "));
+console.log(rerendered("App").join(" "));
+```
 
-So the _location_ of a piece of state determines the _blast radius_ of changes to it.
+```text role="output"
+Input
+App Header Page Sidebar Search Input Results
+```
 
-State held by a leaf component re-renders that leaf.
+Only the owner moved between the two lines. That is why <Mark kind="marker" wraps>the location of state decides the blast radius</Mark> of every change to it. Location is a performance and correctness decision, not a matter of style.
 
-The same state lifted to the root re-renders the whole app on every change unless you work to prevent it.
+### Ownership is traceability
 
-Location is not a stylistic choice.
+```jsx
+function Table() {
+    const [selectedId, setSelectedId] = useState(null); // Table owns it
+    return <Rows selectedId={selectedId} onSelect={setSelectedId} />; // Rows can only ask
+}
+```
 
-It is a performance and correctness decision baked into how rendering propagates.
+In React's one-way data flow, the component that calls `useState` or `useReducer` owns that state and alone calls the setter. Every other component receives the value as a prop, to read it, or a callback, to ask for a change.
 
-Ownership is the other half.
+Clear ownership makes data flow traceable. When a value is wrong, you look at its owner, not at fifteen components that might have touched it. Diffuse ownership, where many components mutate one shared blob, makes large apps hard to reason about.
 
-In React's one-way data flow, the component that holds a piece of state with `useState` or `useReducer` is its owner: it is the only place that calls the setter, and everyone else either receives the value as a prop (to read) or receives a callback (to request a change).
+### The ladder
 
-Keeping ownership clear is what makes data flow traceable: when a value is wrong, you look at its owner, not at fifteen components that might have touched it.
+| Rung | Owner | Use it when | What it costs |
+|---|---|---|---|
+| Local state | The component that uses it | One component needs it | Nothing extra |
+| Lifted state | The nearest common ancestor | A few nearby components share it | A bigger re-render, props to thread |
+| Context | A provider component high up | Many distant components read an ambient value | Implicit links, every consumer re-renders |
+| External store | A module outside React | Wide sharing, frequent changes, each reader using a different part | A dependency and its concepts |
+| Server cache | The server, cached by a query library | The data lives on a server | A separate axis, not a higher rung |
+| URL | The address bar | View state worth sharing in a link | A separate axis, not a higher rung |
 
-Diffuse ownership, where many components can mutate the same shared blob, is exactly the condition that makes large apps hard to reason about, and it is the thing good architecture is trying to prevent, with or without a library.
-
-So the framing for the whole guide is a ladder, and you climb it only as far as a real constraint pushes you:
-
-1. **Local state**, owned by the component that uses it. The default. Cheapest, most traceable, smallest blast radius.
-2. **Lifted state**, owned by the nearest common ancestor of the components that need it. The standard answer to "two siblings need to share." (Section 3.)
-3. **Context**, when the consumers are far apart and passing props through many intermediate layers becomes noise. A transport, not a store (Sections 8 through 11.).
-4. **An external store**, when the shared state is large or changes frequently enough that Context's re-render behavior becomes a problem, or when you want selector-based subscriptions (Sections 12 and 13.).
-5. **A server-state cache** (a query library), which is a separate axis entirely, for data that actually lives on your server (Section 14.).
-
-Each rung is more powerful and more expensive than the one below.
-
-The discipline is to use the lowest rung that solves your actual problem, because every rung up widens blast radius, diffuses ownership, or adds a dependency.
-
-Most state belongs on rung one, and most "we need Redux" conversations are really "we put state on the wrong rung."
+Each rung up widens the blast radius, spreads ownership or adds a dependency. Most state belongs on the first rung, and most "we need Redux" conversations turn out to be "we put state on the wrong rung."
 
 ### Try it
 
-> Take a feature you have built and list its pieces of state. For each, write down who reads it and who changes it. You will almost certainly find at least one piece sitting higher than it needs to (state in a parent that only one child uses) and at least one piece that is not really state at all (Section 4). Just labeling location and ownership surfaces both.
+Add these lines to the Node model above, and predict each output before you run it. After the earlier output, the new lines print this.
 
-### You've got this if
+```js
+console.log(rerendered("Search").join(" "));
+console.log(rerendered("Page").length);
+```
 
-You can explain why the location of a piece of state determines the blast radius of changes to it, in terms of how re-renders propagate.
+```text role="output"
+Search Input Results
+5
+```
 
----
+Then list the state of a feature you built, with who reads and who changes each piece. You will likely find one piece held higher than it needs to be.
 
 ## 2. Colocation: keep state as low as it will go
 
-Prereqs: Section 1.
-
-From the Hooks guide: the snapshot model (Section 2).
-
-From the rendering guide: that a state change re-renders the owning component and its subtree, recapped here.
-
-### The itch
-
-You have a form deep in the tree, and its state lives way up in a parent "so it is easy to find." Now every keystroke in that form re-renders half the app, and you are reaching for `React.memo` everywhere to undo a problem you created.
-
-The fix is not more memoization.
-
-It is moving the state back down.
+A form sits deep in the tree, but its state lives far above it, where it seemed easy to find. Every keystroke re-renders half the app. So you start wrapping components in `React.memo` to hold the re-renders back.
 
 ### The short version
 
-Colocation means keeping each piece of state as close as possible to where it is used, ideally inside the single component that uses it.
+Keeping each piece of state as close as possible to where it is used is called **colocation**. Ideally the state sits inside the one component that uses it. A state change re-renders its owner and that owner's subtree, so the lower the owner, the smaller the re-render.
 
-This is the default and it is almost always right.
+Lifting state higher than needed is the most common self-inflicted React performance problem, and only the Profiler shows it. Colocation also ties the state's lifetime to its owner, so it disappears on unmount. And it keeps a component's whole story readable in one place.
 
-The mechanism is simple: a state change re-renders its owner and that owner's subtree, so <Mark kind="marker" wraps>the lower the owner, the smaller the re-render</Mark>.
+### The propagation rule
 
-Lifting state higher than it needs to be is the most common self-inflicted performance problem in React, and it is invisible until you watch the Profiler.
+```jsx
+function Page() {
+    const [query, setQuery] = useState(""); // held three levels too high
+    return (
+        <>
+            <SearchBox query={query} onChange={setQuery} />
+            <Chart />
+            <ActivityFeed />
+        </>
+    );
+}
+```
 
-### How it actually works
+When a component's state changes, React re-renders it, then its children, and theirs. It stops only at a bailout. One kind is a `React.memo` boundary whose props are unchanged. The other is an element that is the very same object as last render, such as one passed in as `children`.
 
-Recall the propagation rule from the rendering guide, stated just precisely enough for this argument: when a component's state changes, React re-renders that component, then walks down and re-renders its children, and their children, stopping only where a bailout applies (an unchanged-props `React.memo` boundary, or a subtree with no pending work).
+Here every keystroke re-renders `Chart` and `ActivityFeed`, though neither reads `query`. `Page` creates fresh `<Chart />` and `<ActivityFeed />` elements on each render.
 
-With no memo boundaries in the way, a state change at component X re-renders the entire subtree rooted at X.
+### Move the state down
 
-That is the whole basis of colocation: the owner of a piece of state is the root of the re-render it triggers, so you want that owner to be as small a subtree as possible.
+```jsx
+function Page() {
+    return (
+        <>
+            <SearchBox />
+            <Chart />
+            <ActivityFeed />
+        </>
+    );
+}
 
-Picture a search input whose text lives in state.
+function SearchBox() {
+    const [query, setQuery] = useState(""); // now it re-renders only SearchBox
+    return <input value={query} onChange={(event) => setQuery(event.target.value)} />;
+}
+```
 
-If that state lives in the input's own component, typing re-renders only the input.
+Wrapping `Chart` in `React.memo` would have treated the symptom, spending memoization to contain a re-render that need not exist. Moving the state down removes the re-render at its source.
 
-If the same state lives three levels up "to keep it accessible," typing now re-renders those three levels and everything else they contain, every keystroke.
+### State lives and dies with its owner
 
-Nothing about the feature changed.
+```jsx
+{isEditing && <EditForm />} // close the form and its draft state is gone
+```
 
-Only the location of the state changed, and with it the blast radius.
+React keeps state by a component's position in the tree, which the React docs call **preserving and resetting state**. Local state is created when its owner mounts and discarded when it unmounts, so it cleans up after itself.
 
-People then notice the lag and start wrapping siblings in `React.memo` to block the propagation, which is treating the symptom: you are spending memoization effort to contain a re-render that would not exist if the state were colocated.
+Lifted state outlives the components that use it. A wizard that must remember earlier steps wants that. More often it is a stale-data bug, such as a parent still holding a child's form draft after the child is gone.
 
-Moving the state down removes the re-render at the source and makes the memo unnecessary.
+Day to day, colocation helps readability even more than speed. A reader sees the whole story in one component, instead of tracing a prop back through every layer.
 
-There is a subtle, valuable corollary the React docs call "preserving and resetting state" that makes colocation even more attractive: because state lives on a component's position in the tree (rendering guide, the diff and keys sections), keeping state local also keeps its lifetime tied to the component that owns it.
+### The rule, and its limit
 
-When that component unmounts, its state goes with it, automatically.
+Start every piece of state local, and lift it only when a second component genuinely needs it, as section 3 shows. Do not pre-lift "in case," or to a convenient central place.
 
-Local state cleans up after itself.
-
-Lifted state outlives the components that use it, which is sometimes what you want (a wizard that must remember earlier steps) and often a source of stale-data bugs (a parent holding a child's form state after the child is gone).
-
-Colocation also makes a third thing better, which matters more than performance day to day: **readability and ownership.** When a piece of state lives in the component that uses it, anyone reading that component sees the whole story in one place.
-
-When it lives three levels up and is threaded down through props, understanding the component means tracing the prop back up through every intermediate layer.
-
-Local state is self-documenting.
-
-Lifted state is a scavenger hunt.
-
-The rule that falls out: **start every piece of state local, and lift it only at the exact moment a second component genuinely needs it, and only as high as their nearest common ancestor (Section 3).** Do not pre-lift "in case." Do not lift to a convenient central place.
-
-Lifting is a response to a concrete sharing requirement, not a default posture, because every level you lift widens the blast radius and dilutes ownership.
-
-One caution so you do not overcorrect: colocation does not mean duplicating the same state in two places to keep each copy local.
-
-Two components needing the _same_ value is precisely the signal to lift (Section 3), not to keep two local copies that will drift apart (that is the two-sources-of-truth bug of Section 4).
-
-Colocation is "as low as it will go," and "as low as it will go" for shared state is the common ancestor, not two separate leaves.
+Colocation does not mean keeping two copies of one value so each stays local. Two local copies drift apart, which is the bug section 4 removes.
 
 ### Try it
 
-> Build a parent with several children, put a text input's state in the parent, and log a render in each child. Watch every child re-render as you type. Move the input and its state into its own child component and watch the others go silent, with no `React.memo` anywhere. That silence is colocation paying off.
+In a React app, render this `Parent` and type into the input.
 
-### You've got this if
+```jsx
+function Child({ name }) {
+    console.log("render", name);
+    return <p>{name}</p>;
+}
 
-You can explain why moving state down the tree reduces re-renders more reliably than adding `React.memo`, and when colocation would actually be the wrong move.
+function Parent() {
+    const [text, setText] = useState("");
+    return (
+        <>
+            <input value={text} onChange={(event) => setText(event.target.value)} />
+            <Child name="chart" />
+            <Child name="feed" />
+        </>
+    );
+}
+```
 
----
+Both children log on every keystroke. Move the input and its state into its own `SearchBox` component, and the children go silent, with no `React.memo` anywhere. Strict Mode, React's development-only checking mode, may print each line twice.
 
 ## 3. Lifting state up, and what it costs
 
-Prereqs: Section 2.
-
-Outside: React's one-way data flow (props go down, events go up).
-
-### The itch
-
-Two sibling components need to share a value: a filter that one sets and another reads, a selected item that a list and a detail panel both care about.
-
-You know the answer is "lift state up," but lifting feels like it makes everything re-render, and you are not sure how high is too high.
+A list and a detail panel both need to know which item is selected. You know the answer is "lift state up," but you are not sure how high is too high.
 
 ### The short version
 
-Lifting state up means moving a piece of state to the nearest common ancestor of the components that need it, which then passes the value down as a prop and passes setter callbacks down so children can request changes.
+Siblings cannot share state directly, because data flows only down and neither is the other's ancestor. So you move the state to their nearest common ancestor, which is called **lifting state up**. The ancestor passes the value down as a prop, and passes callbacks down so children can request changes.
 
-It is the correct, framework-native answer to sibling sharing, and it is how React intends shared state to work before you reach for anything fancier.
+This is React's own answer to sharing. Lift to the nearest common ancestor and no higher, because the owner roots every re-render the state triggers. Lifting has two costs. The owner's subtree re-renders on every change, and the value must pass through any components in between, which is called prop drilling.
 
-Its cost is real and worth naming: the ancestor that now owns the state re-renders on every change, and so does its subtree, and the value and callbacks have to be threaded through any intermediate components, which is the prop drilling that later motivates Context (Section 7).
+### One owner, controlled children
 
-### How it actually works
+```jsx
+function Panel() {
+    const [selectedId, setSelectedId] = useState(null); // the single source of truth
+    return (
+        <>
+            <List selectedId={selectedId} onSelect={setSelectedId} />
+            <Detail selectedId={selectedId} />
+        </>
+    );
+}
+```
 
-The mechanism is just ownership applied to sharing.
-
-Two siblings cannot share state directly, because neither is an ancestor of the other and React's data flow is one-way (down).
-
-So you move the state up to a component that _is_ an ancestor of both, their nearest common ancestor, and that component becomes the single owner.
-
-It holds the state, passes the current value down to whichever children read it, and passes down callbacks (often the setter itself, or handlers that call it) so children can ask for changes.
-
-The children become _controlled_ by the lifted state: they do not own it, they reflect it and request changes to it.
-
-This is the "single source of truth" principle in its most basic form, and it is why a controlled input takes both a `value` and an `onChange`: the value flows down, the change request flows up, and the owner is the one place the value actually lives.
-
-The reason to lift to the _nearest_ common ancestor, and no higher, is the blast radius from Section 2.
-
-The owner is the root of the re-render that each change triggers, so you want the smallest subtree that still contains every component that needs the state.
-
-Lift to the nearest common ancestor and the re-render covers exactly that subtree.
-
-Lift higher "to be safe" and you have enlarged the blast radius for no benefit, re-rendering components that have nothing to do with this state.
+`Panel` is the single owner. `List` and `Detail` are now **controlled**: they reflect the value and request changes to it. A controlled `<input>` works the same way, which is why it takes both `value` and `onChange`. The value flows down and change requests flow up.
 
 <GuideFigure figure="sm-lift" />
 
-"As high as necessary, no higher" is the same discipline as colocation, applied in the other direction.
+Lift higher "to be safe," and the same change re-renders components that have nothing to do with the state. The rule is "as high as necessary, no higher," which is colocation applied in the other direction.
 
-#### Cost one: the owner and its subtree re-render on every change
+### Cost one: the owner's subtree re-renders
 
-This is usually fine.
+A selected-row value that changes on a click re-renders one panel, which is cheap. Lifting hurts only when the value changes very often, such as every keystroke, and the subtree is large.
 
-A selected-row value that changes on click re-renders a panel, which is cheap and correct.
+| Situation | Fix |
+|---|---|
+| Only one child really needs the fast value | Push the state back down (section 2) |
+| A large sibling does not read the value | Put a `React.memo` boundary around it |
+| Many distant components read a fast value | Step outside the tree into a store (section 12) |
 
-It becomes a problem only when the lifted state changes very frequently (every keystroke, every mouse move) and the subtree is large, at which point you either push the state back down (Section 2), introduce memo boundaries to contain the propagation (rendering guide), or, for genuinely global high-frequency state, step outside React's tree entirely (Section 12).
+### Cost two: prop drilling, and narrow props
 
-Lifting is not the wrong tool.
+When the readers sit far below the owner, the value and its callbacks must pass through every component in between. Section 7 decides when that is fine. Whatever the depth, pass narrow props.
 
-You just need to know its blast radius scales with how high you lifted and how often the value changes.
+```jsx
+// Narrow: each child's contract says exactly what it uses
+<List selectedId={selectedId} onSelect={setSelectedId} />
 
-#### Cost two: prop drilling
+// Wide: every child is coupled to the whole state shape
+<List state={state} setState={setState} />
+```
 
-If the components that need the state are far below the common ancestor, the value and callbacks have to pass through every intermediate component, none of which cares about them, purely to reach the ones that do.
-
-A handful of levels is fine and arguably clearer than the alternative (the data flow is explicit).
-
-Many levels, or threading the same props through large parts of the tree, is noise that obscures each intermediate component's real responsibilities.
-
-That noise, not performance, is the primary thing Context is designed to remove (Sections 7 and 8).
-
-A practical note on what to pass down: prefer passing the specific values and specific callbacks a child needs, rather than passing the whole state object and the raw setter.
-
-Passing `selectedId` and `onSelect` keeps each child's contract narrow and makes its re-render dependencies clear.
-
-Passing the entire state blob and `setState` couples every child to the whole shape and tends to spread ownership back out.
-
-The discipline of narrow props is what keeps lifted state from quietly becoming the diffuse-ownership problem of Section 1.
+Narrow props keep each child's dependencies clear. The whole state object and the raw setter couple every child to the full shape and spread ownership back out.
 
 ### Try it
 
-> Build two siblings, a control and a display, that need to share a value. First try to wire them directly and confirm you cannot (there is no path). Lift the state to their parent, pass `value` to the display and `onChange` to the control, and watch it work. Then deliberately lift it two levels too high and watch, in the Profiler, the extra components that now re-render for no reason.
+In a React app with React DevTools, render two siblings that share a value through their parent.
 
-### You've got this if
+```jsx
+function Control({ value, onChange }) {
+    return <input value={value} onChange={(event) => onChange(event.target.value)} />;
+}
 
-You can explain why you lift to the _nearest_ common ancestor specifically, in terms of re-render blast radius, and name the two costs lifting introduces.
+function Display({ value }) {
+    return <p>You typed: {value}</p>;
+}
 
----
+function Parent() {
+    const [value, setValue] = useState(""); // the nearest common ancestor owns it
+    return (
+        <>
+            <Control value={value} onChange={setValue} />
+            <Display value={value} />
+        </>
+    );
+}
+```
+
+Then move the `useState` two levels higher and record a keystroke in the Profiler. It shows the extra components that now re-render for no reason.
 
 ## 4. Do not store what you can derive
 
-Prereqs: Section 1.
-
-From the Hooks guide: "you might not need an effect" (Section 6) and memoization (Section 12).
-
-### The itch
-
-You keep a `filteredItems` state alongside your `items` and `filter` state, and update `filteredItems` in an effect whenever the others change.
-
-Sometimes they get out of sync: you update `items` somewhere and forget to recompute `filteredItems`, and now the screen shows stale data.
-
-The bug is not that you missed an update.
-
-The bug is that `filteredItems` should never have been state.
+You keep a `filteredItems` state next to `items` and `filter`, and an effect recomputes it. Sometimes the screen shows stale results. The bug is that `filteredItems` should never have been state.
 
 ### The short version
 
-If a value can be computed from existing state or props, it is not state, it is a derivation, and it should be computed during render rather than stored.
+A value you can compute from existing state or props is a **derivation**, not state. Compute it during render instead of storing it. A stored copy makes two sources of truth for one fact. They drift apart, which produces the whole family of "these two things disagree" bugs.
+
+A derived value is correct by construction, because every render recomputes it from the only real source. Syncing a copy with an effect also costs an extra render. Wrap the computation in `useMemo` only when profiling shows it is expensive. By the same rule, store `selectedId` and derive the selected item.
+
+### Two sources of truth drift
+
+Run this in Node.
+
+```js
+let items = ["apple", "avocado", "banana"];
+let filter = "a";
+let filteredItems = items.filter((item) => item.startsWith(filter)); // a stored copy
+
+items = [...items, "apricot"]; // one code path forgets to update the copy
+
+console.log("stored:", filteredItems.length);
+console.log("derived:", items.filter((item) => item.startsWith(filter)).length);
+```
+
+```text role="output"
+stored: 2
+derived: 3
+```
 
 <MarginNote note="keep each fact in one place">
 
-Storing derived values creates two sources of truth for the same fact, which inevitably drift apart, producing the entire family of "these two things disagree" bugs.
+The stored copy went stale because nothing forced it to follow its inputs. The derived value cannot go stale, because it has no existence apart from its inputs.
 
 </MarginNote>
 
-The fix is to compute the derived value inline during render (and memoize it only if the computation is genuinely expensive).
+### The effect version, and the fix
 
-This single principle eliminates more state-synchronization bugs than any library ever will.
-
-### How it actually works
-
-Your component re-renders whenever its state or props change.
-
-During that render, you have all the current values in hand.
-
-So any value that is a pure function of those values can simply be _computed_ in the render, fresh, every time.
-
-It does not need to be stored, because it can always be recreated from its inputs, and recreating it from its inputs is the only way to guarantee it is never stale.
-
-```js
-// Anti-pattern: derived value stored as state, kept in sync with an effect
+```jsx
+// Anti-pattern: a derived value stored as state and synced with an effect
 const [items, setItems] = useState([]);
 const [filter, setFilter] = useState("");
 const [filteredItems, setFilteredItems] = useState([]);
 useEffect(() => {
-    setFilteredItems(items.filter((i) => i.name.includes(filter)));
-}, [items, filter]); // a whole effect, an extra render, and a chance to desync
+    setFilteredItems(items.filter((item) => item.name.includes(filter)));
+}, [items, filter]);
+```
 
-// Correct: derive during render
+The effect version is slower as well as buggier. The component renders with the old `filteredItems`. Then the effect runs after the **commit**, the step where React applies a render to the DOM, and its setter causes a second render.
+
+```jsx
+// Derive during render: one source of truth, one render
 const [items, setItems] = useState([]);
 const [filter, setFilter] = useState("");
-const filteredItems = items.filter((i) => i.name.includes(filter)); // always correct, by construction
+const filteredItems = items.filter((item) => item.name.includes(filter));
 ```
 
-The anti-pattern is worse than just verbose.
+The React docs say that when no external system is involved, you should not need an effect. If an effect only calls `setX` from other state or props, `X` should be a derivation.
 
-Walk what it costs.
+### When the derivation is expensive
 
-There are now two pieces of state holding overlapping truth (`items` plus `filteredItems`), so it is possible for them to disagree, and they will, the first time some code path updates `items` without going through the effect, or updates `items` twice in one tick so the effect sees an intermediate value.
+```jsx
+const sorted = useMemo(
+    () => [...items].sort(compareByPrice), // runs again only when items changes
+    [items],
+);
+```
 
-It also costs an extra render: the component renders with the old `filteredItems`, the effect runs after commit (Hooks guide, effect timing), calls `setFilteredItems`, and the component renders again.
+Sorting a large list on every render wastes work when most renders did not change the inputs. `useMemo` caches the result and recomputes only when an input changes. The value stays a derivation, so it still cannot desync. The React Compiler, a build-time tool that adds memoization automatically, inserts much of this for you.
 
-So the effect version is slower _and_ buggier than just computing the value.
+### Store the id, derive the item
 
-The derived version cannot desync, because there is only one source of truth (`items` and `filter`).
+```jsx
+const [items, setItems] = useState(initialItems);
+const [selectedId, setSelectedId] = useState(null);
+const selectedItem = items.find((item) => item.id === selectedId); // derived, never stale
+```
 
-`filteredItems` is recomputed from them on every render, so it is correct by construction, and there is no second render.
-
-This is why the React docs are blunt that synchronizing one piece of state to another with an effect is almost always a mistake (Hooks guide, Section 6): the effect is trying to keep a derived value in agreement with its inputs, which is exactly the job that computing-during-render does for free and without the chance of drift.
-
-If you find yourself writing an effect whose only job is to call `setX` based on other state or props, stop and ask whether `X` should be a derivation instead.
-
-The answer is usually yes.
-
-The one legitimate concern is cost.
-
-If the derivation is genuinely expensive (sorting or transforming a large collection on every render, where most renders did not change the inputs), recomputing it on every render is wasteful.
-
-That, and only that, is what `useMemo` is for here (Hooks guide, Section 12): it caches the derived value and recomputes only when its inputs change, while keeping the value a derivation rather than a stored piece of state.
-
-Note the difference from the anti-pattern: `useMemo` still computes from a single source of truth and cannot desync.
-
-It just skips redundant recomputation.
-
-With the React Compiler on (rendering guide, the 2026 section), even that manual `useMemo` is often inserted for you.
-
-So the decision tree is: derive during render by default.
-
-Wrap in `useMemo` only if profiling shows the computation is expensive.
-
-Never store a derivation as state and sync it with an effect.
-
-A close relative of this mistake is storing in state something you could read from a single existing source: keeping a `selectedItem` object in state when you already have `items` and a `selectedId` (store the id, derive the item), or keeping a `count` alongside an array whose length is the count.
-
-The general rule is the same: store the minimal set of independent facts, and derive everything else.
-
-Every redundant piece of state is a future desync.
+A `selectedItem` object stored beside `items` goes stale when the item is edited. A `count` stored beside an array is the same mistake. The general rule is to <Mark kind="underline" wraps>store the minimal set of independent facts</Mark> and derive everything else. Every redundant piece of state is a future desync.
 
 ### Try it
 
-> Build the filtered-list anti-pattern with the effect, then introduce a code path that updates `items` without the effect getting the latest filter (for example, update both in a way that batches oddly), and watch the displayed list go stale. Replace it with the derived-during-render version and confirm the staleness is impossible no matter how you update the inputs.
+In a React app, render `<FilteredList items={["apple", "avocado", "banana"]} />` and type `p` into the input.
 
-### You've got this if
+```jsx
+function FilteredList({ items }) {
+    const [filter, setFilter] = useState("");
+    const [filteredItems, setFilteredItems] = useState(items);
+    useEffect(() => {
+        setFilteredItems(items.filter((item) => item.includes(filter)));
+    }, [items, filter]);
+    console.log("render", JSON.stringify(filter), filteredItems.length);
+    return <input value={filter} onChange={(event) => setFilter(event.target.value)} />;
+}
+```
 
-You can explain why deriving a value during render cannot go stale while storing it as state and syncing with an effect can, in terms of sources of truth.
+```text role="output"
+render "p" 3
+render "p" 1
+```
 
----
+The first render pairs the new filter with the old list, which is the stale moment. React then runs the effect and renders a second time. Strict Mode may double each line. Replace the state and effect with `const filteredItems = items.filter(…)`, and each keystroke logs one correct line.
 
-## 5. Structuring state so it cannot contradict itself
+## 5. Shaping state so it cannot contradict itself
 
-Prereqs: Section 4.
-
-From the Hooks guide: referential stability and immutable updates (Sections 4 and 8).
-
-### The itch
-
-Your component has `isLoading`, `isError`, `error`, and `data` as four separate booleans and values, and you keep hitting states that should be impossible: `isLoading` true while `data` is also present, or `isError` true with no `error` and stale `data` still showing.
-
-Each bug is a different illegal combination of independent flags.
-
-The flags themselves are the problem.
+A component keeps `isLoading`, `isError`, `error` and `data` as four separate values. It keeps reaching states that should be impossible, such as an error flag with no error. Each bug is a different illegal combination of the flags.
 
 ### The short version
 
-How you shape state determines which bugs are even possible.
+The shape of your state decides which bugs are possible. Two principles do most of the work. Never keep two pieces of state that encode one fact or can disagree. And when several flags describe one situation, model it as one value with named states.
 
-Two principles do most of the work.
+Three independent booleans form 8 combinations, but only 4 are legal. A single `status` value can form only the legal ones, so the others cannot be written down. Flat, normalized shapes keep immutable updates local. Good structure makes whole categories of bugs impossible instead of merely unlikely.
 
-First, avoid redundant or contradictory state: do not keep multiple pieces of state that encode the same fact (that is Section 4) or that can disagree.
+### Count the states
 
-Second, when several flags really describe one situation, model the situation as a single value with named states rather than as independent booleans, so the illegal combinations become unrepresentable.
-
-<Mark kind="marker" wraps>Good structure makes whole categories of bugs impossible instead of merely unlikely.</Mark>
-
-### How it actually works
-
-Two components reading the same value disagree only if that value is stored twice.
-
-Four booleans describing one process contradict each other only if they are allowed to vary independently.
-
-So state-structure work is largely the work of removing the _freedom to be wrong._ There are a few concrete moves, in rough order of impact.
-
-#### Remove redundancy (the Section 4 principle, restated as structure)
-
-If two pieces of state always change together or one is computable from the other, you have a redundancy that can desync.
-
-Keep one.
-
-Derive the other.
-
-The `selectedId` plus derived `selectedItem` example from Section 4 is a structural fix: by storing only the id, you have made "the selected item and the selected id disagree" unrepresentable, because there is no separate selected-item to disagree.
-
-#### Collapse correlated flags into one state value
-
-The classic offender is the request status modeled as independent booleans:
+Run this in Node.
 
 ```js
-// Boolean soup: 2^3 = 8 representable combinations, most of them illegal
-const [isLoading, setIsLoading] = useState(false);
-const [isError, setIsError] = useState(false);
-const [data, setData] = useState(null);
-// illegal but representable: isLoading && isError, isError && data, ...
+const combos = [];
+for (const isLoading of [false, true]) {
+    for (const isError of [false, true]) {
+        for (const hasData of [false, true]) {
+            combos.push({ isLoading, isError, hasData });
+        }
+    }
+}
+
+const legal = combos.filter(
+    ({ isLoading, isError, hasData }) => Number(isLoading) + Number(isError) + Number(hasData) <= 1,
+);
+console.log(combos.length, "representable,", legal.length, "legal");
 ```
 
-Three independent booleans (or two booleans plus a nullable value) can represent eight combinations, but only a few are legal: idle, loading, success-with-data, error-with-error.
+```text role="output"
+8 representable, 4 legal
+```
 
-The illegal ones (loading and error at once, success with no data, error with stale data) are bugs waiting to be reached, and you end up writing defensive checks to paper over them.
+The legal states are idle, loading, success with data and error with an error. The other four, such as loading and error at once, are bugs waiting to be reached.
 
-Model the _one_ thing that is actually true, the request's status, as a single value:
+### One status value
 
 ```js
-// One status value: only the legal states exist
+// Only the legal states can be constructed.
+// { status: "idle" }
+// { status: "loading" }
+// { status: "success", data }
+// { status: "error", error }
 const [request, setRequest] = useState({ status: "idle" });
-// 'idle' | { status: 'loading' } | { status: 'success', data } | { status: 'error', error }
 ```
 
-Now "loading and error at the same time" is not a bug you have to prevent.
+Now "loading and error at once" is not a bug to prevent but a state that cannot be written down. The principle is called **making illegal states unrepresentable**. Rendering collapses into a switch over the legal states.
 
-It is a state that cannot be written down.
+```jsx
+switch (request.status) {
+    case "idle":
+        return <SearchPrompt />;
+    case "loading":
+        return <Spinner />;
+    case "success":
+        return <Results data={request.data} />; // data always exists here
+    case "error":
+        return <ErrorMessage error={request.error} />;
+}
+```
 
-The general principle is "make illegal states unrepresentable": choose a shape where the only values you can construct are valid ones.
+### Keep state flat, and normalize collections
 
-#### Keep state flat and avoid deep nesting
+```js
+// Normalized: items in a lookup by id, plus an array of ids for order
+const state = {
+    ids: [1, 2],
+    entities: {
+        1: { id: 1, title: "Buy milk", done: false },
+        2: { id: 2, title: "Write guide", done: true },
+    },
+};
 
-Deeply nested state objects are painful to update immutably (Hooks guide, Sections 4 and 8: you must create new objects at every level you change, since React detects changes by identity), and the deeper the nesting, the more places an update can go wrong or accidentally mutate.
+const next = {
+    ...state,
+    entities: { ...state.entities, 2: { ...state.entities[2], done: false } }, // one entry changes
+};
+```
 
-Flatter structures, and for collections, _normalized_ structures (storing items in a lookup keyed by id, plus an array of ids for order, rather than a deeply nested tree), make updates local and identity-changes precise.
+React detects changes by identity, so an immutable update must create a new object at every level it changes. The deeper the nesting, the more places an update can go wrong. A normalized shape keeps items in a lookup by id, so updating one item touches one entry. Redux Toolkit ships `createEntityAdapter` for this `ids` plus `entities` shape.
 
-This is exactly why libraries like Redux Toolkit lean on normalized state: a flat, id-keyed shape means updating one item touches one entry, not a nested path, which keeps both correctness and re-render scope under control.
+### What does not belong in state
 
-#### Do not put non-serializable or derived junk in state
+```jsx
+const timerId = useRef(null); // changing it never re-renders
+```
 
-State should hold the minimal independent facts (Section 4).
+Class instances and functions generally do not belong in state, because they complicate updates and equality. A mutable value that rendering never reads, such as a timer id, belongs in a ref.
 
-Class instances, functions, and the like generally do not belong in state.
-
-They complicate updates and equality.
-
-If you need a stable mutable thing that is not rendered on, that is a ref (Hooks guide, Section 13), not state.
-
-The payoff of all this is that structure is leverage.
-
-A well-shaped state object removes the need for a whole layer of validation, defensive conditionals, and "this should never happen" comments, because the bad situations are no longer expressible.
-
-You are not being tidy for its own sake.
-
-You are deleting bugs in advance by denying them a place to exist.
+A well-shaped state removes a whole layer of validation and "this should never happen" comments, because the bad situations can no longer be expressed.
 
 ### Try it
 
-> Take a component with `isLoading`, `isError`, and `data` booleans and deliberately reach an illegal combination (set loading and error both true) and observe the confused UI. Refactor to a single `status` value and notice that the illegal combination is now a type error or simply impossible to write, and that your render logic collapses to a clean switch over the legal states.
+Every independent flag doubles the representable states. Run this in Node, then add a fifth flag and predict the count.
 
-### You've got this if
+```js
+const flags = ["isLoading", "isError", "hasData", "isRefreshing"];
+console.log(2 ** flags.length, "representable with", flags.length, "flags");
+```
 
-You can explain why modeling a request as one `status` value eliminates a class of bugs that three independent booleans invite, in terms of representable states.
+```text role="output"
+16 representable with 4 flags
+```
 
----
+With a `status` value, adding "refreshing" adds one state, not eight. In TypeScript, type `request` as a union of the legal shapes, and an illegal combination fails to compile.
 
-## 6. Reducers and state machines: making impossible states impossible
+## 6. Reducers and state machines
 
-Prereqs: Section 5.
-
-From the Hooks guide: `useState` vs `useReducer` and `dispatch` stability (Section 5).
-
-### The itch
-
-Your component's update logic has sprawled across a dozen handlers, each calling several setters, and you keep introducing bugs where one update fires and a related one does not.
-
-You have heard "use a reducer" and "use a state machine," but they sound like ceremony.
-
-They are actually how you move the structural discipline of Section 5 from a one-time cleanup into something the code enforces continuously.
+Your update logic has spread across a dozen handlers, each calling several setters, and one update fires while a related one does not. "Use a reducer" sounds like ceremony. It is how the structure from section 5 stays enforced as the code changes.
 
 ### The short version
 
-A reducer consolidates all the ways a piece of state can change into one pure function, `(state, action) => newState`, so the transitions live in one readable, testable place instead of scattered across handlers.
+A **reducer** gathers every way a piece of state can change into one pure function, `(state, action) => newState`. The state changes live in one readable place that you can test without React. The reducer is the only code that writes the state, so it enforces the shape from section 5.
 
-A state machine goes one step further: it makes the _legal transitions_ explicit, so that from a given state, only certain actions can do anything, which is how you enforce "impossible states stay impossible" over time rather than just at the moment you refactor.
+A **state machine** goes further. It names the states and lists, for each one, which events do anything, and it ignores the rest. So a second submit while submitting is not a bug you guard against. It is a move between states that does not exist, enforced every day, not only on the day you refactored.
 
-The Hooks guide covered when to choose `useReducer`.
-
-This section is about using it as an architectural tool for complex state.
-
-### How it actually works
-
-Recall from the Hooks guide that `useState` and `useReducer` are mechanically almost the same (both use the update queue, `useState` is `useReducer` with a built-in reducer), and that the choice is about where transition logic lives, not performance.
-
-A reducer's value is that it turns "the set of all ways this state can change" from an emergent property of your scattered handlers into a single function you can read top to bottom.
-
-When every transition is a `case` in one reducer, you can answer "what can happen to this state" by reading one place, and you can unit-test each transition with plain inputs and outputs and no React.
-
-That is the consolidation win, and it pairs with Section 5: the reducer is where you enforce the well-structured shape, because it is the only thing that writes the state.
-
-The state-machine step makes the structure active rather than passive.
-
-A plain reducer still lets any action attempt any change from any state.
-
-It is up to you to write the cases correctly.
-
-A state machine constrains transitions explicitly: it defines a set of named states and, for each state, which events are even meaningful and what state they lead to.
-
-Modeled this way, "fire a submit while already submitting" or "receive data while in the error state" are not bugs you guard against.
-
-They are transitions that simply do not exist in the machine, so the corresponding events are ignored.
+### useState is a reducer with a built-in function
 
 ```js
-// A reducer shaped as a small state machine for a fetch lifecycle
+// From ReactFiberHooks.js, React 19 (types removed).
+function basicStateReducer(state, action) {
+    return typeof action === "function" ? action(state) : action;
+}
+```
+
+When `useState` updates, React runs the same reducer machinery as `useReducer`, with this function as the reducer. So choosing between them is about where update logic lives, not performance. Several `setState` or `dispatch` calls in one event still render once, which the [scheduler and lanes guide](/articles/react-scheduler-and-lanes-internals) explains as batching.
+
+### A reducer shaped as a machine
+
+Run this in Node.
+
+```js
 function reducer(state, action) {
     switch (state.status) {
         case "idle":
             if (action.type === "FETCH") return { status: "loading" };
-            return state; // any other action from idle is a no-op, by design
+            return state; // anything else from idle does nothing
         case "loading":
-            if (action.type === "SUCCESS")
-                return { status: "success", data: action.data };
-            if (action.type === "ERROR")
-                return { status: "error", error: action.error };
-            return state; // a second FETCH while loading does nothing: impossible state avoided
+            if (action.type === "SUCCESS") return { status: "success", data: action.data };
+            if (action.type === "ERROR") return { status: "error", error: action.error };
+            return state; // a second FETCH while loading does nothing
         case "success":
         case "error":
             if (action.type === "FETCH") return { status: "loading" };
             return state;
     }
 }
+
+let state = { status: "idle" };
+const actions = [
+    { type: "FETCH" },
+    { type: "FETCH" },
+    { type: "SUCCESS", data: ["a", "b"] },
+    { type: "ERROR", error: "too late" },
+];
+for (const action of actions) {
+    state = reducer(state, action);
+    console.log(action.type.padEnd(7), "->", state.status);
+}
 ```
 
-Read what that bought you.
+```text role="output"
+FETCH   -> loading
+FETCH   -> loading
+SUCCESS -> success
+ERROR   -> success
+```
 
-The illegal combinations from Section 5 (loading-and-error, success-with-no-data) cannot occur, because the only way to reach `success` is the `SUCCESS` action, which always carries `data`, and the only way to reach `error` carries `error`.
+The duplicate `FETCH` and the late `ERROR` changed nothing, and `success` always carries `data`. You added no defensive checks. You described the legal moves and let everything else fall through.
 
-A duplicate `FETCH` while already `loading` is explicitly a no-op.
+### Two perks that matter for architecture
 
-You did not add defensive checks.
+```jsx
+const [state, dispatch] = useReducer(reducer, { status: "idle" });
+```
 
-You described the legal transitions and let everything else be ignored.
+First, `dispatch` keeps the same identity for the life of the component. Passing it deep or through Context never causes a re-render by itself, which section 10 relies on. Second, a reducer is pure. Strict Mode calls it twice in development, so a reducer that mutates state shows its bug early.
 
-This is the structural discipline of Section 5 made continuous: every future change goes through the reducer, so the shape stays legal as the code evolves, not just on the day you refactored it.
+### When to use a machine library
 
-Two mechanical perks carry over from the Hooks guide and matter at the architecture level.
+| Need | Tool |
+|---|---|
+| A few states and moves in one component | A reducer shaped as a machine |
+| Nested or parallel states, guards, visual charts | A state machine library such as XState |
+| Side effects orchestrated by the machine itself | A state machine library |
 
-First, `dispatch` is referentially stable for the life of the component, so handing `dispatch` to deep children or through Context does not itself cause re-renders, which makes the "reducer plus Context" pattern (Section 10) clean.
-
-Second, the reducer is pure, so it is testable in isolation and behaves predictably under StrictMode's double-invoke (Hooks guide, Section 5).
-
-If your reducer mutates state or has side effects, StrictMode will surface it.
-
-When do you reach for a dedicated state-machine library (the best known is XState) rather than a hand-rolled reducer?
-
-When the machine gets large enough that you want explicit visualization, nested or parallel states, guards, and machine-level side-effect orchestration, the things a reducer makes you hand-roll.
-
-For most component-level state, a reducer shaped as a small machine, as above, is enough and keeps the dependency count down.
-
-The point is the _modeling discipline_ (named states, explicit transitions), which you can apply with a plain reducer.
-
-A library is an upgrade for when that discipline outgrows a switch statement.
+The point is the modeling discipline, named states and explicit moves between them. A plain reducer carries it, and a library is an upgrade for when it outgrows a `switch`.
 
 ### Try it
 
-> Build a fetch lifecycle first with loose `useState` booleans, then reach a duplicate-submit bug (fire the action twice quickly and watch two requests or a confused state). Rewrite it as the reducer-as-machine above and confirm the duplicate submit is now a structural no-op you did not have to special-case.
+Add these lines to the Node example and predict each status first. After the earlier output, the new lines print this.
 
-### You've got this if
+```js
+console.log(reducer({ status: "idle" }, { type: "ERROR", error: "boom" }).status);
+console.log(reducer({ status: "error", error: "boom" }, { type: "FETCH" }).status);
+```
 
-You can explain how modeling transitions explicitly (a state machine) prevents illegal states more durably than writing correct setter calls by hand, and when a reducer is enough versus when a machine library earns its place.
+```text role="output"
+idle
+loading
+```
 
----
+An error cannot arrive before a fetch starts, and a retry from the error state works. In a React app, wire `dispatch({ type: "FETCH" })` to a button and click it twice quickly. The second click is a no-op you never special-cased.
 
 ## 7. Prop drilling: when it is fine and when it is a smell
 
-Prereqs: Section 3 (lifting state).
-
-### The itch
-
-You lifted some state to a common ancestor, and now you are threading the same `value` and `onChange` through five intermediate components that do nothing with them but pass them along.
-
-It feels wrong.
-
-But you have also heard "Context is overused," so you are not sure whether this drilling is a real problem or just mild annoyance.
+You lifted some state, and now `value` and `onChange` pass through five components that only hand them along. It feels wrong, but you have also heard that Context is overused.
 
 ### The short version
 
-Prop drilling is passing a prop down through intermediate components that do not use it, only to reach a deep descendant that does.
+Passing a prop through components that do not use it, only to reach a deep one that does, is called **prop drilling**. Passing a prop one or two levels to a child that uses it is not drilling. That is props doing their job.
 
-<MarginNote note="explicit flow is a feature, not a flaw">
+Drilling costs clarity, not speed. A little of it is often clearer than Context, because explicit props show where a value comes from. It becomes a smell when one value threads through many layers and clutters their signatures. Before reaching for Context, try composition: pass the deep child down from where the data lives.
 
-A little of it is completely fine and is often clearer than the alternative, because the data flow is explicit and traceable.
+### What drilling looks like
+
+```jsx
+function Page({ user }) {
+    return <Layout user={user} />; // Layout ignores user
+}
+
+function Layout({ user }) {
+    return <Sidebar user={user} />; // so does Sidebar
+}
+
+function Sidebar({ user }) {
+    return <Avatar user={user} />; // only Avatar reads it
+}
+```
+
+Every middle signature now advertises a prop it ignores, and a reader tracing `user` must follow it through each layer. Speed is not the issue. Passing a prop is nearly free, and a well-placed `React.memo` stops unrelated re-renders.
+
+<MarginNote note="explicit flow is a feature">
+
+Still, explicit props make the data flow visible in the code. Context makes the link implicit, so a consumer just knows a value and you must go and find the matching provider.
 
 </MarginNote>
 
-It becomes a smell when the same props thread through many layers or large parts of the tree, at which point the noise obscures each component's real job.
+### When it becomes a smell
 
-That smell, the noise of transport, not a performance problem, is the specific thing Context is built to relieve.
+| Signal | Verdict |
+|---|---|
+| One or two levels, and the child uses the prop | Not drilling. Keep it. |
+| A few pass-through levels on one path | Fine. Explicit flow is worth it. |
+| The same value threads through many layers or branches | A smell |
+| The value is ambient, like a theme, user or locale | A real case for Context (section 8) |
 
-### How it actually works
+Context has costs of its own: the re-renders in sections 9 to 11, and every reader depends on a provider above it. Trading two levels of explicit props for that is usually a bad trade. The React docs agree: first ask whether passing props is fine, and whether the deep component needs to be that deep.
 
-First, be precise about what prop drilling is and is not, because the term gets used as a slur for any prop passing.
+### Composition before Context
 
-Passing a prop one or two levels to a child that uses it is not drilling.
+```jsx
+function Page({ user }) {
+    return (
+        <Layout>
+            <Sidebar>
+                <Avatar user={user} /> {/* rendered where the data already lives */}
+            </Sidebar>
+        </Layout>
+    );
+}
 
-It is just props doing their job, and it is the clearest possible data flow.
+function Layout({ children }) {
+    return <div className="layout">{children}</div>; // no user prop anymore
+}
+```
 
-Drilling specifically means a prop passing _through_ components that do not care about it, purely as a conduit to something deeper.
-
-The cost of drilling is not performance (passing a prop is nearly free, and a well-placed `React.memo` can stop unrelated re-renders).
-
-The cost is _clarity_.
-
-Every intermediate component's signature now advertises props it does not use, and a reader tracing the data has to follow it through layers of indifferent middlemen.
-
-So the honest position is that a small amount of drilling is fine and often _preferable_ to reaching for Context, for two reasons.
-
-One, explicit props make the data flow visible: you can see exactly where a value comes from and where it goes by reading the tree, whereas Context makes the connection implicit (a consumer just "knows" a value, and you have to find the matching provider).
-
-Two, Context has real costs of its own (the re-render behavior of Sections 9 through 11, and the coupling of consumers to a provider's existence).
-
-Trading two levels of explicit props for an implicit Context dependency is usually a bad trade.
-
-The React docs make this point directly: before reaching for Context, consider whether passing props is actually fine, and whether the deep component even needs to be that deep.
-
-When _is_ drilling a real smell worth fixing?
-
-When the same value threads through many layers or branches, so that a meaningful fraction of your components carry pass-through props that have nothing to do with their purpose.
-
-The signal is qualitative: you find yourself adding a prop to several components solely so a distant descendant can receive it, and those components' signatures are getting cluttered with transport they ignore.
-
-At that point the noise outweighs the clarity benefit, and the value is genuinely "ambient" (a theme, the current user, a locale) rather than specific to one path.
-
-That is the case Context was designed for.
-
-A useful intermediate move before Context, which the docs also recommend, is component composition: instead of drilling props down to a deep child, pass the deep child itself _in_ as a prop (often `children`) from higher up, where the data already lives.
-
-If a layout component is only drilling props to render a child, consider whether the parent that has the data can render that child and pass it down as an element, removing the need to drill at all.
-
-Composition often dissolves a drilling problem without introducing Context's implicit coupling.
+If a layout only drills props to render one child, let the parent with the data render that child and pass it as `children`. This often dissolves drilling without Context's implicit link.
 
 ### Try it
 
-> Build a four-level-deep component that needs a value held at the top, and drill it through the two middle layers. Notice how the middle components' props now mention something they do not use. Then refactor using composition: have the top-level component render the deep child as `children` and pass the value directly, and watch the middle layers lose the pass-through prop entirely.
+In a React app, build both versions of `Page` above, and add this line as the first line of `Layout` in each.
 
-### You've got this if
+```jsx
+console.log("Layout props:", Object.keys(props)); // write Layout(props) to see them all
+```
 
-You can explain why a little prop drilling can be clearer than Context, and name the specific condition that turns drilling from fine into a smell.
+The drilled version logs `["user"]`, a prop `Layout` never uses. The composed version logs `["children"]`, and `Avatar` still receives `user` from the component that owns it.
 
----
+## 8. Context is a transport, not a state manager
 
-## 8. Context is dependency injection, not state management
-
-Prereqs: Section 7.
-
-From the rendering guide: what Context is (the Provider and consumer concept), defined inline here.
-
-### The itch
-
-You reach for Context expecting it to "manage" shared state, and then you are confused when it does not give you selectors, does not prevent re-renders, and seems to need a `useState` next to it to actually hold anything.
-
-The confusion comes from a category error: Context is not a state manager.
-
-It is a transport.
+You reach for Context expecting it to manage shared state. It cannot subscribe a reader to part of a value, prevents no re-renders, and needs a `useState` beside it to hold anything. The confusion is a category error.
 
 ### The short version
 
-Context is a way to make a value available to a subtree without passing it through props at every level.
+React's **Context** makes a value available to a whole subtree without passing it through props at every level. That is its only job, a form of **dependency injection**: a component receives what it needs from outside.
 
-That is the whole job: dependency injection, or transport.
+It does not store state, manage updates or reduce re-renders. You hold the state with `useState` or `useReducer` above, and Context delivers it to deep readers.
 
-It does not store state, manage updates, or optimize re-renders by itself.
+So "Context versus Redux" is a confused comparison. The real pair is "Context plus `useState`" against "an external store." In React 19 you render the context itself as the provider, `<ThemeContext value={theme}>`. Context fits ambient values that change rarely, such as a theme, the current user or a locale.
 
-You hold the state with `useState` or `useReducer` in a component above, and use Context only to _deliver_ that state to deep consumers without drilling.
+### Create, provide, read
 
-<Mark kind="underline" wraps>Treating Context as a state-management solution is the source of most of the trouble people have with it.</Mark>
+```jsx
+import { createContext, useContext, useMemo, useState } from "react";
 
-Treating it as a delivery mechanism for state you manage elsewhere is how to use it correctly.
-
-### How it actually works
-
-A Context is a channel you create with `createContext`.
-
-A `Provider` component places a value onto that channel for everything in its subtree, and any descendant can read that value with `useContext` (or `use(Context)`) without it being passed as a prop through the intervening components.
-
-That is all Context is: a way for a deep component to read a value from an ancestor without the layers in between having to carry it.
-
-The category error is expecting Context to do the jobs a state library does.
-
-Context does not hold state: a Context by itself has no memory.
-
-You give its Provider a `value`, and that value comes from somewhere, almost always `useState` or `useReducer` in a component wrapping the Provider.
-
-Context does not manage updates: when you want to change the shared value, you change the state that feeds the Provider, using the normal setter.
-
-Context just carries the new value down.
-
-And, crucially, Context does not optimize anything: every consumer re-renders when the value changes, with no way to subscribe to part of it (Sections 9 through 11).
-
-So "Context versus Redux" is a slightly confused framing.
-
-The real pairing is "Context plus `useState`/`useReducer`" as a way to _share_ state you are managing with React's own primitives, versus an external store as a different way to _manage and share_ state.
-
-Context is the transport in the first option, not a competitor to the store in the second.
-
-Seen correctly, the idiomatic pattern is: hold the state with a hook in a Provider component, and expose it through Context so deep consumers can read it without drilling.
-
-```js
-const ThemeContext = createContext(null);
+const ThemeContext = createContext(null); // null: the value with no provider above
 
 function ThemeProvider({ children }) {
-    const [theme, setTheme] = useState("light"); // the state lives here, managed with React's primitives
-    const value = useMemo(() => ({ theme, setTheme }), [theme]); // Context just transports it (Section 10)
-    return (
-        <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-    );
+    const [theme, setTheme] = useState("light"); // the state lives here
+    const value = useMemo(() => ({ theme, setTheme }), [theme]); // section 10 explains why
+    return <ThemeContext value={value}>{children}</ThemeContext>; // Context carries it
 }
 
 function useTheme() {
-    const ctx = useContext(ThemeContext);
-    if (ctx === null)
-        throw new Error("useTheme must be used within ThemeProvider");
-    return ctx;
+    const context = useContext(ThemeContext);
+    if (context === null) throw new Error("useTheme must be used inside ThemeProvider");
+    return context;
 }
 ```
 
-Notice the division of labor: `useState` _manages_ the theme, Context _delivers_ it, and the custom hook (`useTheme`, an application of the Hooks guide's Section 14) gives consumers a clean way to read it with a helpful error if the Provider is missing.
+`createContext` makes a channel, and its argument is the default value, used only when no provider sits above a reader. A provider puts a value on the channel for its subtree. A reader gets the nearest provider above it, never one rendered by the same component.
 
-This is why Context is excellent for genuinely ambient, rarely-changing values, theme, current user, locale, feature flags, where the win is "deep components can read this without every layer carrying it" and the rare-change part keeps the re-render cost (next section) a non-issue.
+Notice the division of labor. `useState` manages the theme and Context delivers it. The `useTheme` hook gives readers one clean way in, with a helpful error if the provider is missing.
 
-The reason this framing matters so much is that it tells you exactly when Context is the wrong tool.
+### The React 19 provider syntax
 
-If your shared value changes frequently, or is large and different consumers need different slices of it, Context's "deliver the whole value, re-render every consumer" model is a poor fit, and no amount of using Context "better" fixes that, because optimizing slice-level subscriptions is simply not something Context does (Section 11).
+```jsx
+<ThemeContext value={value}>{children}</ThemeContext> // React 19
+<ThemeContext.Provider value={value}>{children}</ThemeContext.Provider> // still works
+```
 
-Knowing Context is a transport, not a manager, is what stops you from trying to make it do a job it was never built for and reaching instead for the right tool (an external store, Section 12).
+Since React 19, `createContext` sets `context.Provider = context`. Save this as an `.mjs` file in any project with React 19 installed, and run it with Node.
+
+```js
+import { createContext } from "react";
+
+const ThemeContext = createContext("light");
+console.log(ThemeContext.Provider === ThemeContext);
+```
+
+```text role="output"
+true
+```
+
+Both lines above render the same object. The React docs call `.Provider` the legacy spelling, and the React 19 release post says a future version will deprecate it.
+
+### useContext and use(Context)
+
+```jsx
+function Banner({ show }) {
+    if (!show) return null;
+    const { theme } = use(ThemeContext); // allowed: use() may run inside a condition
+    return <div className={theme}>Welcome back</div>;
+}
+```
+
+`useContext` is a Hook, so it must run at the top level of a component, never inside an `if` or a loop. React 19's `use(ThemeContext)` reads the same value but may run inside conditions and loops. Both subscribe the component to changes in the same way.
+
+### Context does not hold anything
+
+Context is <Mark kind="circle">a transport</Mark> with no memory. A new value always comes from the state that feeds the provider. And Context optimizes nothing: every reader re-renders when the value changes, with no way to subscribe to part of it.
+
+| Value | Good fit for Context? | Why |
+|---|---|---|
+| Theme, locale, current user | Yes | Read in many places, changes rarely |
+| Feature flags | Yes | Ambient, almost never changes |
+| Search text typed every keystroke | No | Re-renders every reader per key |
+| A large object, each reader using one part | No | Every reader re-renders for any field |
+
+For values that change often, or that each reader uses a different part of, delivering the whole value to everyone is the wrong model. Using Context more carefully does not fix it, and sections 11 and 12 explain why.
 
 ### Try it
 
-> Build the `ThemeProvider` above and a deep consumer that calls `useTheme`. Confirm the intervening components carry no theme prop. Then notice what is doing what: remove the `useState` and watch the Provider have nothing to provide, which makes concrete that Context transports state but does not hold it.
+In a React app, wrap a few layers of components in the `ThemeProvider` above, and put this button at the bottom.
 
-### You've got this if
+```jsx
+function ThemeToggle() {
+    const { theme, setTheme } = useTheme();
+    return <button onClick={() => setTheme(theme === "light" ? "dark" : "light")}>{theme}</button>;
+}
+```
 
-You can explain why "Context versus Redux" is a confused comparison, and state what Context actually pairs with to manage shared state.
+The layers in between carry no theme prop. Then replace the provider's `useState` with a constant `"light"` and a no-op setter. The button still reads the value but can no longer change it, because Context transports state and does not hold it.
 
----
+## 9. How a context change reaches its readers
 
-## 9. How context propagates, and the re-render trap
-
-Prereqs: Section 8.
-
-From the Hooks guide: referential stability (Section 8).
-
-From the rendering guide: the bailout that lets `React.memo` skip work, defined inline here.
-
-### The itch
-
-You put a value in Context, and now every consumer re-renders constantly, even consumers wrapped in `React.memo`, even when the part of the value they read did not change.
-
-You suspect Context is "slow," but the real cause is almost always one specific mistake in how you build the Provider's value.
+You put a value in Context, and now every reader re-renders constantly, even behind `React.memo` and even when the part it reads did not change. You suspect Context is slow. The real cause is almost always how you built the provider's value.
 
 ### The short version
 
-When a Provider's `value` changes (compared by `Object.is`), React re-renders every component that consumes that context, and it does so even through `React.memo` boundaries, because context consumers subscribe to the context directly and are not protected by the normal props bailout.
+When a provider renders, React compares its new `value` with the old one using `Object.is`, an identity check. If they differ, every component that reads that context re-renders. <Mark kind="marker" wraps>The unit of change is the whole value</Mark>, never one field. `React.memo` cannot stop it, because React checks context reads before memo may skip a component.
 
-The notorious trap is passing a freshly-created object as the value (`value={{ user, setUser }}`), which is a new identity every render (Hooks guide, Section 8), so the value "changes" every single render and every consumer re-renders every render.
+The common trap is an inline object such as `value={{ user, setUser }}`. It is a new object on every render, so every reader re-renders on every render. React 19 finds readers lazily, when it is about to skip a subtree, but the result is the same.
 
-The fix (Section 10) is to stabilize the value and split contexts.
+### Object.is compares identity
 
-This section is about why it happens.
-
-### How it actually works
-
-Two mechanisms combine here, and you need both to understand the trap.
-
-First, how a context update reaches consumers.
-
-When you render a Provider with a new `value`, React compares it to the previous value with `Object.is`.
-
-If it is unchanged, nothing happens.
-
-If it changed, React needs to update every consumer of that context, so it walks the subtree and marks each component that reads this context as needing to re-render.
-
-The important part is the _granularity_: the unit of change is the entire `value`.
-
-React knows "the value changed," not "the `theme` field of the value changed." Every consumer is told to re-render, regardless of which part of the value it actually reads.
-
-(Section 11 is entirely about this limitation.)
-
-Second, why `React.memo` does not save you.
-
-Recall the bailout from the rendering guide, defined here in one line: `React.memo` lets a component skip re-rendering when its _props_ are unchanged, by short-circuiting the normal top-down render propagation at that boundary.
-
-But context consumption is a _separate subscription_ that does not go through props.
-
-A component that calls `useContext(C)` has registered a direct dependency on `C`, and when `C`'s value changes, React schedules that component to re-render _regardless of its props_, punching straight through any `React.memo` boundary above it.
-
-This is by design: a consumer's whole purpose is to react to the context, so React cannot let a props-based bailout suppress that.
-
-The practical consequence is that you cannot fix a context re-render problem with `React.memo` on the consumers.
-
-The memo is bypassed for exactly the update you are trying to contain.
-
-Now the trap, which is the collision of these two facts with referential stability (Hooks guide, Section 8):
+Run this in Node.
 
 ```js
+const value = { theme: "dark" };
+console.log(Object.is(value, value)); // the same object
+console.log(Object.is(value, { theme: "dark" })); // equal contents, new object
+console.log(Object.is(NaN, NaN), NaN === NaN); // where Object.is differs from ===
+```
+
+```text role="output"
+true
+false
+true false
+```
+
+Equal contents do not make equal values, and React never looks inside a context value.
+
+### How React 19 finds the readers
+
+```js
+// Simplified teaching version of lazy propagation (ReactFiberNewContext.js).
+function propagate(fiber, context, marked = []) {
+    for (const child of fiber.children) {
+        if (child.reads.includes(context)) {
+            marked.push(child.name); // React visits its children during render
+            continue;
+        }
+        propagate(child, context, marked);
+    }
+    return marked;
+}
+
+const leaf = (name, reads = []) => ({ name, reads, children: [] });
+const provider = {
+    name: "AppContext",
+    reads: [],
+    children: [
+        {
+            name: "Layout (memo)",
+            reads: [],
+            children: [leaf("ThemeButton", ["AppContext"]), leaf("UserMenu", ["AppContext"]), leaf("Footer")],
+        },
+    ],
+};
+
+// Only user changed, but React tracks the context, not the field.
+console.log(propagate(provider, "AppContext"));
+```
+
+```text role="output"
+[ 'ThemeButton', 'UserMenu' ]
+```
+
+Each fiber, React's object for one component instance, keeps a list of the contexts it read in its last render. A provider only pushes its new value while React renders it. Before React skips a subtree with no pending work, it calls `lazilyPropagateParentContextChanges`.
+
+That function looks up the tree for providers whose value changed by `Object.is`. A **lane** is React's priority bit for an update, and `childLanes` records the lanes pending below a fiber. The function walks down, marking each matching reader with the render's lanes and each ancestor's `childLanes`. The [scheduler and lanes guide](/articles/react-scheduler-and-lanes-internals) covers both.
+
+### Why React.memo does not help
+
+```jsx
+const ThemeButton = memo(function ThemeButton() {
+    const { theme } = useContext(AppContext); // a context dependency, not a prop
+    return <button className={theme}>Toggle</button>;
+});
+```
+
+`React.memo` lets a component skip rendering when its props are unchanged. But even when the props match, React first runs `checkScheduledUpdateOrContext`, which also compares the component's context reads. A changed context counts as work, so memo never gets to skip.
+
+This is by design, because a reader exists to respond to its context. So memo on the readers cannot fix a context re-render problem.
+
+### The inline-object trap
+
+```jsx
 function AppProvider({ children }) {
     const [user, setUser] = useState(null);
     const [theme, setTheme] = useState("light");
-    // BUG: a brand-new object literal every render → new identity every render
-    return (
-        <AppContext.Provider value={{ user, setUser, theme, setTheme }}>
-            {children}
-        </AppContext.Provider>
-    );
+    // Bug: a brand-new object literal on every render
+    return <AppContext value={{ user, setUser, theme, setTheme }}>{children}</AppContext>;
 }
 ```
 
-Every time `AppProvider` re-renders, for _any_ reason, including a parent re-rendering or either `useState` changing, the `value={{ ... }}` expression constructs a new object with a new identity.
+`AppProvider` re-renders whenever its parent re-renders or either state changes, and each time `value={{ ... }}` builds a new object. So React re-renders every reader, even one that reads only `theme` when only `user` changed. Context is not slow. It was handed a new value every render and faithfully reported a change.
 
-React compares it to the previous value with `Object.is`, sees a different object, concludes "the value changed," and re-renders every consumer of `AppContext`, even consumers that only read `theme` when it was `user` that changed, even consumers wrapped in `React.memo`.
-
-The context is not slow.
-
-You are handing it a new value every render, so it faithfully propagates a "change" every render.
-
-This one mistake, an inline object (or array, or function) as the Provider value, is the single most common cause of "Context made my app re-render everywhere," and it is pure referential instability wearing a Context costume.
-
-There is a second, related trap worth naming: the **one big context**.
-
-Even with a stabilized value, if you put many unrelated pieces of state into a single context's value object (`{ user, theme, notifications, cart, settings }`), then _any_ change to _any_ of them changes the value object, which re-renders _every_ consumer of that context, including those that only read an unrelated field.
-
-A consumer that reads only `theme` re-renders when `cart` changes, because they share one value and context cannot distinguish which field a consumer uses.
-
-So the size and heterogeneity of a context's value is itself a re-render hazard, independent of the identity bug above.
+An inline array or function as the value has the same problem. This one mistake is the most common cause of "Context made my app re-render everywhere."
 
 <GuideFigure figure="react-context-value" />
 
+### The one big context
+
+A stable value has a second trap. Put many unrelated pieces in one value, such as `{ user, theme, notifications, cart }`, and any change creates a new value. A reader of `theme` re-renders when `cart` changes. The size and mix of a context's value is a re-render hazard of its own.
+
+### Before React 19
+
+React 18 propagated eagerly: when a provider's value changed, `propagateContextChange` walked its whole subtree at once. React 19.0 switched on lazy propagation behind the `enableLazyContextPropagation` flag, and 19.1 removed the flag. Which components re-render did not change.
+
 ### Try it
 
-> Build a Provider with an inline object value and three consumers, one reading each field, each logging its renders and wrapped in `React.memo`. Change one field and watch all three re-render despite the memo. Then change something unrelated in the Provider's parent and watch them all re-render again (the identity bug). Seeing the memo get bypassed is the moment context propagation becomes real.
+In a React app, render the `AppProvider` above around these two memoized readers, plus a button that calls `setUser`.
 
-### You've got this if
+```jsx
+const ThemeReader = memo(function ThemeReader() {
+    const { theme } = useContext(AppContext);
+    console.log("ThemeReader render");
+    return <p>{theme}</p>;
+});
 
-You can explain why a `React.memo` on a context consumer does not prevent it from re-rendering when the context value changes, and why an inline object as the Provider value re-renders every consumer every render.
+const UserReader = memo(function UserReader() {
+    const { user } = useContext(AppContext);
+    console.log("UserReader render");
+    return <p>{user ?? "nobody"}</p>;
+});
+```
 
----
+Change `user` and both readers log, past their memo. Re-render the provider's parent without changing any state, and both log again.
 
-## 10. Taming context: split, stabilize, separate
+## 10. Taming context: stabilize, split, separate
 
-Prereqs: Section 9.
-
-From the Hooks guide: `useMemo` for stabilizing identity (Section 12) and `dispatch` stability (Section 5).
-
-### The itch
-
-You understand now _why_ Context over-renders.
-
-You want the concrete moves that fix it without abandoning Context, because for ambient state Context is still the right tool, you just need it to stop re-rendering everything.
+You now know why Context over-renders. For ambient state it is still the right tool, so you want moves that stop the waste.
 
 ### The short version
 
-Three fixes, each targeting a cause from Section 9.
+Three fixes each target a cause from section 9. First, stabilize the provider's value with `useMemo`, so its identity changes only when its contents do. Second, split one big context into several, grouped by how often each part changes and who reads it. Third, put state and its `dispatch` in two separate contexts.
 
-Stabilize the Provider value with `useMemo` (or by passing already-stable values) so it stops changing identity every render.
+The third fix is the strongest. `dispatch` never changes identity, so a component that only dispatches never re-renders when the state changes. Together the fixes make Context perform well for ambient and moderately changing state. They cannot let a reader subscribe to part of one context's value, which is its hard ceiling.
 
-Split one big context into several smaller ones grouped by how often each part changes and who consumes it, so a change to one part does not re-render consumers of the others.
+### Fix one: stabilize the value
 
-And separate state from its setters into two contexts, because setters and `dispatch` are referentially stable and their consumers should never re-render.
-
-Applied together, these make Context perform well for the ambient-state job it is suited to.
-
-### How it actually works
-
-#### Fix one: stabilize the value
-
-The inline-object bug from Section 9 is referential instability, so the fix is the referential-stability tooling from the Hooks guide (Section 12): wrap the value in `useMemo` keyed by its actual contents, so the value object keeps the same identity until something inside it genuinely changes.
-
-```js
-const value = useMemo(() => ({ user, setUser }), [user]); // setUser is already stable; only re-create when user changes
-return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+```jsx
+const value = useMemo(() => ({ user, setUser }), [user]); // setUser is already stable
+return <AppContext value={value}>{children}</AppContext>;
 ```
 
-Now when `AppProvider` re-renders for an unrelated reason, `value` keeps its identity (because `user` did not change), `Object.is` reports "unchanged," and consumers are not disturbed.
-
-With the React Compiler on (rendering guide, 2026 section), this memoization is often inserted for you, but the principle is the thing to understand: the Provider value must be referentially stable across renders where its contents did not change, or every consumer pays.
-
-#### Fix two: split by change frequency and consumer
-
-The one-big-context problem is that unrelated state shares one value, so one change re-renders everyone.
-
-Split it into multiple contexts grouped so that things that change together, and are consumed together, live together, and things that change at very different rates live apart.
+Here is what `useMemo` keeps between renders, as a simplified teaching version you can run in Node.
 
 ```js
-// Instead of one AppContext holding everything:
-<UserContext.Provider value={userValue}>
-    <ThemeContext.Provider value={themeValue}>
-        <NotificationsContext.Provider value={notificationsValue}>
-            {children}
-        </NotificationsContext.Provider>
-    </ThemeContext.Provider>
-</UserContext.Provider>
+let previous = null;
+function memoValue(user, setUser) {
+    if (previous !== null && Object.is(previous.user, user)) return previous.value;
+    previous = { user, value: { user, setUser } };
+    return previous.value;
+}
+
+const setUser = () => {};
+const first = memoValue("Ada", setUser);
+const second = memoValue("Ada", setUser); // the provider re-rendered, user did not change
+const third = memoValue("Grace", setUser);
+console.log(Object.is(first, second), Object.is(second, third));
 ```
 
-Now a component that reads only the theme consumes only `ThemeContext`, so a change to notifications (a different context) does not touch it.
+```text role="output"
+true false
+```
 
-The guiding question for where to draw the lines is "what changes together, and who reads what": put the rarely-changing ambient values (theme, locale, current user) in their own contexts, and keep a frequently-changing value out of any context that quiet consumers depend on.
+When the provider re-renders for an unrelated reason, `value` keeps its identity, so readers stay quiet. The React Compiler often inserts this memoization for you. Either way, a provider value must keep its identity across renders where its contents did not change.
 
-There is a limit to this, though: pushed too far, splitting becomes "provider sprawl," a deeply nested stack of providers each holding one field, which is its own kind of complexity and still does not give you slice-level subscriptions within a context.
+### Fix two: split by change rate and reader
 
-When you find yourself splitting contexts purely for performance rather than for logical grouping, that is the signal you have outgrown Context and want an external store (Section 11 and 12).
+```jsx
+<UserContext value={userValue}>
+    <ThemeContext value={themeValue}>
+        <NotificationsContext value={notificationsValue}>{children}</NotificationsContext>
+    </ThemeContext>
+</UserContext>
+```
 
-#### Fix three: separate state from dispatch
+A component that reads only the theme now ignores new notifications. Draw the lines by asking what changes together and who reads what. Keep a fast value out of any context that quiet readers depend on.
 
-This one is high-leverage and underused.
+Pushed too far, splitting becomes provider sprawl, a deep stack of providers holding one field each. When you split purely for performance rather than logical grouping, you have outgrown Context.
 
-The _state_ in a context changes often.
+### Fix three: separate state from dispatch
 
-The _way to change it_ (a `useState` setter, or a reducer's `dispatch`) is referentially stable for the component's life (Hooks guide, Sections 4 and 5).
-
-If you put both in one context value, then every consumer that only needs to _dispatch_ (a button that fires an action but does not read the state) re-renders whenever the state changes, for nothing.
-
-Split them into two contexts:
-
-```js
+```jsx
 const StateContext = createContext(null);
 const DispatchContext = createContext(null);
 
-function Provider({ children }) {
-    const [state, dispatch] = useReducer(reducer, initial);
+function TodosProvider({ children }) {
+    const [state, dispatch] = useReducer(reducer, initialState);
     return (
-        <StateContext.Provider value={state}>
-            <DispatchContext.Provider value={dispatch}>
-                {children}
-            </DispatchContext.Provider>
-        </StateContext.Provider>
+        <StateContext value={state}>
+            <DispatchContext value={dispatch}>{children}</DispatchContext>
+        </StateContext>
     );
+}
+
+function AddTodoButton() {
+    const dispatch = useContext(DispatchContext); // never re-renders when todos change
+    return <button onClick={() => dispatch({ type: "added" })}>Add</button>;
 }
 ```
 
-Because `dispatch` never changes identity, `DispatchContext`'s value is stable forever, so components that only dispatch (read `DispatchContext`, not `StateContext`) never re-render from state changes at all.
-
-Only components that actually read the state subscribe to `StateContext` and re-render when it changes.
-
-This "state context plus dispatch context with a reducer" is the canonical scalable-Context pattern the React docs themselves describe, and it is the natural endpoint of Sections 6, 8, and this one combined: a reducer manages the state, two contexts transport state and dispatch separately, and the stability of `dispatch` does the optimization for free.
-
-Together these three fixes make Context perform well for ambient and moderately-changing shared state.
-
-What they cannot do is give a single context slice-level subscriptions, so that a consumer re-renders only when the specific field it reads changes.
-
-That is the hard ceiling.
+`dispatch` keeps its identity forever, so `DispatchContext` never reports a change, and only readers of `StateContext` re-render. The React docs present this reducer-plus-two-contexts pattern as the way to scale Context.
 
 ### Try it
 
-> Take the over-rendering Provider from Section 9. Apply `useMemo` and watch the unrelated re-renders stop. Split into state and dispatch contexts, put a dispatch-only button under the dispatch context, and confirm it never re-renders when the state changes. You have now made Context behave, within its limits.
+In a React app, wrap the value of the over-rendering `AppProvider` from section 9 in `useMemo`. The readers stop logging when only the provider's parent re-renders. Then build `TodosProvider` from fix three, and add one line to `AddTodoButton`.
 
-### You've got this if
+```jsx
+console.log("AddTodoButton render"); // logs at mount, then never again
+```
 
-You can explain why splitting state and dispatch into two contexts lets dispatch-only consumers skip re-renders entirely, using the word "stable."
+Render the button and a list that reads `StateContext` as `children` of `TodosProvider`, passed in from the component above it. Click a few times. The list logs on every click, and the button stays silent after mount, where Strict Mode may log it twice.
 
----
+## 11. The selectivity gap: why Context does not scale
 
-## 11. The selectivity gap: why context does not scale
-
-Prereqs: Sections 9 and 10.
-
-### The itch
-
-You have stabilized and split your contexts and it still is not enough: you have one context whose value legitimately changes often, many consumers read different slices of it, and every change re-renders all of them because each only needs a slice but gets notified of the whole thing.
-
-You have hit Context's actual ceiling, and the fix is not more Context.
+You stabilized and split your contexts, and it is still not enough. One context's value legitimately changes often, many readers each need a different part of it, and every change re-renders all of them.
 
 ### The short version
+
+Context has no built-in way to subscribe to a **slice**, one part of a larger value. A reader re-renders when the value changes, full stop, and cannot say "only when `value.theme` changes." This is the **selectivity gap**. Splitting contexts works around it one whole context at a time, but within one context there is no selection.
+
+A **selector** is a function that picks one slice out of a value. Context selectors have been an open React proposal since 2019, and React 19.3 has none. So when many readers take different slices of fast-changing shared state, move it into an external store, where each component subscribes to its slice.
+
+### Whole value versus a selected slice
+
+Run this in Node.
+
+```js
+const before = { count: 1, name: "Ada" };
+const after = { ...before, count: 2 };
+
+console.log("context sees a change:", !Object.is(before, after));
+
+const selectName = (value) => value.name;
+console.log("name selector sees a change:", !Object.is(selectName(before), selectName(after)));
+```
+
+```text role="output"
+context sees a change: true
+name selector sees a change: false
+```
+
+Context only runs the first comparison. A store runs the second, once per component selector.
 
 <MarginNote note="all or nothing for every consumer">
 
-Context has no built-in way to subscribe to _part_ of its value.
+A reader that uses only `name` still re-renders when `count` changes. It subscribed to the context, not to `name`, and no `memo` or `useMemo` on the reader side changes that.
 
 </MarginNote>
 
-A consumer of a context re-renders when the value changes, full stop.
+### Selectors React does not have
 
-It cannot say "only re-render me when `value.theme` changes." This is the selectivity gap.
+```jsx
+// Not a React API. The open RFC proposes something like this:
+const name = useContextSelector(AppContext, (value) => value.name);
+```
 
-Splitting contexts (Section 10) works around it at the granularity of whole contexts, but within a single context there is no slice-level subscription, and React 19.x still does not add one.
+An RFC, or Request for Comments, is React's public design-proposal process. The "Context selectors" RFC, reactjs/rfcs pull request 119, opened in July 2019 and is still unmerged.
 
-When you genuinely need many consumers reading different slices of frequently-changing shared state, this gap is the reason you step outside React's tree to an external store (Section 12).
+Userland libraries fill the gap. The best known, `use-context-selector` by Daishi Kato, only accepts contexts made with its own `createContext`. It builds selector subscriptions on top of React context rather than making native context selective.
 
-### How it actually works
+### Why concurrency raises the price
 
-Make the limitation precise.
+A **transition** is an update marked non-urgent with `startTransition`. React renders it in short pausable chunks, and a more urgent update can restart it from scratch, as the [scheduler and lanes guide](/articles/react-scheduler-and-lanes-internals) shows. A context change that reaches 200 readers makes each such pass 200 components wide. The wider the broadcast, the more work every restarted pass repeats.
 
-From Section 9, a context's unit of change is the whole `value`: React knows the value changed, not which field, and notifies every consumer.
+### When to step outside
 
-Splitting into multiple contexts (Section 10) raises the granularity from "one value" to "one value per context," which helps when different concerns change at different rates.
+| Shared state is… | Tool |
+|---|---|
+| Read by many, changes rarely | Context, stabilized and split |
+| Read by many, changes often, read whole | Context can work, so measure first |
+| Read by many, changes often, sliced differently | An external store with selectors |
 
-But _within_ one context, there is no selection: if a context's value is `{ a, b, c }` and a consumer only reads `a`, that consumer still re-renders when `b` or `c` changes, because it subscribed to the context, not to `a`.
-
-There is no API to subscribe to a derived slice of a context value and re-render only when that slice changes.
-
-This is not an oversight you can configure away.
-
-A proposal to add context selectors to React (so a consumer could subscribe to `ctx => ctx.a` and re-render only when `a` changes) has existed as an RFC for years and has not been adopted.
-
-As of React 19.x there is still no built-in context selector.
-
-Userland libraries (the well-known one is `use-context-selector`) implement it, but they require creating the context with the library rather than React's own `createContext`, and they re-implement the subscription mechanism under the hood (they do not make React's native context selective).
-
-So the honest state of things in 2026 is: native Context is all-or-nothing per context, and selectivity within a context is something you bolt on with a library or, more commonly, get by using a different tool entirely.
-
-The concurrency angle makes the gap more expensive, which is worth knowing because it explains why the React community leans harder on external stores now than a few years ago.
-
-Under React 19's concurrent rendering (rendering guide, the concurrency section), a render can be started, interrupted, and replayed before it commits.
-
-A context change that broadcasts to many consumers can trigger a broad swath of speculative re-rendering that may be re-run more than once before a commit lands.
-
-So an over-broad context update is not just "some extra re-renders".
-
-Under concurrency it can be extra _speculative_ re-renders, repeated.
-
-The broader the broadcast, the more this costs.
-
-When you have shared state that is (a) read by many components, (b) sliced differently by different consumers, and (c) changing frequently, Context's "notify every consumer of the whole value" model is fundamentally the wrong shape, and the workarounds (split contexts, memoize) cannot close the gap because the gap is the lack of slice subscriptions, not a tuning problem.
-
-The right move is to put that state in a store that lives _outside_ React's tree, where components can subscribe to exactly the slice they read via a selector, so updating one slice re-renders only the components that read that slice.
-
-That is precisely what external state libraries provide, and the mechanism React gives them to do it correctly is `useSyncExternalStore` (Hooks guide, Section 15).
+No tuning closes the gap, because it is a missing feature. The fix is to keep that state outside React's tree, where updating one slice re-renders only its readers. React's bridge for that is `useSyncExternalStore`.
 
 ### Try it
 
-> Build a single context whose value is `{ count, name }`, with one consumer reading only `count` and another reading only `name`, both logging renders. Update `count` and watch the `name`-only consumer re-render anyway. Confirm that no amount of `React.memo` or `useMemo` on the consumer side fixes it (the subscription is to the context, not the slice). That stubborn re-render is the selectivity gap, and it is why Section 12 exists.
+Add a `count` selector to the Node example and predict the result. After the earlier output, the new line prints this.
 
-### You've got this if
+```js
+const selectCount = (value) => value.count;
+console.log("count selector sees a change:", !Object.is(selectCount(before), selectCount(after)));
+```
 
-You can explain why splitting contexts helps but cannot fully solve the problem of consumers reading different slices of one frequently-changing value, and what mechanism external stores use instead.
+```text role="output"
+count selector sees a change: true
+```
 
----
+Only the `count` reader would re-render in a store. In a React app, put `{ count, name }` in one context with a memoized reader for each field, and update `count`. Both readers log, which is the gap.
 
-## 12. External stores: the shared mental model
+## 12. External stores and useSyncExternalStore
 
-Prereqs: Section 11.
-
-From the Hooks guide: `useSyncExternalStore` (Section 15).
-
-From the rendering guide: tearing (why a consistent read matters under concurrency), defined inline here.
-
-### The itch
-
-You have decided Context is not enough and you are about to pick a library, but the libraries look wildly different on the surface (Redux's actions and reducers, Zustand's tiny hook, Jotai's atoms).
-
-You want the _one_ idea they share, so the choice is about ergonomics rather than relearning state from scratch each time.
+You are about to pick a store library, and they look nothing alike on the surface. You want the one idea they share, so the choice is about ergonomics.
 
 ### The short version
 
-Every external store works the same way underneath: the state lives in a plain JavaScript object or closure _outside_ React's component tree, components _subscribe_ to it (usually to a specific slice via a selector function), and the store _notifies_ only the subscribers whose slice actually changed, which re-renders just those components.
+Every **external store** works the same way underneath. The state lives in a plain object or closure outside React's tree. Components subscribe through a selector that picks out the slice they read. When the state changes, the store calls its subscribers, and only components whose slice changed re-render.
 
-React's official bridge for subscribing to an external store safely (including under concurrent rendering, without a consistency bug called tearing) is `useSyncExternalStore`.
+React's bridge is `useSyncExternalStore(subscribe, getSnapshot)`. It prevents **tearing**, where one screen shows two versions of the same store. `getSnapshot` must return the same value while the store is unchanged. A store change re-renders synchronously, never as a transition. Once you see this shape, <Mark kind="underline" wraps>the libraries differ in how you declare state, not in what they do</Mark>.
 
-Once you see that shared shape, <Mark kind="marker" wraps>the libraries differ mainly in how you define state and selectors, not in what they fundamentally do</Mark>.
+### A store in 20 lines
 
-### How it actually works
+Run this in Node.
 
-The defining move is stepping _outside_ React.
+```js
+function createStore(initialState) {
+    let state = initialState;
+    const listeners = new Set();
+    return {
+        getState: () => state,
+        setState(partial) {
+            state = { ...state, ...partial }; // a new object, so changes are visible by identity
+            listeners.forEach((listener) => listener());
+        },
+        subscribe(listener) {
+            listeners.add(listener);
+            return () => listeners.delete(listener); // the unsubscribe function
+        },
+    };
+}
 
-A store is just some state held in a module-level object or closure that is not part of any component's render.
+const store = createStore({ user: { name: "Ada" }, cart: [] });
 
-Because it lives outside the tree, changing it does not go through React's top-down re-render propagation at all.
+function connect(label, selector) {
+    let last = selector(store.getState());
+    store.subscribe(() => {
+        const next = selector(store.getState());
+        if (!Object.is(last, next)) {
+            last = next;
+            console.log(label, "re-renders");
+        }
+    });
+}
 
-Instead, the store maintains a list of subscribers (callbacks), and when its state changes it calls those callbacks.
+connect("UserName", (state) => state.user.name);
+connect("CartBadge", (state) => state.cart.length);
+store.setState({ cart: ["book"] });
+```
 
-A component connects to the store by subscribing and reading the slice it cares about.
+```text role="output"
+CartBadge re-renders
+```
 
-When the store notifies, the component checks whether its slice changed and re-renders only if it did.
+Changing the store skips React's top-down propagation entirely. The store calls each subscriber, which runs its selector and compares the result with the last one. `UserName` stayed quiet, because its selector still returned `"Ada"`.
 
-This inverts Context's model: Context _pushes_ the whole value down to every consumer.
-
-A store lets each component _pull_ exactly the slice it needs and be notified only about that slice.
-
-That inversion is what closes the selectivity gap from Section 11.
-
-The selector is the key ergonomic and performance piece.
-
-A component does not subscribe to "the store".
-
-It subscribes with a selector function, `store => store.user.name`, that picks out the slice it reads.
-
-The store (or the binding hook) runs the selector when the state changes and compares the selector's output to its previous output.
-
-If the output is unchanged, the component does not re-render.
-
-So updating `store.cart` does not re-render a component whose selector reads `store.user.name`, because that selector's output did not change.
-
-This gives you fine-grained, roughly constant-time invalidation: a change re-renders only the components whose selected slice changed, no matter how many total consumers the store has.
-
-That is the property Context cannot provide and the reason large or fast-changing global state belongs in a store.
+This inverts Context's model. Context pushes the whole value down to every reader. A store lets each component pull exactly its slice, which closes the selectivity gap.
 
 <GuideFigure figure="sm-store" />
 
-The bridge to React has to be done carefully, and this is where `useSyncExternalStore` comes in (Hooks guide, Section 15).
+Every subscriber's selector still runs on every store change. But only components whose slice changed re-render, and a selector call is far cheaper than a render.
 
-You cannot just read a mutable external value during render and call it a day, because of a concurrency bug called **tearing** (rendering guide): under concurrent rendering, React can pause partway through rendering the tree, and if the external store mutates during that pause, components rendered before the pause would see the old value and components rendered after would see the new value, so a single screen shows two different versions of the same state, "torn." `useSyncExternalStore(subscribe, getSnapshot)` exists to prevent exactly this: it gives React a controlled way to subscribe to the store and to read a consistent snapshot, so that an entire render sees one coherent value of the store even if the store changes mid-render.
+### Binding it to React
 
-Every well-behaved store library uses `useSyncExternalStore` (or an equivalent) under the hood for this reason, which is why you can trust them under React 19's concurrency.
+```jsx
+import { useSyncExternalStore } from "react";
 
-You will rarely call it yourself.
+function useStore(selector) {
+    return useSyncExternalStore(store.subscribe, () => selector(store.getState()));
+}
 
-You will use a library that calls it for you, but knowing it is there explains _how_ a store stays correct.
+function CartBadge() {
+    const count = useStore((state) => state.cart.length);
+    return <span>{count}</span>;
+}
+```
 
-So the mental model, library-agnostic, is three parts: **state outside the tree**, **selector-based subscription** (pull the slice you need, re-render only when it changes), and **a safe React binding** (`useSyncExternalStore`) that avoids tearing.
+`subscribe` takes a callback and returns an unsubscribe function. `getSnapshot` returns the current slice, and React compares its results with `Object.is`. Declare `subscribe` outside the component, because a new `subscribe` on each render makes React re-subscribe. You will rarely write this hook yourself, because store libraries call it for you.
 
-Hold that, and every store library is a variation on it.
+### getSnapshot must be cached
 
-They differ in how you declare the state (one big store object, a set of small atoms, a proxy you mutate), how you write selectors (explicit functions, automatic dependency tracking), and what extras they bundle (middleware, devtools, persistence), but the engine room is the same.
+```js
+const selectSummary = (state) => ({ name: state.user.name, items: state.cart.length });
+console.log(Object.is(selectSummary(store.getState()), selectSummary(store.getState())));
+```
+
+```text role="output"
+false
+```
+
+This selector builds a new object on every call, so two calls with no change between them still differ. React would treat every check as a store change and render forever. In development React calls `getSnapshot` twice and logs "The result of getSnapshot should be cached to avoid an infinite loop."
+
+Select primitives or existing objects, or cache the derived object until the store changes. Continue the Node example.
+
+```js
+let lastState;
+let lastSummary;
+function selectSummaryCached(state) {
+    if (state !== lastState) {
+        lastState = state; // the store made a new state object, so rebuild
+        lastSummary = { name: state.user.name, items: state.cart.length };
+    }
+    return lastSummary;
+}
+console.log(Object.is(selectSummaryCached(store.getState()), selectSummaryCached(store.getState())));
+```
+
+```text role="output"
+true
+```
+
+Zustand 5 passes your selector straight into `getSnapshot`, which is why it offers `useShallow` for selectors that return new objects.
+
+### How React prevents tearing
+
+```js
+// Simplified teaching version of the check in ReactFiberWorkLoop.js, React 19.
+const exitStatus = renderRootConcurrent(root, lanes); // may pause between components
+if (!isRenderConsistentWithExternalStores(finishedWork)) {
+    renderRootSync(root, lanes); // a store changed mid-render: redo it without pausing
+}
+```
+
+A transition render can pause between components to let the browser work. If the store changes during a pause, components before it saw the old value and components after it see the new one. That split screen is tearing.
+
+React prevents it in two ways. First, a store notification schedules the re-render at `SyncLane`, the most urgent lane, which renders without pausing. So store-driven updates are never transitions.
+
+Second, a component that reads a store during a non-blocking render records its snapshot. After the render, React calls every `getSnapshot` again. If any value changed, React redoes the render as a blocking one, which cannot pause.
+
+| Situation | What React does |
+|---|---|
+| The store calls its subscribers | Re-renders affected components at `SyncLane` |
+| A transition render read the store, then the store changed | Redoes the render synchronously before commit |
+| Server rendering or hydration | Calls `getServerSnapshot`, which is required there |
+
+Hydration is React attaching to HTML the server already rendered, so the server and the first client render must agree. `getServerSnapshot` supplies the store value both sides use.
+
+So a store mutation can never be a non-blocking transition. That is also why the React docs advise against suspending on a store value. A Suspense boundary shows a fallback, such as a spinner, while its content waits for data. A store change would swap visible content for that fallback.
+
+### The mental model
+
+| Part | Job |
+|---|---|
+| State outside the tree | A change skips top-down propagation |
+| Selector subscription | Each component re-renders only when its slice changes |
+| A safe React binding | No tearing under concurrent rendering |
+
+Zustand, Valtio and React Redux call `useSyncExternalStore` for the third part. Jotai is an exception, because its default hooks subscribe with their own `useReducer` and `useEffect` pair.
 
 ### Try it
 
-> Without any library, build a tiny store: a module with a `let state`, a `getState`, a `setState` that updates and calls subscribers, and a `subscribe`. Connect two components with `useSyncExternalStore`, each reading a different slice via `getSnapshot`. Update one slice and confirm only the component reading it re-renders. You have just built, in about 20 lines, the core that every store library wraps in nicer ergonomics.
+Add a third subscriber to the Node store, then change the user's name. Predict which labels print. After the earlier output, the new lines print this.
 
-### You've got this if
+```js
+connect("Greeting", (state) => `Hello, ${state.user.name}`);
+store.setState({ user: { name: "Grace" } });
+```
 
-You can explain how selector-based subscription closes the selectivity gap from Section 11, and what `useSyncExternalStore` protects against.
+```text role="output"
+UserName re-renders
+Greeting re-renders
+```
 
----
+`CartBadge` stays quiet, because the cart length is still 1. In a React app, connect two components through `useStore` and confirm the same split. Then pass `selectSummary` as the selector. Expect the console warning, then a "Maximum update depth exceeded" crash.
 
-## 13. The library landscape as archetypes
+## 13. Store libraries as archetypes
 
-Prereqs: Section 12.
-
-Outside React: pure reducers, immutable updates (and the Immer library), JavaScript Proxies, and the idea of a selector function, since the archetypes are built from these.
-
-### The itch
-
-You finally have to pick something, and the field is crowded: Redux Toolkit, Zustand, Jotai, and a handful of others, plus the ghost of Recoil that tutorials still mention.
-
-You do not want a feature-by-feature bake-off.
-
-You want to know which _shape_ of solution each one is, so you can match it to your problem and learn it as a variation on the model from Section 12.
+The field is crowded: Redux Toolkit, Zustand, Jotai, Valtio, MobX, and the ghost of Recoil in old tutorials. You need to know which shape each one is, not a feature bake-off.
 
 ### The short version
 
-The libraries cluster into a few archetypes, all built on the external-store model.
+The libraries cluster into four archetypes, all built on the store model from section 12. A single store, such as Redux Toolkit, changes one object through dispatched actions and pure reducers. A minimal store, such as Zustand, keeps one store with selectors but cuts the ceremony to a hook and setters, with no provider.
 
-#### Single-store
+Atomic libraries, such as Jotai, build state bottom-up from tiny atoms, and reading an atom is the subscription. Proxy libraries, such as Valtio and MobX, let you mutate a plain-looking object while they track reads. Pick by your state's shape and your team's taste. A "wrong" pick costs mostly ergonomics, not architecture.
 
-Single-store libraries (Redux Toolkit) keep all state in one object updated by pure reducers via dispatched actions, with selectors to read slices.
+### The four archetypes
 
-Predictable and toolable, with the most ceremony.
+| Archetype | Example | You write | Strength | Trade |
+|---|---|---|---|---|
+| Single store | Redux Toolkit | Slices, actions, selectors | Predictable, time-travel devtools, middleware | The most ceremony |
+| Minimal store | Zustand | A hook with setters | Very little code, no provider | Less imposed structure |
+| Atomic | Jotai | Small atoms and derived atoms | Fine-grained by construction | Many small pieces to name |
+| Proxy | Valtio, MobX | Plain mutation, `state.count++` | The most natural-feeling code | Re-renders are less explicit |
 
-#### Minimal-store
+### Single store: Redux Toolkit
 
-Minimal-store libraries (Zustand) keep the same single-store-with-selectors idea but strip the ceremony down to a hook and direct setters, with no provider.
+```js
+import { configureStore, createSlice } from "@reduxjs/toolkit";
 
-#### Atomic
+const cartSlice = createSlice({
+    name: "cart",
+    initialState: { items: [] },
+    reducers: {
+        added(state, action) {
+            state.items.push(action.payload); // Immer turns this into an immutable update
+        },
+    },
+});
 
-Atomic libraries (Jotai, and the now-deprecated Recoil that pioneered the model) build state bottom-up from many tiny independent atoms that compose into derived atoms, giving fine-grained subscriptions by construction.
+export const { added } = cartSlice.actions; // action creators, generated for you
+export const store = configureStore({ reducer: { cart: cartSlice.reducer } });
+```
 
-#### Proxy
+Redux Toolkit is the official modern way to write Redux. It generates action creators, and Immer turns reducer code that looks like mutation into immutable updates. Every change is an explicit action, so changes are logged and replayable. Time-travel devtools use that log to step the app back and forth through its past states.
 
-Proxy libraries (Valtio, MobX) let you read and mutate state like a plain object and track access automatically.
+Middleware gives side effects and async flows one clear place to live. Redux Toolkit earns its keep in large apps with complex, widely shared client state. For a small app, or for mostly server or local state, it is overkill.
 
-Match the archetype to your app's shape.
+### Minimal store: Zustand
 
-Do not cargo-cult the heaviest one.
+```js
+import { create } from "zustand";
 
-### How it actually works
+const useCart = create((set) => ({
+    items: [],
+    add: (item) => set((state) => ({ items: [...state.items, item] })),
+}));
 
-Read each as a point in the design space defined by Section 12 (state outside the tree, selector subscriptions, safe binding), differing in how you declare state and how subscriptions are expressed.
+function CartBadge() {
+    const count = useCart((state) => state.items.length); // a selector subscription
+    return <span>{count}</span>;
+}
+```
 
-#### Single store, actions and reducers: Redux Toolkit
+Zustand has Redux's shape, one store read through selectors, stripped to the bone. `create` returns a hook, setters update the state, and no provider wraps your tree. Its hook calls `useSyncExternalStore` with your selector. It imposes less structure and bundles lighter tooling, and it is a good default for global client state.
 
-The model is one central store holding all application state as a single (usually normalized, Section 5) object, changed only by dispatching _actions_ that pure _reducers_ turn into the next state, and read through _selector_ functions.
+### Atomic: Jotai
 
-Redux Toolkit is the modern, official way to write Redux.
+```js
+import { atom, useAtomValue } from "jotai";
 
-It removes most of the old boilerplate (it generates action creators, uses Immer so you can write "mutating" reducer code that produces immutable updates, and bundles good defaults).
+const priceAtom = atom(20);
+const quantityAtom = atom(3);
+const totalAtom = atom((get) => get(priceAtom) * get(quantityAtom)); // a derived atom
 
-The strengths are predictability (every change is an explicit, logged, replayable action), powerful devtools (time-travel debugging, because the whole history is a sequence of actions over one state), and a clear place for complex shared logic and middleware (side effects, async flows).
+function Total() {
+    return <span>{useAtomValue(totalAtom)}</span>; // re-renders only when total changes
+}
+```
 
-The cost is ceremony and concepts: actions, reducers, selectors, the store, and the mental overhead of routing every change through that pipeline.
+Instead of one store defined from the top, you build state from many small **atoms**. A derived atom recomputes when the atoms it reads change, and components subscribe to exactly the atoms they read. This fits many small interdependent pieces, such as form fields or filters.
 
-It earns its keep in large applications with complex, widely-shared client state and teams that benefit from the strict structure and tooling.
+Recoil pioneered the atom model at Meta. Meta archived its repository at the start of 2025, and its last release shipped in April 2023, so do not start new projects on it. Jotai is the actively maintained library in the same style.
 
-It is overkill for a small app or for state that is mostly server data (Section 14) or mostly local (Section 2).
+### Proxy: Valtio and MobX
 
-#### Minimal store, hook and setters: Zustand
+```js
+import { proxy, useSnapshot } from "valtio";
 
-Same underlying shape as Redux (one store, selector-based reads) but stripped to the bone: you create a store as a hook, read slices by passing a selector to that hook, and update state by calling setters directly, with no actions, no reducers required, and no provider wrapping your tree.
+const state = proxy({ count: 0 });
 
-It uses the external-store mechanism (and `useSyncExternalStore`) so selector subscriptions give you the fine-grained re-renders from Section 12.
+function Counter() {
+    const snap = useSnapshot(state); // tracks which properties this component reads
+    return <button onClick={() => state.count++}>{snap.count}</button>;
+}
+```
 
-The strength is ergonomics: very little code, an easy mental model, and good performance by default.
+You read and write state like a plain mutable object. A JavaScript Proxy is an object wrapper that can intercept every property read and write. MobX uses observables, values that record who reads them. Either way, the library re-renders exactly the components that read a changed property.
 
-The trade is less imposed structure (you can organize a Zustand store well or badly, and it will not force the discipline Redux does) and lighter built-in tooling than Redux's.
+The code feels the most natural, but the magic is the least explicit, and mutation is a different mental model from React's. MobX is the long-established option and Valtio a lighter one.
 
-It is an excellent default for global client state that needs slice subscriptions without Redux's overhead.
+### Do not start here
 
-#### Atomic, bottom-up: Jotai (and the deprecated Recoil)
-
-Instead of one big store you define from the top, you build state from the bottom out of many tiny _atoms_, each a small independent piece of state.
-
-Atoms compose: a _derived atom_ is defined in terms of other atoms and recomputes when they change, and components subscribe to exactly the atoms they read, so re-renders are fine-grained by construction (no manual selectors, reading an atom _is_ the subscription).
-
-This model shines when you have many small, independent pieces of state (form fields, filters, per-item state) that combine in varied ways, and it composes derived state cleanly.
-
-Recoil pioneered this atoms-and-selectors model, but Meta archived Recoil at the start of 2025 and it is no longer maintained, so do not start new projects with it.
-
-#### Jotai is the actively maintained successor
-
-Jotai is the actively maintained successor, with the same atomic model and current React 19 support.
-
-Reach for the atomic archetype when your state is naturally a graph of small interdependent pieces rather than one monolith.
-
-#### Proxy, mutate-and-track: Valtio, MobX
-
-These let you treat state as a plain mutable object: you read and write properties normally, and the library uses JavaScript Proxies (or observables) to track which components read which properties and re-render exactly those when the properties change.
-
-The appeal is the most natural-feeling code (no setters, no selectors, just `state.count++`), with automatic fine-grained tracking.
-
-The trade is that the "magic" is less explicit (it can be harder to reason about exactly when something re-renders) and the mutable style is a different mental model from React's usual immutability.
-
-MobX is the long-established option.
-
-Valtio is a lighter, more React-native take.
-
-Choose this archetype if your team strongly prefers the mutable, automatic-tracking style and accepts the implicitness.
-
-The decision guidance that falls out: do not start here.
-
-Most state is local (Section 2) or lifted (Section 3) or server state (Section 14), none of which needs a global store at all.
-
-Reach for a store only when you have genuinely global client state that many components share and slice differently, or that changes frequently enough that Context's selectivity gap (Section 11) bites.
-
-When you do, pick the archetype by your state's shape and your team's taste: Redux Toolkit for large apps wanting strict structure and time-travel tooling, Zustand for a minimal global store with selector subscriptions, Jotai when state is a graph of small composable pieces, a proxy library if you want mutable automatic tracking.
-
-They are variations on one model, so the cost of choosing "wrong" is mostly ergonomic, not architectural.
+Most state is local, lifted or server data, and none of that needs a global store. Reach for one only for client state that many components share and slice differently, or that changes often enough for the selectivity gap to bite.
 
 ### Try it
 
-> Take a small piece of genuinely global client state (say a theme plus a sidebar-open flag) and implement it twice: once with Zustand (a tiny hook store with two selectors) and once with Jotai (two atoms). Notice that the underlying behavior is identical (slice subscriptions, fine-grained re-renders) and only the _shape_ of the code differs. That sameness is the Section 12 model showing through.
+In a React app with `zustand` and `jotai` installed, define the same UI state both ways.
 
-### You've got this if
+```js
+import { create } from "zustand";
+import { atom } from "jotai";
 
-You can place Redux Toolkit, Zustand, and Jotai as points in one design space, and say which archetype fits "a graph of many small interdependent pieces of state."
+const useUi = create((set) => ({
+    theme: "light",
+    sidebarOpen: false,
+    toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+}));
 
----
+const themeAtom = atom("light");
+const sidebarOpenAtom = atom(false);
+```
 
-## 14. Server state is not client state
+Build a theme reader and a sidebar button on each, with a `console.log` per render. Toggle the sidebar in both versions. Only the sidebar components log, so the behavior is identical, and only the shape of the code differs.
 
-Prereqs: Section 1 (location and ownership).
+## 14. Server state and URL state
 
-The full mechanics are the next guide (Data Fetching and Server State).
-
-### The itch
-
-You fetch data from your API and store it in `useState`, or in Redux, alongside your UI state.
-
-Then you are hand-writing loading flags, error handling, refetch-on-focus, caching, and dedup, and the data goes stale and you are not sure when to refetch.
-
-You are treating remote data as if it were client state, and that mismatch is the source of an enormous amount of accidental complexity.
+You fetch data into `useState`, or into Redux beside your UI state. Then you write loading flags, error handling, refetch-on-focus, caching and deduplication by hand, and the data still goes stale.
 
 ### The short version
 
-There are two fundamentally different kinds of state, and conflating them is the biggest state-management mistake there is.
+Mixing up two kinds of state is the biggest state-management mistake. **Client state** belongs to your app and is always current: toggles, form inputs, selections. **Server state** is a local cache of data a server owns. It is asynchronous and shared, and it can be stale the moment it arrives.
 
-**Client state** is state your app owns and that is synchronous and always current: UI toggles, form inputs, selections.
+Server state needs caching, deduplication, background refetching and staleness rules that `useState`, Context and client stores lack. Query libraries such as TanStack Query and RTK Query provide them. Moving server data there shrinks your client state to something small and local. The URL is a third owner, for view state people should share or bookmark.
 
-**Server state** is a local _cache_ of data that actually lives on a server: it is asynchronous, shared, owned by the server, and can become stale the moment you fetch it, because something else can change it.
+### Client state and server state side by side
 
-Server state needs caching, synchronization, and staleness handling that client-state tools (`useState`, Redux, Context) do not provide, which is why dedicated server-state libraries (React Query, now TanStack Query, and RTK Query) exist.
+| Property | Client state | Server state |
+|---|---|---|
+| Owner | Your app | A server or third-party API |
+| Timing | Synchronous: set it and it is the new value | Asynchronous: fetching takes time and can fail |
+| Freshness | Always exactly what you last set | Can go stale without your app doing anything |
+| Sharing | One source of truth in the browser | Many components, tabs and users see the same data |
+| Needs | A place to live | Caching, deduplication, refetching, a `status` |
 
-<MarginNote note="server data is a cache, not state">
+Fetching gives every piece of server state loading and error conditions, the `status` value from section 5. Others can change the real data, so "when should I refetch?" becomes a real question. For client state, it does not exist.
 
-Putting server data in client-state tools is what forces you to reinvent all of that by hand.
+<MarginNote note="server data is a cache you borrowed">
+
+When you store server data in `useState` or Redux, you use a tool with none of those abilities. So you rebuild them by hand: a loading flag, an error state, a manual cache, refetch logic, deduplication and focus listeners.
 
 </MarginNote>
 
-### How it actually works
+### What a query cache does for you
 
-Lay the two side by side, because the differences are not cosmetic.
+Here is one of those jobs, deduplication, as a simplified teaching version. Save it as an `.mjs` file, because it uses top-level `await`, and run it with Node.
 
-They change what the state _needs_.
+```js
+const inFlight = new Map();
+function fetchOnce(key, fetcher) {
+    if (!inFlight.has(key)) {
+        inFlight.set(key, fetcher().finally(() => inFlight.delete(key)));
+    }
+    return inFlight.get(key);
+}
 
-Client state is owned by your application and lives only in the browser.
+let requests = 0;
+const getUser = () => new Promise((resolve) => setTimeout(() => resolve({ id: 1, request: ++requests }), 10));
 
-It is synchronous (you set it and it is immediately the new value), it is the single source of truth for itself (nothing else can change your modal-open flag behind your back), and it does not go stale (it is exactly what you last set it to).
+const [a, b] = await Promise.all([fetchOnce("user", getUser), fetchOnce("user", getUser)]);
+console.log(a === b, "requests:", requests);
+```
 
-`useState`, `useReducer`, lifted state, Context, and the stores from Section 13 are all built for this: synchronous, client-owned, single-source-of-truth state.
+```text role="output"
+true requests: 1
+```
 
-Server state is a different animal.
+Two components asked for the same data at once, and one request went out. A query library builds this in, and much more.
 
-The real data lives on your server (or a third-party API), and what you hold in the browser is a _copy_, a cache, that was accurate at the moment you fetched it.
+```jsx
+import { useQuery } from "@tanstack/react-query";
 
-That single fact cascades into a list of needs client-state tools do not address:
+function Profile({ userId }) {
+    const { status, data, error } = useQuery({
+        queryKey: ["user", userId], // the cache key
+        queryFn: () => fetchUser(userId),
+    });
+    if (status === "pending") return <Spinner />;
+    if (status === "error") return <ErrorMessage error={error} />;
+    return <h1>{data.name}</h1>;
+}
+```
 
-- It is **asynchronous**: fetching takes time and can fail, so every piece of server state implicitly has loading and error conditions (the exact `status` modeling from Section 5).
-- It is **shared and owned elsewhere**: other users, other tabs, or background processes can change the real data, so your cached copy can be **stale** without your app doing anything. "When should I refetch" is a question that simply does not exist for client state.
-- It needs **caching and deduplication**: the same data is often needed by multiple components. You want one cached copy and one in-flight request, not each component fetching independently.
-- It benefits from **background synchronization**: refetching on window focus or reconnect, revalidating in the background while showing cached data, so the user sees something immediately and it quietly updates.
+| TanStack Query v5 default | Value | Effect |
+|---|---|---|
+| `staleTime` | 0 | Cached data counts as stale at once, so it refetches on the next trigger |
+| `gcTime` | 5 minutes in the browser | Unused cache entries are removed after 5 minutes |
+| `refetchOnWindowFocus` | `true` | Returning to the tab refetches stale queries |
+| `refetchOnReconnect` | `true` | Coming back online refetches stale queries |
+| A second fetch while one runs | Shares the first promise | One request, many readers |
 
-When you store server data in `useState` or Redux, you are using a tool with none of those capabilities, so you end up hand-building all of them: a loading boolean here, an error state there, a manual cache keyed somehow, refetch logic, dedup logic, focus listeners.
+A background refetch keeps showing the cached data while it runs, so the user sees something at once and the screen updates quietly.
 
-That hand-built machinery is fragile, repeated across features, and exactly what a server-state library provides as its core job.
+React Query was renamed TanStack Query at version 4, and RTK Query is the same idea inside Redux Toolkit. The [data fetching guide](/articles/react-data-fetching-server-state) covers query keys, stale-while-revalidate and optimistic updates in depth.
 
-The whole reason React Query and similar tools feel like such a relief is that they treat server state as what it is, a cache with staleness, and give you the caching, deduplication, background revalidation, and `status` modeling as built-in behavior rather than something you assemble per feature.
+### Most "global state" is server state
 
-The architectural payoff of internalizing this distinction is that it _removes_ a huge amount of state from your client-state decisions.
+Much of what people put in Redux, Context or atoms is really server state that belongs in a query cache. Once it moves, the remaining client state is small, local and simple. "Do we need Redux?" often becomes "No, most of that was server state."
 
-A great deal of what people put in Redux or Context or atoms is actually server state that should live in a query cache instead, and once it moves there, your remaining client state is small, local, and simple, exactly the lower rungs of Section 1's ladder.
+### The URL owns shareable state
 
-So "do I need Redux" often resolves to "no, most of that was server state. Put it in a query library and the rest is local."
+```js
+const url = new URL("https://shop.example/products?category=shoes&page=2");
+
+const page = Number(url.searchParams.get("page") ?? "1");
+url.searchParams.set("page", String(page + 1));
+
+console.log(url.searchParams.get("category"), page);
+console.log(url.search);
+```
+
+```text role="output"
+shoes 2
+?category=shoes&page=3
+```
+
+Some view state should survive a reload or travel in a link, such as a filter, a page number or an open tab. The URL owns that state, and components derive their view from it.
+
+A copy in `useState` is a second source of truth that drifts from the address bar. Your router's search-param API, or `URLSearchParams`, reads and writes it.
 
 ### Try it
 
-> Find a place in your own code where you fetch data into `useState` and then maintain `isLoading` and `isError` next to it by hand. Count the lines doing caching, loading, and error bookkeeping. That line count is the tax of treating server state as client state, and it is roughly what a server-state library would handle for you. You do not have to migrate it now. Just see the tax clearly.
+Add these lines to the end of the `fetchOnce` file, and predict `requests` before you run it. After the earlier output, the new line prints this.
 
-### You've got this if
+```js
+await fetchOnce("user", getUser); // the first request has already settled
+console.log("requests:", requests);
+```
 
-You can explain why server state needs caching and staleness handling that client state does not, and why moving server data out of your client-state tools usually shrinks your "do I need a store" problem.
+```text role="output"
+requests: 2
+```
 
----
+Deduplication only shares a request that is still in flight. Keeping the answer for later, and deciding when it is stale, is the cache's other job, which `staleTime` and `gcTime` control. Then count the bookkeeping lines around one `useState` fetch in your own code. That count is roughly what a query library handles for you.
 
-## 15. A decision framework
+## 15. Choosing a rung, and debugging the wrong one
 
-Prereqs: ideally Sections 1 through 14.
-
-### The itch
-
-You have the pieces.
-
-Now you want a repeatable way to decide, for any given piece of state, where it should live, so you are not relitigating the whole question every time.
+You have the pieces. Now you want a repeatable way to place any piece of state, and to map a symptom back to the rung that caused it.
 
 ### The short version
 
-Ask a short, ordered series of questions for each piece of state, and stop at the first one that fits.
+Ask an ordered list of questions about each piece of state, and stop at the first yes. Is it server data? Can it be derived? Does it belong in the URL?
 
-Is it server data?
+Does one component, or the children it renders, use it? Do a few nearby components share it? Is it widely shared but rarely changing?
 
-Can it be derived?
+Only shared state that changes often and is read in slices reaches an external store. The order runs from cheap to expensive, so most state lands low. Debugging runs the same map backward: find the symptom, name the rung, and apply that section's fix. Use the Profiler for re-renders, and ask "which copy is the real one?" for disagreements.
 
-Can it be local?
+### The questions, in order
 
-Does it need to be shared, and if so, how widely and how often does it change?
+Run this in Node.
 
-<Mark kind="circle">The order matters</Mark>: it routes most state to the cheap, low rungs and reserves the expensive ones for the cases that truly need them.
+```js
+function whereDoesItLive(piece) {
+    if (piece.ownedByServer) return "a server cache (a query library)";
+    if (piece.derivable) return "nowhere: compute it during render";
+    if (piece.inUrl) return "the URL";
+    if (piece.readers === 1) return "local state"; // one component, plus the children it renders
+    if (piece.nearby) return "lifted to the nearest common ancestor";
+    if (!piece.changesOften) return "Context over useState or useReducer";
+    return "an external store with selectors";
+}
 
-### How it actually works
+const pieces = [
+    { name: "product list", ownedByServer: true },
+    { name: "filtered list", derivable: true },
+    { name: "search page number", inUrl: true },
+    { name: "input text", readers: 1 },
+    { name: "selected row", readers: 2, nearby: true },
+    { name: "theme", readers: 40, changesOften: false },
+    { name: "cursor positions", readers: 40, changesOften: true },
+];
+for (const piece of pieces) console.log(piece.name.padEnd(18), "->", whereDoesItLive(piece));
+```
 
-Run these in order for each piece of state.
+```text role="output"
+product list       -> a server cache (a query library)
+filtered list      -> nowhere: compute it during render
+search page number -> the URL
+input text         -> local state
+selected row       -> lifted to the nearest common ancestor
+theme              -> Context over useState or useReducer
+cursor positions   -> an external store with selectors
+```
 
-Each question, answered yes, tells you where the state goes.
+<Mark kind="circle">The order matters</Mark>. Server data comes first because it removes the largest share of state from every later question. Derivation comes second because it deletes state instead of placing it. Local state is the default for what remains. Lifted state moves to Context only when drilling becomes the smell from section 7.
 
-Only fall through to the next if the answer is no.
+The order follows cost. Deriving costs nothing, local state is cheapest, lifting widens the blast radius, Context adds implicit links and broad re-renders, and a store adds a dependency. One question sits outside the order: complex state changes with illegal combinations get a reducer or state machine, wherever the state lives.
 
-1. **Is it server data (a cache of something that lives on your server)?** If yes, it belongs in a server-state library (a query cache), not in any client-state tool (Section 14). This is first on purpose, because it removes the largest share of state from the rest of the decision. Most "global state" is server state in disguise.
+### Symptoms and mechanisms
 
-2. **Can it be derived from existing state or props?** If yes, do not store it. Compute it during render, memoizing only if expensive (Section 4). This is second because it deletes state entirely rather than placing it. Every value you derive is a value you do not have to manage or risk desyncing.
+| Symptom | Likely mechanism | Fix |
+|---|---|---|
+| A subtree re-renders on every keystroke or drag | State lifted too high, or in a context that changes per key | Colocate it, or move it to a store with selectors (2, 12) |
+| Every reader of a context re-renders, even behind memo | An inline value, or one big context | `useMemo`, split contexts, separate dispatch (10) |
+| Readers of different slices of one fast value all re-render | The selectivity gap | An external store (11, 12) |
+| Two values disagree | Derivable state stored as a second copy | Store the minimal facts, derive, delete the syncing effect (4) |
+| An "impossible" state appears | A shape that allows it, or unconstrained state changes | One `status` value, a reducer machine (5, 6) |
+| Stale data, hand-written caching and loading flags | Server state treated as client state | A query library (14) |
+| Nobody can tell where a value comes from | Diffuse ownership | One owner with narrow props, or one reducer (1, 3, 6) |
+| A store feels like a lot of ceremony | Escalated past the needed rung | Re-run the questions (15) |
 
-3. **Is it used by only one component (or that component plus its own children)?** If yes, keep it local with `useState` or `useReducer`, owned by that component (Sections 2 and 6). This is the default and the destination for most genuinely-client, non-derived state.
-
-4. **Is it shared by a few components near each other?** If yes, lift it to their nearest common ancestor and pass it down (Section 3). Do not escalate further unless drilling becomes a real smell (Section 7).
-
-5. **Is it shared widely, but ambient and rarely-changing (theme, user, locale)?** If yes, use Context as a transport over `useState`/`useReducer`, with the value stabilized and contexts split sensibly (Sections 8 and 10). The rare-change part is what keeps Context's re-render cost acceptable.
-
-6. **Is it shared widely AND frequently-changing, with different consumers reading different slices?** If yes, this is the case Context cannot serve well (the selectivity gap, Section 11). Use an external store with selector subscriptions, picking the archetype that fits your state's shape (Sections 12 and 13).
-
-7. **Are the transitions complex, with illegal combinations to prevent?** Orthogonal to where the state lives: model it as a reducer or state machine so the legal transitions are explicit and illegal states are unrepresentable (Sections 5 and 6). This applies whether the state is local, lifted, in Context, or in a store.
-
-The reason the order is cheap-to-expensive is the cost structure from Section 1: deriving costs nothing, local state is cheapest, lifting widens blast radius, Context adds implicit coupling and broad re-renders, and a store adds a dependency and its own concepts.
-
-Climbing only as far as a real constraint forces you keeps your architecture at the lowest-cost rung that actually works, which is almost always lower than the instinct to "just use Redux" would put it.
-
-#### The whole thing in one list
-
-1. The location of state is the blast radius of its changes, and the clarity of its ownership is the traceability of your data flow (Section 1).
-2. Keep state as low as it will go, and lift it only to the nearest common ancestor that needs it (Sections 2 and 3).
-3. Never store what you can derive, because a derived value computed during render cannot desync (Section 4).
-4. Shape state so illegal combinations are unrepresentable, and consolidate complex transitions in a reducer or state machine (Sections 5 and 6).
-5. Use Context as a transport for state you still manage with React's own primitives (Sections 7 and 8).
-6. Context delivers the whole value to every consumer and bypasses `React.memo`, so stabilize and split to contain it (Sections 9 and 10).
-7. Context has no slice-level subscriptions, a gap React 19 still does not close (Section 11).
-8. An external store holds state outside React, lets components subscribe to the slice they read, and binds through `useSyncExternalStore` (Sections 12 and 13).
-9. Keep server state, a cache of remote data that is async, shared, and goes stale, in a query library, not your client-state tools (Section 14).
+For re-render problems, record the interaction in the React DevTools Profiler and read which components rendered and why. For disagreements, a second copy of a fact is almost always the bug.
 
 ### Try it
 
-> Take a feature you are about to build and run every piece of its state through the seven questions before writing any code. Notice how few pieces make it past question three, and how the ones that reach questions five and six are the genuinely shared, genuinely client ones. That funnel is the framework working.
+Add pieces from a feature you are about to build to the Node example, and predict each answer first. After the earlier output, the new lines print this.
 
-### You've got this if
+```js
+console.log(whereDoesItLive({ name: "draft comment", readers: 1 }));
+console.log(whereDoesItLive({ name: "unread count", ownedByServer: true }));
+```
 
-You can run an arbitrary piece of state through the ordered questions and justify, at each step, why you did or did not escalate to the next rung.
+```text role="output"
+local state
+a server cache (a query library)
+```
 
----
+Few pieces get past the one-component question. Then take one real re-render or desync bug from your app and name its row in the symptom table. Apply the fix, and confirm it in the Profiler.
 
-## 16. Debugging state architecture
+## The whole thing in one list
 
-Prereqs: the rest of the guide.
+1. Where state lives sets the blast radius of its changes, and one clear owner makes data flow traceable.
+2. Keep state as low as it will go, and lift it only to the nearest common ancestor that needs it.
+3. Never store what you can derive, because a value computed during render cannot go stale.
+4. Shape state so illegal combinations cannot be written, and gather complex state changes in a reducer.
+5. Context is a transport for state you manage with `useState` or `useReducer`, provided as `<Context value>` in React 19.
+6. Context compares the whole value with `Object.is` and re-renders every reader, even behind `React.memo`.
+7. Stabilize, split and separate dispatch to tame Context, but no React version gives it slice subscriptions.
+8. An external store keeps state outside React and lets each component subscribe to its slice.
+9. `useSyncExternalStore` needs a cached `getSnapshot`, and it re-renders synchronously so the screen never tears.
+10. Server data belongs in a query cache, shareable view state in the URL, and both stay out of client-state tools.
 
-### The itch
+## Further reading
 
-Something is structurally wrong: a whole screen re-renders on every keystroke, two values disagree, an "impossible" state appears on screen, data is stale, or a piece of state is somehow owned by the wrong component.
+### The React docs on managing state
 
-You want to map the symptom to the mechanism and the fix.
+[Choosing the State Structure](https://react.dev/learn/choosing-the-state-structure), [Sharing State Between Components](https://react.dev/learn/sharing-state-between-components) and [Preserving and Resetting State](https://react.dev/learn/preserving-and-resetting-state) are the official versions of sections 2 to 5. [You Might Not Need an Effect](https://react.dev/learn/you-might-not-need-an-effect) backs section 4.
 
-### The short version
+### Context and reducers
 
-Most state-architecture problems are one of a small set, and each maps to a section.
+[Passing Data Deeply with Context](https://react.dev/learn/passing-data-deeply-with-context) and [Scaling Up with Reducer and Context](https://react.dev/learn/scaling-up-with-reducer-and-context) cover sections 7 to 10. The [createContext reference](https://react.dev/reference/react/createContext) documents `<Context>` as a provider, and the [use reference](https://react.dev/reference/react/use) covers reading context conditionally.
 
-The procedure is: identify the symptom, find the rung of the ladder it implicates (wrong location, redundant state, wrong sharing tool, server-versus-client confusion), and apply that section's fix.
+### useSyncExternalStore
 
-The Profiler is your main instrument for re-render problems.
+The [useSyncExternalStore reference](https://react.dev/reference/react/useSyncExternalStore) lists the caching rule and the fallback to blocking renders from section 12.
 
-<MarginNote note="ask which copy is the real one">
+### The context selectors RFC
 
-The "two sources of truth" lens is your main instrument for desync problems.
+[RFC: Context selectors](https://github.com/reactjs/rfcs/pull/119) is the open proposal behind section 11. The [use-context-selector README](https://github.com/dai-shi/use-context-selector) explains a userland version and its limits.
 
-</MarginNote>
+### The source files
 
-### How it actually works
+[ReactFiberNewContext.js](https://github.com/facebook/react/blob/main/packages/react-reconciler/src/ReactFiberNewContext.js) holds `lazilyPropagateParentContextChanges` and `checkIfContextChanged`. [ReactFiberHooks.js](https://github.com/facebook/react/blob/main/packages/react-reconciler/src/ReactFiberHooks.js) holds `useSyncExternalStore` and `basicStateReducer`.
 
-Walk the symptoms.
+### The libraries
 
-#### A whole subtree re-renders on a high-frequency change (typing, dragging)
+[Redux Toolkit](https://redux.js.org/toolkit/), [Zustand](https://github.com/pmndrs/zustand), [Jotai](https://github.com/pmndrs/jotai), [Valtio](https://github.com/pmndrs/valtio) and [TanStack Query](https://tanstack.com/query/latest) are best read through section 12's model. TkDodo's [Why You Want React Query](https://tkdodo.eu/blog/why-you-want-react-query) is the clearest case for section 14.
 
-The state is lifted higher than its blast radius should allow (Section 2), or it is in a context whose value changes on every keystroke (Section 9).
+### Kent C. Dodds on application state
 
-Fix by colocating the state lower, or, if it must be shared, moving it out of a broadly-consumed context into a store with selector subscriptions (Sections 11 and 12).
-
-Confirm with the Profiler: record the interaction and look at which components render and why.
-
-#### Every consumer of a context re-renders, even ones reading unrelated fields, even behind `React.memo`
-
-Either the Provider value is an unstable inline object (new identity every render, Section 9) or it is one big context mixing unrelated state (Section 9).
-
-Fix by stabilizing the value with `useMemo` and splitting the context, and separating state from dispatch (Section 10).
-
-If consumers read different slices of one frequently-changing value, you have hit the selectivity gap and need a store (Section 11).
-
-#### Two values disagree (a list and its filtered version, a count and a length, a selected id and a selected object)
-
-You stored something derivable as independent state, creating two sources of truth (Section 4).
-
-Fix by storing the minimal facts and deriving the rest during render.
-
-If you were syncing them with an effect, delete the effect.
-
-#### An "impossible" state shows up (loading and error at once, success with no data)
-
-Your state shape allows illegal combinations (Section 5), or your transitions are not constrained (Section 6).
-
-Fix by collapsing correlated flags into one `status` value and, if needed, modeling the transitions as a reducer-shaped state machine so illegal states are unrepresentable.
-
-#### Data is stale, or you are hand-writing caching, loading flags, and refetch logic
-
-You are treating server state as client state (Section 14).
-
-Fix by moving that data into a server-state library, which removes the hand-built bookkeeping.
-
-This single move also often dissolves a "we need Redux" pressure, because much of what was in the store was server state.
-
-#### You cannot tell where a value comes from, or many components can change the same blob
-
-Ownership is diffuse (Section 1).
-
-Fix by re-establishing a single owner: lift to one clear owner with narrow props, or consolidate the changes through one reducer, so there is one place the value lives and one place it changes.
-
-#### You reached for Redux/a store and it feels like a lot of ceremony for the app
-
-You may have escalated past the rung the problem needed (Section 15).
-
-Re-run the decision framework: how much of that state is server state (a query library), derivable (delete it), local (push it down), or ambient-and-rare (Context)?
-
-Often what remains does not justify a store at all.
-
-### Try it
-
-> Take a real re-render or desync problem from your own app and, before changing anything, name which symptom above it is and which section's mechanism explains it. Then apply that fix and verify in the Profiler (for re-renders) or by trying to reach the bad state (for desyncs). Doing this on two or three real problems makes the mapping reflexive.
-
-### You've got this if
-
-You can take "the whole screen re-renders when I type" or "these two values keep disagreeing" and name the rung, the mechanism, and the fix without guessing.
-
----
-
-## Further reading (primary sources)
-
-### The official React docs (react.dev), "Managing State" section, current within the React 19 line
-
-This is the primary source for most of the first half of this guide, and it is genuinely good:
-
-1. Choosing the State Structure, at https://react.dev/learn/choosing-the-state-structure . The official version of Sections 4 and 5 (avoid redundant and contradictory state, derive rather than store).
-2. Sharing State Between Components, at https://react.dev/learn/sharing-state-between-components . The official version of Section 3 (lifting state up).
-3. Passing Data Deeply with Context, at https://react.dev/learn/passing-data-deeply-with-context . Covers Sections 7 and 8 (when to drill, when to use Context, and composition as an alternative).
-4. Scaling Up with Reducer and Context, at https://react.dev/learn/scaling-up-with-reducer-and-context . The canonical version of the reducer-plus-two-contexts pattern from Sections 6 and 10.
-5. You Might Not Need an Effect, at https://react.dev/learn/you-might-not-need-an-effect . Reinforces Section 4 (do not sync derived state with an effect).
-
-### Kent C. Dodds
-
-"Application State Management with React," at [kentcdodds.com/blog/application-state-management-with-react](https://kentcdodds.com/blog/application-state-management-with-react), and "How to use React Context effectively," at [kentcdodds.com/blog/how-to-use-react-context-effectively](https://kentcdodds.com/blog/how-to-use-react-context-effectively).
-
-The first is the clearest argument for the "most state is local or server state, very little needs to be global" position that underlies Sections 1 and 14.
-
-The second is the practical companion to Sections 8 and 10 (Context as transport, the provider-plus-hook pattern, stabilizing the value).
-
-Both predate the React Compiler and the newest hooks, so pair the memoization advice with the Hooks guide's Section 12, but the architectural guidance is evergreen.
-
-### TkDodo (Dominik Dorfmeister)
-
-The server-state writing, starting with "Why You Want React Query," at [tkdodo.eu/blog/why-you-want-react-query](https://tkdodo.eu/blog/why-you-want-react-query).
-
-The best articulation of the server-state-versus-client-state distinction from Section 14, by a TanStack Query maintainer.
-
-### The library docs, read as archetypes (Section 13), each current and maintained as of 2026
-
-Redux Toolkit at https://redux-toolkit.js.org/ , Zustand at https://github.com/pmndrs/zustand , and Jotai at https://jotai.org/ .
-
-Read each one's "why" or core-concepts page through the Section 12 lens (state outside the tree, selector subscriptions) rather than as isolated tutorials.
-
-Note that Recoil (https://recoiljs.org) was archived by Meta in January 2025 and should not be used for new projects.
-
-Jotai is its maintained successor for the atomic model.
-
-### For the selectivity gap (Section 11)
-
-`use-context-selector` by Daishi Kato, at https://github.com/dai-shi/use-context-selector , is the userland implementation of context selectors, and its README is a concise primary source on exactly why native Context re-renders all consumers and what a selector-based subscription does instead.
-
-### If you want to see the mechanism in React's source (pass 3)
-
-The context propagation logic lives in `ReactFiberNewContext.js` in the `react-reconciler` package (how a Provider value change marks consumers for re-render, the basis of Section 9), and the external-store binding is `useSyncExternalStore` in `ReactFiberHooks.js` (the safe-subscription primitive behind Section 12).
-
-Reading the propagation code is the fastest way to see that "the whole value, every consumer" is not a limitation you can configure away but how the mechanism is built.
+[Application State Management with React](https://kentcdodds.com/blog/application-state-management-with-react) and [How to use React Context effectively](https://kentcdodds.com/blog/how-to-use-react-context-effectively) argue for keeping most state local. Both predate the React Compiler, so treat their memoization advice as optional.

@@ -154,8 +154,8 @@ export function HookNodesFigure() {
                 objects: [
                     { id: "fiber", title: "fiber (function component)", x: 8, y: 8, w: 170, tone: "accent", fields: [{ name: "memoizedState", value: "head of the hook list" }] },
                     hook("useState", 8, 74, "hook 1 · useState", "0", "update queue", "→ hook 2"),
-                    hook("useEffect", 186, 74, "hook 2 · useEffect", "{deps, create, destroy}", "null", "→ hook 3"),
-                    hook("useMemo", 186, 184, "hook 3 · useMemo", "{value, deps}", "null", "null"),
+                    hook("useEffect", 186, 74, "hook 2 · useEffect", "{tag, create, deps, inst}", "null", "→ hook 3"),
+                    hook("useMemo", 186, 184, "hook 3 · useMemo", "[value, deps]", "null", "null"),
                 ],
                 pointers: [
                     { id: "head", from: "fiber.memoizedState", to: "useState" },
@@ -171,19 +171,19 @@ export function HookNodesFigure() {
                     { caption: "For `useState`, the node's `memoizedState` is the state value itself.", fields: ["useState.memoizedState"] },
                     { caption: "`queue` is the update queue, for `useState` and `useReducer`.", fields: ["useState.queue"] },
                     {
-                        caption: "For an effect, `memoizedState` holds `{deps, create, destroy}`, and `queue` is null.",
+                        caption: "For an effect, `memoizedState` holds the effect object `{tag, create, deps, inst}`. Its cleanup lives in `inst.destroy`, and `queue` is null.",
                         fields: ["useEffect.memoizedState", "useEffect.queue"],
                     },
-                    { caption: "For `useMemo`, `memoizedState` holds the cached `{value, deps}`.", fields: ["useMemo.memoizedState"] },
+                    { caption: "For `useMemo`, `memoizedState` holds the cached `[value, deps]` array.", fields: ["useMemo.memoizedState"] },
                     {
                         caption: "`next` points to the next hook called in this component, or is null at the end. React binds the Nth call to the Nth node by position, never by name.",
                         fields: ["useState.next", "useEffect.next", "useMemo.next"],
                         pointers: ["next-1", "next-2"],
                     },
                 ],
-                overview: "Every hook call gets a node with three fields, chained from the fiber. Press Play to read each field across three kinds of hook.",
-                figcaption: "Each hook is a node of `memoizedState`, `queue` and `next`, found by call order.",
-                description: ["fiber.memoizedState points to hook 1 (useState: value 0, an update queue), whose next is hook 2 (useEffect: deps, create, destroy), whose next is hook 3 (useMemo: value, deps), whose next is null."],
+                overview: "Every hook call gets a node, chained from the fiber. Press Play to read three of its five fields across three kinds of hook.",
+                figcaption: "Each hook is a node with `memoizedState`, `queue` and `next`, found by call order.",
+                description: ["fiber.memoizedState points to hook 1 (useState: value 0, an update queue), whose next is hook 2 (useEffect: an effect object with tag, create, deps and inst), whose next is hook 3 (useMemo: the array [value, deps]), whose next is null."],
             }}
         />
     );

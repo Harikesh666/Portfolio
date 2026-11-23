@@ -48,7 +48,7 @@ export function KeysReorderFigure() {
                         cells: [before, [cell("Cy", 3, "key c"), cell("Ana", 3, "key a"), cell("Bo", 3, "key b")]],
                     },
                     {
-                        caption: "Each new element finds its key and reuses that fiber. The DOM node is moved, not recreated, so state travels with the item.",
+                        caption: "Each new element finds its key and reuses that fiber. Cy keeps its place, and Ana and Bo are moved after it, so state travels with each item.",
                         cells: [before, [cell("Cy", 2, "cy"), cell("Ana", 0, "ana"), cell("Bo", 1, "bo")]],
                         links: [
                             [2, 0],
@@ -96,7 +96,7 @@ export function WorkLoopFigure() {
                     { id: "app", label: "App", sub: "root of update" },
                     { id: "header", label: "Header", parent: "app" },
                     { id: "main", label: "Main", parent: "app" },
-                    { id: "chart", label: "Chart", parent: "main", sub: "props unchanged" },
+                    { id: "chart", label: "Chart", parent: "main", sub: "memo, same props" },
                     { id: "list", label: "List", parent: "main" },
                     { id: "item", label: "Item", parent: "list" },
                 ],
@@ -110,12 +110,12 @@ export function WorkLoopFigure() {
                         states: { app: "renders", header: "renders" },
                     },
                     {
-                        caption: "Main is begun next. Between every unit of work the loop checks `shouldYield()`, which is what lets rendering pause.",
+                        caption: "Main is begun next. In a concurrent render the loop checks `shouldYield()` between units of work, which is what lets rendering pause.",
                         states: { app: "renders", main: "renders" },
                         subs: { header: "completed" },
                     },
                     {
-                        caption: "The bailout: unchanged props, no pending state, unchanged context, and `childLanes` shows no work below. React skips the subtree.",
+                        caption: "The bailout: Chart is wrapped in `memo` and its props are equal. It has no pending state or context change, and `childLanes` shows no work below. React skips the subtree.",
                         states: { app: "renders", main: "renders", chart: "skipped" },
                         subs: { header: "completed", chart: "skipped" },
                     },
@@ -142,7 +142,7 @@ export function CommitPhasesFigure() {
     const steps = [
         { caption: "The render phase builds the work-in-progress tree. It must be pure, and React may pause, restart or discard it.", blocks: [block("Render", 0, 3, "render")] },
         {
-            caption: "Commit is one synchronous, uninterruptible burst. Before mutation runs first, and React schedules passive effects for after paint.",
+            caption: "Commit is one synchronous, uninterruptible burst. Before mutation runs first, and React schedules passive effects to run after the commit.",
             blocks: [block("Commit", 3, 4.5, "before", "strong")],
         },
         {
@@ -155,7 +155,7 @@ export function CommitPhasesFigure() {
         },
         { caption: "The browser paints. The user now sees the update.", blocks: [block("Browser", 7.5, 9, "paint", "accent")] },
         {
-            caption: "After paint, passive effects flush asynchronously: the previous render's `useEffect` cleanup, then this render's setup. They do not delay what the user sees.",
+            caption: "Passive effects flush next: the previous render's `useEffect` cleanup, then this render's setup. Usually after paint, but a click's render flushes them before paint.",
             blocks: [block("Effects", 9.2, 12, "useEffect")],
         },
     ];
@@ -169,7 +169,7 @@ export function CommitPhasesFigure() {
                 axis: "time →",
                 steps: cumulative,
                 overview: "One update traced from render through the three commit sub-phases, paint and passive effects. Press Play to see when each hook runs.",
-                figcaption: "Render may run many times, commit runs once, and passive effects wait until after paint.",
+                figcaption: "Render may run many times, commit runs once, and passive effects usually wait until after paint.",
                 description: ["Render, then commit: before mutation, mutation, layout. Then the browser paints. Then useEffect runs."],
             }}
         />
@@ -216,7 +216,7 @@ export function UpdaterFoldFigure() {
 export function EffectCleanupFigure() {
     const steps = [
         {
-            caption: "On the first run React calls `create`, which subscribes to room A, and stores the returned function as `destroy`.",
+            caption: "On the first run React calls `create`, which subscribes to room A, and stores the returned function in `inst.destroy`.",
             blocks: [block("Render", 0, 1.6, "A"), block("Effect A", 1.6, 3.6, "subscribe"), block("Active", 3.6, 4.4, "A", "accent")],
         },
         {
@@ -228,7 +228,7 @@ export function EffectCleanupFigure() {
             blocks: [block("Render", 0, 1.6, "A"), block("Effect A", 1.6, 3.6, "subscribe"), block("Render", 4.4, 6, "A"), block("Render", 6, 7.6, "B"), block("Active", 3.6, 7.6, "A", "accent")],
         },
         {
-            caption: "React first calls the stored `destroy`, cleaning up the previous render's synchronization.",
+            caption: "React first calls the stored `inst.destroy`, cleaning up the previous render's synchronization.",
             blocks: [
                 block("Render", 0, 1.6, "A"),
                 block("Effect A", 1.6, 3.6, "subscribe"),
@@ -252,7 +252,7 @@ export function EffectCleanupFigure() {
             ],
         },
         {
-            caption: "On unmount React calls the stored `destroy` one last time, with no setup after it. Every setup had its cleanup.",
+            caption: "On unmount React calls the stored `inst.destroy` one last time, with no setup after it. Every setup had its cleanup.",
             blocks: [
                 block("Render", 0, 1.6, "A"),
                 block("Effect A", 1.6, 3.6, "subscribe"),
@@ -293,8 +293,8 @@ export function LayoutEffectFigure() {
                 span: 12,
                 steps: [
                     { caption: "React mutates the real DOM to match the new render. The browser has not painted it yet.", blocks: run1.slice(0, 1), markers, at: 1.5 },
-                    { caption: "With `useEffect`, the browser paints the element in its initial position first.", blocks: run1.slice(0, 2), markers, at: 3 },
-                    { caption: "Later, asynchronously, the effect measures and sets state, causing another render and another paint.", blocks: run1, markers, at: 4.6 },
+                    { caption: "With `useEffect`, the browser can paint the element in its initial position before the effect's update renders.", blocks: run1.slice(0, 2), markers, at: 3 },
+                    { caption: "The effect measures and sets state. That update renders at default priority in a later task, causing another render and another paint.", blocks: run1, markers, at: 4.6 },
                     { caption: "The user sees the intermediate frame: a flash.", blocks: flash, markers, at: 6 },
                     {
                         caption: "`useLayoutEffect` runs synchronously after the DOM mutation, before paint. Measuring and repositioning happen here.",
@@ -323,10 +323,10 @@ export function TimeSlicingFigure() {
     const all = [
         block("React work", 0, 2, "slice 1"),
         block("MessageChannel", 2, 3, "post", "accent"),
-        block("Browser", 3, 5.5, "paint, input", "strong"),
+        block("Browser", 3, 5.5, "input, maybe paint", "strong"),
         block("MessageChannel", 5.5, 7, "message", "accent"),
         block("React work", 7, 9, "slice 2"),
-        block("Browser", 9, 10.4, "paint", "strong"),
+        block("Browser", 9, 10.4, "turn", "strong"),
         block("React work", 10.4, 12, "slice 3"),
     ];
     const deadline = [{ at: 2, label: "about 5ms" }];
@@ -338,18 +338,18 @@ export function TimeSlicingFigure() {
                 axis: "time →",
                 steps: [
                     {
-                        caption: "`performWorkUntilDeadline` records a deadline, then runs scheduled work, checking after each unit whether `now >= deadline`.",
+                        caption: "`performWorkUntilDeadline` notes when the slice started, then runs scheduled work, asking `shouldYieldToHost` after each unit whether about 5ms have passed.",
                         blocks: all.slice(0, 1),
                         markers: deadline,
                         at: 2,
                     },
                     {
-                        caption: "The deadline arrives with work left, so the scheduler posts a message to schedule the next chunk as a macrotask, then returns and yields.",
+                        caption: "Time is up with work left, so the scheduler posts a message to schedule the next chunk as a macrotask, then returns and yields.",
                         blocks: all.slice(0, 2),
                         markers: deadline,
                         at: 3,
                     },
-                    { caption: "A macrotask runs after the browser has had the chance to paint and handle input, unlike a microtask.", blocks: all.slice(0, 3), markers: deadline, at: 5.5 },
+                    { caption: "Yielding gives the browser a turn: it handles input, and paints if a frame is due. A microtask would not give it that turn.", blocks: all.slice(0, 3), markers: deadline, at: 5.5 },
                     {
                         caption: "The `message` event arrives promptly, with no 4ms `setTimeout` clamp, and calls `performWorkUntilDeadline` again for another slice.",
                         blocks: all.slice(0, 5),
@@ -359,8 +359,8 @@ export function TimeSlicingFigure() {
                     { caption: "This repeats until the render finishes: the chopped-up pattern you see in a Performance panel trace.", blocks: all, markers: deadline, at: 12 },
                 ],
                 overview: "A render, sliced into chunks of about 5ms, each ending with a `MessageChannel` post and a browser turn. Press Play to watch the yield-and-resume cycle.",
-                figcaption: "Posting a `MessageChannel` message yields after paint, without the `setTimeout` delay.",
-                description: ["React works for about 5ms, posts a message, lets the browser paint and handle input, then resumes on the message event."],
+                figcaption: "Posting a `MessageChannel` message gives the browser a turn, without the `setTimeout` clamp.",
+                description: ["React works for about 5ms, posts a message, lets the browser handle input and paint if a frame is due, then resumes on the message event."],
             }}
         />
     );
@@ -373,30 +373,30 @@ export function StarvationFigure() {
     return (
         <BitsFigure
             spec={{
-                bits: ["DefaultLane", "TransitionLane"],
+                bits: ["SyncLane", "TransitionLane"],
                 steps: [
                     {
-                        caption: "Each lane gets an expiration time when it first becomes pending. Lower priority lanes get later times.",
+                        caption: "Each lane gets an expiration time when it first becomes pending: 250ms for sync and continuous lanes, 5 seconds for default and transition lanes.",
                         rows: [pending([0, 1]), expired([]), render([])],
                     },
-                    { caption: "`getNextLanes` picks the highest priority pending lane, so the urgent work renders first.", rows: [pending([0, 1]), expired([]), render([0])] },
+                    { caption: "The transition renders in time slices. A keystroke arrives on SyncLane, and `getNextLanes` picks it first, interrupting the transition.", rows: [pending([0, 1]), expired([]), render([0])] },
                     {
-                        caption: "Urgent updates keep arriving, so the transition is deferred again and again. This is starvation.",
+                        caption: "Urgent updates keep arriving, so the transition render is interrupted and restarted again and again. This is starvation.",
                         rows: [pending([0, 1]), expired([]), render([0])],
                     },
                     {
-                        caption: "On each scheduling pass, before choosing lanes, `markStarvedLanesAsExpired` walks the pending lanes and checks their expiration times.",
+                        caption: "Each time React schedules the root, `markStarvedLanesAsExpired` walks the pending lanes and checks their expiration times.",
                         rows: [pending([0, 1]), expired([]), render([])],
                     },
-                    { caption: "A lane that has waited past its expiration time is added to the root's `expiredLanes` set.", rows: [pending([0, 1]), expired([1]), render([])] },
+                    { caption: "The transition has waited past its 5 seconds, so it joins the root's `expiredLanes` set.", rows: [pending([0, 1]), expired([1]), render([])] },
                     {
-                        caption: "Expired lanes are forced in regardless of priority and render synchronously, not time-sliced. The stale work finishes.",
+                        caption: "When the transition lane renders next, React turns time slicing off. The render runs without yielding, so new urgent work cannot interrupt it, and the stale work finishes.",
                         rows: [pending([0, 1]), expired([1]), render([1])],
                     },
                 ],
-                overview: "A low-priority transition lane is outranked by constant urgent updates until its expiration time passes. Press Play to see it forced through.",
-                figcaption: "Priority sets the normal order, and expiration puts a deadline on that order.",
-                description: ["The transition lane waits behind the default lane until it expires, then it renders synchronously."],
+                overview: "A transition lane keeps getting interrupted by urgent updates until its expiration time passes. Press Play to see it finish.",
+                figcaption: "Priority sets the normal order, and expiration stops a lane from being interrupted forever.",
+                description: ["The transition keeps losing to urgent sync updates until it expires, then it renders synchronously without yielding."],
             }}
         />
     );
@@ -420,21 +420,21 @@ export function EntanglementFigure() {
                         rows: rows([1, 2], [], [1]),
                     },
                     {
-                        caption: "Entanglement declares that if either lane renders, the other must render in the same pass. Transitions touching the same state are one case.",
+                        caption: "Entanglement records that these lanes should render together. Transition updates on the same hook's queue are one case.",
                         rows: rows([1, 2], [1, 2], []),
                     },
                     {
-                        caption: "When `getNextLanes` selects an entangled lane, it adds every lane entangled with it to `renderLanes` for that pass.",
+                        caption: "As a render starts, `getEntangledLanes` adds every lane entangled with the chosen ones to the lanes for that render.",
                         rows: rows([1, 2], [1, 2], [1, 2]),
                     },
                     {
-                        caption: "The related updates apply together. React splits by default for responsiveness, and entangles where splitting would break consistency.",
+                        caption: "The related updates apply together. React calls this best effort: it will not throw away a render already in progress to honor a new entanglement.",
                         rows: rows([], [1, 2], [1, 2]),
                     },
                 ],
                 overview: "Two related transition lanes, first split across passes, then entangled so they render together. Press Play to see the difference.",
                 figcaption: "Split lanes for responsiveness, entangle lanes where splitting would show an inconsistent UI.",
-                description: ["Transition A and B, when entangled, are always in the same renderLanes."],
+                description: ["Transition A and B, once entangled, normally render in the same pass."],
             }}
         />
     );
@@ -445,34 +445,34 @@ export function EntanglementFigure() {
 export function SuspensePingFigure() {
     const nodes = [
         node("comp", 8, 8, 150, 38, "Comp", "reads the async value", "accent"),
-        node("promise", 202, 8, 150, 38, "thrown promise", "pending", "accent"),
+        node("promise", 202, 8, 150, 38, "pending promise", "pending", "accent"),
         node("subtree", 8, 82, 150, 38, "suspended subtree", "waits", "task"),
         node("boundary", 202, 82, 150, 38, "<Suspense>", "nearest boundary"),
         node("lane", 8, 156, 150, 38, "retry lane", "dedicated lanes", "task"),
-        node("ping", 202, 156, 150, 38, "ping callback", ".then on the thenable", "task"),
+        node("ping", 202, 156, 150, 38, "retry listener", ".then on the promise", "task"),
     ];
     const wires: FlowWire[] = [
-        { id: "throws", d: "M158 27 H200", tone: "accent", label: { text: "throws", x: 179, y: 21 } },
+        { id: "throws", d: "M158 27 H200", tone: "accent", label: { text: "reads", x: 179, y: 21 } },
         { id: "caught", d: "M277 46 V80", tone: "accent", label: { text: "caught in unwind", x: 283, y: 66, anchor: "start" } },
-        { id: "subscribes", d: "M277 120 V154", label: { text: "subscribes", x: 283, y: 140, anchor: "start" } },
+        { id: "subscribes", d: "M277 120 V154", label: { text: "listens", x: 283, y: 140, anchor: "start" } },
         { id: "schedules", d: "M202 175 H160", tone: "task", label: { text: "resolves", x: 181, y: 169 } },
         { id: "retry", d: "M83 156 V122", tone: "task", label: { text: "retry render", x: 89, y: 142, anchor: "start" } },
         { id: "replaces", d: "M158 101 H200", tone: "task", label: { text: "content", x: 179, y: 95 } },
     ];
     const steps: FlowStep[] = [
-        { caption: "A component suspends by throwing a promise. The value it read was still pending.", lit: { nodes: ["comp", "promise"], wires: ["throws"], tone: "accent" } },
+        { caption: "A component reads a promise that is still pending, so React interrupts its render. It suspends.", lit: { nodes: ["comp", "promise"], wires: ["throws"], tone: "accent" } },
         {
             caption: "The unwind reaches the nearest `<Suspense>` boundary, which shows its fallback, so the user sees a loading state.",
             lit: { nodes: ["promise", "boundary"], wires: ["caught"], tone: "accent" },
             patch: subs({ boundary: "shows fallback" }),
         },
         {
-            caption: "React subscribes to the thrown promise by attaching a callback, a \"ping\". It does not poll or guess.",
+            caption: "When the fallback commits, React attaches a retry listener to the promise with `.then`. It does not poll or guess.",
             lit: { nodes: ["boundary", "ping"], wires: ["subscribes"], tone: "task" },
             patch: subs({ boundary: "shows fallback", ping: "attached" }),
         },
         {
-            caption: "When the promise resolves, the callback fires. It tells React the thing the component was waiting on is ready.",
+            caption: "When the promise resolves, the listener fires. It tells React the data the component was waiting on is ready.",
             lit: { nodes: ["promise", "ping"], wires: [], tone: "task" },
             patch: subs({ boundary: "shows fallback", ping: "fired", promise: "resolved" }),
         },
@@ -494,11 +494,11 @@ export function SuspensePingFigure() {
     ];
     return (
         <FlowFigure
-            description={["A component throws a pending promise. The nearest Suspense boundary shows its fallback and subscribes to the promise.", "When it resolves, a retry on a retry lane re-renders the subtree, and the content replaces the fallback."]}
-            figcaption="React subscribes to the thrown promise, so a resolve schedules a retry on a retry lane."
+            description={["A component suspends on a pending promise. The nearest Suspense boundary shows its fallback, and React listens to the promise.", "When it resolves, a retry on a retry lane re-renders the subtree, and the content replaces the fallback."]}
+            figcaption="React listens to the promise a component suspended on, so a resolve schedules a retry on a retry lane."
             height={202}
             nodes={nodes}
-            overview="A suspended component never asks to be re-rendered, because React listens to the very promise it threw. Press Play to follow one suspension to its retry."
+            overview="A suspended component never asks to be re-rendered, because React listens to the very promise it suspended on. Press Play to follow one suspension to its retry."
             steps={steps}
             width={360}
             wires={wires}
@@ -557,7 +557,7 @@ export function SuspenseNestingFigure() {
 export function FallbackThrottleFigure() {
     const fast = [block("Promise", 0, 1.5, "pending", "muted")];
     const flash = [...fast, block("Naive", 0, 1.5, "flash", "accent"), block("Naive", 1.5, 3, "content")];
-    const skip = [...flash, block("React", 1.5, 3, "content")];
+    const skip = [...flash, block("React", 0, 3, "fallback", "accent"), block("React", 3, 4.5, "content")];
     const resolves = [...skip, block("Promise", 4, 4.6, undefined, "muted"), block("Promise", 4.8, 5.4, undefined, "muted"), block("Promise", 5.6, 6.2, undefined, "muted")];
     const popcorn = [...resolves, block("Naive", 4.6, 5.4), block("Naive", 5.4, 6.2), block("Naive", 6.2, 7), block("React", 6.2, 8.2, "together")];
     const slow = [...popcorn, block("Promise", 8.6, 12, "slow", "muted"), block("React", 8.6, 10.6, "fallback", "accent"), block("React", 10.6, 12, "content")];
@@ -575,21 +575,21 @@ export function FallbackThrottleFigure() {
                         at: 3,
                     },
                     {
-                        caption: "React throttles fallbacks. If the suspension resolves within a short window, it skips the fallback and the content appears directly.",
+                        caption: "React shows the fallback, then holds the reveal until 300ms after it appeared. The fallback stays up briefly instead of flickering.",
                         blocks: skip,
-                        at: 3,
+                        at: 4.5,
                     },
                     { caption: "Several boundaries resolve at slightly different times. Revealing each at once would pop content in piece by piece: the popcorn UI.", blocks: resolves, at: 6.2 },
                     { caption: "React staggers or batches the reveals. It trades a little reveal latency for fewer distinct visual updates.", blocks: popcorn, at: 8.2 },
                     {
-                        caption: "When content is clearly slow, the fallback does show. Throttling smooths small timing differences, not slow data.",
+                        caption: "When data is slow, the fallback simply stays until it arrives. The throttle only keeps reveals at least 300ms apart.",
                         blocks: slow,
                         at: 12,
                     },
                 ],
-                overview: "React deliberately does not show every fallback or reveal every boundary the instant it could. Press Play to compare naive Suspense with React's.",
-                figcaption: "Throttling suppresses fallback flashes and popcorn reveals at the cost of a little latency.",
-                description: ["A fast promise: naive Suspense flashes a fallback, React shows content directly.", "Staggered resolves: naive reveals pop in one by one, React reveals together."],
+                overview: "React deliberately does not reveal every boundary the instant it could. Press Play to compare naive Suspense with React's.",
+                figcaption: "The 300ms reveal throttle stops fallback flicker and popcorn reveals at the cost of a little latency.",
+                description: ["A fast promise: naive Suspense flashes a fallback, React holds it for 300ms and then reveals the content once.", "Staggered resolves: naive reveals pop in one by one, React reveals together."],
             }}
         />
     );
@@ -623,7 +623,7 @@ export function BoundaryMethodsFigure() {
         {
             caption: "It returns state, which is merged into the boundary's state. No logging, network calls or DOM work belong here.",
             lit: { nodes: ["derive", "render"], wires: ["state"], tone: "task" },
-            patch: subs({ child: "throws", derive: "returns { hasError: true }" }),
+            patch: subs({ child: "throws", derive: "returns { error }" }),
         },
         { caption: "`render()` now returns the fallback instead of the children.", lit: { nodes: ["render"], wires: [], tone: "task" }, patch: subs({ child: "throws", render: "returns the fallback" }) },
         {
@@ -675,7 +675,7 @@ export function ErrorForwardingFigure() {
     ];
     const steps: FlowStep[] = [
         {
-            caption: "An error is thrown in an event handler or async code. Boundaries do not catch it directly, because they catch render errors only.",
+            caption: "An error is thrown in an event handler or async code. Boundaries do not catch it directly, because they catch only errors React hits while rendering or committing.",
             lit: { nodes: ["handler"], wires: [], tone: "accent" },
         },
         {
@@ -733,7 +733,7 @@ export function BoundaryResetFigure() {
                         states: { boundary: "boundary", profile: "skipped", fallback: "fallback" },
                     },
                     {
-                        caption: "Manual reset: `reset` sets `hasError: false`, so the next render returns the children again.",
+                        caption: "Manual reset: `reset` clears the error state, so the next render returns the children again.",
                         states: { boundary: "boundary", fallback: "fallback" },
                         subs: { fallback: "try again clicked" },
                     },
@@ -779,10 +779,10 @@ export function CaptureBubbleFigure() {
                 span: 12,
                 axis: "handler order →",
                 steps: [
-                    { caption: "A click lands on the button. The real listener is at the root container, not on your elements.", blocks: [] },
-                    { caption: "React finds the target fiber and walks up to the root, building the propagation path from the fiber tree.", blocks: [], markers: path },
+                    { caption: "A click lands on the button. React's two listeners are at the root container, and your handlers are never attached to your elements.", blocks: [] },
+                    { caption: "The root's capture listener fires first. React finds the target fiber and walks up to the root, building the path from the fiber tree.", blocks: [], markers: path },
                     { caption: "The capture phase fires `onClickCapture` handlers in root-to-target order. The outermost handler runs first.", blocks: all.slice(0, 1), markers: path, at: 2 },
-                    { caption: "Capture continues down to the button. Every React event has a `Capture` variant.", blocks: all.slice(0, 3), markers: path, at: 6 },
+                    { caption: "Capture continues down to the button. Now the root's bubble listener fires and walks the same fiber path again.", blocks: all.slice(0, 3), markers: path, at: 6 },
                     { caption: "The bubble phase fires `onClick` handlers in target-to-root order. The button runs first.", blocks: all.slice(0, 4), markers: path, at: 8 },
                     {
                         caption: "Bubble continues up to the outermost ancestor. React collected these handlers itself, with no per-element DOM listeners.",
@@ -801,12 +801,12 @@ export function CaptureBubbleFigure() {
 
 export function EventBatchingFigure() {
     const nodes = [
-        node("dispatch", 8, 8, 150, 38, "event dispatch", "batched context", "task"),
+        node("dispatch", 8, 8, 150, 38, "event dispatch", "React's root listener", "task"),
         node("handlers", 202, 8, 150, 38, "your handleClick", "runs", "task"),
-        node("flush", 8, 82, 150, 38, "flush", "after handlers finish", "accent"),
+        node("flush", 8, 82, 150, 38, "microtask", "after listener returns", "accent"),
         node("queue", 202, 82, 150, 38, "update queue", "empty", "accent"),
         node("render", 8, 156, 150, 38, "one render", "at the event's priority", "task"),
-        node("commit", 202, 156, 150, 38, "render and commit", "scheduler", "strong"),
+        node("commit", 202, 156, 150, 38, "render and commit", "no scheduler task", "strong"),
     ];
     const wires: FlowWire[] = [
         { id: "enters", d: "M158 27 H200", tone: "task" },
@@ -816,28 +816,28 @@ export function EventBatchingFigure() {
         { id: "schedule", d: "M158 175 H200", tone: "task" },
     ];
     const steps: FlowStep[] = [
-        { caption: "React begins dispatching the event and enters a batched context.", lit: { nodes: ["dispatch"], wires: [], tone: "task" } },
+        { caption: "React's root listener begins dispatching the click and sets its priority to `SyncLane`.", lit: { nodes: ["dispatch"], wires: [], tone: "task" } },
         {
-            caption: "React calls the collected handlers. The first `setCount` enqueues an update but does not render, because React is batching.",
+            caption: "React calls the collected handlers. The first `setCount` enqueues an update and queues one microtask. It does not render.",
             lit: { nodes: ["handlers", "queue"], wires: ["enters", "enqueue"], tone: "accent" },
             patch: subs({ queue: "1 update" }),
         },
-        { caption: "The second and third `setCount` calls enqueue too. Nothing has rendered yet.", lit: { nodes: ["queue"], wires: ["enqueue"], tone: "accent" }, patch: subs({ queue: "3 updates" }) },
-        { caption: "When every handler for the event has finished, React flushes the enqueued updates.", lit: { nodes: ["queue", "flush"], wires: ["done"], tone: "accent" }, patch: subs({ queue: "3 updates" }) },
+        { caption: "The second and third `setCount` calls enqueue too. The microtask is already queued, so no new one is added.", lit: { nodes: ["queue"], wires: ["enqueue"], tone: "accent" }, patch: subs({ queue: "3 updates" }) },
+        { caption: "When React's listener returns, the microtask runs and picks up every pending `SyncLane` update.", lit: { nodes: ["queue", "flush"], wires: ["done"], tone: "accent" }, patch: subs({ queue: "3 updates" }) },
         {
             caption: "One render reflects all three updates, at the priority the event established. The updater form makes them compose.",
             lit: { nodes: ["flush", "render"], wires: ["once"], tone: "task" },
             patch: subs({ queue: "folded", render: "count renders once" }),
         },
         {
-            caption: "The scheduler runs render and commit. `flushSync` is the escape hatch that flushes immediately, at the cost of an extra render.",
+            caption: "React renders and commits right there, without a scheduler task. `flushSync` is the escape hatch that renders at once, at the cost of an extra render.",
             lit: { nodes: ["render", "commit"], wires: ["schedule"], tone: "strong" },
-            patch: subs({ queue: "folded", render: "count renders once", commit: "flushSync opts out" }),
+            patch: subs({ queue: "folded", render: "count renders once", commit: "flushSync renders now" }),
         },
     ];
     return (
         <FlowFigure
-            description={["During the event, each setState enqueues an update. When the handlers finish, React flushes them as one render."]}
+            description={["During the event, each setState enqueues an update. A single microtask after the listener renders them as one."]}
             figcaption="Updates enqueue during the handler and flush together as a single render."
             height={202}
             nodes={nodes}
@@ -854,9 +854,9 @@ export function PortalEventsFigure() {
         <TreeFigure
             spec={{
                 nodes: [
-                    { id: "root", label: "root container", sub: "listener lives here" },
+                    { id: "root", label: "root container", sub: "React listeners" },
                     { id: "sidebar", label: "Sidebar", parent: "root", sub: "onClick" },
-                    { id: "body", label: "document.body", parent: "root", sub: "modal's DOM lives here" },
+                    { id: "body", label: "document.body", sub: "portal container" },
                     { id: "modal", label: "Modal", parent: "sidebar", sub: "portal into body" },
                     { id: "button", label: "button", parent: "modal", sub: "target" },
                 ],
@@ -867,10 +867,11 @@ export function PortalEventsFigure() {
                         subs: { modal: "written inside Sidebar" },
                     },
                     {
-                        caption: "The user clicks inside the modal. The native click bubbles up the real DOM through `body` and still reaches the root container's listener.",
-                        states: { button: "renders", body: "renders", root: "renders" },
+                        caption: "The user clicks inside the modal. The native click bubbles up the real DOM to `body`, the portal's container, where React attached listeners too.",
+                        states: { button: "renders", body: "renders" },
+                        subs: { body: "React listeners too" },
                     },
-                    { caption: "React finds the target fiber: the clicked element's fiber.", states: { button: "renders" } },
+                    { caption: "The listener on `body` finds the target fiber: the clicked element's fiber.", states: { button: "renders" } },
                     {
                         caption: "React walks up the fiber tree. The modal's parent is `Sidebar`, the component that rendered the portal, not `body`.",
                         states: { button: "renders", modal: "renders", sidebar: "renders", root: "renders" },
@@ -889,7 +890,7 @@ export function PortalEventsFigure() {
                 legend: false,
                 overview: "Portals split the DOM tree from the React tree, and events follow React's. Press Play to trace a click inside a portaled modal.",
                 figcaption: "React propagation follows the component tree you wrote, not the DOM.",
-                description: ["The root container holds Sidebar and document.body. Modal is written inside Sidebar but its DOM lives in body."],
+                description: ["Sidebar is in the root container. Modal is written inside Sidebar, but its DOM lives in document.body, outside the root container."],
             }}
         />
     );
@@ -959,10 +960,10 @@ export function DedupeFigure() {
 }
 
 export function OptimisticUpdateFigure() {
-    const s1 = [block("Mutation", 0, 2, "onMutate")];
+    const s1 = [block("Mutation", 0, 6.2, "onMutate")];
     const s2 = [...s1, block("Cache", 2, 4, "snapshot", "strong")];
     const s3 = [...s2, block("Cache", 4, 6.2, "optimistic", "accent"), block("UI", 4, 6.2, "new value", "accent")];
-    const s4 = [...s3, block("Mutation", 2, 8, "write in flight", "muted"), block("UI", 6.2, 8, undefined, "accent")];
+    const s4 = [...s3, block("Mutation", 6.2, 8, "write in flight", "muted"), block("UI", 6.2, 8, undefined, "accent")];
     const s5 = [...s4, block("Mutation", 8, 9.8, "error", "accent"), block("Cache", 8, 9.8, "restore", "strong"), block("UI", 8, 9.8, "rollback", "strong")];
     const s6 = [...s5, block("Cache", 9.8, 12, "invalidate"), block("UI", 9.8, 12, "server truth")];
     return (
@@ -978,7 +979,7 @@ export function OptimisticUpdateFigure() {
                         at: 2,
                     },
                     {
-                        caption: "Next, `getQueryData` takes a snapshot as the rollback point. It is returned from `onMutate` and arrives as `context` in `onError`.",
+                        caption: "Next, `getQueryData` takes a snapshot as the rollback point. It is returned from `onMutate` and arrives as `onMutateResult` in `onError`.",
                         blocks: s2,
                         at: 4,
                     },
@@ -989,7 +990,7 @@ export function OptimisticUpdateFigure() {
                     },
                     { caption: "The write is still pending while the UI already shows the new value. This trusts that the write will succeed.", blocks: s4, at: 8 },
                     {
-                        caption: "If the write fails, `onError` restores the snapshot with `context.previous`. Without this, the UI keeps showing a change that never happened.",
+                        caption: "If the write fails, `onError` restores the snapshot with `onMutateResult.previous`. Without this, the UI keeps showing a change that never happened.",
                         blocks: s5,
                         at: 9.8,
                     },
@@ -1085,9 +1086,9 @@ export function TransitionTypingFigure() {
                 span: 12,
                 axis: "time →",
                 steps: [
-                    { caption: "The user types. `setQuery` is urgent, so the input reflects the keystroke at once, at high priority.", blocks: k1, at: 1.2 },
+                    { caption: "The user types. `setText` is urgent, so the input reflects the keystroke at once, at high priority.", blocks: k1, at: 1.2 },
                     {
-                        caption: "`setResults` sits inside `startTransition`, so it is non-urgent. React renders the expensive results at lower priority, and `isPending` is true.",
+                        caption: "`setQuery` sits inside `startTransition`, so it is non-urgent. React renders the expensive results at lower priority, and `isPending` is true.",
                         blocks: t1,
                         at: 3,
                     },
@@ -1202,7 +1203,7 @@ export function StoreSelectorFigure() {
             patch: subs({ store: "cart changed", cart: "re-renders", user: "same output: skipped" }),
         },
         {
-            caption: "`useSyncExternalStore` gives one consistent snapshot per render. This prevents tearing when React pauses mid-render.",
+            caption: "If the store changed while React paused mid-render, React redoes the render synchronously before committing. The screen never shows two versions of the store.",
             lit: { nodes: ["sync", "user", "cart"], wires: ["bind-user", "bind-cart"], tone: "strong" },
             patch: subs({ store: "cart changed" }),
         },
@@ -1283,7 +1284,7 @@ export function FirstLoadFigure() {
                         at: 3.6,
                     },
                     {
-                        caption: "Separately, React renders the combined tree, including client components' first markup, into HTML. The server streams the HTML and the payload together.",
+                        caption: "SSR reads the payload as it streams and renders it, with client components' first markup, into HTML. The server streams the HTML with the payload inlined.",
                         blocks: s2,
                         at: 5.5,
                     },

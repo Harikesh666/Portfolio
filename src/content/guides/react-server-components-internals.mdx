@@ -1,324 +1,283 @@
 ---
 title: "React Server Components and the Server/Client Boundary"
-description: "A clear model of Server Components, Client Components, serialization, streaming, and framework boundaries."
+description: "How React 19 splits one tree between server and browser: the use client module boundary, what props can cross it, the Flight payload row by row, first load and hydration, Server Functions and their security, and what Next.js owns."
 category: "Framework"
-readTime: "30 min read"
+readTime: "22 min read"
 date: "May 2026"
 publishedAt: "2026-05-01"
 order: 10
 series: "react-internals"
 ---
 
-> Current as of React 19.2.x (2026), with Server Components stable in the React 19 line.
-
-> **What this guide builds on.** This guide sits on top of the rendering engine, so it leans on the **rendering and reconciliation guide**: the component tree, the render and commit phases, reconciliation, hydration, and Suspense (which RSC uses for streaming). Wherever it reaches for an engine concept, it recaps it in a line.
-
-## Read this first
-
-**You are not meant to absorb this in one sitting.**
-
-### Pass 1, one relaxed sitting
-
-Read only **"The itch"** and **"The short version"** of each section.
-
-Skip the "How it actually works" blocks.
-
-You will come out with the whole mental model of how Server Components and the boundary work, which is enough to stop you making the common mistakes and to read framework docs with understanding.
-
-### Pass 2, driven by real work
-
-When a `"use client"` error or a "function cannot be serialized" message or a confusing data-fetching choice shows up in your Next.js work, come back and read the deep part of the matching section.
-
-### Pass 3, when curious
-
-The further-reading section points at the primary sources.
-
-One honesty note up front, because it matters for how much of this to trust over time.
-
-The _user-facing_ model here (Server Components, Client Components, the directives, Server Functions) is **stable** in React 19 and will not change between minor versions.
-
-But the _framework-facing_ internals that make RSC work (the exact wire format, the bundler hooks) are **not** semver-stable within the 19.x line and are tightly coupled to your framework, almost always Next.js.
-
-So treat the concepts as solid and the deepest plumbing details as "true today, may shift," and pin your React version in a real project.
-
-The React team says exactly this in the official docs.
-
-A second honesty note: RSC is the one area of React that you cannot really run "plain." It needs a bundler and framework integration.
-
-Everything you try will be through Next.js (or a similar framework).
-
-### Trust the order
-
-The sections build one picture, in order.
-
-Here is the spine:
-
-<GuideSpine steps={[{"title": "Why RSC exists", "sections": [1]}, {"title": "The model: two worlds, one tree", "sections": [2]}, {"title": "The two kinds of component", "sections": [3, 4], "note": "Server vs Client"}, {"title": "The boundary: what can cross it", "sections": [5], "note": "the children trick lives here"}, {"title": "The wire format: the RSC payload", "sections": [6]}, {"title": "Meeting SSR and hydration", "sections": [7]}, {"title": "Server Functions (writing back)", "sections": [8]}, {"title": "Back to the rendering engine, pitfalls", "sections": [9, 10]}]} />
-
-Each section also opens with a one-line **Prereqs** note: the earlier sections it leans on (here or in the rendering guide) plus any outside knowledge worth having first.
-
-Sections that need nothing past basic React say so.
-
-### What is React core versus what your framework implements
-
-This distinction trips up a lot of people, and a lot of the internet blurs it by attributing pure-framework conventions to React.
-
-Keep this table in mind as you read: the _model_ in this guide is genuinely React, but everything _runnable_ is your framework (Next.js) implementing React's primitives.
-
-| This is React core (in the React docs, stable in React 19)                                | This is your framework implementing React's primitives (Next.js, etc.)                    |
-| ----------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| The concepts: Server Components, Client Components, the boundary                          | The file conventions and project structure (where pages and routes live)                  |
-| The directives `"use client"` and `"use server"` and their meaning                        | How `await`ing data in a component is actually wired to a request                         |
-| "Server Components are the default, no directive marks them"                              | The router, and the fact that client navigation fetches a new RSC payload instead of HTML |
-| The RSC payload format and the serialization rules for props                              | The HTTP endpoint a Server Function is exposed at, and how forms post to it               |
-| Server Functions, and the hooks `useActionState`, `useFormStatus`, `useOptimistic`, `use` | Caching, revalidation, and most performance behavior                                      |
-| Progressive enhancement (a Server Action working before JS loads) as a design goal        | The actual mechanism that makes that progressive enhancement happen                       |
-
-The rule of thumb: read the **React docs for the _why_** (the model, the directives, the rules) and the **framework docs for the _how_** (the commands, the files, the wiring).
-
----
-
-## 1. Why Server Components exist at all
-
-Prereqs: basic React (client components, fetching data in `useEffect`).
-
-Outside React: the cost of downloading and parsing a JavaScript bundle, and the round trip of fetching data from an API.
-
-### The itch
-
-You have shipped React apps where the JavaScript bundle is huge, every screen starts with a spinner while it fetches, and you keep writing little API routes whose only job is to hand the frontend some data.
-
-It feels like a lot of plumbing for "show the user their data." Server Components are React's answer to that whole category of pain.
-
-### The short version
-
-A Server Component is a component that runs **only on the server**, never in the browser.
-
-Because it runs on the server, it can talk directly to your database or filesystem, it ships **zero JavaScript** to the client, and it can fetch its own data with a plain `await` instead of a `useEffect` plus a loading state plus an API route.
-
-The browser only receives the _result_.
-
-This attacks four long-standing problems at once: bloated bundles, loading-spinner waterfalls, API boilerplate, and secrets leaking into client code.
-
-### How it actually works
-
-In a framework that supports Server Components, an async component can read data directly:
+A blog post page needs one post from a database and a Markdown parser to display it. In a client-rendered React app, it looks like this.
 
 ```jsx
-async function getPost() {
-    return { title: "Rendered on the server" };
-}
+import { useEffect, useState } from "react";
+import { Markdown } from "./markdown"; // and its parser, shipped to every visitor
 
-export default async function Page() {
-    const post = await getPost();
-    return <h1>{post.title}</h1>;
+export default function Post({ id }) {
+    const [post, setPost] = useState(null);
+    useEffect(() => {
+        fetch(`/api/posts/${id}`) // an API route you also had to write
+            .then((response) => response.json())
+            .then(setPost);
+    }, [id]);
+    if (post === null) return <p>Loading…</p>;
+    return <Markdown>{post.body}</Markdown>;
 }
 ```
 
-Think about what a normal (client) React component costs.
+The browser downloads all of it, renders a spinner, calls your API route, and renders again. With React Server Components, often shortened to RSC, the page looks like this.
 
-Its code has to be downloaded, parsed, and executed in the browser.
+```jsx
+import { Markdown } from "./markdown"; // stays on the server
+import { db } from "./db";
 
-If it needs data, it typically renders empty, fires a `useEffect`, shows a spinner, waits for a `fetch` to an API route you wrote, then re-renders with the data.
+export default async function Post({ id }) {
+    const post = await db.posts.find(id);
+    return <Markdown>{post.body}</Markdown>;
+}
+```
 
-Every library it imports (a date formatter, a markdown parser, a syntax highlighter) is added to the bundle the user downloads, even if the component's output never changes after first render.
+No effect, no spinner, no API route, and neither the component nor the parser reaches the browser. But it can never hold state or answer a click. This guide shows how React splits one tree between server and browser.
 
-Server Components remove that cost by moving the work to where the data already is.
+> Current as of React 19.2 and 19.3. Server Components and Server Functions are stable in React 19. Framework behaviour is shown with the Next.js App Router and labelled as Next.js.
 
-The component executes on the server during the request (or even at build time for static content).
+## Before you start
 
-The four problems it solves, concretely:
+- Elements, fibers, render and commit, and hydration: [the rendering guide](/articles/react-rendering-reconciliation-internals).
+- Suspense boundaries and fallbacks: [the Suspense guide](/articles/react-suspense-internals).
+- Hooks, effects and Actions: [the hooks guide](/articles/react-hooks-and-effects-internals).
+- Promises and `await`: [the event loop guide](/articles/asynchronous-javascript-event-loop).
 
-1. **Bundle size.** Server Component code, and the libraries it uses, are never sent to the browser. For content-heavy UI this can cut the client bundle dramatically.
-2. **Data waterfalls and spinners.** Data is fetched on the server as part of rendering, so the user often sees real content immediately rather than a spinner that resolves into content.
-3. **API boilerplate.** For simple "read data and show it" cases, you no longer write a separate API endpoint. The component reads the data itself.
-4. **Secrets and security.** Database credentials, API keys, and internal logic stay on the server, because the component that uses them never ships to the client.
+<GuideSpine steps={[{"title": "Why Server Components exist", "sections": [1]}, {"title": "The boundary: two environments, one module graph", "sections": [2, 3, 4], "note": "Server vs Client"}, {"title": "What crosses, and the rows it travels in", "sections": [5, 6], "note": "the children trick lives here"}, {"title": "First load and navigation", "sections": [7]}, {"title": "Writing back: Server Functions and security", "sections": [8, 9]}, {"title": "What the framework owns, and debugging", "sections": [10, 11]}]} />
 
-The trade is that a Server Component is _not interactive_.
+## 1. Why Server Components exist
 
-It runs once, on the server, produces output, and that is it.
-
-No state, no effects, no event handlers, no browser APIs.
-
-Anything interactive has to live in a Client Component, which is the subject of Section 4.
-
-The art of using RSC well is deciding which parts of your UI are "stable structure that just displays data" (Server Components) and which parts are "interactive bits" (Client Components).
-
-### Try it
-
-> In a Next.js App Router project, write an `async` component in a `page.js` that does `const data = await fetch(...)` (or reads a local file) and renders it, with no `"use client"` at the top. Notice you never wrote a `useEffect`, never wrote an API route, and the data is just _there_ in the first render. Then check the network tab and the bundle: the component's code is not in the client JavaScript.
-
-### You've got this if
-
-You can name two things a Server Component can do that a normal client component cannot, and one thing it cannot do that a client component can.
-
----
-
-## 2. The mental model: two worlds, one tree
-
-Prereqs: Section 1.
-
-From the rendering guide: the component tree (one tree of components that produces the UI).
-
-Outside React: the server/client distinction, code that runs on your server versus in the user's browser.
-
-### The itch
-
-Once both kinds of component exist, it gets confusing fast.
-
-Which runs where?
-
-Can they call each other?
-
-Why does putting `"use client"` in the wrong place break things or bloat the bundle?
-
-You need one clear mental picture before the rules make sense.
+The opening page paid twice, once to download code and once to fetch data. The react.dev docs describe a static page that ships an extra 75K of gzipped libraries for content that never changes.
 
 ### The short version
 
-Picture your component tree split into two regions by a boundary.
+A Server Component runs only on the server, at build time or for each request, and never in the browser. Because it runs where the data lives, it can `await` a database query in its body. Its code and libraries never join the **bundle**, the JavaScript files the browser downloads. The browser receives only the rendered result.
 
-Above the boundary, components run only on the server (Server Components).
+That removes four old costs: big bundles, spinner waterfalls, API routes that only pass data along, and secrets near client code. Content-heavy pages gain the most. The price is interactivity, so interactive parts stay Client Components, the ordinary React you know.
 
-Below it, components run in the browser too (Client Components).
+### Rendering where the data lives
 
-A Server Component can render a Client Component (you cross the boundary going down), but a Client Component cannot reach back _up_ and import a Server Component.
+```jsx
+import { readFile } from "node:fs/promises";
 
-The boundary is decided at **build time** by the `"use client"` directive, not at runtime.
+// No directive, so this is a Server Component.
+export default async function Page({ slug }) {
+    const text = await readFile(`./posts/${slug}.md`, "utf8");
+    return <article>{text}</article>;
+}
+```
 
-<Mark kind="marker" wraps>Get this picture right and almost every rule is a consequence of it.</Mark>
+This reads a file with Node's own API, which browser code can never do.
 
-### How it actually works
+### The trade
 
-The key shift from old React is that there is no longer one uniform kind of component.
+```jsx
+export default async function Post({ id }) {
+    const post = await db.posts.find(id);
+    return (
+        <article>
+            <h1>{post.title}</h1>
+            <LikeButton postId={id} /> {/* a Client Component, because it handles clicks */}
+        </article>
+    );
+}
+```
 
-There are two, and they execute in different environments:
-
-- **Server Components** run on the server, during the request or at build time. They run **once** and never run again in the browser. They produce a description of UI that gets sent to the client.
-- **Client Components** are the React you already know. They run in the browser, can hold state, run effects, and respond to events. (They also run on the server once for the initial HTML, which is a subtlety covered in Sections 4 and 7. For now, "they run in the browser" is the useful half of the truth.)
-
-Your app is a single tree, but a **boundary** runs through it.
-
-Everything from the root down to a `"use client"` marker is server territory.
-
-Everything from that marker down is client territory.
-
-The direction of the boundary matters enormously:
-
-- A Server Component **can render** a Client Component. This is crossing the boundary downward, and it is the normal case. The server component renders, hits a client component, and leaves a "hole" that says "the browser will fill this in with this interactive component."
-- A Client Component **cannot import** a Server Component and render it directly. Once you are in client territory, you are in the browser's world, and the browser cannot run server-only code. (There is a way to get server-rendered content _into_ a client component, by passing it as `children`, which is the elegant trick in Section 5. But that is the server component handing content _down_, not the client component reaching _up_.)
-
-Because `"use client"` is read by the bundler at build time, the boundary is a **static property of your code**, not something decided while running.
-
-The bundler walks your imports: a file with `"use client"` at the top, and everything it imports, goes into the client bundle.
-
-This is why a single misplaced `"use client"` high in your tree can accidentally drag a huge subtree into client territory and balloon your bundle.
-
-The directive does not just mark one component.
-
-It marks an **entry point** into the client world for everything reachable from it.
+A Server Component runs, returns its output and is finished, so `LikeButton` must be a Client Component (section 4). Using RSC well means a split: structure that displays data stays on the server, and interactive bits become small Client Components.
 
 ### Try it
 
-> Draw your last Next.js page as a tree and draw a line where each `"use client"` sits. Everything above each line ran only on the server. Everything below shipped to the browser. If a line is higher than it needs to be, that is bundle you are shipping for no reason.
+In a Next.js App Router project, put this in `app/page.js` with no directive.
 
-### You've got this if
+```jsx
+export default async function Page() {
+    const response = await fetch("https://api.github.com/repos/facebook/react");
+    const repo = await response.json();
+    return <p>React has {repo.stargazers_count} stars.</p>;
+}
+```
 
-You can explain why a Client Component cannot import a Server Component, but a Server Component can render a Client Component.
+Run `next build && next start` and load the page. The number should be in the first HTML. Search the page's JavaScript in the DevTools Sources panel for `stargazers_count`. It should not be there, because this component never shipped.
 
----
+## 2. Two environments, one module graph
 
-## 3. Server Components: what they are and what they cannot do
-
-Prereqs: Section 2.
-
-Outside React: what only a server can do (read the filesystem, query a database directly, hold secrets) and what only the browser can do (hold state, handle events, run effects).
-
-### The itch
-
-You wrote a component, tried to add `useState` to it, and got an error telling you it needs `"use client"`.
-
-Why can't a Server Component just use a hook like everything else?
+With two kinds of component, which runs where? Can they render each other? Why does one misplaced line bloat the bundle?
 
 ### The short version
 
-A Server Component <Mark kind="circle">runs once</Mark> on the server and then it is done.
+One React tree now spans two environments. The server runs Server Components, and the browser runs Client Components. The line between them sits in the **module graph**, the map of which file imports which.
 
-There is no "later" for it: no re-render, no browser, no user events.
+A file that starts with `"use client"` is a client entry point, and everything it imports becomes client code. The **bundler**, the build tool that packs browser code into bundles, reads the directive at build time. Server code can render client code, but client code cannot run server-only code.
 
-So everything that depends on a "later" is forbidden in it: no `useState` (state changes over time), no `useEffect` (effects run in the browser after render), no event handlers like `onClick` (those fire in the browser), no browser APIs like `localStorage`.
+### The boundary lives in the module graph
 
-In exchange it gets the server superpowers: it can be `async` and `await` data directly, and it can use server-only resources.
+```jsx
+// page.js: no directive, so a Server Component
+import { LikeButton } from "./LikeButton";
+import { formatDate } from "./format";
 
-There is no directive that marks a component as a Server Component.
+export default async function Page() {
+    const post = await db.posts.find(1);
+    return (
+        <article>
+            <p>{formatDate(post.date)}</p>
+            <LikeButton postId={post.id} />
+        </article>
+    );
+}
+```
 
-Being a Server Component is just the **default**.
+```jsx
+// LikeButton.js: a client entry point
+"use client";
+import { useState } from "react";
+import { formatDate } from "./format"; // pulled into the client bundle too
 
-### How it actually works
+export function LikeButton({ postId }) {
+    const [liked, setLiked] = useState(false);
+    return <button onClick={() => setLiked(true)}>{liked ? "Liked" : "Like"}</button>;
+}
+```
 
-The single fact that explains every rule is this: **a Server Component executes exactly once, on the server, and never again.** It has no presence in the browser.
+The bundler walks imports from each `"use client"` file and bundles everything reachable. So the directive marks an entry point, not one component, and in a file already imported by client code it changes nothing. Server Components are the default, with no directive.
 
-From that, the capabilities and restrictions follow directly.
+`format.js` has no directive, so it runs on the server for `page.js` and ships to the browser for `LikeButton.js`. A component with no directive works the same way. <Mark kind="marker" wraps>Wherever client code imports it, that usage is a Client Component</Mark>.
 
-What a Server Component **can** do, that client components cannot:
+### Downward only
 
-- **Be `async` and `await` directly.** Because it runs in a server environment, you can write `const user = await db.users.find(id)` right in the component body. The component's render is allowed to be asynchronous. This is why data fetching no longer needs `useEffect`.
-- **Access server-only resources.** Filesystem reads, direct database queries, internal services, environment-variable secrets. None of this is exposed to the client because the component's code never ships.
-- **Import heavy dependencies for free.** A markdown parser, a syntax highlighter, a date library: use it on the server, send only the output, and the library never touches the client bundle.
+| Move | Allowed | Why |
+|---|---|---|
+| A Server Component renders a Client Component | Yes | The server leaves a hole plus the props, and the browser fills it |
+| A Server Component passes JSX into a Client Component | Yes | The JSX is already rendered, so it crosses as data (section 5) |
+| A client file imports a component that needs the server | No | Imported there, it becomes client code, which cannot reach a database |
 
-What a Server Component **cannot** do, and why:
+```jsx
+"use client";
+import Comments from "./Comments"; // Comments awaits db.comments.all()
 
-- **No state (`useState`, `useReducer`).** State is a value that changes over time and triggers re-renders. A Server Component has no "over time". It runs once. There is nothing to re-render.
-- **No effects (`useEffect`, `useLayoutEffect`).** Effects run in the browser after the DOM is committed. A Server Component never reaches the browser, so its effects could never run.
-- **No event handlers.** `onClick` and friends fire in response to browser events. No browser, no events.
-- **No browser-only APIs.** `window`, `document`, `localStorage` do not exist on the server.
-- **No Context consumption in the interactive sense.** (Context is largely a client-side coordination tool, Server Components do not subscribe to changing context.)
+export function Sidebar() {
+    return <Comments />; // now a Client Component, and it breaks
+}
+```
 
-A point that confuses nearly everyone: **there is no `"use server"` directive that marks a component as a Server Component.** Server Components are simply the default.
-
-A component with no directive, rendered in server territory, is a Server Component.
-
-The `"use server"` directive exists, but it means something entirely different (it marks Server Functions, Section 8).
-
-If you ever see advice to put `"use server"` at the top of a file to "make it a server component," that advice is wrong, and the official docs explicitly call this out as a common misunderstanding.
+The import itself does not fail, but it turns `Comments` into client code. Bundling then fails on Node-only imports, and React warns that only Server Components can be async.
 
 ### Try it
 
-> Take a Server Component and add `const [n, setN] = useState(0)` to it. Read the exact error. Then think about which of the restrictions above it is enforcing (state needs a "later," which a server-only component does not have). Now move that stateful logic into a small child component with `"use client"` and watch it work.
+List the client entry points in a Next.js project. The pattern matches both quote styles.
 
-### You've got this if
+```bash
+grep -rlE "^['\"]use client['\"]" --include="*.js" --include="*.jsx" --include="*.tsx" app components
+```
 
-You can explain, from the single fact "it runs once on the server," why a Server Component cannot use `useState` or `onClick`.
+Sketch what each file imports, since all of it ships. A shipped module with no state, effects or handlers is bundle you pay for with no benefit.
 
----
+## 3. Server Components: what they can and cannot do
 
-## 4. Client Components and what "use client" actually marks
-
-Prereqs: Sections 2 and 3.
-
-Outside React: the idea of a boundary marker in source code that a bundler reads to split code.
-
-### The itch
-
-You assumed `"use client"` means "this component runs only in the browser." Then you learned it still shows up in the server-rendered HTML, and got confused about what the directive actually does.
+You add `useState` to a component, and the build tells you to add `"use client"`. Why can a Server Component not use hooks?
 
 ### The short version
 
-`"use client"` does **not** mean "runs only on the client." It marks the **boundary** where your code enters the client bundle.
+A Server Component runs once per server render. It never runs in the browser, so for it there is <Mark kind="circle">no "later"</Mark>: no re-render, no user event, no committed DOM. That rules out state, effects, event handlers, browser APIs and Context.
 
-<MarginNote note="client means shipped, not browser only">
+A separate `react-server` build of `react` leaves those hooks out. Next.js turns such an import into a build error that names `"use client"`. In exchange, a Server Component can be `async`, query databases, read files, hold secrets and import heavy libraries for free.
 
-A Client Component actually runs in _two_ places: once on the server to produce the initial HTML (this is plain SSR, the same as React has done for years), and then in the browser, where it hydrates and becomes interactive.
+### The server build of React
 
-</MarginNote>
+```js
+// The react-server build of react (packages/react/src/ReactServer.js, React 19.2), abridged.
+export {
+    Children, Fragment, Suspense, StrictMode, Profiler,
+    createElement, cloneElement, isValidElement, lazy, memo, forwardRef,
+    use, useId, useMemo, useCallback, useDebugValue,
+    cache, cacheSignal, version,
+};
+```
 
-The thing that makes it a "Client Component" is that its code is **shipped to the browser** so it _can_ run there.
+Server code picks this build through the `react-server` **export condition**. That is a `package.json` label that points one package name at different files. `use`, `useId`, `useMemo` and `useCallback` survive, because none of them needs a later. So Server Components can call `use` too.
 
-`"use client"` is the marker that tells the bundler "send this, and everything it imports, to the client."
+| Not available | Why |
+|---|---|
+| `useState`, `useReducer` | State changes over time and triggers re-renders, and there is no later render |
+| `useRef` | A ref is a mutable box kept per component instance across renders, and a server render keeps no instance |
+| `useEffect`, `useLayoutEffect` | Effects run in the browser after commit, which a Server Component never reaches |
+| `onClick` and other handlers | They fire on browser events, and there is no browser |
+| `window`, `document`, `localStorage` | They do not exist on the server |
+| Context | `useContext` is missing from the server build, and `use(Context)` throws "Cannot read a Client Context from a Server Component." |
 
-### How it actually works
+To share a theme or a user, put the provider in a small Client Component that accepts `children`, and wrap your server tree in it.
 
-A file becomes a client-bundle entry when the directive appears at its top:
+```jsx
+"use client";
+import { createContext } from "react";
+
+export const ThemeContext = createContext("light");
+
+export function ThemeProvider({ children }) {
+    return <ThemeContext value="dark">{children}</ThemeContext>;
+}
+```
+
+### What it can do
+
+```jsx
+import { marked } from "marked"; // a heavy parser that never ships
+
+export default async function Profile({ id }) {
+    const user = await db.users.find(id); // the render itself is async
+    return <section dangerouslySetInnerHTML={{ __html: marked(user.bio) }} />;
+}
+```
+
+Because the render can be asynchronous, data fetching needs no effect. Files, internal services and environment variables are safe here, because this code never reaches the user.
+
+"Runs once" means once per server render: at build time for a static page, per request for a dynamic one. In Next.js a navigation, `router.refresh()` or a revalidating Server Action runs them again, still on the server.
+
+### No directive marks a Server Component
+
+```js
+"use server"; // wrong tool: every export becomes a callable Server Function
+
+export default function Page() {
+    return <p>Hello</p>;
+}
+```
+
+Server Components are the default, so they need no directive. `"use server"` marks Server Functions (section 8). Advice to add it "to make a Server Component" is wrong, and react.dev calls this a common misunderstanding.
+
+### Try it
+
+Add state to a Server Component in a Next.js app.
+
+```jsx
+import { useState } from "react";
+
+export default function Page() {
+    const [count] = useState(0);
+    return <p>{count}</p>;
+}
+```
+
+The build should fail and point you to `"use client"`. Move the counter into a child file that starts with `"use client"`, render it from `Page`, and it works.
+
+## 4. Client Components and what "use client" marks
+
+`"use client"` sounds like "browser only", yet view-source shows your Client Component's markup in the server HTML. What does it mark?
+
+### The short version
+
+`"use client"` does not mean "runs only in the browser". It means "this code must exist in the browser". The bundler ships the file and its imports. On the server, each export becomes a **client reference**, a marker naming the module and export.
+
+A Client Component then runs in two places. It renders once on the server for the first HTML, then again in the browser, where it hydrates and becomes interactive (section 7). Every module under the directive ships, so push `"use client"` down to the small interactive leaf.
+
+### The directive
 
 ```jsx
 "use client";
@@ -331,487 +290,768 @@ export function Counter() {
 }
 ```
 
-`"use client"` is a **boundary marker read by the bundler at build time.** When the bundler sees a file starting with `"use client"`, it treats that file as an entry point into the client bundle: that module, and every module it imports, gets compiled into the JavaScript that ships to the browser.
+The directive goes at the very top of the file, above the imports. From there, section 2's rule applies: this module and its imports ship.
 
-That is the entire literal meaning of the directive.
+<MarginNote note="client means shipped, not browser only">
 
-It does not say "run only on the client." It says "this code needs to exist on the client."
+The name says where the code ships and becomes interactive. It never meant the component is absent from the server.
 
-Now, what actually happens to a Client Component at runtime:
+</MarginNote>
 
-1. **On the server, during the initial request,** React still renders the Client Component to HTML, exactly like traditional server-side rendering. This is why a Client Component's output appears in "view source." The user gets meaningful HTML immediately, even before any JavaScript loads.
-2. **In the browser,** the Client Component's code (which was shipped because of `"use client"`) loads and **hydrates** that HTML: React attaches its logic to the already-present DOM nodes, wiring up state and event handlers so the component becomes interactive. From then on, it behaves like the React you already know, re-rendering in the browser as state changes.
+### What the server holds instead
 
-So the accurate mental model is: a Server Component runs **only on the server, once**.
+A Server Component that imports `Counter` does not get the function. The bundler hands it a client reference.
 
-A Client Component runs **on the server once (for HTML) and then in the browser (for interactivity)**.
+```js
+// Simplified teaching version of registerClientReference
+// (react-server-dom-webpack, ReactFlightWebpackReferences.js).
+function registerClientReference(standIn, id, exportName) {
+    return Object.defineProperties(standIn, {
+        $$typeof: { value: Symbol.for("react.client.reference") },
+        $$id: { value: `${id}#${exportName}` }, // for example "./Counter.js#Counter"
+    });
+}
+```
 
-The word "client" in the name is about _where its code is shipped and where it becomes interactive_, not about it being absent from the server.
+When React meets this marker as an element type, it does not call it. It writes the reference into the **payload**, the stream of data the server sends to describe the rendered tree (section 6). The browser later loads the real code.
 
-The practical consequence you must internalize is the **bundle cost of the boundary's placement**.
+### Keep the line low
 
-The guidance "push `"use client"` as far down the tree as possible" is a direct result: you want the interactive leaf to be a client component, not its big non-interactive parent.
+```jsx
+import { LikeButton } from "./LikeButton"; // the only "use client" file here
 
-A common, costly mistake is slapping `"use client"` at the top of a page "just in case," which turns the whole page into client-shipped code and throws away most of RSC's benefit.
+export default async function PostPage({ id }) {
+    const post = await db.posts.find(id);
+    return (
+        <article>
+            <PostBody markdown={post.body} /> {/* stays on the server, with its parser */}
+            <LikeButton postId={id} />
+        </article>
+    );
+}
+```
+
+Only the button ships. Adding `"use client"` to `PostPage` "just in case" would ship the page, the body and the parser. That throws away most of RSC's benefit.
 
 ### Try it
 
-> Make a component with `"use client"` and a `console.log("rendering")` in its body, then load the page with the network tab open and JavaScript still enabled. You will see the log fire on the server (in your terminal) for the initial render and again in the browser console during hydration.
+In a Next.js app, render this from a page and load it.
 
-### You've got this if
+```jsx
+"use client";
 
-You can correct the statement "`use client` means the component runs only in the browser" with what it actually means.
+export function Hello() {
+    console.log("rendering Hello");
+    return <p>Hello</p>;
+}
+```
 
----
+"rendering Hello" should print in your terminal for the server render, and in the browser console during hydration. Two runs, two environments.
 
-## 5. The boundary rules: what can cross, and the children trick
+## 5. What can cross the boundary
 
-Prereqs: Sections 3 and 4.
-
-Outside React: serialization (turning a value into data that can be sent over the network) and the kinds of values that cannot be serialized, like functions and class instances.
-
-### The itch
-
-You tried to pass a function as a prop from a Server Component to a Client Component and got an error about something not being serializable.
-
-And you have heard you "can't use Server Components inside Client Components," which seems to make composing them impossible.
+You pass `onSave={() => save(id)}` to a Client Component, and the render fails. You also heard Client Components cannot contain Server Components. Two separate rules are at work.
 
 ### The short version
 
-When a Server Component passes props _down_ to a Client Component, those props have to travel from the server to the browser as data, so they must be **serializable**.
+Props from a Server Component to a Client Component travel inside the payload. So they must be **serializable**: React must turn them into data and back. Primitives, plain objects, arrays, `Date`, `Map`, `Set`, promises and JSX cross. A live function cannot, because its code and scope exist only in server memory. Server Functions cross as references.
 
-Plain values (strings, numbers, objects, arrays, dates, even promises and JSX) can cross.
+Composition is a separate rule. A Client Component cannot import server-only code, but it can receive server-rendered JSX as `children`. The server renders that content first, and the client only places it.
 
-Arbitrary **functions and class instances cannot**, because you cannot send a live function over the network.
+### Rule one: props must serialize
 
-As for "Server Components inside Client Components": you cannot _import_ one into client code, but you can **pass server-rendered content as `children`** (or any prop) into a Client Component.
+| Crosses | Notes |
+|---|---|
+| string, number, bigint, boolean, null, undefined | `bigint` and `undefined` get special encodings |
+| Symbols from `Symbol.for` | Only globally registered symbols |
+| Plain objects and arrays | Built with literals, holding serializable values |
+| `Date`, `Map`, `Set`, typed arrays, `ArrayBuffer` | Rebuilt as the same built-in type |
+| Promises | The client reads them with `use()` |
+| JSX from Server or Client Components | This is what makes the children slot work |
+| Server Functions | A reference crosses, never the code (section 8) |
 
-<Mark kind="marker" wraps>That trick lets a client component wrap server content without ever running it.</Mark>
+| Does not cross | Why |
+|---|---|
+| Other functions and closures | Their code and captured scope live in server memory |
+| Class instances and null-prototype objects | Methods and prototypes are not data |
+| Symbols not made with `Symbol.for` | The browser cannot find the same symbol |
 
-### How it actually works
+That is the react.dev list. React's source also encodes `FormData`, `Blob`, `ReadableStream` and async iterables, which matter most for Server Function arguments.
 
-Two separate rules are at play, and people tangle them together.
+### Watching a function fail
 
-#### Rule one: props crossing the boundary must be serializable
+These experiments run React's real server renderer in Node. Install it in an empty folder.
 
-When a Server Component renders a Client Component and passes props, those props are part of the data the server sends to the browser (they get encoded into the RSC payload, Section 6).
+```bash
+npm install react@19 react-dom@19 react-server-dom-webpack@19
+```
 
-Anything that can be encoded as data can cross:
+Save this as `fn-prop.cjs`. A **manifest** is the bundler's table of client modules and their files. Here it and `registerClientReference` stand in for what a bundler would generate.
 
-- primitives (string, number, boolean, null, undefined, bigint)
-- plain objects and arrays of serializable things
-- `Date`, `Map`, `Set`, `FormData`, typed arrays
-- React elements (JSX), which is what makes the children trick below work
-- promises (the client can `use()` them)
-- references to **Server Functions** (Section 8), which serialize to a callable reference, not to their code
+```js
+const React = require("react");
+const { renderToPipeableStream, registerClientReference } = require("react-server-dom-webpack/server");
 
-What **cannot** cross:
+const Button = registerClientReference(function () {}, "./Button.js", "Button");
+const manifest = { "./Button.js#Button": { id: "./Button.js", chunks: [], name: "Button" } };
 
-- arbitrary **functions** and closures (you cannot serialize a live function and its captured scope, so an `onClick` handler cannot be passed from server to client, define it in the client component instead)
-- **class instances** with methods and prototypes
-- anything else that is not plain data
+const tree = React.createElement(Button, { onClick: () => console.log("hi") });
+renderToPipeableStream(tree, manifest, {
+    onError: (error) => console.error(error.message.split("\n")[0]),
+}).pipe(process.stdout);
+```
 
-This is why "pass data, not functions" is the rule of thumb.
+Run it from a POSIX shell. `--conditions react-server` picks the server build of `react` from section 3.
 
-The error you saw was React telling you a prop could not be encoded to send across the boundary.
+```bash
+NODE_ENV=production node --conditions react-server fn-prop.cjs
+```
 
-#### Rule two: composition direction, and the children trick
+```text role="output"
+Event handlers cannot be passed to Client Component props.
+1:I["./Button.js",[],"Button"]
+0:["$","$L1",null,{"onClick":"$2"}]
+2:E{"digest":""}
+```
 
-A Client Component cannot `import ServerComponent from "..."` and render it, because client code runs in the browser and cannot execute server-only logic.
+Row `2` is what the browser gets: an error row whose message production builds hide. The `digest` is an id a framework can attach to match server logs.
 
-But composition is still possible, because the server can render content and hand it _down_ as a prop:
+Rename the prop to `format`, and React instead says functions cannot be passed directly to Client Components unless marked with `"use server"`. The fix is the rule of thumb: pass data, and define behaviour inside the Client Component.
+
+### Rule two: composition and the children slot
 
 ```jsx
-// Server Component
-function Page() {
+// Page.js: a Server Component
+import { ClientLayout } from "./ClientLayout"; // a "use client" file
+import { ServerContent } from "./ServerContent"; // awaits server data
+
+export default function Page() {
     return (
         <ClientLayout>
-            {/* a Client Component */}
             <ServerContent />
-            {/* rendered on the server, passed in as children */}
         </ClientLayout>
     );
 }
 ```
 
-Here `Page` is a Server Component.
-
-It renders `ServerContent` on the server and passes the _result_ into `ClientLayout` as `children`.
-
-`ClientLayout` is a client component.
-
-It receives `children` as an already-rendered piece of UI and just places it.
-
-`ClientLayout` never imports or runs `ServerContent`.
-
-This "slot" or "donut" pattern is how you get server-rendered content visually inside a client component (a client-side interactive shell wrapping server-rendered content), without violating the import rule.
-
-<GuideFigure figure="react-children-slot" />
-
-### Try it
-
-> Pass a plain object from a Server Component to a Client Component as a prop: it works. Now try to pass an inline function like `onSomething={() => ...}`: read the serialization error. Then restructure so the function is defined _inside_ the client component instead. Separately, build the children pattern above and confirm the server content renders inside the client wrapper.
-
-### You've got this if
-
-You can explain why a function cannot be passed as a prop across the boundary, and how the `children` pattern lets server content live inside a client component anyway.
-
----
-
-## 6. The RSC payload: how the server describes the tree
-
-Prereqs: Sections 2 and 5.
-
-From the rendering guide: that React elements are plain data describing the UI, not DOM (Section 2 there).
-
-Outside React: a streamable wire format (a response sent in pieces).
-
-### The itch
-
-A Server Component runs on the server and the browser somehow ends up showing its output, with interactive client components slotted in at the right places.
-
-What is actually sent over the wire to make that happen?
-
-It is not just HTML, and it is not the component's code.
-
-### The short version
-
-The server renders your Server Components into a special streamable description of the UI tree, often called the **RSC payload** (the format is sometimes called "Flight").
-
-It is <Mark kind="circle">not HTML</Mark> and it is not JavaScript.
-
-It is a serialized description that says "here is the rendered tree, here are the plain values, and here are the _holes_ where client components go, identified by a reference the browser can use to load that component's code." The browser takes this payload plus the client component code and assembles the final tree.
-
-### How it actually works
-
-When Server Components render, they do not produce raw HTML directly as their primary output (HTML is also produced for the first load, see Section 7, but the RSC-specific output is different).
-
-They produce a **serialized representation of the rendered React tree**.
-
-Think of it as a description, streamed in pieces, that contains:
-
-- the rendered output of Server Components as plain data describing elements (tag names, props, text, nested structure)
-- the serializable props that were passed down
-- **module references** wherever a Client Component appears: instead of the client component's code, the payload contains a reference (an id plus enough information to load the right client bundle chunk) that says "a client component goes here, here is which one, and here are its props"
-
-The browser receives this payload and reconstructs the React element tree from it.
-
-<GuideFigure figure="rs-payload" />
-
-Where the payload has plain rendered output, the browser just uses it.
-
-Where the payload has a module reference to a client component, the browser loads that component's code (which was shipped because of its `"use client"` marker) and renders it with the provided props, making it interactive.
-
-Two properties of this format matter:
-
-- **It is streamable.** The server can send the payload in chunks as rendering progresses, which is what lets content appear progressively and integrates with Suspense (the server can stream a boundary's content when its data resolves). This is the same streaming idea from the rendering guide's Suspense section, applied to the server output.
-- **Client component code is referenced, not embedded.** The payload never contains the source of a client component. It contains a pointer to it. This keeps the payload itself lean and is how the same client component can be referenced many times without duplicating code.
-
-A crucial consequence for navigation: when you navigate between routes in an App Router app, the framework can fetch a **new RSC payload** for the destination rather than a full HTML document.
-
-The client already has React and the client component code loaded.
-
-It just needs the new tree description.
-
-This is why client-side navigation in these apps can update server-rendered content without a full page reload, and without re-downloading client component code it already has.
-
-Remember the honesty note from the preface: the exact shape of this wire format is a framework-and-bundler-facing internal that is not semver-stable within React 19.x.
-
-You should understand _what it is and why_ (a streamable tree description with module-reference holes), but not memorize byte-level details, because those are exactly the part that can change.
-
-### Try it
-
-> In a Next.js App Router app, open the network tab and trigger a client-side navigation between two routes. Look for the request that fetches the new route's data: it is not a full HTML page, it is the RSC payload (you will see an unusual-looking streamed text format, not HTML tags).
-
-### You've got this if
-
-You can explain what the browser receives for a Server Component (a tree description) versus for a Client Component inside it (a reference plus props, not code).
-
----
-
-## 7. How RSC, SSR, and hydration fit together
-
-Prereqs: Sections 2 and 6.
-
-From the rendering guide: the render and commit phases, and that hydration attaches React to server-rendered HTML.
-
-Outside React: server-side rendering (HTML generated on the server), which is distinct from RSC.
-
-### The itch
-
-You now have several things that all sound like "rendering on the server": Server Components, server-side rendering (SSR) to HTML, and hydration.
-
-They are related but not the same, and conflating them makes the whole picture muddy.
-
-### The short version
-
-They are three distinct steps that cooperate on first load.
-
-**RSC** runs your Server Components and produces the tree description (the payload).
-
-**SSR** takes the full tree (server output plus client components) and renders it to **HTML** so the user sees content immediately.
-
-**Hydration** happens in the browser, where React attaches interactivity to that HTML for the Client Components only.
-
-<MarginNote note="the same reason they ship no code">
-
-Server Components never hydrate, because they have no browser-side behavior to attach.
-
-</MarginNote>
-
-So the user gets fast HTML, then the interactive bits wake up, and the non-interactive bits stay as cheap static content forever.
-
-### How it actually works
-
-On an initial page load, here is the sequence, kept deliberately concrete:
-
-1. **RSC render (server).** React runs your Server Components. They `await` their data, render, and the result is serialized into the RSC payload (Section 6), with module-reference holes where client components sit.
-2. **SSR to HTML (server).** Separately, React also renders the combined tree (the server-rendered output _plus_ the client components rendered for their initial markup) into actual HTML. This is the traditional SSR step, and it is what gives the user visible content before any JavaScript runs. The server streams this HTML, and it streams the RSC payload alongside it.
-3. **Hydration (browser).** The browser displays the HTML immediately. Then React loads the client component code and **hydrates**: it walks the existing DOM and attaches each Client Component's state and event handlers to the already-present nodes, making them interactive. Hydration uses the RSC payload to know the tree structure, including where the client components are and what props they received.
-
-The defining facts to hold onto:
-
-- **Server Components do not hydrate.** Hydration is the process of making static HTML interactive, and Server Components have no interactivity to add. Their output is rendered once, sent as HTML and as payload, and then it is just there. This is a major efficiency win: large swaths of your UI never participate in hydration at all, which reduces the client-side work on load.
-- **Client Components are rendered twice on first load** (once on the server for HTML, once in the browser to hydrate), which is the normal SSR lifecycle and exactly why your purity and cleanup discipline from the rendering guide matters here too.
-- **On later client-side navigations,** there is no fresh HTML document. The browser fetches a new RSC payload and updates the tree in place (Section 6).
-
-This is also where Suspense and streaming from the rendering guide reconnect: because both the HTML and the RSC payload are streamed, a slow Server Component (say one awaiting a slow query) can be wrapped in `<Suspense>`, letting the rest of the page stream and appear while that one part fills in when its data is ready.
-
-The server-side reveal-batching refinement mentioned in the rendering guide is part of making these streamed reveals feel calm rather than janky.
-
-<GuideFigure figure="rs-first-load" />
-
-### Try it
-
-> Load a Next.js page with JavaScript disabled in the browser. You will still see the content, because of the SSR-to-HTML step. Nothing interactive will work (no hydration without JS), but the static structure is all there.
-
-### You've got this if
-
-You can state, in one sentence each, what RSC, SSR, and hydration each do, and why Server Components skip the third.
-
----
-
-## 8. Server Functions and Actions ("use server")
-
-Prereqs: Sections 4 and 5.
-
-Outside React: an HTTP endpoint, a form submission, and progressive enhancement (a form working before JavaScript has loaded).
-
-### The itch
-
-Mutations (submitting a form, saving an edit) still felt like a lot of wiring: write an API route, `fetch` it from the client, manage loading and error state, revalidate.
-
-You heard `"use server"` and Server Actions fix this, but it is unclear what is really happening when you "call a server function from the client."
-
-### The short version
-
-A **Server Function** is an `async` function marked with `"use server"` that runs on the server but can be **called from client code as if it were a normal function**.
-
-<MarginNote note="it looks local but it is a network call">
-
-Under the hood, the bundler replaces it on the client with a reference, and calling it performs a network request (an RPC) to run the real function on the server.
-
-</MarginNote>
-
-This lets a Client Component trigger server-side work (a database write, say) without you writing an API route.
-
-When wired to a form or used for a mutation, these are commonly called **Server Actions**, and React 19 adds hooks (`useActionState`, `useFormStatus`, `useOptimistic`) to manage their pending and result states cleanly.
-
-### How it actually works
-
-`"use server"` is the _other_ directive, and it is unrelated to marking Server Components (Section 3 warned about this confusion).
-
-It marks **functions**, not components, as server-runnable-from-the-client.
-
-You write:
-
-```js
-"use server";
-export async function savePost(formData) {
-    // runs on the server: can hit the database, read secrets, etc.
+```jsx
+// ClientLayout.js
+"use client";
+import { useState } from "react";
+
+export function ClientLayout({ children }) {
+    const [open, setOpen] = useState(true);
+    return (
+        <div>
+            <button onClick={() => setOpen(!open)}>Toggle</button>
+            {open && children}
+        </div>
+    );
 }
 ```
 
-When a Client Component imports `savePost` and calls it, here is the reality: the bundler does **not** ship the function's body to the browser.
+`Page` renders `ServerContent` on the server and passes the result into `ClientLayout` as `children`. `ClientLayout` never imports or runs `ServerContent`, and only places what it was handed. This is the slot, or donut, pattern. <Mark kind="marker" wraps>A client shell can wrap server content without ever running it</Mark>.
 
-Instead, on the client side, `savePost` becomes a **reference**, and calling it sends a network request to the server (an RPC: remote procedure call) carrying the arguments.
+<GuideFigure figure="react-children-slot" />
 
-The server runs the real function and returns the result.
+The boundary stays one-directional. The server hands content down, and the client never reaches up.
 
-From your code's point of view it looks like calling an async function.
+### Promises cross too
 
-Mechanically it is a typed network round-trip that React and the framework wire up for you.
+```jsx
+// A Server Component: start the query, but do not wait for it.
+export default async function Page({ id }) {
+    const commentsPromise = db.comments.forPost(id); // not awaited
+    return <Comments commentsPromise={commentsPromise} />;
+}
+```
 
-This is why a Server Function can be passed as a prop across the boundary (Section 5 listed it as serializable): what crosses is the _reference_, not the code.
+```jsx
+"use client";
+import { use } from "react";
 
-This collapses the usual mutation boilerplate.
+export function Comments({ commentsPromise }) {
+    const comments = use(commentsPromise); // suspends until the value arrives
+    return <ul>{comments.map((c) => <li key={c.id}>{c.text}</li>)}</ul>;
+}
+```
 
-Instead of "write an API route, `fetch` it, handle loading, handle errors, revalidate," you mark a function `"use server"` and call it.
-
-When attached to a form (a **Server Action**), the form can submit directly to it, and it even works before client JavaScript has loaded, because the form post is a real HTTP request the server can handle.
-
-React 19 adds three hooks to make the interactive states pleasant, and they are worth knowing by what problem each solves:
-
-- **`useActionState`** replaces the manual "`useState` for the result plus `onSubmit` plus loading flag" pattern. You give it an action and an initial state. It gives you back the current state, a wrapped action to call, and a pending flag. It is the standard way to manage a form-and-action's lifecycle.
-- **`useFormStatus`** lets a component deep inside a form read the parent form's pending/submitting status without prop-drilling it down. Useful for a submit button that disables itself while the action runs.
-- **`useOptimistic`** lets you show an immediate, optimistic UI update (the comment appears instantly) while the server action is still in flight, then reconciles with the real result when it returns. It is the correct tool for making mutations feel instant without lying about correctness.
-
-Security note worth carrying: a Server Function is a real network endpoint that the client can call, so you must validate and authorize its inputs exactly as you would an API route.
-
-The convenience of "just call a function" hides the fact that it is a public entry point to your server.
-
-### Try it
-
-> In a Next.js App Router project, write a Server Function with `"use server"` that logs its arguments server-side, import it into a `"use client"` component, and call it from a button. Watch the log appear in your server terminal, not the browser console, and watch the network tab show the RPC request. Then wire it to a `<form action={...}>` and submit with JavaScript disabled. It still runs, because the form post reaches the server directly.
-
-### You've got this if
-
-You can explain what physically happens when client code "calls" a `"use server"` function (a network request runs the real function on the server), and why that function must still validate its inputs.
-
----
-
-## 9. How this connects back to the rendering engine
-
-Prereqs: Sections 2, 6, and 7, plus the rendering guide's reconciliation and Suspense sections, recapped here.
-
-Outside React: nothing new.
-
-### The itch
-
-You spent real effort learning fibers, reconciliation, lanes, and commit phases.
-
-Does RSC throw any of that away, or sit on top of it?
-
-You want to know how the two pictures join.
-
-### The short version
-
-RSC does not replace the rendering engine.
-
-It sits **on top** of it.
-
-Everything from the rendering guide (fibers, reconciliation, the render and commit phases, hooks, Suspense) still governs what happens in the browser for Client Components.
-
-RSC is best understood as a new **source** for the element tree: instead of all elements coming from components that run in the browser, some of the tree arrives pre-rendered from the server as the RSC payload, and the browser's reconciler works with the combination.
-
-<Mark kind="marker">Same engine, new input.</Mark>
-
-### How it actually works
-
-Recall the core loop from the rendering guide: React builds an element tree, reconciles it against the fiber tree, and commits changes to the DOM, with hooks living on fibers and Suspense unwinding to boundaries.
-
-RSC changes _where some of the tree comes from_, not how the tree is processed once it is in the browser.
-
-- The **Server Component output** arrives as the RSC payload, a description of part of the tree that was already rendered on the server. The browser turns this into React elements. These elements have no client-side fiber behavior of their own to run again. They are essentially finished.
-- The **Client Components** referenced inside that payload are where the familiar engine takes over. Each is a normal React component in the browser: it gets a fiber, runs its hooks, participates in reconciliation, re-renders when its state changes, and commits like anything else. Everything you learned about bailouts, the render and commit phases, effect timing, and keys applies to these.
-- **Suspense** is the shared seam. The server can stream Server Component output and the browser can suspend on it, using the same boundary-and-fallback mechanism described in the rendering guide. The `use()` hook reads promises in both worlds.
-- **On re-renders and navigations,** when only client state changes, it is pure browser reconciliation, exactly as before. When a navigation fetches a new RSC payload, the browser reconciles the new server-provided tree against the current one, reusing the same diffing rules (same type reuse, keys for lists) you already know.
-
-Time spent on fibers and reconciliation was not wasted.
-
-It is precisely what lets you reason about the Client Component half of an RSC app.
+The page streams without waiting, and the comments arrive later in the same response. Wrap `Comments` in `<Suspense>` to show a fallback meanwhile.
 
 ### Try it
 
-> Take an interactive Client Component inside an RSC page and profile it with the React DevTools Profiler, the same tool from the rendering guide. You will see it render and commit exactly like any client component, with the same bailout behavior. The Server Component parts around it will not show re-renders, because they do not re-render in the browser at all.
+In `fn-prop.cjs`, rename `onClick` to `value` and try each of these. Predict first, using the tables.
 
-### You've got this if
+```js
+new Map([["a", 1]]); // crosses as "$Q2", with the entries in row 2
+10n; // crosses as "$n10"
+new (class User {})(); // fails: "Only plain objects, and a few built-ins, can be passed..."
+Symbol("local"); // fails: "Only global symbols received from Symbol.for(...) can be passed..."
+Promise.resolve(42); // crosses as "$@2", and row 2 holds 42
+```
 
-You can explain RSC as "a new source for the element tree" rather than "a replacement for how React renders."
+## 6. The RSC payload
 
----
-
-## 10. Mental model, pitfalls, and debugging
-
-Prereqs: the rest of the guide.
-
-### The itch
-
-You want a compact set of rules and traps so you stop making the common RSC mistakes, and a way to reason when something goes wrong.
+The browser received neither a Server Component's code nor plain HTML. So what did it receive?
 
 ### The short version
 
-Default to Server Components, push `"use client"` as deep as possible, pass data not functions across the boundary, and remember that `"use server"` is for functions, not components.
+The server renders Server Components into the RSC payload, a streamed text format React calls **Flight**. It is <Mark kind="circle">not HTML</Mark> and not JavaScript. Each line is a row with a hex id, and rows refer to each other by id.
 
-<MarginNote note="the boundary from section 2 again">
+Where a Client Component appears, the payload holds a reference to its module plus its props, never its code. Rows can arrive late, so a Suspense boundary or a promise fills in when its data resolves. The format is framework-facing and can change in any release.
 
-When something breaks, ask: which side of the boundary is this code on, and is it trying to do something only the other side can do?
+### Real rows from a real renderer
+
+Save this as `flight.cjs`, next to `fn-prop.cjs`, and run it the same way.
+
+```js
+const React = require("react");
+const { renderToPipeableStream, registerClientReference } = require("react-server-dom-webpack/server");
+const h = React.createElement;
+
+// What a bundler generates for a "use client" file, written by hand.
+const Counter = registerClientReference(function () {}, "./Counter.js", "Counter");
+const manifest = { "./Counter.js#Counter": { id: "./Counter.js", chunks: ["counter", "counter.js"], name: "Counter" } };
+
+async function Post() {
+    const title = await Promise.resolve("Hello"); // pretend this is a database query
+    return h("article", null, h("h1", null, title), h(Counter, { start: 3, tags: new Set(["a"]), at: new Date(0) }));
+}
+
+renderToPipeableStream(h(Post), manifest).pipe(process.stdout);
+```
+
+```text role="output"
+1:I["./Counter.js",["counter","counter.js"],"Counter"]
+2:["a"]
+0:["$","article",null,{"children":[["$","h1",null,{"children":"Hello"}],["$","$L1",null,{"start":3,"tags":"$W2","at":"$D1970-01-01T00:00:00.000Z"}]]}]
+```
+
+Row `0` is the root, and `Post` itself is gone. `"$L1"` stands where `Counter` was and points at row `1`, which names the module, its **chunks** (the bundle files to load) and the export. The `Set` became row `2`, and the date a `"$D"` string.
+
+### Row tags and value encodings
+
+A row is a hex id, a colon, an optional one-letter tag, then data. React 19's Flight client reads string tags in `processFullStringRow` and binary ones in `processFullBinaryRow`.
+
+| Tag | The row holds |
+|---|---|
+| none | A JSON model: elements, props and plain values |
+| `I` | A client reference: module id, chunks, export name |
+| `H` | A hint, such as a stylesheet or font to preload |
+| `E` | An error thrown while rendering that part |
+
+Other tags carry streams, binary data and development-only debug info. Inside the JSON, strings that start with `$` carry meaning.
+
+| Encoding | Meaning |
+|---|---|
+| `["$", type, key, props]` | A React element |
+| `"$1"` | The value stored in row 1 |
+| `"$L1"` | A lazy reference to row 1. React suspends there until that row, a client module or late content, arrives |
+| `"$@4"` | A promise, resolved when row 4 arrives |
+| `"$h2"` | A Server Function reference (section 8) |
+| `"$Q2"`, `"$W2"` | A `Map` or a `Set` whose entries sit in row 2 |
+| `"$D…"`, `"$n…"`, `"$S…"` | A date, a bigint, a global symbol from `Symbol.for` |
+
+### Streaming: rows arrive when their data does
+
+Save this as `stream.cjs`. It prints each flush with its time.
+
+```js
+const React = require("react");
+const { renderToPipeableStream, registerClientReference } = require("react-server-dom-webpack/server");
+const h = React.createElement;
+
+const Comments = registerClientReference(function () {}, "./Comments.js", "Comments");
+const manifest = { "./Comments.js#Comments": { id: "./Comments.js", chunks: [], name: "Comments" } };
+const wait = (ms, value) => new Promise((resolve) => setTimeout(() => resolve(value), ms));
+
+async function Slow() {
+    return h("p", null, await wait(500, "slow part"));
+}
+
+function Page() {
+    const comments = wait(1000, ["first!"]); // not awaited: passed down as a promise
+    return h("main", null,
+        h("h1", null, "fast part"),
+        h(React.Suspense, { fallback: h("p", null, "loading") }, h(Slow)),
+        h(Comments, { comments }));
+}
+
+const start = Date.now();
+const stream = renderToPipeableStream(h(Page), manifest);
+stream.pipe(new (require("node:stream").Writable)({
+    write(chunk, _encoding, done) {
+        const ms = Math.round((Date.now() - start) / 250) * 250; // round off startup noise
+        process.stdout.write(`+${ms}ms ${chunk}`);
+        done();
+    },
+}));
+```
+
+```text role="output"
++0ms 1:"$Sreact.suspense"
+3:I["./Comments.js",[],"Comments"]
+0:["$","main",null,{"children":[["$","h1",null,{"children":"fast part"}],["$","$1",null,{"fallback":["$","p",null,{"children":"loading"}],"children":"$L2"}],["$","$L3",null,{"comments":"$@4"}]]}]
++500ms 2:["$","p",null,{"children":"slow part"}]
++1000ms 4:["first!"]
+```
+
+Row `1` holds the Suspense type as a global symbol, and the element type `"$1"` points at it. The first flush carries everything ready, including the fallback and a hole, `"$L2"`, for the slow part. Row `2` lands after half a second and the promise row `4` after one.
+
+The browser shows the fallback at once and swaps in each row as it arrives. SSR HTML streams the same way (section 7), and since React 19.2 it briefly batches Suspense reveals so several appear together.
+
+<GuideFigure figure="rs-payload" />
+
+<MarginNote note="learn the shape, not the bytes">
+
+React does not follow semver for this format. The Server Function prefix changed from `"$F"` to `"$h"` inside a 19.2 patch release. Learn what the payload carries, and pin your React version.
 
 </MarginNote>
 
-### How it actually works
+### Try it
 
-A reasoning procedure for RSC bugs:
+Render `Counter` twice inside `Post` and run `flight.cjs` again. You should see one `I` row and two `"$L1"` references, because React writes one `I` row per Client Component per response.
 
-1. **Which side of the boundary is this code on?** Trace upward to the nearest `"use client"`. If there is one above this code, you are in client territory (browser rules apply: no direct database access, no server secrets). If there is none, you are in server territory (no state, no effects, no events, no browser APIs).
-2. **Is it trying to do something only the other side can do?** A server-territory component using `useState` or `onClick`, or a client-territory component trying to `await` a database, is a boundary violation. The fix is almost always to move that piece to the correct side, often by splitting one component into a server parent and a small client leaf.
-3. **Is something failing to cross the boundary?** A serialization error means a non-serializable prop (usually a function or class instance) is being passed from server to client. Pass data instead, or define the behavior inside the client component.
-4. **Is the bundle too big?** Look for `"use client"` markers that are higher in the tree than they need to be. Each one drags its whole import subtree into the browser.
+Then run it without `NODE_ENV=production`.
 
-The high-value pitfalls, each tied to the section that explains it:
+```bash
+node --conditions react-server flight.cjs
+```
 
-| Pitfall, and what to do instead | Sections |
-| --- | --- |
-| Marking a component `"use client"` "just in case," or high up the tree, ships its entire subtree of code to the browser and discards most of RSC's benefit. Push the directive to the interactive leaf. | 2 and 4 |
-| Believing `"use server"` makes a component a Server Component. It does not. Server Components are the default and have no directive, while `"use server"` marks Server Functions. | 3 and 8 |
-| Believing `"use client"` means "runs only in the browser." It actually marks the client-bundle boundary, and such components still render to HTML on the server first. | 4 |
-| Trying to pass a function (like an event handler) as a prop from a Server Component to a Client Component. Functions are not serializable. Define handlers inside the client component. | 5 |
-| Trying to `import` and render a Server Component from inside a Client Component. The boundary is one-directional. Use the `children` pattern to pass server content down instead. | 5 |
-| Forgetting that a Server Function is a real, callable network endpoint, and skipping input validation and authorization on it. | 8 |
-| Putting a data fetch in a Client Component's `useEffect` out of habit, when a Server Component could fetch it directly during render with no spinner and no API route. | 1 and 3 |
+The development build adds debug rows (`D`), a time origin row (`N`) and JSON rows describing `Post` and its stack, so the ids shift.
 
-#### The whole thing in one list
+## 7. First load and navigation: RSC, SSR and hydration
 
-1. RSC splits your tree into server and client regions, divided by the `"use client"` boundary that the bundler resolves at build time (Section 2).
-2. Server Components run once on the server, ship zero JavaScript, can `await` data and touch server-only resources, but cannot be interactive (Sections 1 and 3).
-3. Client Components ship to the browser, render to HTML on the server first, and then hydrate to become interactive (Sections 4 and 7).
-4. The server describes its rendered output as a streamable RSC payload of plain rendered data plus module references where client components go (Section 6).
-5. The browser assembles the final tree from that payload plus the client component code (Section 6).
-6. Props crossing the boundary must be serializable, which is why you pass data rather than functions (Section 5).
-7. The `children` pattern is how server content lives inside a client shell (Section 5).
-8. Server Functions marked `"use server"` let client code call server logic like a local function, but each call is really a network round-trip (Section 8).
-9. RSC decides where components run and how their output reaches the browser, and reconciliation is still the engine that processes the result (Section 9).
+Server Components, server-side rendering and hydration all sound like rendering on the server. They are three different steps.
+
+### The short version
+
+On the first load, the RSC render runs Server Components and streams the payload. **Server-side rendering** (SSR) reads that payload and renders it, with each Client Component's first markup, into HTML. The user sees content before any JavaScript runs.
+
+**Hydration** then attaches state and event handlers to that HTML in the browser, for Client Components only. Server Components never hydrate, because they have nothing to attach. Later navigations skip HTML: the browser fetches a new payload and updates the tree in place.
+
+### The first-load pipeline
+
+```jsx
+// Simplified teaching version of a framework's first-load handler.
+import { renderToReadableStream as renderFlight } from "react-server-dom-webpack/server";
+import { createFromReadableStream } from "react-server-dom-webpack/client";
+import { renderToReadableStream as renderHtml } from "react-dom/server";
+
+async function handleRequest(request) {
+    const flight = renderFlight(<App url={request.url} />, clientManifest); // 1. RSC render
+    const [forSsr, forBrowser] = flight.tee();
+
+    const tree = createFromReadableStream(forSsr, { serverConsumerManifest }); // 2. SSR decodes the payload
+    const html = await renderHtml(<Root tree={tree} />); // and renders it to HTML
+
+    return new Response(inlinePayload(html, forBrowser)); // 3. HTML plus payload, streamed
+}
+```
+
+In a real framework, steps 1 and 2 run in separate module graphs, because step 1 needs the `react-server` build of React.
+
+### In the browser
+
+```jsx
+// Simplified teaching version of the browser entry.
+import { hydrateRoot } from "react-dom/client";
+import { createFromReadableStream } from "react-server-dom-webpack/client";
+
+const tree = createFromReadableStream(readInlinedPayload()); // no second request
+hydrateRoot(document, <Root tree={tree} />);
+```
+
+React loads the Client Component chunks, rebuilds the tree from the payload and walks the existing DOM. At each client reference, it attaches state and handlers to the nodes already there. Next.js inlines the payload in the HTML as `self.__next_f.push` scripts, so no extra request is needed.
+
+<MarginNote note="the same reason they ship no code">
+
+A Server Component has no browser behaviour to attach. Its HTML stays cheap static content for the life of the page, which cuts the client's work on load.
+
+</MarginNote>
+
+A Client Component renders twice on the first load, and that is why purity and cleanup discipline matter here too. A render that reads `Date.now()` or `window` can differ between the two runs, and React reports a hydration mismatch.
+
+<GuideFigure figure="rs-first-load" />
+
+In Next.js, a later navigation requests the route's payload with an `rsc` header, not an HTML document. React and the client chunks are already loaded, so only the new tree description travels. Next.js also prefetches payloads for links and caches them.
 
 ### Try it
 
-> Audit one real page in your Next.js app. For each component, mark which side of the boundary it is on and whether it needs to be there. Move at least one `"use client"` deeper, or convert one client-fetching component to a server component, and check the bundle and network tabs before and after.
+Disable JavaScript in DevTools and load a Next.js page. The content should still appear, because SSR produced HTML, but nothing interactive works. That separates "HTML exists" from "it became interactive". Then enable JavaScript, view the page source, and search for this.
 
-### You've got this if
+```text
+self.__next_f.push
+```
 
-You can take a confusing RSC error and immediately ask "which side of the boundary is this, and is it doing something only the other side can do?"
+Each match is a chunk of the inlined payload, in the row format from section 6. Finally, click a link and find the request with an `rsc` header in the Network tab. Its response is rows, not HTML.
 
----
+## 8. Server Functions: calling the server from the client
 
-## 11. Further reading
+Writing data still meant an API route, a `fetch`, loading and error state, then a refresh. Could client code call the server directly?
 
-### Official Server Components reference
+### The short version
 
-Read it on [react.dev](https://react.dev/reference/rsc/server-components).
+A **Server Function** is an `async` function marked with `"use server"` that runs on the server but can be called from client code. Its body never ships. The client gets a server reference, a stub that knows its id. Calling it sends the arguments in a POST and returns the serialized result.
 
-The authoritative description of Server Components, kept current in the React 19 line.
+So a local-looking call is a network round trip. A Server Function can be a prop, because only the reference crosses, and as a form `action` it works before JavaScript loads. React called all of these Server Actions until September 2024.
 
-Maps to Sections 1 through 3.
+### Marking a Server Function
 
-### Official `"use client"` and `"use server"` directive references
+```js
+// actions.js: every export becomes a Server Function
+"use server";
 
-They are on react.dev under the RSC section: [`"use client"`](https://react.dev/reference/rsc/use-client) and [`"use server"`](https://react.dev/reference/rsc/use-server).
+export async function savePost(formData) {
+    await db.posts.update({ title: formData.get("title") }); // runs on the server
+}
+```
 
-Read these for the precise meaning of each directive.
+```jsx
+// Inline, inside a Server Component
+export default function Page({ id }) {
+    async function publish() {
+        "use server";
+        await db.posts.publish(id); // id is captured and sent along with the reference
+    }
+    return <PublishButton onPublish={publish} />;
+}
+```
 
-They are the cure for the two biggest misconceptions in this whole topic (Sections 4 and 8).
+At the top of a file, `"use server"` marks every export. At the top of an async function body, it marks that one function. It never marks components. "Server Action" now means a Server Function used as an action, such as a form's `action`.
 
-### The `use` hook reference
+### What the client receives
 
-Read it on [react.dev](https://react.dev/reference/react/use).
+Save this as `server-ref.cjs`. It does by hand what a bundler does for `"use server"`.
 
-The modern way to read promises and context during render, used on both sides of the boundary.
+```js
+const React = require("react");
+const { renderToPipeableStream, registerClientReference, registerServerReference } = require("react-server-dom-webpack/server");
 
-### Server Functions and the React 19 form hooks
+const LikeButton = registerClientReference(function () {}, "./LikeButton.js", "LikeButton");
+const manifest = { "./LikeButton.js#LikeButton": { id: "./LikeButton.js", chunks: [], name: "LikeButton" } };
 
-Server Functions and the React 19 form hooks (`useActionState`, `useFormStatus`, `useOptimistic`) are documented on react.dev.
+// What a bundler generates for a "use server" export, written by hand.
+async function like(postId) {
+    return postId;
+}
+registerServerReference(like, "./actions.js", "like");
 
-Read these when you start handling real mutations and forms (Section 8).
+const tree = React.createElement(LikeButton, { postId: 7, onLike: like.bind(null, 7) });
+renderToPipeableStream(tree, manifest).pipe(process.stdout);
+```
 
-### Your framework's docs (almost certainly Next.js App Router)
+```text role="output"
+1:I["./LikeButton.js",[],"LikeButton"]
+2:{"id":"./actions.js#like","bound":"$@3"}
+0:["$","$L1",null,{"postId":7,"onLike":"$h2"}]
+3:[7]
+```
 
-Because RSC only runs through a framework, the Next.js documentation on Server and Client Components, data fetching, and Server Actions is where the concepts here become concrete commands and file conventions.
+The function body appears nowhere. `onLike` became `"$h2"`, and row 2 holds the function's id plus its `bind` arguments, which React turns into a stub in the browser.
+
+### Calling it is a POST
+
+```js
+// Simplified teaching version of the client stub (createServerReference in react-client).
+function createServerReference(id, callServer) {
+    return (...args) => callServer(id, args);
+}
+
+// The framework supplies callServer. The endpoint and header here are made up.
+async function callServer(id, args) {
+    const response = await fetch("/server-functions", {
+        method: "POST",
+        headers: { "x-function-id": id },
+        body: await encodeReply(args), // the same serialization rules, in reverse
+    });
+    return createFromFetch(Promise.resolve(response)); // the result comes back as Flight rows
+}
+```
+
+<MarginNote note="it looks local but it is a network call">
+
+Every call pays a round trip and serializes its arguments. Treat it like a request.
+
+</MarginNote>
+
+The server decodes the arguments with `decodeReply` and runs the function. In Next.js the POST goes to the page that invoked the action. Next.js also runs Server Actions one at a time per client, so `Promise.all` will not parallelize them.
+
+### Forms that work before JavaScript
+
+```jsx
+import { savePost } from "./actions";
+
+export default function Editor() {
+    return (
+        <form action={savePost}>
+            <input name="title" />
+            <button>Save</button>
+        </form>
+    );
+}
+```
+
+Before hydration, this is a plain HTML form. React adds a hidden field named `$ACTION_ID_` plus the function's id, and the server's `decodeAction` finds the function from it. After hydration, React intercepts the submit and calls the function without a reload.
+
+This is **progressive enhancement**: the form works first, and JavaScript makes it nicer. In Next.js, a form inside a Client Component queues an early submit until it hydrates.
+
+| Hook | Problem it solves | Returns |
+|---|---|---|
+| `useActionState(action, initialState)` | Replaces `useState` for the result, an `onSubmit` handler and a loading flag | `[state, dispatchAction, isPending]` |
+| `useFormStatus()` | A child inside a form, like a submit button, needs the form's status without prop drilling | `{ pending, data, method, action }` |
+| `useOptimistic(value, reducer)` | The UI should change at once while the action runs, then settle on the real result | `[optimisticState, setOptimistic]` |
+
+```jsx
+"use client";
+import { useActionState } from "react";
+import { saveTitle } from "./actions"; // "use server": (previous, formData) => message
+
+export function TitleForm() {
+    const [message, formAction, isPending] = useActionState(saveTitle, "");
+    return (
+        <form action={formAction}>
+            <input name="title" />
+            <button disabled={isPending}>Save</button>
+            <p>{message}</p>
+        </form>
+    );
+}
+```
+
+### Try it
+
+In a Next.js app, import this into a `"use client"` component and call it from a button.
+
+```js
+"use server";
+
+export async function ping(message) {
+    console.log("server got", message);
+    return message.toUpperCase();
+}
+```
+
+The log should appear in your terminal, though in development React may also echo it in the browser console, marked as server output. The Network tab should show a POST. Then disable JavaScript and submit the `Editor` form above. It should still save.
+
+## 9. Keeping the server side safe
+
+Server code now feels like component code, and that comfort is the risk. One import can leak a secret, and a Server Function is a public endpoint.
+
+### The short version
+
+Two rules keep the server side safe. First, a Server Function's arguments are client-controlled, and anyone can send its POST without your UI. A login check on the page that renders the form does not protect it. So each function validates input and checks authentication and authorization itself.
+
+Second, keep server-only code out of client modules. Importing the `server-only` package turns that mistake into a build error, and Next.js sends only `NEXT_PUBLIC_` environment variables to the client. Next.js adds its own protections, but they never replace your checks.
+
+### Every Server Function checks its caller
+
+```js
+"use server";
+
+export async function deletePost(postId) {
+    const session = await auth(); // who is calling?
+    if (!session) throw new Error("Unauthorized");
+
+    if (typeof postId !== "string") throw new Error("Bad input"); // never trust the shape
+    const post = await db.posts.find(postId);
+    if (post.authorId !== session.userId) throw new Error("Forbidden"); // may this caller do this?
+
+    await db.posts.delete(postId);
+}
+```
+
+<Mark kind="underline" wraps>Treat every Server Function as a public HTTP endpoint</Mark>. Authentication asks who is calling. Authorization asks whether that caller may touch this post. Without it, any logged-in user can delete anyone's post, a bug called an insecure direct object reference.
+
+Next.js accepts only POST for actions. It blocks **cross-site request forgery** (CSRF), where another site makes the user's browser send the POST, by checking that `Origin` matches `Host`. It caps bodies at 1MB, encrypts action ids and captured variables, and strips unused actions. The docs still say to check every caller yourself.
+
+### Keeping secrets out of the bundle
+
+```js
+// lib/data.js
+import "server-only"; // importing this file from client code fails the build
+
+export async function getData() {
+    const response = await fetch("https://api.example.com/data", {
+        headers: { authorization: process.env.API_KEY },
+    });
+    return response.json();
+}
+```
+
+Without that import, a Client Component could import `getData` by accident. Next.js would bundle it with `process.env.API_KEY` replaced by an empty string, and the call would fail confusingly. The `client-only` package marks the opposite case.
+
+Props leak too. Everything passed to a Client Component is readable in the payload, so pass the fields it needs, not a whole user record.
+
+### Try it
+
+Create `lib/secret.js` with `import "server-only"` at the top, then import it from a client file.
+
+```js
+"use client";
+import "../lib/secret"; // the build should fail here
+```
+
+The Next.js build should fail and name the file. Then right-click one of your action requests in the Network tab and choose "Copy as cURL". Replay it with another user's post id, and confirm your check rejects it.
+
+## 10. What React owns and what the framework owns
+
+Much of what people call RSC behaviour is Next.js behaviour, and caching is the biggest example. Knowing the owner tells you which docs to read.
+
+### The short version
+
+React defines the model, and a framework turns it into an app with files, a router, HTTP endpoints and caching. RSC needs a bundler to create client references, which is why real apps run through a framework.
+
+Caching shows the split. React's only caching primitive here is `cache()`, which shares a result within one server request. Anything that lasts across requests, like `"use cache"` or `revalidatePath`, is Next.js. So read the React docs for the why, and the framework docs for the how.
+
+### Who owns what
+
+| React core (react.dev, stable in React 19) | Your framework (Next.js here) |
+|---|---|
+| Server Components, Client Components and the boundary | File conventions and where routes live |
+| `"use client"`, `"use server"` and their meaning | How an `await` in a component is tied to a request |
+| Server Components as the default | The router, and navigations that fetch payloads instead of HTML |
+| The payload format and the serialization rules | The HTTP endpoint a Server Function lives at, and how forms post to it |
+| Server Functions, `use`, `useActionState`, `useFormStatus`, `useOptimistic` | Caching, revalidation and most performance behaviour |
+| Progressive enhancement as a design goal | The mechanism that delivers it |
+| `cache()` for one request | `"use cache"`, `cacheLife`, revalidation and the router cache |
+
+### React's cache lasts one request
+
+```js
+import { cache } from "react";
+
+export const getUser = cache(async (id) => {
+    return db.users.find(id); // runs once per id per request
+});
+```
+
+Two Server Components that call `getUser(1)` in one render share a single query. React drops the cache when the request ends, and `cache` works only in Server Components.
+
+### Next.js caches across requests
+
+```js
+import { cacheLife } from "next/cache";
+
+export async function getProducts() {
+    "use cache";
+    cacheLife("hours");
+    return db.products.all();
+}
+```
+
+With Cache Components, a Next.js setting enabled in `next.config`, `"use cache"` keeps a result across requests, keyed by its arguments. After a mutation, calls such as `revalidatePath` choose what to refresh.
+
+### Try it
+
+Wrap a data function in `cache`, log inside it, and call it from two Server Components on one page.
+
+```jsx
+export default function Page() {
+    return (
+        <>
+            <UserName id={1} />
+            <UserAvatar id={1} />
+        </>
+    );
+}
+```
+
+It should log once per request. Remove `cache`, and it should log twice.
+
+## 11. Same engine, new input: debugging the boundary
+
+Does RSC replace fibers, reconciliation and the commit phase? And when something breaks, where do you look first?
+
+### The short version
+
+RSC does not replace the rendering engine. It gives it a new input: part of the element tree arrives pre-rendered as the payload. The host elements a Server Component returned become fibers, but the Server Component itself never exists in the browser.
+
+Client Components run hooks and re-render as before. A new payload is diffed against the current tree, so client state survives where type and position match. When something breaks, ask which side this code is on, and whether it does something only the other side can.
+
+### What the browser actually holds
+
+```jsx
+// What the browser builds from row 0 of the payload in section 6.
+<article>
+    <h1>Hello</h1>
+    <Counter start={3} tags={new Set(["a"])} at={new Date(0)} />
+</article>
+```
+
+`Post` is not in this tree, so it has no fiber, no hooks and no re-render. The `article` and `h1` become host fibers and commit like any DOM elements. `Counter` is a normal Client Component, so bailouts, effect timing and keys apply as before. <Mark kind="marker">Same engine, new input.</Mark>
+
+A Next.js navigation or refresh brings a new payload, which React reconciles with the usual rules: same type at the same position, keys for lists. So a Client Component in a shared layout keeps its state.
+
+### A procedure for boundary bugs
+
+1. Trace imports up to the nearest `"use client"` file to find the side.
+2. Server territory has no state, effects, events or browser APIs.
+3. Client territory has no database, files or secrets.
+4. Fix a violation by moving the piece, often into a small client leaf.
+
+### Pitfalls
+
+| Pitfall | Do this instead | Section |
+|---|---|---|
+| A heavy client bundle, because `"use client"` sits too high or was added "just in case" | Put it on the interactive leaf | 2, 4 |
+| `"use server"` to make a Server Component | Add no directive | 3, 8 |
+| Believing `"use client"` means browser-only | It still renders to HTML on the server | 4 |
+| A serialization error, because a function or class instance was passed down | Pass data, and define the function in the Client Component | 5 |
+| Importing server-only code into a client file | Pass server content down as `children` | 2, 5 |
+| Reading Context in a Server Component | Put the provider in a Client Component | 3 |
+| A Server Function without its own checks | Validate and authorize inside it | 9 |
+| Passing a whole database record as props | Pass only the fields needed | 9 |
+| Fetching in an effect out of habit | Fetch in a Server Component during render | 1, 3 |
+
+The React DevTools Profiler shows Client Components rendering as usual. Server Components never re-render in the browser, so they never appear there as re-rendering.
+
+### Try it
+
+Audit one real page. Mark each component's side and ask whether it needs to be there. Then move one `"use client"` deeper.
+
+```diff
+- "use client"; // at the top of app/page.js
++ "use client"; // only at the top of app/LikeButton.js
+```
+
+Compare the JavaScript transferred in the Network tab before and after. Then record an interaction in the React DevTools Profiler, and confirm only Client Components render.
+
+## The whole thing in one list
+
+1. RSC splits one tree at `"use client"` boundaries in the module graph, fixed at build time.
+2. Server Components are the default: they run only on the server, can `await` data, and ship no code.
+3. Never running in the browser, they have no state, effects, handlers, browser APIs or Context.
+4. Client Components ship to the browser, render to HTML on the server first, then hydrate.
+5. Props must serialize, and server content enters Client Components as `children`.
+6. The payload is Flight: streamed rows of JSON, client references and late-filling promises.
+7. On first load RSC feeds SSR, which feeds hydration, and navigations fetch payloads.
+8. Server Functions turn a client call into a POST, so each must validate and authorize its caller.
+9. Caching across requests belongs to the framework, while React offers per-request `cache()`.
+10. Reconciliation still processes the result in the browser: same engine, new input.
+
+## Further reading
+
+### Server Components on react.dev
+
+The [Server Components reference](https://react.dev/reference/rsc/server-components) states the stability boundary: the model is stable, the bundler APIs are not.
+
+### The two directives
+
+The [`"use client"`](https://react.dev/reference/rsc/use-client) and [`"use server"`](https://react.dev/reference/rsc/use-server) references list the serializable types and the security notes.
+
+### Server Functions and hooks
+
+Read [Server Functions](https://react.dev/reference/rsc/server-functions), [`useActionState`](https://react.dev/reference/react/useActionState), [`use`](https://react.dev/reference/react/use) and [`cache`](https://react.dev/reference/react/cache).
+
+### Next.js App Router
+
+[Server and Client Components](https://nextjs.org/docs/app/getting-started/server-and-client-components), [Server Actions](https://nextjs.org/docs/app/guides/server-actions), [Data Security](https://nextjs.org/docs/app/guides/data-security) and [Caching](https://nextjs.org/docs/app/getting-started/caching) turn the model into files and commands.
+
+### The Flight source
+
+[ReactFlightServer.js](https://github.com/facebook/react/blob/main/packages/react-server/src/ReactFlightServer.js) writes the rows, and [ReactFlightClient.js](https://github.com/facebook/react/blob/main/packages/react-client/src/ReactFlightClient.js) reads them in `processFullStringRow`.
+
+### The React 19.2 release post
+
+The [React 19.2 announcement](https://react.dev/blog/2025/10/01/react-19-2) covers batched Suspense reveals in SSR.

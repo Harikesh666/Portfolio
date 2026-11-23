@@ -55,7 +55,7 @@ export function HostConfigFigure() {
         { id: "create", label: "createInstance(type, props)", sub: "'div' → a real <div>" },
         { id: "text", label: "createTextInstance(text)", sub: "a text node" },
         { id: "structure", label: "appendChild, insertBefore", sub: "and removeChild: structure" },
-        { id: "update", label: "commitUpdate(instance, ...)", sub: "apply a computed prop change" },
+        { id: "update", label: "commitUpdate(instance, ...)", sub: "diff old and new props" },
     ];
     const nodes: FlowNode[] = [
         { id: "reconciler", x: 8, y: 64, w: 104, h: 48, label: "reconciler", sub: ["knows nothing", "about the DOM"], tone: "accent" },
@@ -78,7 +78,7 @@ export function HostConfigFigure() {
         "To make a node, the reconciler calls the renderer's `createInstance`. In React DOM, `'div'` becomes a real `<div>`.",
         "Text gets its own call, `createTextInstance`, which makes a text node.",
         "Structural changes go through `appendChild`, `insertBefore` and `removeChild`.",
-        "And a computed prop change is applied to an existing node with `commitUpdate`.",
+        "And a changed node gets `commitUpdate`, which diffs the old and new props and applies the difference.",
     ];
     const steps: FlowStep[] = calls.map((call, index) => ({
         caption: captions[index],
@@ -125,7 +125,7 @@ export function DoubleBufferFigure() {
             patch: { wip: { sub: ["interrupted? throw it away"] } },
         },
         {
-            caption: "Committing is a single pointer swap: `FiberRoot.current` now points at the finished tree, instantly.",
+            caption: "Commit applies the DOM changes in one synchronous pass, then swaps the pointer: `FiberRoot.current` now points at the finished tree.",
             lit: { nodes: ["root", "wip"], wires: ["to-wip"], tone: "accent" },
             patch: { wip: { label: "new current tree", sub: ["now on screen"] }, current: { label: "old tree", sub: ["next update's WIP"] } },
         },

@@ -173,11 +173,10 @@ A deliberate thematic break.
         expect(elements(result, "a")).toEqual(elements(original, "a"));
 
         if (slug.startsWith("react-")) {
+            // Rebuilt React guides write Try it as plain prose and code, not a quote, and have no
+            // rules before chapters, so only the version note is classified here. The exercise role
+            // and rule removal have their own tests above.
             expect(result.querySelector('[data-guide-role="context"]')).not.toBeNull();
-            expect(result.querySelector('[data-guide-role="exercise"]')).not.toBeNull();
-            expect(result.querySelectorAll("hr").length).toBeLessThan(
-                original.querySelectorAll("hr").length,
-            );
         }
     });
 });
